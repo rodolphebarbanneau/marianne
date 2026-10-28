@@ -1,0 +1,48 @@
+/** Paris time: the Assemblée's agenda and broadcasts are in it, whatever the computer's time zone. */
+
+const PARIS = 'Europe/Paris'
+
+/** YYYY-MM-DD in Paris. */
+export function parisDay(date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: PARIS, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+}
+
+/** Paris' offset from UTC at that moment: "+01:00" or "+02:00". */
+export function parisOffset(date: Date): string {
+  const name = new Intl.DateTimeFormat('en-US', { timeZone: PARIS, timeZoneName: 'longOffset' }).formatToParts(date).find((p) => p.type === 'timeZoneName')
+  return name?.value.replace('GMT', '') || '+00:00'
+}
+
+/** "2026-10-28 14:00:00" (Paris) → "2026-10-28T14:00:00+01:00". */
+export function parisIso(local: string): string {
+  const [day, time = '00:00:00'] = local.trim().split(/[ T]/)
+  const hms = time.length === 5 ? `${time}:00` : time.slice(0, 8)
+  return `${day}T${hms}${parisOffset(new Date(`${day}T${hms}Z`))}`
+}
+
+/** A day (YYYY-MM-DD) moved by a number of days. */
+export function addDays(day: string, days: number): string {
+  const d = new Date(`${day}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+/** "14:30", Paris time, of an ISO date. */
+export function parisTime(iso: string): string {
+  return new Intl.DateTimeFormat('fr-FR', { timeZone: PARIS, hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
+}
+
+/** "1:02:15", "4:05": a position in a video. */
+export function clock(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000))
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  return `${h ? `${h}:` : ''}${String(m).padStart(h ? 2 : 1, '0')}:${String(s % 60).padStart(2, '0')}`
+}
+
+/** "4:05" or "1:02:15" → ms; NaN when it isn't a position. */
+export function parseClock(text: string): number {
+  const parts = text.trim().split(':')
+  if (parts.length > 3 || parts.some((p) => !/^\d+$/.test(p))) return NaN
+  return parts.reduce((total, p) => total * 60 + Number(p), 0) * 1000
+}

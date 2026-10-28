@@ -1,0 +1,387 @@
+/* 3615 ASSEMBLEE: its own blocks, on top of Marianne's classes (.tabs, .card, .btn, .rows, .chip…). */
+
+.assemblee {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  max-width: 960px;
+}
+.assemblee .tabs {
+  margin-bottom: 0;
+}
+.assemblee-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+.assemblee .label {
+  display: block;
+  margin-top: var(--s2);
+}
+.assemblee-grow {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: normal;
+}
+.assemblee-back {
+  align-self: flex-start;
+}
+.assemblee-back:hover {
+  color: var(--hi);
+}
+.assemblee-title {
+  font-size: 1.15em;
+  margin: 0;
+}
+.assemblee-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.assemblee-foot {
+  margin-top: var(--s2);
+}
+.assemblee-live {
+  color: var(--rouge);
+  letter-spacing: 0.06em;
+}
+
+/* filters */
+
+.assemblee-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.assemblee-choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.assemblee-choices .chip.on {
+  color: var(--noir);
+  background: var(--fg);
+  border-color: var(--fg);
+  border-style: solid;
+}
+.assemblee-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--s3);
+}
+.assemblee-fields > input {
+  grid-column: 1 / -1;
+}
+.assemblee-inline {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.assemblee-inline input {
+  width: 9ch;
+}
+
+/* the sync of the open data */
+
+.assemblee-sync {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.assemblee-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 420px;
+}
+.assemblee-progress .gauge > i,
+.assemblee-gauge > i {
+  transition: width 0.3s;
+}
+.assemblee-gauge {
+  max-width: 420px;
+}
+
+/* the agenda */
+
+.assemblee-day {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex-wrap: wrap;
+}
+.assemblee-agenda {
+  border-top: 1px solid var(--rule);
+}
+.assemblee-meeting {
+  display: flex;
+  gap: var(--s3);
+  width: 100%;
+  padding: 8px 2px;
+  border-bottom: 1px dashed var(--rule);
+}
+.assemblee-meeting:hover {
+  background: var(--hover);
+}
+.assemblee-meeting.off .hi {
+  text-decoration: line-through;
+  color: var(--dim);
+}
+.assemblee-hour {
+  flex: none;
+  width: 9ch;
+  color: var(--accent);
+}
+.assemblee-states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
+.assemblee-items {
+  margin: 0;
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* live streams */
+
+.assemblee-streams .card {
+  min-height: 0;
+}
+.assemblee-streams img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--bg-sunken);
+  margin-bottom: 4px;
+}
+
+/* deputies and groups */
+
+.assemblee-deputies {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+}
+.assemblee-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.assemblee-deputy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  padding: 6px 8px;
+}
+.assemblee-deputy:hover {
+  border-color: var(--bleu);
+}
+.assemblee-deputy img {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  background: var(--bg-sunken);
+}
+.assemblee-mark {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  background: var(--muted);
+  vertical-align: baseline;
+}
+.assemblee-groups {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--rule);
+}
+.assemblee-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 2px;
+  border-bottom: 1px dashed var(--rule);
+}
+.assemblee-group:hover {
+  background: var(--hover);
+}
+.assemblee-profile {
+  display: flex;
+  gap: var(--s4);
+  align-items: flex-start;
+}
+.assemblee-profile img {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  background: var(--bg-sunken);
+}
+.assemblee-profile .assemblee-grow {
+  gap: 4px;
+}
+.assemblee-facts {
+  margin-bottom: 0;
+}
+.assemblee-roles {
+  margin: 0;
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* ballots */
+
+.assemblee-ballots {
+  border-top: 1px solid var(--rule);
+}
+.assemblee-ballot {
+  display: grid;
+  grid-template-columns: 16ch minmax(0, 1fr) 9ch auto;
+  gap: var(--s3);
+  align-items: baseline;
+  width: 100%;
+  padding: 7px 2px;
+  border-bottom: 1px dashed var(--rule);
+  white-space: normal;
+}
+.assemblee-ballot:hover {
+  background: var(--hover);
+}
+.assemblee-count {
+  display: flex;
+  height: 8px;
+  max-width: 420px;
+  border: 1px solid var(--rule);
+  background: var(--bg-sunken);
+}
+.assemblee-count .for {
+  background: var(--vert);
+}
+.assemblee-count .against {
+  background: var(--rouge);
+}
+.assemblee-count .abstention {
+  background: var(--jaune);
+}
+.assemblee-table {
+  border-collapse: collapse;
+  max-width: 800px;
+}
+.assemblee-table th,
+.assemblee-table td {
+  padding: 4px 10px 4px 2px;
+  text-align: left;
+  border-bottom: 1px dashed var(--rule);
+}
+.assemblee-table th {
+  color: var(--dim);
+  font-weight: 400;
+  font-size: 0.86em;
+}
+
+/* videos */
+
+.assemblee-videos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.assemblee-video {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  padding: 6px;
+}
+.assemblee-video:hover {
+  border-color: var(--bleu);
+}
+.assemblee-video img,
+.assemblee-noimg {
+  flex: none;
+  width: 128px;
+  height: 72px;
+  object-fit: cover;
+  background: var(--bg-sunken);
+}
+.assemblee-player video {
+  display: block;
+  width: 100%;
+  max-width: 900px;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+.assemblee-chapters {
+  display: flex;
+  flex-direction: column;
+  max-height: 420px;
+  overflow: auto;
+  border-top: 1px solid var(--rule);
+}
+.assemblee-chapters button {
+  display: flex;
+  gap: 10px;
+  padding: 4px 8px;
+  white-space: normal;
+}
+.assemblee-chapters button:hover:not(:disabled) {
+  background: var(--hover);
+}
+.assemblee-chapters button.on {
+  background: var(--sel);
+}
+.assemblee-tc {
+  flex: none;
+  width: 8ch;
+  color: var(--accent);
+}
+.assemblee-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+/* clips */
+
+.assemblee-clips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.assemblee-clip {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  padding: 8px;
+}
+.assemblee-thumb img,
+.assemblee-thumb .assemblee-noimg {
+  display: block;
+  width: 160px;
+  height: 90px;
+  object-fit: cover;
+  background: var(--bg-sunken);
+}
+.assemblee-acts {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
