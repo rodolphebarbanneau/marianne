@@ -36,6 +36,7 @@ jobs:
 
       - name: Package & publish (draft release)
         shell: bash
+        working-directory: apps/desktop
         # Secrets that aren't configured arrive as empty strings, and electron-builder reads an
         # empty CSC_LINK as a certificate path: unset them. Without a certificate, macOS builds
         # are signed ad hoc: Apple Silicon Macs then open them after the "unidentified developer"

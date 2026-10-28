@@ -1,0 +1,19 @@
+name: Un avis, une idée
+description: Ce qui vous a plu, gêné, manqué.
+labels: [avis]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        N’écrivez ici **aucune donnée personnelle** : ce message est public.
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Votre avis
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: 0.1.0-alpha.1
