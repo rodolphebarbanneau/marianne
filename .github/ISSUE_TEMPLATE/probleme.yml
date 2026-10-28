@@ -1,0 +1,47 @@
+name: Un problème
+description: Quelque chose ne marche pas, ou pas comme prévu.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de tester Marianne. N’écrivez ici **aucune donnée personnelle** (numéro de sécurité sociale, adresse, numéro fiscal…) : ce rapport est public.
+  - type: textarea
+    id: what
+    attributes:
+      label: Ce qui s’est passé
+      description: Ce que vous avez fait, ce que vous attendiez, ce que Marianne a fait.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pour le reproduire
+      placeholder: |
+        1. Ouvrir…
+        2. Cliquer sur…
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Réglages › À propos et mises à jour, ou en bas de l’écran de verrouillage.
+      placeholder: 0.1.0-alpha.1
+    validations:
+      required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: Système
+      options: [Windows, macOS (puce Apple), macOS (Intel), Linux]
+    validations:
+      required: true
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Moteur
+      options: [Claude Code, Codex, Mistral Vibe, aucun]
+  - type: textarea
+    id: screens
+    attributes:
+      label: Captures d’écran
+      description: Si possible, en masquant tout ce qui est personnel.

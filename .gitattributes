@@ -1,0 +1,6 @@
+# LF everywhere, as Prettier checks it, whatever the contributor's system.
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.icns binary
+*.woff2 binary

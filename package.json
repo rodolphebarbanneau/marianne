@@ -1,9 +1,6 @@
 {
-  "name": "marianne",
-  "productName": "Marianne",
-  "version": "0.1.0",
-  "description": "Assistant citoyen : vos droits, vos démarches et les données publiques françaises, avec votre propre Claude Code ou Codex.",
-  "main": "./out/main/index.js",
+  "name": "marianne-workspace",
+  "description": "Marianne: the desktop app (apps/desktop), its SDK (packages/sdk), its content (content) and its built-in services (services).",
   "author": "Rodolphe Barbanneau",
   "license": "MIT",
   "repository": {
@@ -12,45 +9,31 @@
   },
   "private": true,
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build",
-    "start": "electron-vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "dev": "npm run dev -w marianne",
+    "build": "npm run build -w marianne",
+    "start": "npm run start -w marianne",
+    "typecheck": "tsc --noEmit -p tsconfig.json && npm run typecheck --workspaces --if-present",
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run format:check && npm run typecheck && npm test",
-    "icons": "node scripts/generate-icons.mjs",
-    "dist": "npm run build && electron-builder",
-    "dist:dir": "npm run build && electron-builder --dir"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.2",
-    "electron-updater": "^6.8.11",
-    "fast-xml-parser": "^5.11.2",
-    "fflate": "^0.8.3",
-    "pdfjs-dist": "^6.4.299",
-    "zod": "^4.6.7"
+    "check": "npm run format:check && node scripts/check-gitkeep.mjs && npm run typecheck && npm test",
+    "icons": "npm run icons -w marianne",
+    "content:bundle": "npm run bundle -w @marianne/content",
+    "content:key": "npm run key -w @marianne/content --",
+    "dist": "npm run dist -w marianne",
+    "dist:dir": "npm run dist:dir -w marianne"
   },
   "devDependencies": {
-    "@fontsource-variable/jetbrains-mono": "^5.3.0",
-    "@fontsource/vt323": "^5.3.0",
     "@types/node": "^26.6.5",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.2",
-    "electron": "^45.1.0",
-    "electron-builder": "^26.18.0",
-    "electron-vite": "^6.0.0",
-    "hls.js": "^1.7.3",
     "prettier": "^3.9.10",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1",
     "typescript": "^7.0.2",
-    "vite": "^8.3.5",
     "vitest": "^5.0.5"
-  }
+  },
+  "workspaces": [
+    "apps/*",
+    "content",
+    "packages/*",
+    "services/*"
+  ]
 }

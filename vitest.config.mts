@@ -1,8 +1,8 @@
 import { defineConfig } from 'vitest/config'
 
+/** Every package's tests: the app (apps/*), the content, the SDK (packages/*) and the services. */
 export default defineConfig({
   test: {
-    include: ['test/**/*.test.ts'],
-    environment: 'node'
+    projects: ['apps/*', 'content', 'packages/*', 'services/*']
   }
 })

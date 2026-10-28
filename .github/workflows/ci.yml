@@ -57,6 +57,7 @@ jobs:
 
       - name: Package (unpacked)
         shell: bash
+        working-directory: apps/desktop
         run: |
           args=()
           if [ "$RUNNER_OS" = macOS ]; then args+=(-c.mac.identity=null); fi
