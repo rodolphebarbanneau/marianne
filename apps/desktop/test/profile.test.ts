@@ -394,7 +394,8 @@ describe('documents', () => {
   })
 })
 
-describe('in the archive', () => {
+// Creating an archive derives its keys on purpose slowly (scrypt): seconds on a slow runner.
+describe('in the archive', { timeout: 30_000 }, () => {
   const dir = mkdtempSync(join(tmpdir(), 'marianne-profile-'))
   afterAll(() => {
     session.lock()
