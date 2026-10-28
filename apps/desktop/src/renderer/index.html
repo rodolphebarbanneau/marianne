@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: %SERVICE_HOSTS%; media-src 'self' blob: %SERVICE_HOSTS%; worker-src 'self' blob:; connect-src 'self' %DEV_SERVER% %SERVICE_HOSTS%"
+    />
+    <title>Marianne</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>
