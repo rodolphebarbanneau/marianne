@@ -1,0 +1,23 @@
+{
+  "name": "@marianne/content",
+  "version": "1.0.0",
+  "description": "Marianne's content, open to contributions through review: the engines' skills, the guided démarches, the official calendar, the public sites and the news sources.",
+  "license": "MIT",
+  "author": "Rodolphe Barbanneau",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": "./src/index.ts",
+    "./files": "./src/files.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run",
+    "bundle": "node scripts/bundle.mjs",
+    "key": "node scripts/key.mjs"
+  },
+  "peerDependencies": {
+    "@marianne/sdk": "*"
+  }
+}
