@@ -1,0 +1,81 @@
+/* 3615 ANNUAIRE */
+
+.annuaire {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.annuaire-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  max-width: 1100px;
+}
+.annuaire-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+.annuaire-search input {
+  width: min(260px, 100%);
+}
+.annuaire-ask {
+  margin-left: auto;
+}
+.annuaire-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.annuaire-kinds .chip.on {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--hi);
+}
+.annuaire-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+.annuaire-stale {
+  opacity: 0.6;
+}
+.annuaire-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.annuaire-group-title {
+  color: var(--hi);
+  letter-spacing: 0.04em;
+  border-bottom: 1px dashed var(--rule);
+  padding-bottom: 2px;
+}
+.annuaire-offices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--s2);
+}
+.annuaire-office {
+  min-height: 0;
+  gap: 4px;
+}
+.annuaire-office .link {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.annuaire-hours {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 8px;
+  border-left: 1px solid var(--rule);
+}
+.annuaire-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: auto;
+  padding-top: 4px;
+}

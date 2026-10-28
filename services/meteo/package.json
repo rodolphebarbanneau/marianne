@@ -1,0 +1,43 @@
+{
+  "name": "@marianne/service-meteo",
+  "version": "1.0.0",
+  "description": "3615 METEO · Météo : le temps de votre commune, maintenant et sur 7 jours (Météo-France)",
+  "license": "MIT",
+  "author": "Rodolphe Barbanneau",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./main": "./src/main.ts",
+    "./view": "./src/view.tsx"
+  },
+  "marianne": {
+    "code": "meteo",
+    "name": "Météo",
+    "description": "le temps de votre commune, maintenant et sur 7 jours (Météo-France)",
+    "category": "daily",
+    "keywords": [
+      "temps",
+      "prévisions",
+      "pluie",
+      "température",
+      "vent",
+      "weather"
+    ],
+    "connections": [
+      "geo"
+    ],
+    "hosts": [
+      "api.open-meteo.com"
+    ]
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@marianne/sdk": "*",
+    "react": "^19.0.0",
+    "zod": "^4.0.0"
+  }
+}

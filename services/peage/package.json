@@ -1,0 +1,52 @@
+{
+  "name": "@marianne/service-peage",
+  "version": "1.0.0",
+  "description": "3615 PEAGE · Péage en flux libre : les autoroutes sans barrière, vos trajets, l’échéance de 72 heures, le paiement officiel",
+  "license": "MIT",
+  "author": "Rodolphe Barbanneau",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./main": "./src/main.ts",
+    "./view": "./src/view.tsx"
+  },
+  "marianne": {
+    "code": "peage",
+    "name": "Péage en flux libre",
+    "description": "les autoroutes sans barrière : vos trajets, l’échéance de 72 heures, le paiement officiel",
+    "category": "daily",
+    "keywords": [
+      "péage",
+      "flux libre",
+      "autoroute",
+      "sans barrière",
+      "sanef",
+      "aliae",
+      "a13",
+      "a14",
+      "a79",
+      "avis de paiement",
+      "toll"
+    ],
+    "hosts": [],
+    "domains": [
+      "mobility"
+    ],
+    "permissions": {
+      "profile": [
+        "vehicles.plate"
+      ],
+      "purpose": "vous rappeler les péages en flux libre à payer et ouvrir le paiement officiel"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@marianne/sdk": "*",
+    "react": "^19.0.0",
+    "zod": "^4.0.0"
+  }
+}

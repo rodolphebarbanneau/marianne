@@ -1,0 +1,23 @@
+{
+  "name": "@marianne/sdk",
+  "version": "0.1.0",
+  "description": "Build services for Marianne: the manifest, and the contracts of their main-process side, background sync and window view.",
+  "license": "MIT",
+  "author": "Rodolphe Barbanneau",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./main": "./src/main.ts",
+    "./sync": "./src/sync.ts",
+    "./view": "./src/view.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "zod": "^4.0.0"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "name": "@marianne/service-assemblee",
+  "version": "1.0.0",
+  "description": "3615 ASSEMBLEE · Assemblée nationale : vos députés, les scrutins, l’agenda, les séances en vidéo et en direct",
+  "license": "MIT",
+  "author": "Rodolphe Barbanneau",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./main": "./src/main.ts",
+    "./view": "./src/view.tsx",
+    "./sync": "./src/sync.ts"
+  },
+  "marianne": {
+    "code": "assemblee",
+    "name": "Assemblée nationale",
+    "description": "vos députés, les scrutins, l’agenda, les séances en vidéo et en direct",
+    "category": "democracy",
+    "keywords": [
+      "député",
+      "scrutin",
+      "vote",
+      "séance",
+      "vidéo",
+      "direct",
+      "parlement",
+      "loi",
+      "assembly"
+    ],
+    "hosts": [
+      "data.assemblee-nationale.fr",
+      "videos.assemblee-nationale.fr",
+      "www.assemblee-nationale.fr",
+      "www2.assemblee-nationale.fr",
+      "videos-an.vodalys.com",
+      "assemblee-nationale.akamaized.net",
+      "anorigin.vodalys.com"
+    ],
+    "links": [
+      "https://videos.assemblee-nationale.fr/"
+    ]
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "hls.js": "^1.7.3"
+  },
+  "peerDependencies": {
+    "@marianne/sdk": "*",
+    "react": "^19.0.0",
+    "zod": "^4.0.0"
+  }
+}
