@@ -1,0 +1,45 @@
+{
+  "updated": "2026-10-28",
+  "note": "Dates that come back every year. Indicative dates are set each year by the administration: the app says so, and links to the source.",
+  "items": [
+    {
+      "id": "income-declaration",
+      "domain": "taxes",
+      "title": "déclarer vos revenus (service en ligne ouvert mi-avril ; date limite entre fin mai et début juin selon le département)",
+      "monthDay": "05-21",
+      "applies": "always",
+      "indicative": true,
+      "site": "impots",
+      "procedure": "declare-income",
+      "source": "https://www.service-public.gouv.fr/particuliers/vosdroits/F359"
+    },
+    {
+      "id": "income-correction",
+      "domain": "taxes",
+      "title": "dernier délai habituel pour corriger en ligne votre déclaration de revenus",
+      "monthDay": "12-10",
+      "applies": "always",
+      "indicative": true,
+      "site": "impots",
+      "source": "https://www.service-public.gouv.fr/particuliers/vosdroits/F358"
+    },
+    {
+      "id": "property-tax",
+      "domain": "taxes",
+      "title": "payer la taxe foncière (date limite habituelle : mi-octobre, quelques jours de plus en ligne)",
+      "monthDay": "10-15",
+      "applies": "owner",
+      "indicative": true,
+      "site": "impots",
+      "source": "https://www.service-public.gouv.fr/particuliers/vosdroits/F59"
+    },
+    {
+      "id": "cfe",
+      "domain": "business",
+      "title": "payer la cotisation foncière des entreprises (CFE)",
+      "monthDay": "12-15",
+      "applies": "company",
+      "site": "impots"
+    }
+  ]
+}

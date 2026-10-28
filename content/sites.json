@@ -1,0 +1,401 @@
+{
+  "updated": "2026-10-28",
+  "note": "The public-service websites people most often need, with how they sign in. Ids are the sites' own names (impots, caf, ameli…); a field key becomes the [[token]] of the identifier the site needs.",
+  "sites": [
+    {
+      "id": "service-public",
+      "name": "Service-Public",
+      "url": "https://www.service-public.gouv.fr",
+      "domain": "identity",
+      "login": "franceconnect",
+      "description": "le site officiel de l’administration : fiches, démarches en ligne, espace personnel"
+    },
+    {
+      "id": "ants",
+      "name": "ANTS",
+      "url": "https://ants.gouv.fr",
+      "domain": "identity",
+      "login": "franceconnect",
+      "description": "carte d’identité, passeport, permis de conduire, carte grise"
+    },
+    {
+      "id": "france-identite",
+      "name": "France Identité",
+      "url": "https://france-identite.gouv.fr",
+      "domain": "identity",
+      "login": "none",
+      "description": "l’identité numérique sur téléphone, avec la carte d’identité électronique"
+    },
+    {
+      "id": "demarches-simplifiees",
+      "name": "Démarches simplifiées",
+      "url": "https://www.demarches-simplifiees.fr",
+      "domain": "identity",
+      "login": "account",
+      "description": "formulaires en ligne de nombreuses administrations et collectivités"
+    },
+    {
+      "id": "impots",
+      "name": "impots.gouv.fr",
+      "url": "https://www.impots.gouv.fr",
+      "domain": "taxes",
+      "login": "account",
+      "description": "déclaration de revenus, avis d’impôt, prélèvement à la source, taxe foncière, messagerie sécurisée",
+      "fields": [
+        {
+          "key": "tax_number",
+          "label": "numéro fiscal",
+          "hint": "13 chiffres, en haut à gauche de votre avis d’impôt",
+          "pattern": "^[0-9]{13}$"
+        }
+      ]
+    },
+    {
+      "id": "antai",
+      "name": "ANTAI",
+      "url": "https://www.antai.gouv.fr",
+      "domain": "mobility",
+      "login": "none",
+      "description": "payer ou contester une amende, désigner le conducteur"
+    },
+    {
+      "id": "cadastre",
+      "name": "Cadastre",
+      "url": "https://www.cadastre.gouv.fr",
+      "domain": "housing",
+      "login": "none",
+      "description": "plans cadastraux et parcelles"
+    },
+    {
+      "id": "dvf",
+      "name": "Prix immobiliers (DVF)",
+      "url": "https://explore.data.gouv.fr/fr/immobilier",
+      "domain": "housing",
+      "login": "none",
+      "description": "les ventes immobilières réelles, parcelle par parcelle"
+    },
+    {
+      "id": "caf",
+      "name": "Caf",
+      "url": "https://www.caf.fr",
+      "domain": "family",
+      "login": "account",
+      "description": "allocations familiales, aides au logement, rsa, prime d’activité, simulateurs",
+      "fields": [
+        {
+          "key": "caf_number",
+          "label": "numéro allocataire",
+          "hint": "7 chiffres, sur vos courriers de la caf",
+          "pattern": "^[0-9]{7}$"
+        }
+      ]
+    },
+    {
+      "id": "msa",
+      "name": "MSA",
+      "url": "https://www.msa.fr",
+      "domain": "family",
+      "login": "account",
+      "description": "la protection sociale du monde agricole",
+      "needsNir": true
+    },
+    {
+      "id": "mes-droits-sociaux",
+      "name": "Mes droits sociaux",
+      "url": "https://www.mesdroitssociaux.gouv.fr",
+      "domain": "family",
+      "login": "franceconnect",
+      "description": "toutes vos prestations sociales au même endroit, et un simulateur d’aides"
+    },
+    {
+      "id": "mes-aides",
+      "name": "1 jeune 1 solution · mes aides",
+      "url": "https://www.1jeune1solution.gouv.fr/mes-aides",
+      "domain": "family",
+      "login": "none",
+      "description": "simulateur des aides pour les jeunes"
+    },
+    {
+      "id": "cheque-energie",
+      "name": "Chèque énergie",
+      "url": "https://chequeenergie.gouv.fr",
+      "domain": "family",
+      "login": "none",
+      "description": "éligibilité, utilisation et réclamations"
+    },
+    {
+      "id": "ameli",
+      "name": "ameli",
+      "url": "https://www.ameli.fr",
+      "domain": "health",
+      "login": "account",
+      "description": "assurance maladie : remboursements, attestations, arrêts de travail, complémentaire santé solidaire",
+      "needsNir": true
+    },
+    {
+      "id": "mon-espace-sante",
+      "name": "Mon espace santé",
+      "url": "https://www.monespacesante.fr",
+      "domain": "health",
+      "login": "account",
+      "description": "dossier médical partagé et messagerie santé",
+      "needsNir": true
+    },
+    {
+      "id": "mdph",
+      "name": "MDPH en ligne",
+      "url": "https://mdphenligne.cnsa.fr",
+      "domain": "health",
+      "login": "account",
+      "description": "demandes auprès de la maison départementale des personnes handicapées",
+      "fields": [
+        {
+          "key": "mdph_number",
+          "label": "numéro de dossier MDPH"
+        }
+      ]
+    },
+    {
+      "id": "france-travail",
+      "name": "France Travail",
+      "url": "https://www.francetravail.fr",
+      "domain": "work",
+      "login": "account",
+      "description": "inscription, actualisation, allocations chômage, offres d’emploi",
+      "fields": [
+        {
+          "key": "france_travail_id",
+          "label": "identifiant France Travail",
+          "hint": "sur vos courriers de France Travail"
+        }
+      ]
+    },
+    {
+      "id": "mon-compte-formation",
+      "name": "Mon compte formation",
+      "url": "https://www.moncompteformation.gouv.fr",
+      "domain": "work",
+      "login": "franceconnect",
+      "description": "vos droits à la formation (cpf) et le catalogue des formations",
+      "needsNir": true
+    },
+    {
+      "id": "code-travail",
+      "name": "Code du travail numérique",
+      "url": "https://code.travail.gouv.fr",
+      "domain": "work",
+      "login": "none",
+      "description": "réponses personnalisées sur le droit du travail, conventions collectives, modèles de courriers"
+    },
+    {
+      "id": "info-retraite",
+      "name": "Info retraite",
+      "url": "https://www.info-retraite.fr",
+      "domain": "retirement",
+      "login": "franceconnect",
+      "description": "relevé de carrière, simulation et demande de retraite, tous régimes",
+      "needsNir": true
+    },
+    {
+      "id": "assurance-retraite",
+      "name": "L’Assurance retraite",
+      "url": "https://www.lassuranceretraite.fr",
+      "domain": "retirement",
+      "login": "account",
+      "description": "la retraite de base du régime général",
+      "needsNir": true
+    },
+    {
+      "id": "agirc-arrco",
+      "name": "Agirc-Arrco",
+      "url": "https://www.agirc-arrco.fr",
+      "domain": "retirement",
+      "login": "account",
+      "description": "la retraite complémentaire des salariés du privé",
+      "needsNir": true
+    },
+    {
+      "id": "logement-social",
+      "name": "Demande de logement social",
+      "url": "https://www.demande-logement-social.gouv.fr",
+      "domain": "housing",
+      "login": "account",
+      "description": "déposer et renouveler une demande de logement social",
+      "fields": [
+        {
+          "key": "housing_request_number",
+          "label": "numéro unique de demande",
+          "hint": "sur l’attestation d’enregistrement de votre demande"
+        }
+      ]
+    },
+    {
+      "id": "france-renov",
+      "name": "France Rénov’",
+      "url": "https://france-renov.gouv.fr",
+      "domain": "housing",
+      "login": "none",
+      "description": "aides à la rénovation énergétique, maprimerénov’"
+    },
+    {
+      "id": "anil",
+      "name": "ANIL · ADIL",
+      "url": "https://www.anil.org",
+      "domain": "housing",
+      "login": "none",
+      "description": "conseil juridique gratuit sur le logement : bail, loyers, copropriété"
+    },
+    {
+      "id": "georisques",
+      "name": "Géorisques",
+      "url": "https://www.georisques.gouv.fr",
+      "domain": "housing",
+      "login": "none",
+      "description": "les risques naturels et technologiques à une adresse"
+    },
+    {
+      "id": "justice",
+      "name": "Justice.fr",
+      "url": "https://www.justice.fr",
+      "domain": "justice",
+      "login": "none",
+      "description": "démarches judiciaires, formulaires, aide juridictionnelle, trouver un tribunal"
+    },
+    {
+      "id": "telerecours",
+      "name": "Télérecours citoyens",
+      "url": "https://citoyens.telerecours.fr",
+      "domain": "justice",
+      "login": "account",
+      "description": "saisir le tribunal administratif en ligne et suivre son dossier"
+    },
+    {
+      "id": "legifrance",
+      "name": "Légifrance",
+      "url": "https://www.legifrance.gouv.fr",
+      "domain": "justice",
+      "login": "none",
+      "description": "les codes, lois, décrets et la jurisprudence"
+    },
+    {
+      "id": "defenseur-des-droits",
+      "name": "Défenseur des droits",
+      "url": "https://www.defenseurdesdroits.fr",
+      "domain": "justice",
+      "login": "none",
+      "description": "recours gratuit en cas de litige avec un service public ou de discrimination"
+    },
+    {
+      "id": "signal-conso",
+      "name": "SignalConso",
+      "url": "https://signal.conso.gouv.fr",
+      "domain": "justice",
+      "login": "none",
+      "description": "signaler un problème avec une entreprise"
+    },
+    {
+      "id": "crit-air",
+      "name": "Crit’Air",
+      "url": "https://www.certificat-air.gouv.fr",
+      "domain": "mobility",
+      "login": "none",
+      "description": "la vignette qualité de l’air"
+    },
+    {
+      "id": "histovec",
+      "name": "HistoVec",
+      "url": "https://histovec.interieur.gouv.fr",
+      "domain": "mobility",
+      "login": "none",
+      "description": "l’historique d’un véhicule d’occasion"
+    },
+    {
+      "id": "urssaf-ae",
+      "name": "Urssaf auto-entrepreneur",
+      "url": "https://www.autoentrepreneur.urssaf.fr",
+      "domain": "business",
+      "login": "account",
+      "description": "déclarer son chiffre d’affaires et payer ses cotisations",
+      "fields": [
+        {
+          "key": "micro_siret",
+          "label": "siret de la micro-entreprise",
+          "hint": "14 chiffres",
+          "pattern": "^[0-9]{14}$"
+        }
+      ]
+    },
+    {
+      "id": "mon-entreprise",
+      "name": "mon-entreprise",
+      "url": "https://mon-entreprise.urssaf.fr",
+      "domain": "business",
+      "login": "none",
+      "description": "simulateurs officiels : salaire, cotisations, statut, revenus d’indépendant"
+    },
+    {
+      "id": "guichet-unique",
+      "name": "Guichet unique INPI",
+      "url": "https://procedures.inpi.fr",
+      "domain": "business",
+      "login": "account",
+      "description": "créer, modifier ou fermer une entreprise"
+    },
+    {
+      "id": "annuaire-entreprises",
+      "name": "Annuaire des entreprises",
+      "url": "https://annuaire-entreprises.data.gouv.fr",
+      "domain": "business",
+      "login": "none",
+      "description": "les informations légales de toutes les entreprises"
+    },
+    {
+      "id": "elections",
+      "name": "Ma situation électorale",
+      "url": "https://situation.elections.interieur.gouv.fr",
+      "domain": "identity",
+      "login": "franceconnect",
+      "description": "vérifier son inscription et son bureau de vote"
+    },
+    {
+      "id": "assemblee",
+      "name": "Assemblée nationale",
+      "url": "https://www.assemblee-nationale.fr",
+      "domain": "identity",
+      "login": "none",
+      "description": "députés, textes, scrutins, vidéos des débats"
+    },
+    {
+      "id": "senat",
+      "name": "Sénat",
+      "url": "https://www.senat.fr",
+      "domain": "identity",
+      "login": "none",
+      "description": "sénateurs, textes et débats"
+    },
+    {
+      "id": "vie-publique",
+      "name": "Vie publique",
+      "url": "https://www.vie-publique.fr",
+      "domain": "identity",
+      "login": "none",
+      "description": "comprendre les lois en préparation et les institutions"
+    },
+    {
+      "id": "data-gouv",
+      "name": "data.gouv.fr",
+      "url": "https://www.data.gouv.fr",
+      "domain": "identity",
+      "login": "none",
+      "description": "toutes les données publiques ouvertes"
+    },
+    {
+      "id": "ma-securite",
+      "name": "Ma sécurité",
+      "url": "https://www.masecurite.interieur.gouv.fr",
+      "domain": "identity",
+      "login": "none",
+      "description": "pré-plainte en ligne, signalements, contacter la police ou la gendarmerie"
+    }
+  ]
+}

@@ -1,0 +1,153 @@
+{
+  "updated": "2026-10-28",
+  "note": "French news sources and their public RSS or Atom feeds, checked in October 2026. Les Échos has no front-page feed: its economy section is the paper's core. Not listed: RTL (no news feed, only podcasts), AFP Factuel (its feed carries no articles), LCI (its feed is TF1 Info's).",
+  "sources": [
+    {
+      "id": "le-monde",
+      "name": "Le Monde",
+      "group": "national",
+      "feed": "https://www.lemonde.fr/rss/une.xml",
+      "homepage": "https://www.lemonde.fr"
+    },
+    {
+      "id": "le-figaro",
+      "name": "Le Figaro",
+      "group": "national",
+      "feed": "https://www.lefigaro.fr/rss/figaro_actualites.xml",
+      "homepage": "https://www.lefigaro.fr"
+    },
+    {
+      "id": "liberation",
+      "name": "Libération",
+      "group": "national",
+      "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/collection/accueil-une/?outputType=xml",
+      "homepage": "https://www.liberation.fr"
+    },
+    {
+      "id": "les-echos",
+      "name": "Les Échos",
+      "group": "national",
+      "feed": "https://services.lesechos.fr/rss/les-echos-economie.xml",
+      "homepage": "https://www.lesechos.fr"
+    },
+    {
+      "id": "le-parisien",
+      "name": "Le Parisien",
+      "group": "national",
+      "feed": "https://feeds.leparisien.fr/leparisien/rss",
+      "homepage": "https://www.leparisien.fr"
+    },
+    {
+      "id": "la-croix",
+      "name": "La Croix",
+      "group": "national",
+      "feed": "https://www.la-croix.com/feeds/rss/site.xml",
+      "homepage": "https://www.la-croix.com"
+    },
+    {
+      "id": "l-humanite",
+      "name": "L’Humanité",
+      "group": "national",
+      "feed": "https://www.humanite.fr/feed",
+      "homepage": "https://www.humanite.fr"
+    },
+    {
+      "id": "l-opinion",
+      "name": "L’Opinion",
+      "group": "national",
+      "feed": "https://www.lopinion.fr/index.rss",
+      "homepage": "https://www.lopinion.fr"
+    },
+    {
+      "id": "ouest-france",
+      "name": "Ouest-France",
+      "group": "regional",
+      "feed": "https://www.ouest-france.fr/rss/une",
+      "homepage": "https://www.ouest-france.fr"
+    },
+    {
+      "id": "sud-ouest",
+      "name": "Sud Ouest",
+      "group": "regional",
+      "feed": "https://www.sudouest.fr/rss.xml",
+      "homepage": "https://www.sudouest.fr"
+    },
+    {
+      "id": "la-voix-du-nord",
+      "name": "La Voix du Nord",
+      "group": "regional",
+      "feed": "https://www.lavoixdunord.fr/rss.xml",
+      "homepage": "https://www.lavoixdunord.fr"
+    },
+    {
+      "id": "le-progres",
+      "name": "Le Progrès",
+      "group": "regional",
+      "feed": "https://www.leprogres.fr/rss",
+      "homepage": "https://www.leprogres.fr"
+    },
+    {
+      "id": "franceinfo",
+      "name": "franceinfo",
+      "group": "broadcast",
+      "feed": "https://www.franceinfo.fr/titres.rss",
+      "homepage": "https://www.franceinfo.fr"
+    },
+    {
+      "id": "bfmtv",
+      "name": "BFMTV",
+      "group": "broadcast",
+      "feed": "https://www.bfmtv.com/rss/news-24-7/",
+      "homepage": "https://www.bfmtv.com"
+    },
+    {
+      "id": "cnews",
+      "name": "CNews",
+      "group": "broadcast",
+      "feed": "https://www.cnews.fr/rss.xml",
+      "homepage": "https://www.cnews.fr"
+    },
+    {
+      "id": "tf1-info",
+      "name": "TF1 Info · LCI",
+      "group": "broadcast",
+      "feed": "https://www.tf1info.fr/feeds/rss-une.xml",
+      "homepage": "https://www.tf1info.fr"
+    },
+    {
+      "id": "france-24",
+      "name": "France 24",
+      "group": "broadcast",
+      "feed": "https://www.france24.com/fr/rss",
+      "homepage": "https://www.france24.com/fr"
+    },
+    {
+      "id": "rfi",
+      "name": "RFI",
+      "group": "broadcast",
+      "feed": "https://www.rfi.fr/fr/rss",
+      "homepage": "https://www.rfi.fr/fr"
+    },
+    {
+      "id": "europe-1",
+      "name": "Europe 1",
+      "group": "broadcast",
+      "feed": "https://www.europe1.fr/rss.xml",
+      "homepage": "https://www.europe1.fr"
+    },
+    {
+      "id": "les-decodeurs",
+      "name": "Les Décodeurs (Le Monde)",
+      "group": "factcheck",
+      "feed": "https://www.lemonde.fr/les-decodeurs/rss_full.xml",
+      "homepage": "https://www.lemonde.fr/les-decodeurs"
+    },
+    {
+      "id": "vrai-ou-faux",
+      "name": "Vrai ou faux (franceinfo)",
+      "group": "factcheck",
+      "feed": "https://www.franceinfo.fr/vrai-ou-fake.rss",
+      "homepage": "https://www.franceinfo.fr/vrai-ou-fake"
+    }
+  ]
+}
