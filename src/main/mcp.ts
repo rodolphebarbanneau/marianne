@@ -1,0 +1,147 @@
+import { randomBytes, timingSafeEqual } from 'node:crypto'
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
+import type { AddressInfo } from 'node:net'
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import { app } from 'electron'
+import { MCP_SERVER_NAME } from '../shared/constants'
+import { dossier } from './dossier/store'
+import { redact, resolveDeep } from './dossier/tokens'
+import { log } from './log'
+import { activeTools } from './tools'
+import { ToolError, type ToolContext } from './tools/tool'
+
+/**
+ * Marianne's tools, served to the agent CLIs over MCP (streamable HTTP, stateless) from the main
+ * process. It listens on the loopback interface only, on a random port, and every request must
+ * carry a token generated at each launch: other programs on the computer can't use it.
+ *
+ * It is also where the privacy boundary holds: [[tokens]] in tool arguments are replaced by the
+ * user's values here, and every result is scrubbed of them before it goes back to the agent.
+ */
+
+const MAX_BODY = 4 * 1024 * 1024
+
+function readBody(req: IncomingMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    let size = 0
+    const chunks: Buffer[] = []
+    req.on('data', (c: Buffer) => {
+      size += c.length
+      if (size > MAX_BODY) {
+        reject(new Error('Request too large'))
+        req.destroy()
+      } else chunks.push(c)
+    })
+    req.on('end', () => {
+      try {
+        resolve(chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : undefined)
+      } catch (err) {
+        reject(err)
+      }
+    })
+    req.on('error', reject)
+  })
+}
+
+/** One MCP server per request (stateless mode), with the tools enabled right now. */
+function buildServer(ctx: ToolContext): McpServer {
+  const server = new McpServer({ name: MCP_SERVER_NAME, title: 'Marianne', version: app.getVersion() }, { capabilities: { tools: {} } })
+  for (const t of activeTools()) {
+    server.registerTool(
+      t.name,
+      { title: t.title, description: t.description, inputSchema: t.input, annotations: { readOnlyHint: t.readOnly ?? false, openWorldHint: true } },
+      async (args: unknown) => {
+        const started = Date.now()
+        const tokens = dossier.tokens()
+        try {
+          const raw = JSON.stringify(args ?? {})
+          if (t.tokens === false && /\[\[[a-z0-9_.]+\]\]/i.test(raw))
+            throw new ToolError('Les jetons [[…]] ne sont pas acceptés ici : les identifiants de l’utilisateur ne quittent pas l’application par une adresse.')
+          const resolved = resolveDeep(args, tokens)
+          const text = await t.run(resolved as never, { ...ctx, resolved: JSON.stringify(resolved ?? {}) !== raw })
+          log.info(`tool ${t.name} ok in ${Date.now() - started}ms`)
+          return { content: [{ type: 'text' as const, text: redact(text, dossier.tokens()) }] }
+        } catch (err) {
+          // Messages may quote the resolved arguments: scrubbed for the log as for the agent.
+          const message = redact((err as Error).message ?? String(err), tokens)
+          if (err instanceof ToolError) log.info(`tool ${t.name}: ${message.slice(0, 120)}`)
+          else log.warn(`tool ${t.name} failed: ${message}`)
+          return { content: [{ type: 'text' as const, text: message }], isError: true }
+        }
+      }
+    )
+  }
+  return server
+}
+
+class McpHost {
+  private server: Server | null = null
+  readonly token = randomBytes(32).toString('hex')
+  url = ''
+
+  async start(): Promise<void> {
+    if (this.server) return
+    const server = createServer((req, res) => void this.handle(req, res))
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject)
+      server.listen(0, '127.0.0.1', () => resolve())
+    })
+    this.server = server
+    const { port } = server.address() as AddressInfo
+    this.url = `http://127.0.0.1:${port}/mcp`
+    log.info(`MCP server on ${this.url}`)
+  }
+
+  private authorized(req: IncomingMessage): boolean {
+    // Loopback only, and no DNS-rebinding: the Host must be our own address.
+    const { port } = this.server!.address() as AddressInfo
+    if (req.headers.host !== `127.0.0.1:${port}` && req.headers.host !== `localhost:${port}`) return false
+    const given = Buffer.from((req.headers.authorization ?? '').replace(/^Bearer\s+/i, ''))
+    const expected = Buffer.from(this.token)
+    return given.length === expected.length && timingSafeEqual(given, expected)
+  }
+
+  private async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const send = (status: number, message: string) => {
+      res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify({ jsonrpc: '2.0', error: { code: -32000, message }, id: null }))
+    }
+    if (!req.url?.startsWith('/mcp')) return send(404, 'Not found')
+    if (!this.authorized(req)) return send(401, 'Unauthorized')
+    // Stateless: no server-initiated stream (GET) and no session to close (DELETE).
+    if (req.method !== 'POST') return send(405, 'Method not allowed')
+    let body: unknown
+    try {
+      body = await readBody(req)
+    } catch {
+      return send(400, 'Invalid JSON body')
+    }
+    // Each turn's MCP address names its conversation (?c=…), where cards are shown.
+    const conversationId = new URL(req.url, 'http://localhost').searchParams.get('c') ?? undefined
+    const server = buildServer({ conversationId })
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true })
+    res.on('close', () => {
+      void transport.close()
+      void server.close()
+    })
+    try {
+      await server.connect(transport)
+      await transport.handleRequest(req, res, body)
+    } catch (err) {
+      log.error('MCP request failed:', err)
+      if (!res.headersSent) send(500, 'Internal error')
+    }
+  }
+
+  /** The address a turn's agent connects to: cards of its tool calls go to `conversationId`. */
+  urlFor(conversationId?: string): string {
+    return conversationId ? `${this.url}?c=${encodeURIComponent(conversationId)}` : this.url
+  }
+
+  stop(): void {
+    this.server?.close()
+    this.server = null
+  }
+}
+
+export const mcp = new McpHost()

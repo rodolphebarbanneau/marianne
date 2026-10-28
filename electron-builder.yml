@@ -1,0 +1,61 @@
+appId: io.github.rodolphebarbanneau.marianne
+productName: Marianne
+copyright: Copyright © 2026 Rodolphe Barbanneau
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**
+  - resources/**
+  - package.json
+  - '!**/*.map'
+npmRebuild: false
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: Marianne
+
+# Apple Silicon (arm64) and Intel (x64) builds. The updater picks the zip matching the Mac.
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+  category: public.app-category.productivity
+  icon: build/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+# Name both installers by chip (the default leaves x64 unnamed).
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Utility
+  icon: build/icon.png
+  synopsis: Assistant citoyen pour les démarches et les données publiques françaises
+  maintainer: Rodolphe Barbanneau
+  desktop:
+    entry:
+      StartupWMClass: Marianne
+
+# Releases on GitHub double as the update feed: installers + latest*.yml manifests read by
+# electron-updater. CI creates a draft; publishing it rolls the update out to every install.
+publish:
+  provider: github
+  owner: rodolphebarbanneau
+  repo: marianne
+  releaseType: draft
