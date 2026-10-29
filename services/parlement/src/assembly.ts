@@ -1,4 +1,5 @@
 import { foldText } from '@marianne/sdk'
+import { LEGISLATURE } from './links'
 import type { AssemblyOrgan, Attendance, Ballot, BallotVote, Deputy, Meeting, MeetingKind, MeetingState, Position } from './types'
 
 /**
@@ -46,6 +47,37 @@ export function parseOrgan(doc: Json): AssemblyOrgan | null {
 }
 
 const current = (m: Json) => !m.dateFin
+
+/** A deputy of the legislature, in office or not: how subjects name them, and their groups over time. */
+export interface LegislatureDeputy {
+  id: string
+  civility: string
+  firstName: string
+  lastName: string
+  /** Their groups (GP), with the days they joined and left ('' : still). */
+  groups: Array<{ id: string; from: string; to: string }>
+}
+
+/** A deputy of the legislature from the actors' history (AMO30); null for one of other legislatures only. */
+export function parseLegislatureDeputy(doc: Json): LegislatureDeputy | null {
+  const a = doc.acteur
+  const id = str(a?.uid?.['#text'] ?? a?.uid)
+  if (!id) return null
+  const mandates = asArray(a.mandats?.mandat)
+  const ours = (m: Json) => str(m.legislature) === String(LEGISLATURE)
+  if (!mandates.some((m) => m.typeOrgane === 'ASSEMBLEE' && ours(m))) return null
+  const ident = a.etatCivil?.ident ?? {}
+  return {
+    id,
+    civility: str(ident.civ),
+    firstName: str(ident.prenom),
+    lastName: str(ident.nom),
+    groups: mandates
+      .filter((m) => m.typeOrgane === 'GP' && ours(m))
+      .map((m) => ({ id: str(m.organes?.organeRef), from: str(m.dateDebut), to: str(m.dateFin) }))
+      .filter((g) => g.id)
+  }
+}
 
 /** A deputy with a mandate in progress; null for former deputies and other actors. */
 export function parseDeputy(doc: Json): Deputy | null {

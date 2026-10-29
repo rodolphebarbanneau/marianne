@@ -51,11 +51,14 @@ export function ballotKind(title: string): BallotKind {
 const AN_STOP = /\s(?:a l'|et l')|\s(?:apres|avant|a la|au|aux|sur|et plusieurs|et les|tendant|portant|visant)(?=\s|$)|\s\(|,|$/
 
 // An amendment as the Assemblée names it: "amendement n° 12", "amendements identiques n° 12",
-// "amendement de suppression n° 444", "amendement de rédaction globale n° 9".
-const AMENDMENT = /amendements?(?: de (?:suppression|retablissement|redaction globale))? (?:identiques )?n° ?/
-const NUMBERED = new RegExp(`${AMENDMENT.source}(\\d+(?: \\([^)]*\\)| (?:rectifie|rect\\.)(?: [a-z]+)?)?)`)
+// "amendement de suppression n° 444", "amendement de rédaction globale n° 9", and as it sometimes
+// misspells it ("amendement de supression n°", "amendement de n°").
+const AMENDMENT = /amendements?(?: de(?: [a-z]+){0,2})? (?:identiques )?n° ?/
+// A rectification's rank: "rectifié bis", "rect. quater" (not the "de" of the author that follows).
+const RANK = '(?: (?:bis|ter|quater|quinquies|sexies|septies|octies|nonies|decies))?'
+const NUMBERED = new RegExp(`${AMENDMENT.source}(\\d+(?: \\([^)]*\\)| (?:rectifi?e|rect\\.)${RANK})?)`)
 // Its number, and what may follow it before its author: "rectifié", "rect. bis".
-const NUMBER = /^amendement n° ?\d+(?: rect(?:ifie|\.)(?: [a-z]+)?)?/
+const NUMBER = new RegExp(`^amendement n° ?\\d+(?: rect(?:ifi?e|\\.)${RANK})?`)
 
 /** The kind, the amendment's number and its author, as the subject says them. */
 export function parseMention(chamber: Chamber, title: string): Mention {
@@ -74,8 +77,13 @@ export function parseMention(chamber: Chamber, title: string): Mention {
       .replace(/^(amendement n° ?\d+) \([^)]*\)/, '$1')
     const head = after.match(NUMBER)?.[0]
     if (!head) return { kind, amendment, author: null }
-    const rest = after.slice(head.length)
-    if (/^ du gouvernement\b/.test(rest)) return { kind, amendment, author: { type: 'government' } }
+    // Its author, as the subject sometimes misspells it: "de de M. X", "M Fournier", no "de" at all.
+    const rest = after
+      .slice(head.length)
+      .replace(/^ de (?=de |du )/, ' ')
+      .replace(/^ (?=m\.? |mme )/, ' de ')
+      .replace(/^ de m (?=[a-z])/, ' de m. ')
+    if (/^ (?:de )?du gouvernement\b/.test(rest)) return { kind, amendment, author: { type: 'government' } }
     const committee = rest.match(/^ de la (commission [^,(]+?)(?:\s(?:apres|avant|a l'|au|aux|sur)\b|,|\(|$)/)
     if (committee) return { kind, amendment, author: { type: 'committee', name: committee[1].trim() } }
     const member = rest.match(/^ de ((?:m\.|mme) .+)$/)
@@ -126,6 +134,30 @@ export class MemberNames {
     }
     return null
   }
+}
+
+/**
+ * A name as a subject writes it (its accents, its capitals), from its folded form ("m. aurelien
+ * tache" → "M. Aurélien Taché"), after its civility ("Mmes Gisèle Jourda et…" → "Mme Gisèle
+ * Jourda"); its words capitalised when the subject spells it otherwise.
+ */
+export function writtenName(title: string, folded: string): string {
+  const [, civility = '', name = folded] = folded.match(/^(m\.|mme) ?(.*)$/) ?? []
+  const variants: Record<string, string> = { a: 'aàâä', e: 'eéèêë', i: 'iîï', o: 'oôö', u: 'uùûü', c: 'cç', y: 'yÿ' }
+  const pattern = [...name]
+    .map((ch) => (ch === ' ' ? '[\\s\\-‐]+' : ch === "'" ? "['’`]" : variants[ch] ? `[${variants[ch]}]` : ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+    .join('')
+  const written =
+    title.match(new RegExp(`(?<!\\p{L})${pattern}(?!\\p{L})`, 'iu'))?.[0] ??
+    name.replace(/(^|[\s'-])(\p{L})/gu, (_, before: string, letter: string) => before + letter.toUpperCase())
+  return civility ? `${civility === 'm.' ? 'M.' : 'Mme'} ${written}` : written
+}
+
+/** The group a deputy sat in on a day: the membership that covers it, or the latest before. */
+export function groupOn(groups: Array<{ id: string; from: string; to: string }>, day: string): string {
+  const covering = groups.find((g) => (!g.from || g.from <= day) && (!g.to || day <= g.to))
+  if (covering) return covering.id
+  return [...groups].filter((g) => !g.from || g.from <= day).sort((a, b) => b.from.localeCompare(a.from))[0]?.id ?? ''
 }
 
 /**

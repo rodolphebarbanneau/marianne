@@ -12,6 +12,7 @@ import {
   indexBills,
   indexConstituencies,
   indexDeputies,
+  indexFormer,
   indexMeetings,
   indexSenators,
   senateBallotNumbers
@@ -76,8 +77,21 @@ export async function syncJob(ctx: SyncContext): Promise<SyncResult> {
       changed.push('senators')
     }
 
+    // The deputies of the legislature who left office: their amendments keep their author. The
+    // history (14 MB) is read again only when the deputies changed: someone may have left.
+    const formerDue = !filled(db, 'former') || changed.includes('deputies')
+    const former = formerDue ? await zip(DUMPS.former, !filled(db, 'former'), 'les députés de la législature') : null
+    if (former) {
+      indexFormer(db, former, indexing('les députés de la législature'))
+      changed.push('former')
+    }
+
     // Amendments' authors are matched with the deputies: new deputies, ballots read again.
-    const ballots = await zip(DUMPS.ballots, !filled(db, 'ballots') || changed.includes('deputies'), 'les scrutins de l’Assemblée')
+    const ballots = await zip(
+      DUMPS.ballots,
+      !filled(db, 'ballots') || changed.includes('deputies') || changed.includes('former'),
+      'les scrutins de l’Assemblée'
+    )
     if (ballots) {
       indexBallots(db, ballots, indexing('les scrutins de l’Assemblée'))
       changed.push('ballots')

@@ -79,24 +79,26 @@ export const groupInfo = (g: GroupRecord, members = 0): GroupInfo => ({
   members
 })
 
-/** Who tabled a ballot's amendment, with their group's colour; null when the subject doesn't say (or no member matches). */
+/** Who tabled a ballot's amendment, with their group's colour; null when the subject doesn't say. */
 export function authorOf(
   b: Pick<BallotRecord, 'chamber' | 'author' | 'author_group'> & { data?: string },
   members: Map<string, MemberRow>,
   groups: Map<string, GroupRecord>
 ): Author | null {
   const pseudo = AUTHOR_GROUPS[b.author_group]
-  if (pseudo) return { id: b.author_group, name: pseudo.name, groupId: b.author_group, groupShort: pseudo.short, groupColor: pseudo.color }
-  if (!b.author) return null
+  if (pseudo) return { id: b.author_group, name: pseudo.name, groupId: b.author_group, groupShort: pseudo.short, groupColor: pseudo.color, current: false }
+  // A member who left office, or one no list has: their name as the ballot kept it.
+  const kept = (b.data && (JSON.parse(b.data) as { authorName?: string }).authorName) || ''
+  if (!b.author) return kept ? { id: '', name: kept, groupId: '', groupShort: '', groupColor: '', current: false } : null
   const member = members.get(`${b.chamber}:${b.author}`)
   const group = groups.get(`${b.chamber}:${b.author_group}`)
   return {
     id: b.author,
-    // A member who left office: their name as the ballot kept it.
-    name: member ? memberName(member.data) : (b.data && (JSON.parse(b.data) as { authorName?: string }).authorName) || b.author,
+    name: member ? memberName(member.data) : kept || b.author,
     groupId: b.author_group,
     groupShort: group?.short_name ?? '',
-    groupColor: visibleColor(group?.color ?? '')
+    groupColor: group ? visibleColor(group.color) : '',
+    current: !!member
   }
 }
 

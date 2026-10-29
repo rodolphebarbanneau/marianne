@@ -268,13 +268,18 @@ export interface MemberVote {
   proxy: boolean
 }
 
-/** Who tabled an amendment: a member, the Government (GOUV) or a committee (COM). */
+/**
+ * Who tabled an amendment: a member, the Government (GOUV) or a committee (COM). A deputy who left
+ * office keeps their id and the group of that day; one no member list has is a name only (id '').
+ */
 export interface Author {
   id: string
   name: string
   groupId: string
   groupShort: string
   groupColor: string
+  /** In office: their page opens. */
+  current: boolean
 }
 
 export interface BallotLine {

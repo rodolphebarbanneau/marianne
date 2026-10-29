@@ -10,12 +10,16 @@ import { DatabaseSync } from 'node:sqlite'
 
 export const DB_FILE = 'parlement.db'
 
-/** 3: amendments' authors read again (sub-amendments, "de suppression"…), their names kept with the ballots. */
-export const SCHEMA_VERSION = 3
+/**
+ * 3: amendments' authors read again (sub-amendments, "de suppression"…), their names kept with the
+ * ballots; 4: the legislature's deputies who left office (former), their amendments' authors.
+ */
+export const SCHEMA_VERSION = 4
 
 /**
  * The sources of the index, each refilling its own rows:
  * - deputies: the Assemblée's deputies, its groups and organs (AMO dump);
+ * - former: the deputies of the legislature, those who left office too, and their groups over time (AMO history);
  * - ballots: its public ballots and every deputy's vote (Scrutins dump);
  * - meetings: its agenda, and who attended committee meetings (Agenda dump);
  * - bills: the rapporteurs of its legislative files (Dossiers dump);
@@ -23,9 +27,9 @@ export const SCHEMA_VERSION = 3
  * - senators: the Sénat's senators and groups;
  * - senateBallots: its public ballots and every senator's vote (added as they come, never rebuilt).
  */
-export type Source = 'deputies' | 'ballots' | 'meetings' | 'bills' | 'constituencies' | 'senators' | 'senateBallots'
+export type Source = 'deputies' | 'former' | 'ballots' | 'meetings' | 'bills' | 'constituencies' | 'senators' | 'senateBallots'
 
-export const SOURCES: Source[] = ['deputies', 'senators', 'ballots', 'senateBallots', 'meetings', 'bills', 'constituencies']
+export const SOURCES: Source[] = ['deputies', 'former', 'senators', 'ballots', 'senateBallots', 'meetings', 'bills', 'constituencies']
 
 /**
  * The tables, created once per schema. Members and ballots of both chambers share a table (a few
@@ -64,6 +68,7 @@ create table rapporteurs (bill text not null, member text not null, type text no
 create index rapporteurs_bill on rapporteurs (bill);
 create index rapporteurs_member on rapporteurs (member);
 create table bills (id text primary key, title text not null);
+create table former (chamber text not null, id text not null, data text not null, primary key (chamber, id)) without rowid;
 create table communes (commune text not null, department text not null, constituency text not null, primary key (commune, department, constituency)) without rowid;
 create table contours (department text not null, constituency text not null, west real not null, south real not null, east real not null, north real not null,
   geometry text not null, primary key (department, constituency)) without rowid;

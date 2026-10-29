@@ -7,12 +7,14 @@ import {
   parseBallot,
   parseBill,
   parseDeputy,
+  parseLegislatureDeputy,
   parseMeeting,
   parseOrgan,
   POSITION_CODES,
-  searchKey
+  searchKey,
+  type LegislatureDeputy
 } from './assembly'
-import { ballotAuthor, MemberNames, parseMention } from './authors'
+import { ballotAuthor, groupOn, MemberNames, parseMention, writtenName, type Mention } from './authors'
 import { parseContours, type CommuneConstituency } from './constituency'
 import { LEGISLATURE } from './links'
 import { senateBallotId, senateBallotKey, senateBillTitle, senatorKey, type SenateBallotHead, type Senator } from './senate'
@@ -30,6 +32,8 @@ const REPOSITORY = `https://data.assemblee-nationale.fr/static/openData/reposito
 /** The Assemblée's dumps. */
 export const DUMPS = {
   deputies: `${REPOSITORY}/amo/deputes_actifs_mandats_actifs_organes/AMO10_deputes_actifs_mandats_actifs_organes.json.zip`,
+  // Every actor since the 11th legislature, with their mandates: the deputies of this one who left office.
+  former: `${REPOSITORY}/amo/tous_acteurs_mandats_organes_xi_legislature/AMO30_tous_acteurs_tous_mandats_tous_organes_historique.json.zip`,
   ballots: `${REPOSITORY}/loi/scrutins/Scrutins.json.zip`,
   meetings: `${REPOSITORY}/vp/reunions/Agenda.json.zip`,
   bills: `${REPOSITORY}/loi/dossiers_legislatifs/Dossiers_Legislatifs.json.zip`
@@ -102,6 +106,56 @@ function memberNames(db: DatabaseSync, chamber: 'an' | 'se'): MemberNames {
   )
 }
 
+/** The deputies of the legislature no longer in office, as amendments' subjects name them, with their groups over time. */
+function formerDeputies(db: DatabaseSync): { names: MemberNames; groups: Map<string, LegislatureDeputy['groups']> } {
+  const current = new Set((db.prepare("select id from members where chamber = 'an'").all() as Array<{ id: string }>).map((r) => r.id))
+  const rows = (db.prepare("select data from former where chamber = 'an'").all() as Array<{ data: string }>)
+    .map((r) => JSON.parse(r.data) as LegislatureDeputy)
+    .filter((d) => !current.has(d.id))
+  return {
+    names: new MemberNames(rows.map((d) => ({ id: d.id, groupId: '', civility: d.civility, firstName: d.firstName, lastName: d.lastName }))),
+    groups: new Map(rows.map((d) => [d.id, d.groups]))
+  }
+}
+
+/**
+ * Who tabled a ballot's amendment: a member in office; at the Assemblée, else a deputy of the
+ * legislature who left it, with the group they sat in that day; else the name as the subject writes it.
+ */
+function authorOfBallot(
+  mention: Mention,
+  title: string,
+  day: string,
+  names: MemberNames,
+  former?: ReturnType<typeof formerDeputies>
+): { author: string; group: string; name?: string } {
+  const found = ballotAuthor(mention, names)
+  if (found.author || mention.author?.type !== 'member') return found
+  const left = former?.names.find(mention.author.name)
+  if (left) return { author: left.id, group: groupOn(former!.groups.get(left.id) ?? [], day), name: `${left.civility} ${left.firstName} ${left.lastName}` }
+  return { author: '', group: '', name: writtenName(title, mention.author.name) }
+}
+
+/** The deputies of the legislature, past ones too (AMO30): amendments' authors who left office keep their name. */
+export function indexFormer(db: DatabaseSync, zip: Uint8Array, step?: Step): number {
+  const part = zipDocuments(zip, (name) => name.includes('/acteur/'))
+  return transaction(db, () => {
+    db.exec("delete from former where chamber = 'an'")
+    const insert = db.prepare('insert or replace into former (chamber, id, data) values (?, ?, ?)')
+    let count = 0
+    let done = 0
+    for (const [, doc] of part.documents) {
+      const d = parseLegislatureDeputy(doc as Record<string, unknown>)
+      if (d) {
+        insert.run('an', d.id, JSON.stringify(d))
+        count++
+      }
+      step?.(++done, part.count)
+    }
+    return count
+  })
+}
+
 /** The full-text index of ballots' subjects, after either chamber's ballots changed. */
 const reindexTitles = (db: DatabaseSync) => db.exec("insert into ballots_fts (ballots_fts) values ('rebuild')")
 
@@ -153,6 +207,7 @@ export function indexDeputies(db: DatabaseSync, zip: Uint8Array, step?: Step): n
 export function indexBallots(db: DatabaseSync, zip: Uint8Array, step?: Step): number {
   const part = zipDocuments(zip, () => true)
   const names = memberNames(db, 'an')
+  const former = formerDeputies(db)
   return transaction(db, () => {
     db.exec("delete from ballots where chamber = 'an'")
     db.exec('drop table if exists votes_an')
@@ -168,7 +223,7 @@ export function indexBallots(db: DatabaseSync, zip: Uint8Array, step?: Step): nu
       if (parsed) {
         const b = parsed.ballot
         const mention = parseMention('an', b.title)
-        const { author, group, name: authorName } = ballotAuthor(mention, names)
+        const { author, group, name: authorName } = authorOfBallot(mention, b.title, b.date, names, former)
         ballot.run(
           'an',
           b.id,
@@ -316,7 +371,7 @@ export function addSenateBallots(
     for (const { session, head, votes: list } of ballots) {
       const key = senateBallotKey(session, head.number)
       const mention = parseMention('se', head.title)
-      const { author, group, name: authorName } = ballotAuthor(mention, names)
+      const { author, group, name: authorName } = authorOfBallot(mention, head.title, head.date, names)
       const count = (p: Position) => list.filter((v) => v.position === p).length
       const billTitle = senateBillTitle(head.title)
       const data = {
@@ -371,9 +426,10 @@ export function counts(db: DatabaseSync): { deputies: number; senators: number; 
 }
 
 /** Whether a source has filled its rows. */
-export function filled(db: DatabaseSync, source: 'deputies' | 'senators' | 'ballots' | 'meetings' | 'bills' | 'constituencies'): boolean {
+export function filled(db: DatabaseSync, source: 'deputies' | 'former' | 'senators' | 'ballots' | 'meetings' | 'bills' | 'constituencies'): boolean {
   const sql = {
     deputies: "select 1 from members where chamber = 'an' limit 1",
+    former: "select 1 from former where chamber = 'an' limit 1",
     senators: "select 1 from members where chamber = 'se' limit 1",
     ballots: "select 1 from ballots where chamber = 'an' limit 1",
     meetings: 'select 1 from meetings limit 1',

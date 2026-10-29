@@ -1,7 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite'
 import { strToU8, zipSync } from 'fflate'
 import { parsePollingStations } from '../src/constituency'
-import { addSenateBallots, indexBallots, indexBills, indexConstituencies, indexDeputies, indexMeetings, indexSenators } from '../src/indexer'
+import { addSenateBallots, indexBallots, indexBills, indexConstituencies, indexDeputies, indexFormer, indexMeetings, indexSenators } from '../src/indexer'
 import { parseSenateColors, parseSenateVotes, parseSenators } from '../src/senate'
 import { resetSchema, transaction } from '../src/store'
 import type { Http } from '../src/videos'
@@ -9,7 +9,8 @@ import type { Http } from '../src/videos'
 /**
  * A small Parliament in the shapes of its sources. At the Assemblée: four organs, five sitting
  * deputies and a former one, two ballots, the agenda of 28 October 2026 (with a committee's
- * attendance), a legislative file's rapporteur. At the Sénat: three senators, the home page's
+ * attendance), a legislative file's rapporteur; in the actors' history, a deputy of the
+ * legislature who changed group then left office, and one of the previous legislature only. At the Sénat: three senators, the home page's
  * colours, two ballots of the session 2026. And which constituency a few communes are in. The
  * Assemblée's JSON comes from XML: single children are objects, several are arrays, empty ones null.
  */
@@ -20,6 +21,7 @@ export const organ = (uid: string, codeType: string, libelle: string, libelleAbr
 
 const mandate = (typeOrgane: string, organeRef: string, extra: Record<string, unknown> = {}) => ({
   typeOrgane,
+  legislature: '17',
   dateFin: null,
   organes: { organeRef },
   ...extra
@@ -112,6 +114,27 @@ export const ACTORS = [
     }
   ),
   actor('PA9', { civ: 'Mme', prenom: 'Ancienne', nom: 'Députée' }, { departement: 'Gironde', numDepartement: '33', numCirco: '1' }, [], { ended: true })
+]
+
+/** In the actors' history (AMO30) only: a deputy who sat with the RN, then the SOC, and left office; one of the 16th legislature. */
+export const HISTORY = [
+  actor(
+    'PA795950',
+    { civ: 'M.', prenom: 'David', nom: 'Amiel' },
+    { departement: 'Paris', numDepartement: '75', numCirco: '13' },
+    [
+      mandate('GP', 'PO845401', { dateDebut: '2024-07-19', dateFin: '2025-03-31' }),
+      mandate('GP', 'PO845419', { dateDebut: '2025-04-01', dateFin: '2025-11-12' })
+    ],
+    { ended: true }
+  ),
+  {
+    acteur: {
+      uid: { '#text': 'PA16' },
+      etatCivil: { ident: { civ: 'M.', prenom: 'Pierre', nom: 'Seizième' } },
+      mandats: { mandat: [{ typeOrgane: 'ASSEMBLEE', legislature: '16', organes: { organeRef: 'PO800000' }, dateFin: '2024-06-09' }] }
+    }
+  }
 ]
 
 const voters = (...refs: Array<[string, boolean]>) =>
@@ -282,13 +305,17 @@ const zip = (files: Record<string, unknown>) => zipSync(Object.fromEntries(Objec
 
 const uidOf = (doc: { organe?: { uid: string }; acteur?: { uid: { '#text': string } } }) => doc.organe?.uid ?? doc.acteur!.uid['#text']
 
-/** The Assemblée's dumps as their zips: AMO10 (with a déport the indexer skips), Scrutins, Agenda and Dossiers. */
+/** The Assemblée's dumps as their zips: AMO10 (with a déport the indexer skips), AMO30, Scrutins, Agenda and Dossiers. */
 export function dumps(ballots = BALLOTS, meetings = MEETINGS) {
   return {
     deputies: zip({
       ...Object.fromEntries(ORGANS.map((o) => [`json/organe/${uidOf(o)}.json`, o])),
       ...Object.fromEntries(ACTORS.map((a) => [`json/acteur/${uidOf(a)}.json`, a])),
       'json/deport/PD1.json': { deport: { uid: 'PD1' } }
+    }),
+    former: zip({
+      ...Object.fromEntries(ORGANS.map((o) => [`json/organe/${uidOf(o)}.json`, o])),
+      ...Object.fromEntries([...ACTORS, ...HISTORY].map((a) => [`json/acteur/${uidOf(a)}.json`, a]))
     }),
     ballots: zip(Object.fromEntries(ballots.map((b) => [`json/${b.scrutin.uid}.json`, b]))),
     meetings: zip(Object.fromEntries(meetings.map((m) => [`json/reunion/${m.reunion.uid}.json`, m]))),
@@ -457,6 +484,7 @@ export function buildIndex(db: DatabaseSync): void {
   transaction(db, () => resetSchema(db))
   const zips = dumps()
   indexDeputies(db, zips.deputies)
+  indexFormer(db, zips.former)
   indexSenators(db, parseSenators(SENATORS), parseSenateColors(SENATE_HOME), { SOC: 3, UMP: 1 })
   indexBallots(db, zips.ballots)
   addSenateBallots(
