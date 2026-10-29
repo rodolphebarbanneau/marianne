@@ -168,7 +168,7 @@ export class ContentStore extends EventEmitter {
 
   private readKey(): KeyObject | null {
     if (!this.opts.signingKey) {
-      this.log.info(`Content updates are off: no signing key (content/signing-key.pem); using the built-in content of ${this.builtIn.updated}`)
+      this.log.info(`Content updates are off: no signing key (packages/content/signing-key.pem); using the built-in content of ${this.builtIn.updated}`)
       return null
     }
     try {
