@@ -9,6 +9,7 @@ import { ChamberCode, dateTime, Failure, hour, Loading, shortDay, useFollowed, u
 import { Thumb } from './home'
 import { videoRef } from './members'
 import { Player } from './player'
+import { LiveAgenda } from './videos'
 
 /** The week of both chambers, side by side: sittings and committees, what is filmed, live or cancelled, the meetings of the user's members marked. */
 
@@ -229,18 +230,23 @@ export function MeetingPane({ id }: { id: string }) {
         <States m={{ ...m, live: !!stream?.live }} />
       </p>
       <h3 className="hi parlement-title">{title(m)}</h3>
-      {m.items.length > 0 && (
-        <ol className="parlement-items">
-          {m.items.map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ol>
-      )}
       {stream?.live ? (
-        <Player src={stream.hls} poster={stream.poster} autoPlay />
-      ) : stream ? (
-        <div className="box-note">Diffusion en direct annoncée à {hour(stream.startAt)}.</div>
-      ) : null}
+        <div className="parlement-watch">
+          <Player src={stream.hls} poster={stream.poster} autoPlay />
+          <LiveAgenda stream={{ ...stream, items: m.items }} />
+        </div>
+      ) : (
+        <>
+          {m.items.length > 0 && (
+            <ol className="parlement-items">
+              {m.items.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ol>
+          )}
+          {stream && <div className="box-note">Diffusion en direct annoncée à {hour(stream.startAt)}.</div>}
+        </>
+      )}
       {videos.length > 0 && (
         <div className="parlement-lines">
           <span className="label">en vidéo</span>

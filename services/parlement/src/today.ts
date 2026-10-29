@@ -50,7 +50,8 @@ export function streamLine(s: LiveStream): TodayItem {
 export function todayItems(day: string, meetings: Array<Meeting & { live?: boolean }>, streams: LiveStream[]): TodayItem[] {
   const agenda = meetings.filter((m) => m.kind !== 'other')
   const live = new Set(streams.filter((s) => s.live).map((s) => s.id))
-  const lines = agenda.map((m) => meetingLine(m, m.live || live.has(m.id)))
+  // The agenda says which meeting a broadcast shows (liveMeetings); without it, the broadcast's own id.
+  const lines = agenda.map((m) => meetingLine(m, m.live ?? live.has(m.id)))
   if (!agenda.some((m) => m.chamber === 'an')) lines.push(...streams.filter((s) => s.chamber === 'an' && s.startAt.startsWith(day)).map(streamLine))
   return lines.sort((a, b) => a.start.localeCompare(b.start))
 }

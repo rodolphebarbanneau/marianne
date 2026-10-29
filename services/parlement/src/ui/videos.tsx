@@ -655,6 +655,7 @@ function ClipsShelf() {
 /** A broadcast, from the list of what is live. */
 export function LivePane({ chamber, id }: { chamber: Chamber; id: string }) {
   const host = useHost()
+  const nav = useNav()
   const live = useMethod('live', [])
   if (live.error) return <Failure error={live.error} retry={live.reload} />
   if (!live.data) return <Loading />
@@ -670,23 +671,62 @@ export function LivePane({ chamber, id }: { chamber: Chamber; id: string }) {
         </span>
       </p>
       <h3 className="hi parlement-title">{stream.title || stream.subject}</h3>
-      <Player src={stream.hls} poster={stream.poster} autoPlay />
-      <p className="parlement-actions">
-        <button
-          className="btn small"
-          onClick={() =>
-            host.ask(
-              `Que se passe-t-il en ce moment ${chamber === 'an' ? 'à l’Assemblée nationale' : 'au Sénat'} (${stream.organ}) ? ${stream.title || stream.subject}`
-            )
-          }
-        >
-          demander à Marianne
-        </button>
-        <button className="btn small" onClick={() => host.openUrl(stream.url)}>
-          page officielle
-        </button>
-      </p>
+      <div className="parlement-watch">
+        <div className="parlement-stack">
+          <Player src={stream.hls} poster={stream.poster} autoPlay />
+          <p className="parlement-actions">
+            {stream.meeting && (
+              <button className="btn small" onClick={() => nav.open({ kind: 'meeting', id: stream.meeting! })}>
+                la réunion
+              </button>
+            )}
+            <button
+              className="btn small"
+              onClick={() =>
+                host.ask(
+                  `Que se passe-t-il en ce moment ${chamber === 'an' ? 'à l’Assemblée nationale' : 'au Sénat'} (${stream.organ}) ? ${stream.title || stream.subject}`
+                )
+              }
+            >
+              demander à Marianne
+            </button>
+            <button className="btn small" onClick={() => host.openUrl(stream.url)}>
+              page officielle
+            </button>
+          </p>
+        </div>
+        <LiveAgenda stream={stream} />
+      </div>
     </>
+  )
+}
+
+/**
+ * Beside a broadcast, what it is about: at the Sénat, its video's chapters (the portal names them
+ * before their times, at the end of the sitting); otherwise the agenda of the meeting it shows.
+ */
+export function LiveAgenda({ stream }: { stream: LiveStream }) {
+  const video = useMethod('video', stream.chamber === 'se' ? [`se:${stream.id}`] : null)
+  const chapters = video.data?.chapters ?? []
+  const items = stream.items ?? []
+  if (stream.chamber === 'se' && !video.data && !video.error) return <Loading />
+  if (!chapters.length && !items.length) return <p className="small dim">L’ordre du jour n’est pas publié pour cette diffusion.</p>
+  return (
+    <div className="parlement-chapters">
+      <span className="label">ordre du jour</span>
+      {chapters.length
+        ? chapters.map((c) => (
+            <span key={c.id} className={`parlement-chapter${c.depth === 0 ? ' hi' : ''}`} style={{ paddingLeft: 8 + c.depth * 14 }}>
+              {c.title}
+            </span>
+          ))
+        : items.map((item, i) => (
+            <span key={i} className="parlement-chapter">
+              {item}
+            </span>
+          ))}
+      <span className="small dim parlement-chapter-note">Les horaires des interventions arrivent avec la vidéo, après la séance.</span>
+    </div>
   )
 }
 
@@ -697,9 +737,12 @@ export function LivePane({ chamber, id }: { chamber: Chamber; id: string }) {
  */
 export function VideoPane({ refId, start, stopAt, clip }: { refId: string; start?: number; stopAt?: number; clip?: string }) {
   const host = useHost()
+  const nav = useNav()
   const { clips, shelf, setShelf } = useStore()
   const { pinned, starred, togglePin, toggleStar } = useShelf()
   const video = useMethod('video', [refId])
+  // A video still being processed: what its chamber broadcasts now, to watch it live meanwhile.
+  const live = useMethod('live', video.data && !video.data.hls ? [] : null)
   const player = useRef<PlayerHandle>(null)
   const [time, setTime] = useState(0)
   const [editing, setEditing] = useState<Clip | null>(() => clips.find((c) => c.id === clip) ?? null)
@@ -794,7 +837,7 @@ export function VideoPane({ refId, start, stopAt, clip }: { refId: string; start
         </button>
       </p>
       <h3 className="hi parlement-title">{v.title}</h3>
-      <div className="parlement-watch">
+      <div className={`parlement-watch${v.chapters.length ? '' : ' solo'}`}>
         <div className="parlement-stack">
           {v.hls ? (
             <Player
@@ -809,6 +852,19 @@ export function VideoPane({ refId, start, stopAt, clip }: { refId: string; start
           ) : (
             <div className="box-note">
               La vidéo est en cours de traitement par {CHAMBER_NAMES[v.chamber] === 'Sénat' ? 'le Sénat' : 'l’Assemblée'} : elle sera visible un peu plus tard.
+              {(() => {
+                // The same kind of meeting broadcast now by its chamber: the sitting, or the committee.
+                const now = (live.data ?? []).find((s) => s.chamber === v.chamber && (s.organ === 'Séance publique') === /s[ée]ance/i.test(v.type))
+                return now ? (
+                  <>
+                    {' '}
+                    Elle est diffusée en direct :{' '}
+                    <button className="link" onClick={() => nav.open({ kind: 'live', chamber: now.chamber, id: now.id })}>
+                      ▶ la regarder en direct
+                    </button>
+                  </>
+                ) : null
+              })()}
             </div>
           )}
           {resumable && start === undefined && v.timecode === undefined && (
@@ -842,6 +898,11 @@ export function VideoPane({ refId, start, stopAt, clip }: { refId: string; start
         {v.chapters.length > 0 && (
           <div className="parlement-chapters">
             <span className="label">ordre du jour et interventions</span>
+            {!v.chapters.some((c) => c.timecode !== null) && (
+              <span className="small dim parlement-chapter-note">
+                Les horaires des interventions arrivent à la fin de la séance : la vidéo est encore en cours.
+              </span>
+            )}
             {v.chapters.map((c) => (
               <button
                 key={c.id}

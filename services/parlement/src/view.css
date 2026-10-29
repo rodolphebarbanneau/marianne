@@ -1307,6 +1307,22 @@ button.parlement-bt-row:hover {
 .parlement-watch > .parlement-stack {
   gap: 10px;
 }
+/* No chapters: the player alone, not beside an empty column. */
+.parlement-watch.solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+.parlement-watch.solo > .parlement-stack {
+  max-width: 960px;
+}
+/* An agenda beside a broadcast: its lines, not clickable (no times yet). */
+.parlement-chapter {
+  display: block;
+  padding: 4px 8px;
+}
+.parlement-chapter-note {
+  display: block;
+  padding: 4px 8px 6px;
+}
 .parlement-player video {
   display: block;
   width: 100%;
