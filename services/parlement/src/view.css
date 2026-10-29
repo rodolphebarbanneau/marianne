@@ -984,12 +984,34 @@ button.parlement-bt-row:hover {
   text-align: center;
   margin-top: 2px;
 }
-.parlement-callout {
-  font-family: var(--retro);
-  fill: var(--accent);
-  paint-order: stroke;
+/* "votre député": a line from the seat, out of the hemicycle, to a label in the Videotex codes' style. */
+.parlement-leader {
+  pointer-events: none;
+}
+.parlement-leader polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.parlement-leader polyline.halo {
   stroke: var(--bg);
-  stroke-width: 3px;
+}
+.parlement-leader circle {
+  fill: var(--accent);
+}
+.parlement-callout {
+  position: absolute;
+  z-index: 1;
+  font-family: var(--retro);
+  font-size: 15px;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0 5px;
+  background: var(--accent);
+  color: var(--noir);
+  white-space: nowrap;
   pointer-events: none;
 }
 .parlement-tip {

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import plans from '../hemicycle.json'
 import { parisDay } from '../time'
 import type { BallotLine, Chamber, DayPresence, GroupInfo, Hemicycle as HemicycleData, VoteMap } from '../types'
@@ -69,14 +69,69 @@ export function HemicycleDrawing({ data, fill, detail, callout, center, compact 
   const mosaic = prefs.style === 'mosaic'
   const r = plan.r
   const pad = r * 4
-  const seats = data.seats.flatMap((s) => {
-    const at = plan.seats[String(s.seat)]
-    return at ? [{ ...s, x: at[0], y: at[1] }] : []
-  })
+  const seats = useMemo(
+    () =>
+      data.seats.flatMap((s) => {
+        const at = plan.seats[String(s.seat)]
+        return at ? [{ ...s, x: at[0], y: at[1] }] : []
+      }),
+    [data.seats, plan]
+  )
   // The figure sits in the bay, on the last row; its caption under it.
   const base = seats.length ? Math.max(...seats.map((s) => s.y)) : plan.height
-  const below = center?.big ? r * 2 : 0
   const calloutSeat = callout ? seats.find((s) => own.has(s.member) && data.chamber === 'an') : undefined
+
+  /**
+   * The callout: a line from the seat, out of the hemicycle along its radius, then up to the empty
+   * corner on its side, where the label goes (above the arc for a seat near the top). The circle is
+   * the plan's: centred across, its outer row as far from the centre as its widest seats.
+   */
+  const leader = useMemo(() => {
+    if (!calloutSeat || !seats.length) return null
+    const left = Math.min(...seats.map((s) => s.x))
+    const high = Math.min(...seats.map((s) => s.y))
+    const cx = plan.width / 2
+    const radius = cx - left
+    const cy = high + radius
+    const dx = calloutSeat.x - cx
+    const dy = calloutSeat.y - cy
+    const d = Math.hypot(dx, dy) || 1
+    const [ux, uy] = [dx / d, dy / d]
+    const from = { x: calloutSeat.x + ux * r * 1.95, y: calloutSeat.y + uy * r * 1.95 }
+    const out = { x: cx + ux * (radius + r * 3.5), y: cy + uy * (radius + r * 3.5) }
+    const end = { x: out.x, y: Math.min(out.y, high + radius * 0.3) }
+    return { points: [from, out, end], end, side: Math.abs(ux) < 0.45 ? ('above' as const) : dx < 0 ? ('left' as const) : ('right' as const) }
+  }, [calloutSeat, seats, plan.width, r])
+  // Room above the arc for a label that goes there; under the last row, the bay's figure.
+  const high = seats.length ? Math.min(...seats.map((s) => s.y)) : 0
+  const top = leader && leader.end.y < high + r * 4 ? Math.max(pad, high - leader.end.y + r * 7) : pad
+  const view = { x: -pad, y: -top, width: plan.width + pad * 2, height: base + top + (center?.big ? r * 2.4 : pad) }
+
+  // The label in the page's text (a constant size), placed by the line's end, within the drawing.
+  const svg = useRef<SVGSVGElement>(null)
+  const label = useRef<HTMLSpanElement>(null)
+  const [labelAt, setLabelAt] = useState<{ left: number; top: number } | null>(null)
+  useLayoutEffect(() => {
+    if (!leader || !box.current) return setLabelAt(null)
+    const place = () => {
+      const drawing = svg.current?.getBoundingClientRect()
+      const el = label.current
+      if (!drawing || !el) return
+      const scale = drawing.width / view.width
+      const x = (leader.end.x - view.x) * scale
+      const y = (leader.end.y - view.y) * scale
+      const [w, h, gap] = [el.offsetWidth, el.offsetHeight, 6]
+      let at = leader.side === 'above' ? { left: x - w / 2, top: y - h - gap } : { left: leader.side === 'left' ? x - w - gap : x + gap, top: y - h / 2 }
+      // Not enough room beside its line: above it.
+      if (at.left < 0 || at.left + w > drawing.width) at = { left: x - w / 2, top: y - h - gap }
+      const next = { left: Math.round(Math.max(0, Math.min(drawing.width - w, at.left))), top: Math.round(Math.max(0, at.top)) }
+      setLabelAt((prev) => (prev && prev.left === next.left && prev.top === next.top ? prev : next))
+    }
+    place()
+    const observer = new ResizeObserver(place)
+    observer.observe(box.current)
+    return () => observer.disconnect()
+  }, [leader, view.x, view.y, view.width])
   // The hover card, in the drawing's own coordinates; on its left side near the right edge.
   const hover = (s: (typeof seats)[number]) => (e: MouseEvent) => {
     const r = box.current?.getBoundingClientRect()
@@ -85,7 +140,8 @@ export function HemicycleDrawing({ data, fill, detail, callout, center, compact 
   return (
     <div ref={box} className={`parlement-hemi${compact ? ' compact' : ''}`} onMouseLeave={() => setTip(null)}>
       <svg
-        viewBox={`${-pad} ${-pad} ${plan.width + pad * 2} ${base + pad * 2 + below}`}
+        ref={svg}
+        viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
         role="img"
         aria-label={`hémicycle ${data.chamber === 'an' ? 'de l’Assemblée nationale' : 'du Sénat'}`}
       >
@@ -111,16 +167,12 @@ export function HemicycleDrawing({ data, fill, detail, callout, center, compact 
               style={{ strokeWidth: r * (own.has(s.member) ? 0.4 : 0.28) }}
             />
           ))}
-        {calloutSeat && (
-          <text
-            className="parlement-callout"
-            x={calloutSeat.x + (calloutSeat.x < plan.width / 2 ? -r * 3 : r * 3)}
-            y={calloutSeat.y - r * 2.4}
-            textAnchor={calloutSeat.x < plan.width / 2 ? 'end' : 'start'}
-            style={{ fontSize: r * (compact ? 6 : 4.5) }}
-          >
-            {callout}
-          </text>
+        {leader && (
+          <g className="parlement-leader">
+            <polyline className="halo" points={leader.points.map((p) => `${p.x},${p.y}`).join(' ')} style={{ strokeWidth: r * 0.95 }} />
+            <polyline points={leader.points.map((p) => `${p.x},${p.y}`).join(' ')} style={{ strokeWidth: r * 0.3 }} />
+            <circle cx={leader.end.x} cy={leader.end.y} r={r * 0.5} />
+          </g>
         )}
         {center?.big && (
           <text className="parlement-center" x={plan.width / 2} y={base + r * 0.5} style={{ fontSize: r * (compact ? 11 : 8), fill: center.color }}>
@@ -128,6 +180,11 @@ export function HemicycleDrawing({ data, fill, detail, callout, center, compact 
           </text>
         )}
       </svg>
+      {leader && (
+        <span ref={label} className="parlement-callout" style={labelAt ?? { visibility: 'hidden' }}>
+          {callout}
+        </span>
+      )}
       {/* The caption in the page's text, readable whatever the drawing's size. */}
       {center?.small && <div className="parlement-center-sub small">{center.small}</div>}
       {tip && (
