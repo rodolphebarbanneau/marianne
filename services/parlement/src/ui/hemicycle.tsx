@@ -1,7 +1,7 @@
-import { useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import plans from '../hemicycle.json'
 import { parisDay } from '../time'
-import type { BallotLine, Chamber, DayPresence, GroupInfo, Hemicycle as HemicycleData, VoteMap } from '../types'
+import type { Chamber, DayPresence, GroupInfo, Hemicycle as HemicycleData, VoteMap } from '../types'
 import {
   ChamberCode,
   Failure,
@@ -18,6 +18,7 @@ import {
   useStore
 } from './common'
 import { NeedsData } from './data'
+import { VoteView, type BallotRef } from './vote'
 
 /**
  * The hemicycles: one dot per seat, at its place on the chamber's own plan (hemicycle.json). The
@@ -278,13 +279,13 @@ function Hemicycles() {
   const { mine } = useStore()
   const lens = useLens()
   const [reading, setReading] = useState<Reading>('groups')
-  const [ballot, setBallot] = useState<{ chamber: Chamber; id: string } | null>(null)
+  const [ballot, setBallot] = useState<BallotRef | null>(null)
   const chambers: Chamber[] = nav.chambers === 'both' ? ['an', 'se'] : [nav.chambers]
   const deputy = mine?.exact ? mine.deputies[0] : undefined
   const readings = READINGS.filter((r) => (r.id !== 'lens' || lens.on) && (r.id !== 'deputy' || deputy))
   const current = readings.some((r) => r.id === reading) ? reading : 'groups'
-  const recent = useMethod('ballots', current === 'vote' ? [{ limit: 40, ...(nav.chambers === 'both' ? {} : { chamber: nav.chambers }) }] : null)
-  const choice = (ballot && nav.shows(ballot.chamber) ? ballot : null) ?? (recent.data?.[0] ? { chamber: recent.data[0].chamber, id: recent.data[0].id } : null)
+  // A ballot of a chamber the switch hides: the latest of those it shows instead.
+  const choice = ballot && nav.shows(ballot.chamber) ? ballot : null
   return (
     <>
       <div className="parlement-toolbar">
@@ -297,21 +298,6 @@ function Hemicycles() {
           ))}
         </span>
       </div>
-      {current === 'vote' && (
-        <div className="parlement-toolbar">
-          <span className="small dim">scrutin</span>
-          <select
-            value={choice ? `${choice.chamber}:${choice.id}` : ''}
-            onChange={(e) => setBallot({ chamber: e.target.value.slice(0, 2) as Chamber, id: e.target.value.slice(3) })}
-          >
-            {(recent.data ?? []).map((b: BallotLine) => (
-              <option key={b.id} value={`${b.chamber}:${b.id}`}>
-                {b.chamber === 'an' ? 'AN' : 'Sénat'} n° {b.number} · {b.date.split('-').reverse().join('/')} · {b.title.slice(0, 110)}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
       {['presence', 'deputy', 'lens'].includes(current) && chambers.includes('se') && current !== 'lens' && (
         <div className="box-note small">
           {current === 'presence'
@@ -319,33 +305,40 @@ function Hemicycles() {
             : 'Votre député siège à l’Assemblée : au Sénat, l’hémicycle reste en groupes.'}
         </div>
       )}
-      <div className="parlement-hemis">
-        {chambers.map((c) => (
-          <ChamberReading
-            key={c}
-            chamber={c}
-            reading={READINGS.find((r) => r.id === current)!.chambers.includes(c) ? current : 'groups'}
-            ballot={choice?.chamber === c ? choice.id : null}
-          />
-        ))}
-      </div>
-      <div className="parlement-keyrow">
-        <span>
-          <i className="ring" />
-          vos élus
-        </span>
-        <span>
-          <i className="dring" />
-          vos suivis
-        </span>
-        <span>survol : l’élu · clic : sa fiche</span>
-      </div>
+      {/* A ballot is one chamber's: its hemicycle alone, its card beside it. */}
+      {current === 'vote' ? (
+        <VoteView ballot={choice} onPick={setBallot} />
+      ) : (
+        <div className="parlement-hemis">
+          {chambers.map((c) => (
+            <ChamberReading key={c} chamber={c} reading={READINGS.find((r) => r.id === current)!.chambers.includes(c) ? current : 'groups'} ballot={null} />
+          ))}
+        </div>
+      )}
+      <SeatsKey />
     </>
   )
 }
 
-/** One chamber in a reading, with its key. */
-function ChamberReading({ chamber, reading, ballot }: { chamber: Chamber; reading: Reading; ballot: string | null }) {
+/** What marks the seats: the user's members, those they follow, and what a seat does. */
+export function SeatsKey() {
+  return (
+    <div className="parlement-keyrow">
+      <span>
+        <i className="ring" />
+        vos élus
+      </span>
+      <span>
+        <i className="dring" />
+        vos suivis
+      </span>
+      <span>survol : l’élu · clic : sa fiche</span>
+    </div>
+  )
+}
+
+/** One chamber in a reading, with its key beside it; or, with `aside` (a ballot's card), the key under it and the aside beside. */
+export function ChamberReading({ chamber, reading, ballot, aside }: { chamber: Chamber; reading: Reading; ballot: string | null; aside?: ReactNode }) {
   const { mine } = useStore()
   const day = useBallotDay()
   const lens = useLens()
@@ -400,18 +393,23 @@ function ChamberReading({ chamber, reading, ballot }: { chamber: Chamber; readin
         <ChamberCode chamber={chamber} />
         <span className="hi">{chamber === 'an' ? 'Assemblée nationale' : 'Sénat'}</span>
       </div>
-      <div className="parlement-hemi-side">
-        <HemicycleDrawing
-          data={data.data}
-          fill={fill}
-          detail={detail}
-          callout={deputy && chamber === 'an' ? (deputy.female ? 'votre députée' : 'votre député') : undefined}
-          center={center}
-        />
-        <div>
-          <ReadingKey reading={reading} chamber={chamber} lensGroup={lensGroup} />
-          {reading === 'groups' && <GroupLegend groups={data.data.groups} />}
+      <div className={`parlement-hemi-side${aside ? ' with-aside' : ''}`}>
+        <div className="parlement-stack">
+          <HemicycleDrawing
+            data={data.data}
+            fill={fill}
+            detail={detail}
+            callout={deputy && chamber === 'an' ? (deputy.female ? 'votre députée' : 'votre député') : undefined}
+            center={center}
+          />
+          {aside && <ReadingKey reading={reading} chamber={chamber} lensGroup={lensGroup} />}
         </div>
+        {aside ?? (
+          <div>
+            <ReadingKey reading={reading} chamber={chamber} lensGroup={lensGroup} />
+            {reading === 'groups' && <GroupLegend groups={data.data.groups} />}
+          </div>
+        )}
       </div>
     </div>
   )

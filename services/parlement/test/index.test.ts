@@ -149,6 +149,12 @@ describe('ballots', () => {
     expect(ids(searchBallots(writer, { result: 'adopted' }))).toEqual(['VTANR5L17V9097', 'SE2026-2'])
   })
 
+  it('finds a ballot by its number, in either chamber', () => {
+    expect(ids(searchBallots(writer, { number: 9097 }))).toEqual(['VTANR5L17V9097'])
+    expect(ids(searchBallots(writer, { number: 2, chamber: 'se' }))).toEqual(['SE2026-2'])
+    expect(searchBallots(writer, { number: 123456 })).toEqual([])
+  })
+
   it('gives each member’s vote, with proxies at the Assemblée', () => {
     const an = votesIn(writer, 'an', [9000])
     expect(an.map((v) => [v.member, v.position, v.proxy]).sort()).toEqual([

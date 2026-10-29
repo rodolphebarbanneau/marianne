@@ -19,6 +19,7 @@ import {
   POSITION_SHORT,
   Result,
   shortDate,
+  StickyPanel,
   useBallotDay,
   useDebounced,
   useFollowed,
@@ -98,7 +99,7 @@ function useThemes() {
 }
 
 /** A ballot in the day's table: two lines, always (time and number, title and what it is, the bar and its counts, the votes). */
-function BallotRow({
+export function BallotRow({
   line,
   selected,
   onSelect,
@@ -232,8 +233,11 @@ export function BallotTable({
   )
 }
 
-/** A ballot, detailed: its map, its groups, the user's members, those who voted otherwise than their group. */
-export function BallotCard({ chamber, id, sticky }: { chamber: Chamber; id: string; sticky?: boolean }) {
+/**
+ * A ballot, detailed: its map, its groups, the user's members, those who voted otherwise than their
+ * group, and the way to see it in its hemicycle; `inHemicycle`: beside that hemicycle, without its map.
+ */
+export function BallotCard({ chamber, id, inHemicycle }: { chamber: Chamber; id: string; inHemicycle?: boolean }) {
   const host = useHost()
   const nav = useNav()
   const lens = useLens()
@@ -253,7 +257,7 @@ export function BallotCard({ chamber, id, sticky }: { chamber: Chamber; id: stri
   const mine = own ? b.votes.find((v) => v.member.id === own.id) : undefined
   const fill = data.data && map.data ? readingFill(data.data, 'vote', { votes: map.data }) : null
   return (
-    <div className={`parlement-card parlement-bt-card${sticky ? ' sticky' : ''}`}>
+    <div className="parlement-card parlement-bt-card">
       <span className="parlement-row nowrap small">
         <ChamberCode chamber={chamber} />
         <span className="dim parlement-ell">
@@ -293,7 +297,7 @@ export function BallotCard({ chamber, id, sticky }: { chamber: Chamber; id: stri
           )}
         </span>
       )}
-      {data.data && fill ? (
+      {inHemicycle ? null : data.data && fill ? (
         <div className="parlement-bt-hemi">
           <HemicycleDrawing
             data={data.data}
@@ -323,6 +327,11 @@ export function BallotCard({ chamber, id, sticky }: { chamber: Chamber; id: stri
           abst. {b.abstentions}
         </span>
         {chamber === 'an' && <span>⇄ {b.proxies} par délégation</span>}
+        {!inHemicycle && (
+          <button className="link parlement-more" onClick={() => nav.open({ kind: 'vote', chamber, id })} title="chaque siège, et ce scrutin à côté">
+            ⤢ voir dans l’hémicycle
+          </button>
+        )}
       </div>
       {b.votes.length > 0 && (
         <>
@@ -494,9 +503,9 @@ function DayBallotsView({ day }: { day: string }) {
           onSelect={(line) => (nav.wide ? setSelected(line) : nav.open({ kind: 'ballot', chamber: line.chamber, id: line.id }))}
         />
         {nav.wide && (
-          <div className="parlement-bt-detail">
-            <BallotCard key={current.id} chamber={current.chamber} id={current.id} sticky />
-          </div>
+          <StickyPanel className="parlement-bt-detail">
+            <BallotCard key={current.id} chamber={current.chamber} id={current.id} />
+          </StickyPanel>
         )}
       </div>
       {nav.shows('an') && data.bills.some((b) => b.chamber === 'an') && <PresenceBlock day={day} data={data} />}
@@ -1042,13 +1051,13 @@ function SearchView() {
             ))}
           </div>
           {nav.wide && (
-            <div className="parlement-bt-detail">
+            <StickyPanel className="parlement-bt-detail">
               {selected ? (
-                <BallotCard key={selected.id} chamber={selected.chamber} id={selected.id} sticky />
+                <BallotCard key={selected.id} chamber={selected.chamber} id={selected.id} />
               ) : (
                 <p className="small dim">Choisissez un scrutin pour le détail.</p>
               )}
-            </div>
+            </StickyPanel>
           )}
         </div>
       ) : (
