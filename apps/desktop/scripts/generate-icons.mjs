@@ -1,4 +1,4 @@
-// Generates the app icons (no dependencies): node scripts/generate-icons.mjs
+// Generates the app icons, and the website's (no dependencies): node scripts/generate-icons.mjs
 // Design: a Minitel screen tile, deep navy with a faint dot matrix, showing a mosaic "M" (Videotex
 // blocks with a hairline gap, like the "disjoint" mosaic mode) in the French colours: blue left stem,
 // white V, red right stem. Each size is laid out on whole pixels, and the Windows .ico / macOS .icns
@@ -268,9 +268,10 @@ out('resources/icon.ico', appIco)
 
 // Tray: on Linux, the tile; on Windows, an .ico of it with every scaling's size (16px at 100 %, 20 at
 // 125 %, where a PNG gets stretched); on macOS, a black "M" template the menu bar recolors.
+const trayIco = ico([16, 20, 24, 28, 32, 36, 40, 48].map((size) => ({ size, data: render(size, TRAY) })))
 out('resources/tray.png', render(16, TRAY))
 out('resources/tray@2x.png', render(32, TRAY))
-out('resources/tray.ico', ico([16, 20, 24, 28, 32, 36, 40, 48].map((size) => ({ size, data: render(size, TRAY) }))))
+out('resources/tray.ico', trayIco)
 for (const [size, suffix] of [
   [18, ''],
   [36, '@2x']
@@ -287,3 +288,9 @@ for (const [size, suffix] of [
   )
   out(`resources/tray-mac${suffix}.png`, png(size, rgba))
 }
+
+// The website's (site/public/): in a browser tab, the tray's tile, among the other sites' icons as the
+// tray's is among the system's, one image per scaling (/favicon.ico, where browsers look first); on an
+// iPhone's home screen, the app's tile edge to edge, iOS rounding the corners itself.
+out('../../site/public/favicon.ico', trayIco)
+out('../../site/public/apple-touch-icon.png', render(180, { margin: 0 }))
