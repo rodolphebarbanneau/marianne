@@ -1148,6 +1148,10 @@ button.ev:hover {
 .domain-page {
   padding: var(--s4) var(--gutter) var(--s6);
 }
+/* Its head in the page's own gutter, over what follows. */
+.domain-page > .service-head {
+  padding: 0;
+}
 .domain-ask {
   display: flex;
   justify-content: space-between;
@@ -1156,8 +1160,15 @@ button.ev:hover {
   flex-wrap: wrap;
   margin-bottom: var(--s4);
 }
+.domain-ask > span {
+  min-width: 0;
+}
+/* A question on its lines when the page is narrower than it. */
 .domain-ask .chip {
   margin: 2px 4px 2px 0;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
 }
 .dash {
   display: grid;
@@ -1361,7 +1372,7 @@ button.ev:hover {
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-/* A service's way back: its 3615 block, the arrow inside it; lit as the Services tab is when pointed at. */
+/* The way back: a service's 3615 block, a domain's badge, the arrow inside it; lit as the page's tab is when pointed at. */
 .service-back {
   display: inline-flex;
   align-items: baseline;
@@ -1374,14 +1385,6 @@ button.ev:hover {
 }
 .service-back:hover {
   background: var(--accent);
-}
-/* A domain's way back, an arrow alone (its page in its title): a little larger than the text, to be easy to hit. */
-.service-head .back {
-  font-size: 1.15em;
-  line-height: 1;
-}
-.service-head .back:hover {
-  color: var(--hi);
 }
 .service-head .star {
   margin-left: auto;
