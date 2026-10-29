@@ -1,4 +1,4 @@
-/** A small valid content: a skill, a démarche with every kind of action, a date, two sites, a news source. */
+/** A small valid content: a skill, a démarche with every kind of action, a date, two sites, a news source, a group in each chamber. */
 export function minimal(): Record<string, string> {
   return {
     'skills/fines.md': [
@@ -62,6 +62,13 @@ export function minimal(): Record<string, string> {
       updated: '2026-10-01',
       note: 'checked',
       sources: [{ id: 'press', name: 'La Presse', group: 'national', feed: 'https://www.presse.example/rss', homepage: 'https://www.presse.example' }]
+    }),
+    'parliament.json': JSON.stringify({
+      updated: '2026-10-01',
+      groups: [
+        { chamber: 'an', acronym: 'EcoS', name: 'Écologiste et Social', color: '#77aa79', senate: 'GEST' },
+        { chamber: 'se', acronym: 'GEST', name: 'Écologiste - Solidarité et Territoires', color: '#5cb88d' }
+      ]
     })
   }
 }

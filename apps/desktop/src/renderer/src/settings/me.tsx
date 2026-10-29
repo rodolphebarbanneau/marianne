@@ -29,6 +29,7 @@ import { Field } from '../components/ui'
 import { api, errorText } from '../lib/api'
 import { bytes, shortDate } from '../lib/format'
 import { useDocuments, useProfile } from '../lib/profile'
+import { OpinionsSection } from './opinions'
 
 const compact = (s: string) => s.replace(/\s+/g, '')
 const groups = (s: string, size: number) => compact(s).replace(new RegExp(`(.{${size}})(?=.)`, 'g'), '$1 ')
@@ -242,6 +243,7 @@ export function IdentityPane() {
         </Field>
       </div>
       {error && <p className="bad small">{error}</p>}
+      <OpinionsSection />
     </>
   )
 }

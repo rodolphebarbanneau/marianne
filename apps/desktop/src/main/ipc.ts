@@ -285,6 +285,7 @@ export function registerIpc(): void {
   handle('franceDigest', () => franceDigest())
   handle('listSites', () => content.get().sites)
   handle('newsSources', () => content.get().newsSources)
+  handle('parliamentGroups', () => content.get().parliament)
 
   // ---------- services ----------
   handle('listServices', () => services.states())

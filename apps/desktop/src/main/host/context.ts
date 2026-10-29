@@ -47,14 +47,30 @@ function vehicles(m: ServiceManifest): Vehicle[] {
   return profile.get().vehicles.map((v) => ({ id: v.id, ...Object.fromEntries(fields.map((f) => [f, v[f]])) }))
 }
 
+/**
+ * The day a service last read the user's opinions, kept so that Réglages › Identité can say it:
+ * written once a day at most.
+ */
+function noteRead(m: ServiceManifest): void {
+  const day = new Date().toISOString().slice(0, 10)
+  if (accounts.settings().services.reads[m.id] !== day) accounts.updateSettings({ services: { reads: { [m.id]: day } } })
+}
+
 /** The groups the user leans to, when they granted it and said something. */
 function leaning(m: ServiceManifest): Leaning | null {
   if (!grantedFields(m).includes('opinions.leaning')) return null
   const l = profile.get().opinions.leaning
-  return l.assembly.length || l.senate.length ? { assembly: [...l.assembly], senate: [...l.senate] } : null
+  if (!l.assembly.length && !l.senate.length) return null
+  noteRead(m)
+  return { assembly: [...l.assembly], senate: [...l.senate] }
 }
 
-const themes = (m: ServiceManifest): string[] => (grantedFields(m).includes('opinions.themes') ? [...profile.get().opinions.themes] : [])
+function themes(m: ServiceManifest): string[] {
+  if (!grantedFields(m).includes('opinions.themes')) return []
+  const chosen = profile.get().opinions.themes
+  if (chosen.length) noteRead(m)
+  return [...chosen]
+}
 
 export function serviceContext(m: ServiceManifest, sync: ServiceSync): ServiceContext {
   const dataDir = join(paths.services, m.id)

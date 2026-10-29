@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
+import { THEMES, themesOf } from '@marianne/sdk'
 import type { FranceDigest, FranceItem, NewsDigest, NewsStory, TodayEvent } from '@shared/public'
 import { useApp } from '../app/context'
 import { PageHead, SearchField, Spinner } from '../components/ui'
 import { api, errorText } from '../lib/api'
 import { useNewsSources } from '../lib/content'
 import { clock, shortDate } from '../lib/format'
+import { useProfile } from '../lib/profile'
 import { NextArrow } from './next'
 
 /**
  * Actualités: the headlines of the user's sources (only what a feed shows: title, time, link),
  * what happens today in public life, and what changes in France. Marianne never shows the
- * article: the user opens it, copies its link, or asks Marianne about it.
+ * article: the user opens it, copies its link, or asks Marianne about it. The themes the user
+ * chose (Réglages › Identité) bring their headlines first, sorted on this computer.
  */
 export function NewsPage() {
   const app = useApp()
@@ -21,6 +24,7 @@ export function NewsPage() {
   const [query, setQuery] = useState('')
   const settings = app.settings?.news
   const catalog = useNewsSources()
+  const themes = useProfile()?.opinions.themes ?? []
 
   const load = useCallback(() => {
     setError('')
@@ -42,7 +46,10 @@ export function NewsPage() {
 
   const sourceName = (id: string) => catalog.find((s) => s.id === id)?.name ?? settings?.custom.find((c) => c.id === id)?.name ?? id
   const q = query.trim().toLowerCase()
-  const stories = (news?.stories ?? []).filter((s) => !q || [s.item, ...s.others].some((i) => i.title.toLowerCase().includes(q)))
+  const found = (news?.stories ?? []).filter((s) => !q || [s.item, ...s.others].some((i) => i.title.toLowerCase().includes(q)))
+  const themesOfStory = (s: NewsStory) => (themes.length ? themesOf(`${s.item.title} ${s.item.summary ?? ''}`, themes) : [])
+  // The user's themes first, in the feeds' order otherwise.
+  const stories = themes.length ? [...found.filter((s) => themesOfStory(s).length), ...found.filter((s) => !themesOfStory(s).length)] : found
   const ask = (text: string) => {
     app.setSeed({ text, attachments: [] })
     app.goPage('home')
@@ -71,6 +78,14 @@ export function NewsPage() {
               <button className="small link" onClick={load} title="les flux sont relus toutes les quelques minutes">
                 actualiser
               </button>
+              {themes.length > 0 && (
+                <span className="small dim news-themes">
+                  vos thèmes d’abord : {themes.map((t) => THEMES.find((x) => x.id === t)?.label ?? t).join(', ')} ·{' '}
+                  <button className="link" onClick={() => app.openSettings('identity')}>
+                    changer
+                  </button>
+                </span>
+              )}
             </div>
             <div className="news-cols">
               <div>
@@ -79,7 +94,7 @@ export function NewsPage() {
                 {error && <p className="small accent">{error}</p>}
                 {news && !stories.length && <p className="small dim">{q ? 'Rien ne correspond.' : 'Aucun titre pour le moment.'}</p>}
                 {stories.map((s) => (
-                  <Story key={s.id} story={s} sourceName={sourceName} onCopy={copy} onAsk={ask} />
+                  <Story key={s.id} story={s} themes={themesOfStory(s)} sourceName={sourceName} onCopy={copy} onAsk={ask} />
                 ))}
                 {!!news?.failed.length && <p className="small dim">sans réponse : {news.failed.map((f) => sourceName(f.source)).join(', ')}</p>}
               </div>
@@ -118,11 +133,14 @@ export function NewsPage() {
 
 function Story({
   story,
+  themes,
   sourceName,
   onCopy,
   onAsk
 }: {
   story: NewsStory
+  /** The user's themes it is about. */
+  themes: string[]
   sourceName: (id: string) => string
   onCopy: (url: string) => void
   onAsk: (text: string) => void
@@ -142,6 +160,7 @@ function Story({
           {item.category && ` · ${item.category}`}
           {others.length > 0 && ` · aussi chez ${[...new Set(others.map((o) => sourceName(o.source)))].join(', ')}`}
         </span>
+        {themes.length > 0 && <span className="small accent"> ◆ {themes.map((t) => THEMES.find((x) => x.id === t)?.label ?? t).join(', ')}</span>}
       </span>
       <span className="acts">
         <button className="btn small" onClick={() => onCopy(item.url)}>

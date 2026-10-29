@@ -1073,6 +1073,9 @@ button.card:hover {
   gap: 6px;
   align-items: center;
 }
+.news-themes {
+  margin-left: auto;
+}
 .src {
   font-size: 0.8em;
   border: 1px solid var(--rule);
@@ -1967,6 +1970,139 @@ button.ev:hover {
 .space .big {
   font-size: 1.3em;
   color: var(--hi);
+}
+/* Réglages › Identité: the opinions (a leaning, themes) and who may read them. */
+.opinions .chips {
+  width: auto;
+  margin: 0;
+}
+.opinions .lean-groups,
+.opinions .lean-indent {
+  margin-left: 22px;
+}
+.lean-grp {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 6px;
+  white-space: nowrap;
+}
+.lean-grp i {
+  width: 0.72em;
+  height: 0.72em;
+  flex: none;
+}
+.chip.on .lean-grp {
+  color: var(--hi);
+}
+.perm-bar {
+  max-width: 800px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 10px 0 6px;
+}
+.search-field.framed {
+  width: 260px;
+  border-color: var(--rule);
+}
+.search-field.framed:focus-within {
+  border-color: var(--accent);
+}
+.perms {
+  max-width: 800px;
+  border-top: 1px solid var(--rule);
+}
+.perm-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px auto;
+  gap: 14px;
+  align-items: center;
+  padding: 7px 2px;
+  border-bottom: 1px dashed var(--rule);
+}
+.perm-row > * {
+  min-width: 0;
+}
+.perm-row.off .hi {
+  color: var(--dim);
+}
+.perm-head {
+  padding: 4px 2px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.78em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.perm-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.perm-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.perm-ell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.perm-acts {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.perm-seg {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+}
+.perm-seg button {
+  padding: 1px 9px;
+  color: var(--dim);
+  border-right: 1px solid var(--rule);
+}
+.perm-seg button:last-child {
+  border-right: 0;
+}
+.perm-seg button:hover {
+  color: var(--hi);
+}
+.perm-seg button.on {
+  background: var(--fg);
+  color: var(--noir);
+}
+.icon-btn.accent {
+  color: var(--accent);
+}
+.perm-cfg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  padding: 8px 12px;
+  border-bottom: 1px dashed var(--rule);
+  background: var(--bg-raised);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.perm-empty {
+  padding: 8px 2px;
+  margin: 0;
+}
+.origin {
+  font-size: 0.8em;
+  border: 1px solid var(--rule);
+  padding: 0 6px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+.origin.community {
+  border-style: dashed;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .sbar {
   position: relative;

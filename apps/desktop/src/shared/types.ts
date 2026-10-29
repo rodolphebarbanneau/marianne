@@ -131,9 +131,10 @@ export interface AccountSettings {
   news: { sources: string[]; perSource: number; group: boolean; custom: Array<{ id: string; name: string; url: string }> }
   /**
    * Services by id: starred ones come first on the Services page; disabled ones are hidden,
-   * with their tools; `access`: the profile fields each was granted (absent: not asked yet).
+   * with their tools; `access`: the profile fields each was granted (absent: not asked yet);
+   * `reads`: the day each last read the user's opinions (leaning, themes), YYYY-MM-DD.
    */
-  services: { starred: string[]; disabled: string[]; access: Record<string, string[]> }
+  services: { starred: string[]; disabled: string[]; access: Record<string, string[]>; reads: Record<string, string> }
   browser: { askOnline: 'folder' | 'site'; show: 'ask' | 'always' | 'never' }
 }
 

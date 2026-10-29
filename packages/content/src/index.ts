@@ -3,8 +3,8 @@ import type { DomainId } from '@marianne/sdk'
 
 /**
  * @marianne/content: what Marianne knows that anyone may improve, through review: the engines'
- * skills, the guided démarches (procedures), the official calendar, the public-sites catalog and
- * the news sources. Skills go into the engines' instructions and démarches are legal guidance, so
+ * skills, the guided démarches (procedures), the official calendar, the public-sites catalog, the
+ * news sources and the parliamentary groups. Skills go into the engines' instructions and démarches are legal guidance, so
  * every change is reviewed, every source is official, and the app only takes a bundle the project
  * signed.
  *
@@ -186,6 +186,24 @@ export interface NewsSource {
   homepage: string
 }
 
+/** The two chambers of the Parlement: the Assemblée nationale and the Sénat. */
+export const CHAMBERS = ['an', 'se'] as const
+export type ChamberId = (typeof CHAMBERS)[number]
+
+/**
+ * A political group of either chamber, for the leaning a user may declare (Réglages › Identité):
+ * its acronym as the chamber's open data writes it, its colour, and for a group of the Assemblée,
+ * the Sénat group of its political family, proposed when the user picks it.
+ */
+export interface ParliamentGroup {
+  chamber: ChamberId
+  acronym: string
+  name: string
+  color: string
+  /** The acronym of the Sénat group of its family (Assemblée groups only); none when there isn't one. */
+  senate?: string
+}
+
 /** The whole content, read and checked. */
 export interface ContentSet {
   /** The day of its latest change: the most recent `updated` of its files (YYYY-MM-DD). */
@@ -198,10 +216,12 @@ export interface ContentSet {
   /** In the catalog's order. */
   sites: Site[]
   newsSources: NewsSource[]
+  /** Each chamber's groups, from left to right in its hemicycle. */
+  parliament: ParliamentGroup[]
 }
 
 /** The content's files besides skills/<name>.md and procedures/<domain>/<id>.md. */
-export const CONTENT_FILES = ['calendar.json', 'sites.json', 'news-sources.json'] as const
+export const CONTENT_FILES = ['calendar.json', 'sites.json', 'news-sources.json', 'parliament.json'] as const
 
 /** Content that can't be used: every problem found, as "file: field: what is wrong". */
 export class ContentError extends Error {
@@ -550,6 +570,35 @@ function readNewsSources(file: string, report: Report): { updated: string; sourc
   return { updated: data.updated, sources }
 }
 
+const PARLIAMENT_KEYS = ['chamber', 'acronym', 'name', 'color', 'senate'] as const
+/** As the profile keeps a leaning: letters, digits, spaces, dots, apostrophes and hyphens. */
+const ACRONYM = /^[\p{L}\d .'-]{1,24}$/u
+const COLOR = /^#[0-9a-f]{6}$/
+
+function readParliament(file: string, report: Report): { updated: string; groups: ParliamentGroup[] } | null {
+  const data = readJson(file, 'groups', report)
+  if (!data) return null
+  const groups: ParliamentGroup[] = []
+  for (const { o, where } of entries(data.entries, 'groups', PARLIAMENT_KEYS, report)) {
+    const chamber = field(o, 'chamber', where, report, oneOf(CHAMBERS)) as ChamberId
+    const senate = optionalField(o, 'senate', where, report, () => (chamber === 'an' ? null : 'only a group of the Assemblée (an) has a Sénat counterpart'))
+    groups.push({
+      chamber,
+      acronym: field(o, 'acronym', where, report, like(ACRONYM, 'an acronym (up to 24 letters, digits, spaces, dots, apostrophes or hyphens)')),
+      name: field(o, 'name', where, report),
+      color: field(o, 'color', where, report, like(COLOR, 'a colour (#rrggbb, lowercase)')),
+      ...(senate !== undefined ? { senate } : {})
+    })
+  }
+  for (const chamber of CHAMBERS)
+    for (const acronym of twice(groups.filter((g) => g.chamber === chamber).map((g) => g.acronym)))
+      report('groups', `"${acronym}" is listed twice in the same chamber`)
+  const senate = new Set(groups.filter((g) => g.chamber === 'se').map((g) => g.acronym))
+  for (const [i, g] of groups.entries())
+    if (g.senate && !senate.has(g.senate)) report(`groups[${i}].senate`, `"${g.senate}" is not a group of the Sénat (se) in this file`)
+  return { updated: data.updated, groups }
+}
+
 const CALENDAR_KEYS = ['id', 'domain', 'title', 'monthDay', 'applies', 'indicative', 'site', 'procedure', 'source'] as const
 
 function readCalendar(file: string, sites: Set<string> | null, procedures: Set<string>, report: Report): { updated: string; items: CalendarItem[] } | null {
@@ -600,6 +649,7 @@ export function readContent(files: Record<string, string>): ContentSet {
   const sites = files['sites.json'] === undefined ? null : readSites(files['sites.json'], reporter(problems, 'sites.json'))
   const siteIds = sites ? new Set(sites.sites.map((s) => s.id)) : null
   const news = files['news-sources.json'] === undefined ? null : readNewsSources(files['news-sources.json'], reporter(problems, 'news-sources.json'))
+  const parliament = files['parliament.json'] === undefined ? null : readParliament(files['parliament.json'], reporter(problems, 'parliament.json'))
 
   for (const path of paths) {
     const report = reporter(problems, path)
@@ -615,7 +665,7 @@ export function readContent(files: Record<string, string>): ContentSet {
       const p = readProcedure(procedure[1], procedure[2], files[path], report)
       if (p) procedures.push(p)
     } else if (!known.includes(path)) {
-      report('', 'not a content file: skills/<name>.md, procedures/<domain>/<id>.md, calendar.json, sites.json or news-sources.json')
+      report('', 'not a content file: skills/<name>.md, procedures/<domain>/<id>.md, calendar.json, sites.json, news-sources.json or parliament.json')
     }
   }
   for (const name of CONTENT_FILES) if (files[name] === undefined) problems.push(`${name}: missing`)
@@ -636,15 +686,18 @@ export function readContent(files: Record<string, string>): ContentSet {
       ? null
       : readCalendar(files['calendar.json'], siteIds, new Set(procedures.map((p) => p.id)), reporter(problems, 'calendar.json'))
 
-  if (problems.length || !sites || !news || !calendar) throw new ContentError(problems)
-  const updated = [sites.updated, news.updated, calendar.updated, ...skills.map((s) => s.updated), ...procedures.map((p) => p.updated)].sort().at(-1)!
+  if (problems.length || !sites || !news || !calendar || !parliament) throw new ContentError(problems)
+  const updated = [sites.updated, news.updated, calendar.updated, parliament.updated, ...skills.map((s) => s.updated), ...procedures.map((p) => p.updated)]
+    .sort()
+    .at(-1)!
   return {
     updated,
     skills: skills.sort((a, b) => a.name.localeCompare(b.name)),
     procedures: procedures.sort((a, b) => a.title.localeCompare(b.title, 'fr')),
     calendar: calendar.items,
     sites: sites.sites,
-    newsSources: news.sources
+    newsSources: news.sources,
+    parliament: parliament.groups
   }
 }
 
