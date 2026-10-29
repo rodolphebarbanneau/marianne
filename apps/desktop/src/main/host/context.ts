@@ -4,12 +4,12 @@ import { allowedUrl, type ServiceManifest } from '@marianne/sdk'
 import type { ProfileField } from '@marianne/sdk'
 import type { ServiceContext, ServiceHttp, Vehicle } from '@marianne/sdk/main'
 import { accounts } from '../account'
-import { session } from '../archive/session'
 import { fetchAsBrowser, fetchJson, fetchText } from '../http'
 import { log } from '../log'
 import { paths } from '../paths'
 import { profile } from '../profile/store'
 import { findCommunes, getCommune } from '../public/geo'
+import { session } from '../session'
 import type { ServiceSync } from './sync'
 
 /**

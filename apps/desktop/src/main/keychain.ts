@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import type { KeychainEntry, KeychainInput } from '../shared/types'
-import { session } from './archive/session'
+import { session } from './session'
 
 /**
  * The keychain: logins for public-service websites and API credentials, inside the account's

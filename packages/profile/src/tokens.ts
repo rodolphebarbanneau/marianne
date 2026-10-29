@@ -1,6 +1,6 @@
-import { ENTITY_LABELS } from '../../shared/domains'
-import { ID_DOCUMENT_LABELS, nirValid, RELATION_LABELS, type Profile } from '../../shared/profile'
-import type { Site } from '../../shared/sites'
+import type { Site } from '@marianne/content'
+import { ENTITY_LABELS } from './domains'
+import { ID_DOCUMENT_LABELS, nirValid, RELATION_LABELS, type Profile } from './profile'
 
 /**
  * Tokens stand for the user's identifiers in everything the engines see. An engine writes [[nir]]

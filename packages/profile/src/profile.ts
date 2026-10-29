@@ -1,11 +1,11 @@
+import type { Site } from '@marianne/content'
+import type { DomainId } from '@marianne/sdk'
 import { domainInfo } from './domains'
-import type { Site } from './sites'
-import type { DomainId } from './types'
 
 /**
  * The personal file: who the user is, what is linked to them, and what they have to do. It lives
- * in the account archive (main/profile); only a context view, with identifiers replaced by
- * [[tokens]], ever reaches the engines.
+ * in the account archive (the app's profile store); only a context view, with identifiers
+ * replaced by [[tokens]], ever reaches the engines.
  */
 
 export type Civility = '' | 'mr' | 'ms'
@@ -145,7 +145,7 @@ export interface ManualDeadline {
 
 export type DocumentType = 'tax_notice' | 'certificate' | 'payslip' | 'statement' | 'letter' | 'contract' | 'proof' | 'other'
 
-/** A document of the archive (main/profile/documents): the meta of its archive file. */
+/** A document of the archive (the app's profile documents): the meta of its archive file. */
 export interface DocumentMeta {
   id: string
   domain: DomainId
@@ -247,11 +247,6 @@ export interface Deadline {
   service?: string
   params?: Record<string, string | number>
 }
-
-// ---------------------------------------------------------------- guided procedures
-
-/** Guided procedures (démarches) are content: their format is @marianne/content's. */
-export type { Procedure, ProcedureAction, ProcedureActionKind, ProcedureStep } from '@marianne/content'
 
 // ---------------------------------------------------------------- operations
 

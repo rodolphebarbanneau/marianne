@@ -1,6 +1,7 @@
+import type { Procedure } from '@marianne/content'
+import type { Deadline, DocumentMeta, Profile, ProfileOp } from '@marianne/profile'
 import type { ProfileField, ServiceState, ServiceSummary } from '@marianne/sdk'
 import type { NewsSource } from './news'
-import type { Deadline, DocumentMeta, Procedure, Profile, ProfileOp } from './profile'
 import type { FranceDigest, NewsDigest, PublicSourceStatus, TodayEvent } from './public'
 import type { Site } from './sites'
 import type {

@@ -1,9 +1,9 @@
 import { EventEmitter } from 'node:events'
 import { session as electronSession, shell, WebContentsView, type BrowserWindow } from 'electron'
 import type { BrowserState, PagePart } from '../../shared/types'
-import { session } from '../archive/session'
 import { keychain, siteOf } from '../keychain'
 import { log } from '../log'
+import { session } from '../session'
 import {
   CLICK_SCRIPT,
   FILL_SCRIPT,

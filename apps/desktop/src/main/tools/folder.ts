@@ -1,5 +1,5 @@
+import { domainInfo } from '@marianne/profile'
 import * as z from 'zod'
-import { domainInfo } from '../../shared/domains'
 import type { Folder } from '../../shared/types'
 import { content } from '../content'
 import { listSkills, readSkill } from '../engines/skills'

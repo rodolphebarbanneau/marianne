@@ -1,4 +1,6 @@
-import { DOMAINS } from '../../shared/domains'
+import type { Site } from '@marianne/content'
+import type { DomainId } from '@marianne/sdk'
+import { DOMAINS } from './domains'
 import {
   ageOf,
   CONTRACT_LABELS,
@@ -17,9 +19,7 @@ import {
   WORK_STATUS_LABELS,
   type Deadline,
   type Profile
-} from '../../shared/profile'
-import type { Site } from '../../shared/sites'
-import type { DomainId } from '../../shared/types'
+} from './profile'
 import type { TokenDef } from './tokens'
 
 /**

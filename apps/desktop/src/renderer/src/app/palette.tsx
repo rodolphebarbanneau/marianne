@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { DOMAINS } from '@shared/domains'
-import type { Procedure } from '@shared/profile'
+import type { Procedure } from '@marianne/content'
+import { DOMAINS } from '@marianne/profile'
 import { foldText, serviceCode, serviceMatches } from '@marianne/sdk'
 import { api } from '../lib/api'
 import { useServices } from '../host'

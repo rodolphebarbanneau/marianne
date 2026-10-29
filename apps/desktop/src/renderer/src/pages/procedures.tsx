@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { DOMAIN_CATEGORIES, DOMAINS } from '@shared/domains'
-import { frDate, type Deadline } from '@shared/profile'
+import { DOMAIN_CATEGORIES, DOMAINS, frDate, type Deadline } from '@marianne/profile'
 import { useApp } from '../app/context'
 import { PageHead } from '../components/ui'
 import { api } from '../lib/api'

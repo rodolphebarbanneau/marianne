@@ -1,0 +1,16 @@
+{
+  "name": "@marianne/archive",
+  "version": "0.1.0",
+  "description": "The user's data at rest: the encrypted account archive, its keys, the PIN unlock on a computer, the accounts in a folder and the open session.",
+  "license": "MIT",
+  "author": "Rodolphe Barbanneau",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  }
+}

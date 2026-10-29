@@ -1,7 +1,7 @@
 import { readContent } from '@marianne/content'
 import { files } from '@marianne/content/files'
+import { EMPTY_PROFILE, type Profile } from '@marianne/profile'
 import { describe, expect, it } from 'vitest'
-import { EMPTY_PROFILE, type Profile } from '../src/shared/profile'
 import { computeDeadline, weekday } from '../src/main/tools/calendar'
 import { articleNumber, findCode } from '../src/main/tools/legifrance'
 import { consequential, Consents } from '../src/main/tools/online'

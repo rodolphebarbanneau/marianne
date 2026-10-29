@@ -1,7 +1,6 @@
 import type { CalendarItem } from '@marianne/content'
-import type { ServiceDeadline } from '@marianne/sdk'
-import { monthDay, type Company, type Deadline, type IdDocumentType, type Profile } from '../../shared/profile'
-import type { DomainId } from '../../shared/types'
+import type { DomainId, ServiceDeadline } from '@marianne/sdk'
+import { monthDay, type Company, type Deadline, type IdDocumentType, type Profile } from './profile'
 
 /**
  * Deadlines computed from the profile: rules (documents expiring, URSSAF declarations, company

@@ -1,11 +1,11 @@
+import { daysUntil, frDate, type Deadline } from '@marianne/profile'
 import { app, Menu, nativeImage, Notification, Tray } from 'electron'
-import { daysUntil, frDate, type Deadline } from '../shared/profile'
-import { session } from './archive/session'
 import { configStore } from './config'
 import { log } from './log'
 import { resource } from './paths'
 import { deadlines } from './deadlines'
 import { profile } from './profile/store'
+import { session } from './session'
 import { isMac, isWin } from './util'
 import { navigate, setKeepInTray, showMain } from './windows'
 

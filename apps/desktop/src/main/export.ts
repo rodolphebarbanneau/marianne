@@ -1,11 +1,11 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { domainInfo } from '../shared/domains'
+import { domainInfo } from '@marianne/profile'
 import type { ChatMessage } from '../shared/types'
-import { session } from './archive/session'
 import { folders } from './folders'
 import { documents } from './profile/documents'
 import { profile } from './profile/store'
+import { session } from './session'
 
 /**
  * "Tout exporter": the account as ordinary files, in clear, for the user to keep or move

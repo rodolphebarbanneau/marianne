@@ -1,7 +1,7 @@
-import { session } from '../archive/session'
 import { keychain } from '../keychain'
 import { isEnabled } from '../public/sources'
 import { serviceTools } from '../host'
+import { session } from '../session'
 import { browserTools } from './browser'
 import { calendarTools } from './calendar'
 import { datagouvTools } from './datagouv'

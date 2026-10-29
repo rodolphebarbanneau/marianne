@@ -2,13 +2,12 @@ import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import { readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
-import { today, type DocumentMeta, type DocumentType } from '../../shared/profile'
+import { redact, today, type DocumentMeta, type DocumentType } from '@marianne/profile'
 import type { DomainId } from '../../shared/types'
-import { session } from '../archive/session'
 import { log } from '../log'
 import { paths } from '../paths'
+import { session } from '../session'
 import { profile } from './store'
-import { redact } from './tokens'
 
 /**
  * Documents (tax notices, certificates, payslips…): files of the account archive, sealed like the

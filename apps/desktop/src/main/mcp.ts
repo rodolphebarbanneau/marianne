@@ -1,12 +1,12 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { redact, resolveDeep } from '@marianne/profile'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { app } from 'electron'
 import { log } from './log'
 import { profile } from './profile/store'
-import { redact, resolveDeep } from './profile/tokens'
 import { activeTools } from './tools'
 import { ToolError, type ToolContext } from './tools/tool'
 

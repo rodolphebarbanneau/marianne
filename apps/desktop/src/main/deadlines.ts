@@ -1,6 +1,5 @@
-import type { Deadline } from '../shared/profile'
+import { serviceDeadlines, type Deadline } from '@marianne/profile'
 import { services } from './host'
-import { serviceDeadlines } from './profile/rules'
 import { profile } from './profile/store'
 
 /**

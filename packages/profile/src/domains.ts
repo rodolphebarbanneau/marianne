@@ -1,5 +1,5 @@
+import type { DomainId } from '@marianne/sdk'
 import type { EntityKind } from './profile'
-import type { DomainId } from './types'
 
 /**
  * The domains of the app: one page each, built the same way (deadlines, sites, information,

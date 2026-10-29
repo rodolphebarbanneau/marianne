@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 /**
  * This computer's data: ~/.marianne (MARIANNE_HOME overrides). Nothing personal lives here: the
- * accounts are archives in the folder the user chose (see archive/).
+ * accounts are archives in the folder the user chose (see @marianne/archive).
  */
 export const home = process.env.MARIANNE_HOME || join(homedir(), '.marianne')
 
