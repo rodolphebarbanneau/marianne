@@ -1,4 +1,5 @@
-import type { Procedure } from '@marianne/content'
+import type { ParliamentGroup, Procedure } from '@marianne/content'
+export type { ParliamentGroup }
 import type { Deadline, DocumentMeta, Profile, ProfileOp } from '@marianne/profile'
 import type { ProfileField, ServiceState, ServiceSummary } from '@marianne/sdk'
 import type { NewsSource } from './news'
@@ -253,6 +254,8 @@ export interface MarianneApi {
   listSites(): Promise<Site[]>
   /** The news sources of Actualités. */
   newsSources(): Promise<NewsSource[]>
+  /** The parliamentary groups of both chambers (the content's parliament.json), for the leaning of Réglages › Identité. */
+  parliamentGroups(): Promise<ParliamentGroup[]>
   /** Newer content was taken: the sites, news sources and procedures are worth asking again. */
   onContent(cb: () => void): () => void
 }

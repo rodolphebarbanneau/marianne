@@ -4,11 +4,14 @@
  * readContent. Vite puts them in the build: nothing is read from disk at run time.
  */
 
-const raw = import.meta.glob<string>(['../skills/**/*', '../procedures/**/*', '../calendar.json', '../sites.json', '../news-sources.json'], {
-  query: '?raw',
-  import: 'default',
-  eager: true
-})
+const raw = import.meta.glob<string>(
+  ['../skills/**/*', '../procedures/**/*', '../calendar.json', '../sites.json', '../news-sources.json', '../parliament.json'],
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true
+  }
+)
 
 export const files: Record<string, string> = Object.fromEntries(Object.entries(raw).map(([path, text]) => [path.replace(/^\.\.\//, ''), text]))
 

@@ -32,6 +32,8 @@ interface Loaded {
   runtime: ServiceRuntime | null
   sync: ServiceSync
   error?: string
+  /** Shipped with Marianne (its registry); community services will not be. */
+  builtIn: boolean
 }
 
 const SYNC_CHECK_MS = 3600_000
@@ -52,7 +54,7 @@ class ServiceHost extends EventEmitter {
         continue
       }
       seen.add(manifest.id)
-      const entry: Loaded = { manifest, module, runtime: null, sync: null as unknown as ServiceSync }
+      const entry: Loaded = { manifest, module, runtime: null, sync: null as unknown as ServiceSync, builtIn: true }
       entry.sync = new ServiceSync(manifest, module.sync?.everyHours ?? 0, () => entry.runtime?.synced?.())
       entry.sync.on('change', () => this.emit('change'))
       try {
@@ -86,8 +88,10 @@ class ServiceHost extends EventEmitter {
   /** Every service, with what the user made of it (none starred nor off while locked). */
   states(): ServiceState[] {
     const connections = configStore.get().sources as Record<string, { enabled: boolean } | undefined>
-    const chosen = session.unlocked ? accounts.settings().services : { starred: [], disabled: [], access: {} as Record<string, string[]> }
-    return this.loaded.map(({ manifest, module, runtime, sync, error }) => {
+    const chosen = session.unlocked
+      ? accounts.settings().services
+      : { starred: [], disabled: [], access: {} as Record<string, string[]>, reads: {} as Record<string, string> }
+    return this.loaded.map(({ manifest, module, runtime, sync, error, builtIn }) => {
       const available = !!runtime && manifest.connections.every((c) => connections[c]?.enabled)
       return {
         manifest,
@@ -97,7 +101,12 @@ class ServiceHost extends EventEmitter {
         tools: (runtime?.tools ?? []).map((t) => ({ name: toolName(manifest, t.name), label: t.label })),
         ...(module.sync ? { sync: sync.status() } : {}),
         ...(error ? { error } : {}),
-        access: { asked: manifest.permissions.profile, granted: manifest.id in chosen.access ? grantedFields(manifest) : null }
+        builtIn,
+        access: {
+          asked: manifest.permissions.profile,
+          granted: manifest.id in chosen.access ? grantedFields(manifest) : null,
+          ...(chosen.reads[manifest.id] ? { readAt: chosen.reads[manifest.id] } : {})
+        }
       }
     })
   }

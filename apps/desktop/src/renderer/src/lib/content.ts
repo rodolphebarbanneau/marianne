@@ -1,3 +1,4 @@
+import type { ParliamentGroup } from '@shared/api'
 import type { NewsSource } from '@shared/news'
 import type { Site } from '@shared/sites'
 import { api, useLive } from './api'
@@ -13,3 +14,6 @@ export const useSites = (): Site[] => useLive(api.listSites, onContent(api.listS
 
 /** The news sources of Actualités. */
 export const useNewsSources = (): NewsSource[] => useLive(api.newsSources, onContent(api.newsSources)) ?? []
+
+/** The parliamentary groups of both chambers, for the leaning. */
+export const useParliamentGroups = (): ParliamentGroup[] => useLive(api.parliamentGroups, onContent(api.parliamentGroups)) ?? []

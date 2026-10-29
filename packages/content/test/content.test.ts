@@ -88,6 +88,33 @@ describe('reading the content', () => {
     expect(c.newsSources).toEqual([
       { id: 'press', name: 'La Presse', group: 'national', feed: 'https://www.presse.example/rss', homepage: 'https://www.presse.example' }
     ])
+    expect(c.parliament).toEqual([
+      { chamber: 'an', acronym: 'EcoS', name: 'Écologiste et Social', color: '#77aa79', senate: 'GEST' },
+      { chamber: 'se', acronym: 'GEST', name: 'Écologiste - Solidarité et Territoires', color: '#5cb88d' }
+    ])
+  })
+
+  it('checks the parliamentary groups: chambers, acronyms, colours, Sénat counterparts', () => {
+    const files = minimal()
+    files['parliament.json'] = JSON.stringify({
+      updated: '2026-10-29',
+      groups: [
+        { chamber: 'an', acronym: 'EcoS', name: 'Écologiste et Social', color: '#77AA79', senate: 'VERTS' },
+        { chamber: 'an', acronym: 'EcoS', name: 'doublon', color: '#77aa79' },
+        { chamber: 'cc', acronym: '<b>', name: 'x', color: 'vert' },
+        { chamber: 'se', acronym: 'GEST', name: 'Écologiste', color: '#5cb88d', senate: 'GEST', seats: 15 }
+      ]
+    })
+    expect(problems(files)).toEqual([
+      'parliament.json: groups[0].color: "#77AA79" is not a colour (#rrggbb, lowercase)',
+      'parliament.json: groups[2].chamber: "cc" is not one of an, se',
+      'parliament.json: groups[2].acronym: "<b>" is not an acronym (up to 24 letters, digits, spaces, dots, apostrophes or hyphens)',
+      'parliament.json: groups[2].color: "vert" is not a colour (#rrggbb, lowercase)',
+      'parliament.json: groups[3].seats: unknown key (expected: chamber, acronym, name, color, senate)',
+      'parliament.json: groups[3].senate: only a group of the Assemblée (an) has a Sénat counterpart',
+      'parliament.json: groups: "EcoS" is listed twice in the same chamber',
+      'parliament.json: groups[0].senate: "VERTS" is not a group of the Sénat (se) in this file'
+    ])
   })
 
   it('sorts skills by name and démarches by title', () => {
@@ -112,7 +139,7 @@ describe('reading the content', () => {
     files['notes.txt'] = 'x'
     delete files['news-sources.json']
     expect(problems(files)).toEqual([
-      'notes.txt: not a content file: skills/<name>.md, procedures/<domain>/<id>.md, calendar.json, sites.json or news-sources.json',
+      'notes.txt: not a content file: skills/<name>.md, procedures/<domain>/<id>.md, calendar.json, sites.json, news-sources.json or parliament.json',
       'procedures/taxes/contest-fine.md: domain: must be its folder\'s, "taxes"',
       'skills/fines.md: reviewer: unknown key (expected: name, title, description, sources, updated, owner, verified)',
       'skills/fines.md: name: must be the file\'s name, "fines"',
@@ -224,6 +251,6 @@ describe('reading the content', () => {
   })
 
   it('says how many problems there are', () => {
-    expect(() => readContent({})).toThrow(/^3 problems in the content:\n- calendar\.json: missing\n/)
+    expect(() => readContent({})).toThrow(/^4 problems in the content:\n- calendar\.json: missing\n/)
   })
 })

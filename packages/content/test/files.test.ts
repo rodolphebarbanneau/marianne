@@ -13,6 +13,8 @@ describe('the shipped content', () => {
     expect(content.calendar.length).toBeGreaterThan(0)
     expect(content.sites.length).toBeGreaterThan(40)
     expect(content.newsSources.length).toBeGreaterThan(20)
+    expect(content.parliament.filter((g) => g.chamber === 'an').length).toBeGreaterThanOrEqual(10)
+    expect(content.parliament.filter((g) => g.chamber === 'se').length).toBeGreaterThanOrEqual(8)
   })
 
   it('files each démarche in its domain’s folder, under its id', () => {

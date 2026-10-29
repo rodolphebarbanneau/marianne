@@ -106,7 +106,8 @@ const INVOKE = [
   'setServiceAccess',
   'listSkills',
   'listSites',
-  'newsSources'
+  'newsSources',
+  'parliamentGroups'
 ] as const
 
 const LISTEN = [

@@ -35,7 +35,7 @@ export function merge<T>(base: T, patch: unknown, open: string[] = []): T {
 const OPEN_KEYS = ['shortcuts']
 
 /** In an account's settings, the services' access is keyed by service id: a record taken whole. */
-const ACCOUNT_OPEN_KEYS = ['access']
+const ACCOUNT_OPEN_KEYS = ['access', 'reads']
 
 /** An account's settings: what its archive keeps, over the defaults, and `patch` on top. */
 export function accountSettings(stored: unknown, patch?: DeepPartial<AccountSettings>): AccountSettings {

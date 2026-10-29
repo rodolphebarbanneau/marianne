@@ -1,0 +1,26 @@
+{
+  "updated": "2026-10-29",
+  "note": "The political groups of the Assemblée nationale (17th legislature) and of the Sénat, from left to right in each hemicycle, for the leaning a user may declare in Réglages › Identité. Acronyms and colours are the chambers' own, as their open data gives them (3615 PARLEMENT matches them). Non-attached members are not a leaning: they are not listed. An Assemblée group's \"senate\" is the Sénat group of its political family, proposed to the user when they pick it, and theirs to change: RN and UDR senators sit in UNT, LFI has no group at the Sénat (CRCE-K is the closest).",
+  "groups": [
+    { "chamber": "an", "acronym": "LFI-NFP", "name": "La France insoumise - Nouveau Front Populaire", "color": "#c00d0d", "senate": "CRCE-K" },
+    { "chamber": "an", "acronym": "GDR", "name": "Gauche Démocrate et Républicaine", "color": "#830e21", "senate": "CRCE-K" },
+    { "chamber": "an", "acronym": "EcoS", "name": "Écologiste et Social", "color": "#77aa79", "senate": "GEST" },
+    { "chamber": "an", "acronym": "SOC", "name": "Socialistes et apparentés", "color": "#f5b4ce", "senate": "SER" },
+    { "chamber": "an", "acronym": "LIOT", "name": "Libertés, Indépendants, Outre-mer et Territoires", "color": "#ffd96f", "senate": "RDSE" },
+    { "chamber": "an", "acronym": "Dem", "name": "Les Démocrates", "color": "#f07e26", "senate": "UCI" },
+    { "chamber": "an", "acronym": "EPR", "name": "Ensemble pour la République", "color": "#7b4591", "senate": "RDPI" },
+    { "chamber": "an", "acronym": "HOR", "name": "Horizons & Indépendants", "color": "#b5e2f9", "senate": "LIRT" },
+    { "chamber": "an", "acronym": "DR", "name": "Droite Républicaine", "color": "#8cb0dc", "senate": "LR" },
+    { "chamber": "an", "acronym": "UDR", "name": "Union des droites pour la République", "color": "#3367a7", "senate": "UNT" },
+    { "chamber": "an", "acronym": "RN", "name": "Rassemblement National", "color": "#313567", "senate": "UNT" },
+    { "chamber": "se", "acronym": "CRCE-K", "name": "Communiste Républicain Citoyen et Écologiste - Kanaky", "color": "#d90001" },
+    { "chamber": "se", "acronym": "SER", "name": "Socialiste, Écologiste et Républicain", "color": "#fb6f99" },
+    { "chamber": "se", "acronym": "GEST", "name": "Écologiste - Solidarité et Territoires", "color": "#5cb88d" },
+    { "chamber": "se", "acronym": "RDPI", "name": "Rassemblement des démocrates, progressistes et indépendants", "color": "#f1b608" },
+    { "chamber": "se", "acronym": "RDSE", "name": "Rassemblement Démocratique et Social Européen", "color": "#814a97" },
+    { "chamber": "se", "acronym": "LIRT", "name": "Les Indépendants - République et Territoires", "color": "#c7dde2" },
+    { "chamber": "se", "acronym": "UCI", "name": "Union Centriste et Indépendants", "color": "#7accea" },
+    { "chamber": "se", "acronym": "LR", "name": "Les Républicains", "color": "#2e70d1" },
+    { "chamber": "se", "acronym": "UNT", "name": "Union Nationale pour les Territoires", "color": "#173680" }
+  ]
+}

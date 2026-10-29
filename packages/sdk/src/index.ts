@@ -253,8 +253,10 @@ export interface ServiceState {
   sync?: SyncStatus
   /** It failed to start: why (it stays off). */
   error?: string
-  /** The profile fields it asks for, and the ones the user granted; null: not asked yet. */
-  access: { asked: ProfileField[]; granted: ProfileField[] | null }
+  /** Built into Marianne; false: published by the community. */
+  builtIn: boolean
+  /** The profile fields it asks for, and the ones the user granted (null: not asked yet); the day it last read the user's opinions. */
+  access: { asked: ProfileField[]; granted: ProfileField[] | null; readAt?: string }
 }
 
 export type Urgency = 'none' | 'soon' | 'urgent'
