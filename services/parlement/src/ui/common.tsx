@@ -1,16 +1,16 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { Spinner, useCall, type Loaded } from '@marianne/sdk/view'
 import { ordinal } from '../links'
-import type { AssembleeMethods, Clip, DeputyCard, Favorites, VideoQuery } from '../types'
+import type { ParlementMethods, Clip, DeputyCard, Favorites, VideoQuery } from '../types'
 
 /** What the view's parts share: typed calls, navigation, the user's stored data, French formats. */
 
 /** A method of the main side, loaded again when its arguments change; null arguments wait. */
-export function useMethod<K extends keyof AssembleeMethods & string>(
+export function useMethod<K extends keyof ParlementMethods & string>(
   method: K,
-  args: Parameters<AssembleeMethods[K]> | null
-): Loaded<Awaited<ReturnType<AssembleeMethods[K]>>> {
-  return useCall<AssembleeMethods, K>(method, args)
+  args: Parameters<ParlementMethods[K]> | null
+): Loaded<Awaited<ReturnType<ParlementMethods[K]>>> {
+  return useCall<ParlementMethods, K>(method, args)
 }
 
 /** A value that settles: searches wait for the typing to pause. */
@@ -113,16 +113,16 @@ export function Failure({ error, retry }: { error: string; retry?: () => void })
 
 /** A group's color, as the Assemblée draws it. */
 export function GroupMark({ color }: { color: string }) {
-  return <i className="assemblee-mark" style={color ? { background: color } : undefined} />
+  return <i className="parlement-mark" style={color ? { background: color } : undefined} />
 }
 
 export function DeputyLine({ d }: { d: DeputyCard }) {
   const nav = useNav()
   return (
-    <div className="assemblee-deputy">
-      <button className="assemblee-open" onClick={() => nav.open({ kind: 'deputy', id: d.id })}>
+    <div className="parlement-deputy">
+      <button className="parlement-open" onClick={() => nav.open({ kind: 'deputy', id: d.id })}>
         <img src={d.photo} alt="" loading="lazy" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
-        <span className="assemblee-grow">
+        <span className="parlement-grow">
           <span className="hi">{d.name}</span>
           <span className="small dim">
             <GroupMark color={d.groupColor} /> {d.groupShort || 'non inscrit'} · {d.department} · {constituency(d.constituency)}
@@ -136,7 +136,7 @@ export function DeputyLine({ d }: { d: DeputyCard }) {
 
 export function DeputyList({ deputies }: { deputies: DeputyCard[] }) {
   return (
-    <div className="assemblee-deputies">
+    <div className="parlement-deputies">
       {deputies.map((d) => (
         <DeputyLine key={d.id} d={d} />
       ))}

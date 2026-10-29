@@ -14,7 +14,7 @@ let file: string
 let writer: DatabaseSync
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'marianne-assemblee-'))
+  dir = mkdtempSync(join(tmpdir(), 'marianne-parlement-'))
   file = join(dir, DB_FILE)
   const opened = openWriter(file)
   expect(opened.current).toBe(false)

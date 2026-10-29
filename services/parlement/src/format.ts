@@ -145,6 +145,6 @@ export function formatLive(streams: LiveStream[]): string {
     `- ${s.organ}${s.place ? ` · ${s.place}` : ''} · ${s.live ? 'since' : 'from'} ${when(s.startAt) || s.start} · meeting ${s.meetingId}\n  ${s.title || s.subject}`
   const parts = [live.length ? `# Live now\n\n${live.map(line).join('\n')}` : 'Nothing is broadcast live right now.']
   if (later.length) parts.push(`# Later today\n\n${later.map(line).join('\n')}`)
-  parts.push('The user can watch them in the 3615 ASSEMBLEE service (Services page).')
+  parts.push('The user can watch them in the 3615 PARLEMENT service (Services page).')
   return parts.join('\n\n')
 }

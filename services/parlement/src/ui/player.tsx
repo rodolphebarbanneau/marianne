@@ -90,7 +90,7 @@ export function Player({ src, poster, start, stopAt, autoPlay, onTime, ref }: Pl
   }
 
   return (
-    <div className="assemblee-player">
+    <div className="parlement-player">
       <video ref={video} controls poster={poster || undefined} onTimeUpdate={(e) => time(e.currentTarget.currentTime * 1000)} />
       {error && <p className="bad">✗ {error}</p>}
     </div>

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { errorText, formatNumber, useHost } from '@marianne/sdk/view'
-import type { AssembleeMethods, DataStatus } from '../types'
+import type { ParlementMethods, DataStatus } from '../types'
 import { Loading, megabytes, shortDate } from './common'
 
 /**
@@ -22,7 +22,7 @@ export function useData(): Data {
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const host = useHost<AssembleeMethods>()
+  const host = useHost<ParlementMethods>()
   const [status, setStatus] = useState<DataStatus | null>(null)
   const [requested, setRequested] = useState(false)
 
@@ -72,7 +72,7 @@ function Progress({ status }: { status: DataStatus }) {
   const p = status.sync.running
   const share = p?.total ? Math.min(1, p.done / p.total) : 0
   return (
-    <div className="assemblee-progress">
+    <div className="parlement-progress">
       <span className="gauge">
         <i style={{ width: `${share * 100}%` }} />
       </span>
@@ -87,7 +87,7 @@ export function NeedsData({ children }: { children: ReactNode }) {
   if (!status) return <Loading />
   if (status.ready) return <>{children}</>
   return (
-    <div className="box-note assemblee-sync">
+    <div className="box-note parlement-sync">
       <p>
         Les députés, les scrutins et l’agenda viennent des données ouvertes de l’Assemblée nationale, gardées sur cet ordinateur et mises à jour chaque jour.
         Elles ne sont pas encore téléchargées (une quarantaine de Mo).
@@ -114,7 +114,7 @@ export function DataLine() {
   if (!status?.ready) return null
   const s = status.sync
   return (
-    <p className="small dim assemblee-foot">
+    <p className="small dim parlement-foot">
       données ouvertes de l’Assemblée nationale{s.syncedAt ? ` du ${shortDate(s.syncedAt)}` : ''} · {formatNumber(status.deputies)} députés,{' '}
       {formatNumber(status.ballots)} scrutins, {formatNumber(status.meetings)} réunions ·{' '}
       {s.running ? (

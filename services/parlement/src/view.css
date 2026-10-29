@@ -1,25 +1,25 @@
-/* 3615 ASSEMBLEE: its own blocks, on top of Marianne's classes (.tabs, .card, .btn, .rows, .chip…). */
+/* 3615 PARLEMENT: its own blocks, on top of Marianne's classes (.tabs, .card, .btn, .rows, .chip…). */
 
-.assemblee {
+.parlement {
   display: flex;
   flex-direction: column;
   gap: var(--s3);
   max-width: 960px;
 }
-.assemblee .tabs {
+.parlement .tabs {
   margin-bottom: 0;
 }
-.assemblee-body {
+.parlement-body {
   display: flex;
   flex-direction: column;
   gap: var(--s3);
   min-width: 0;
 }
-.assemblee .label {
+.parlement .label {
   display: block;
   margin-top: var(--s2);
 }
-.assemblee-grow {
+.parlement-grow {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -27,122 +27,122 @@
   gap: 2px;
   white-space: normal;
 }
-.assemblee-back {
+.parlement-back {
   align-self: flex-start;
 }
-.assemblee-back:hover {
+.parlement-back:hover {
   color: var(--hi);
 }
-.assemblee-title {
+.parlement-title {
   font-size: 1.15em;
   margin: 0;
 }
-.assemblee-actions {
+.parlement-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
-.assemblee-foot {
+.parlement-foot {
   margin-top: var(--s2);
 }
-.assemblee-live {
+.parlement-live {
   color: var(--rouge);
   letter-spacing: 0.06em;
 }
 
 /* filters */
 
-.assemblee-filters {
+.parlement-filters {
   display: flex;
   flex-direction: column;
   gap: var(--s2);
 }
-.assemblee-choices {
+.parlement-choices {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
-.assemblee-choices .chip.on {
+.parlement-choices .chip.on {
   color: var(--noir);
   background: var(--fg);
   border-color: var(--fg);
   border-style: solid;
 }
-.assemblee-fields {
+.parlement-fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--s3);
 }
-.assemblee-fields > input {
+.parlement-fields > input {
   grid-column: 1 / -1;
 }
-.assemblee-inline {
+.parlement-inline {
   display: flex;
   gap: 6px;
   align-items: center;
 }
-.assemblee-inline input {
+.parlement-inline input {
   width: 9ch;
 }
 
 /* the sync of the open data */
 
-.assemblee-sync {
+.parlement-sync {
   display: flex;
   flex-direction: column;
   gap: var(--s2);
 }
-.assemblee-progress {
+.parlement-progress {
   display: flex;
   flex-direction: column;
   gap: 4px;
   max-width: 420px;
 }
-.assemblee-progress .gauge > i,
-.assemblee-gauge > i {
+.parlement-progress .gauge > i,
+.parlement-gauge > i {
   transition: width 0.3s;
 }
-.assemblee-gauge {
+.parlement-gauge {
   max-width: 420px;
 }
 
 /* the agenda */
 
-.assemblee-day {
+.parlement-day {
   display: flex;
   align-items: center;
   gap: var(--s3);
   flex-wrap: wrap;
 }
-.assemblee-agenda {
+.parlement-agenda {
   border-top: 1px solid var(--rule);
 }
-.assemblee-meeting {
+.parlement-meeting {
   display: flex;
   gap: var(--s3);
   width: 100%;
   padding: 8px 2px;
   border-bottom: 1px dashed var(--rule);
 }
-.assemblee-meeting:hover {
+.parlement-meeting:hover {
   background: var(--hover);
 }
-.assemblee-meeting.off .hi {
+.parlement-meeting.off .hi {
   text-decoration: line-through;
   color: var(--dim);
 }
-.assemblee-hour {
+.parlement-hour {
   flex: none;
   width: 9ch;
   color: var(--accent);
 }
-.assemblee-states {
+.parlement-states {
   display: flex;
   flex-wrap: wrap;
   gap: 0 10px;
 }
-.assemblee-items {
+.parlement-items {
   margin: 0;
   padding-left: 1.4em;
   display: flex;
@@ -152,10 +152,10 @@
 
 /* live streams */
 
-.assemblee-streams .card {
+.parlement-streams .card {
   min-height: 0;
 }
-.assemblee-streams img {
+.parlement-streams img {
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
@@ -165,19 +165,19 @@
 
 /* deputies and groups */
 
-.assemblee-deputies {
+.parlement-deputies {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 8px;
 }
-.assemblee-open {
+.parlement-open {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.assemblee-deputy {
+.parlement-deputy {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -185,57 +185,57 @@
   background: var(--bg-raised);
   padding: 6px 8px;
 }
-.assemblee-deputy:hover {
+.parlement-deputy:hover {
   border-color: var(--bleu);
 }
-.assemblee-deputy img {
+.parlement-deputy img {
   flex: none;
   width: 44px;
   height: 44px;
   object-fit: cover;
   background: var(--bg-sunken);
 }
-.assemblee-mark {
+.parlement-mark {
   display: inline-block;
   width: 0.7em;
   height: 0.7em;
   background: var(--muted);
   vertical-align: baseline;
 }
-.assemblee-groups {
+.parlement-groups {
   display: flex;
   flex-direction: column;
   border-top: 1px solid var(--rule);
 }
-.assemblee-group {
+.parlement-group {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 6px 2px;
   border-bottom: 1px dashed var(--rule);
 }
-.assemblee-group:hover {
+.parlement-group:hover {
   background: var(--hover);
 }
-.assemblee-profile {
+.parlement-profile {
   display: flex;
   gap: var(--s4);
   align-items: flex-start;
 }
-.assemblee-profile img {
+.parlement-profile img {
   flex: none;
   width: 96px;
   height: 96px;
   object-fit: cover;
   background: var(--bg-sunken);
 }
-.assemblee-profile .assemblee-grow {
+.parlement-profile .parlement-grow {
   gap: 4px;
 }
-.assemblee-facts {
+.parlement-facts {
   margin-bottom: 0;
 }
-.assemblee-roles {
+.parlement-roles {
   margin: 0;
   padding-left: 1.2em;
   display: flex;
@@ -245,10 +245,10 @@
 
 /* ballots */
 
-.assemblee-ballots {
+.parlement-ballots {
   border-top: 1px solid var(--rule);
 }
-.assemblee-ballot {
+.parlement-ballot {
   display: grid;
   grid-template-columns: 16ch minmax(0, 1fr) 9ch auto;
   gap: var(--s3);
@@ -258,36 +258,36 @@
   border-bottom: 1px dashed var(--rule);
   white-space: normal;
 }
-.assemblee-ballot:hover {
+.parlement-ballot:hover {
   background: var(--hover);
 }
-.assemblee-count {
+.parlement-count {
   display: flex;
   height: 8px;
   max-width: 420px;
   border: 1px solid var(--rule);
   background: var(--bg-sunken);
 }
-.assemblee-count .for {
+.parlement-count .for {
   background: var(--vert);
 }
-.assemblee-count .against {
+.parlement-count .against {
   background: var(--rouge);
 }
-.assemblee-count .abstention {
+.parlement-count .abstention {
   background: var(--jaune);
 }
-.assemblee-table {
+.parlement-table {
   border-collapse: collapse;
   max-width: 800px;
 }
-.assemblee-table th,
-.assemblee-table td {
+.parlement-table th,
+.parlement-table td {
   padding: 4px 10px 4px 2px;
   text-align: left;
   border-bottom: 1px dashed var(--rule);
 }
-.assemblee-table th {
+.parlement-table th {
   color: var(--dim);
   font-weight: 400;
   font-size: 0.86em;
@@ -295,12 +295,12 @@
 
 /* videos */
 
-.assemblee-videos {
+.parlement-videos {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-.assemblee-video {
+.parlement-video {
   display: flex;
   gap: 12px;
   align-items: center;
@@ -308,49 +308,49 @@
   background: var(--bg-raised);
   padding: 6px;
 }
-.assemblee-video:hover {
+.parlement-video:hover {
   border-color: var(--bleu);
 }
-.assemblee-video img,
-.assemblee-noimg {
+.parlement-video img,
+.parlement-noimg {
   flex: none;
   width: 128px;
   height: 72px;
   object-fit: cover;
   background: var(--bg-sunken);
 }
-.assemblee-player video {
+.parlement-player video {
   display: block;
   width: 100%;
   max-width: 900px;
   aspect-ratio: 16 / 9;
   background: #000;
 }
-.assemblee-chapters {
+.parlement-chapters {
   display: flex;
   flex-direction: column;
   max-height: 420px;
   overflow: auto;
   border-top: 1px solid var(--rule);
 }
-.assemblee-chapters button {
+.parlement-chapters button {
   display: flex;
   gap: 10px;
   padding: 4px 8px;
   white-space: normal;
 }
-.assemblee-chapters button:hover:not(:disabled) {
+.parlement-chapters button:hover:not(:disabled) {
   background: var(--hover);
 }
-.assemblee-chapters button.on {
+.parlement-chapters button.on {
   background: var(--sel);
 }
-.assemblee-tc {
+.parlement-tc {
   flex: none;
   width: 8ch;
   color: var(--accent);
 }
-.assemblee-editor {
+.parlement-editor {
   display: flex;
   flex-direction: column;
   gap: var(--s3);
@@ -358,12 +358,12 @@
 
 /* clips */
 
-.assemblee-clips {
+.parlement-clips {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.assemblee-clip {
+.parlement-clip {
   display: grid;
   grid-template-columns: 160px minmax(0, 1fr) auto;
   gap: 12px;
@@ -372,15 +372,15 @@
   background: var(--bg-raised);
   padding: 8px;
 }
-.assemblee-thumb img,
-.assemblee-thumb .assemblee-noimg {
+.parlement-thumb img,
+.parlement-thumb .parlement-noimg {
   display: block;
   width: 160px;
   height: 90px;
   object-fit: cover;
   background: var(--bg-sunken);
 }
-.assemblee-acts {
+.parlement-acts {
   display: flex;
   flex-direction: column;
   gap: 5px;

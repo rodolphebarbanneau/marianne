@@ -11,7 +11,7 @@ The app itself is in French: this guide quotes its labels as they appear on scre
 - **Folders (dossiers).** Each subject has its folder: a conversation with Marianne that keeps the question, the documents and the steps.
 - **Guided formalities (démarches guidées).** Declaring your income, renewing your ID card, appealing a decision… Marianne walks you through them step by step.
 - **News (Actualités).** The news from several newspapers, the day's events and a few figures about France.
-- **Services.** Small public-information tools, with their 3615 codes: the weather, free-flow motorway tolls, the map of France, the National Assembly, the directory of public services.
+- **Services.** Small public-information tools, with their 3615 codes: the weather, free-flow motorway tolls, the map of France, Parliament (the National Assembly and the Senate), the directory of public services.
 - **Your papers.** Your documents and your profile stay in the archive, and help prepare your formalities.
 
 ## The guide

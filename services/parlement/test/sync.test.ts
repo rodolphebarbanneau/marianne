@@ -20,7 +20,7 @@ let served: Record<Dump, { body: Uint8Array; etag: string }>
 const URLS = Object.entries(DUMPS) as Array<[Dump, string]>
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'marianne-assemblee-sync-'))
+  dir = mkdtempSync(join(tmpdir(), 'marianne-parlement-sync-'))
   job = { dataDir: join(dir, 'data'), tmpDir: join(dir, 'tmp'), hosts: readManifest(pkg).hosts, userAgent: 'Marianne/test', etags: {} }
   const zips = dumps()
   served = { deputies: { body: zips.deputies, etag: '"d1"' }, ballots: { body: zips.ballots, etag: '"b1"' }, meetings: { body: zips.meetings, etag: '"m1"' } }

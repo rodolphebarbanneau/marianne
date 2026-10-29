@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { formatNumber, useHost } from '@marianne/sdk/view'
-import type { AssembleeMethods } from '../types'
+import type { ParlementMethods } from '../types'
 import { BallotLines } from './ballots'
 import { DeputyList, Failure, GroupMark, Loading, shortDate, Star, constituency, useDebounced, useMethod, useNav, useStore } from './common'
 import { NeedsData } from './data'
@@ -10,7 +10,7 @@ import { NeedsData } from './data'
 const VOS_DEPUTES = 'https://www.assemblee-nationale.fr/dyn/vos-deputes'
 
 export function MineTab() {
-  const host = useHost<AssembleeMethods>()
+  const host = useHost<ParlementMethods>()
   if (!host.home)
     return (
       <div className="box-note">
@@ -79,7 +79,7 @@ function Favorites() {
       ) : (
         <Loading />
       )}
-      <div className="assemblee-fields">
+      <div className="parlement-fields">
         <input value={text} onChange={(e) => setText(e.target.value)} placeholder="chercher un député : nom ou numéro de département" />
       </div>
       {search.length > 1 &&
@@ -98,12 +98,12 @@ function Favorites() {
       {groups.error ? (
         <Failure error={groups.error} retry={groups.reload} />
       ) : (
-        <div className="assemblee-groups">
+        <div className="parlement-groups">
           {(groups.data ?? []).map((g) => (
-            <div key={g.id} className="assemblee-group">
-              <button className="assemblee-open" onClick={() => nav.open({ kind: 'group', id: g.id })}>
+            <div key={g.id} className="parlement-group">
+              <button className="parlement-open" onClick={() => nav.open({ kind: 'group', id: g.id })}>
                 <GroupMark color={g.color} />
-                <span className="assemblee-grow">
+                <span className="parlement-grow">
                   <span className="hi">{g.shortName}</span> <span className="small dim">{g.name}</span>
                 </span>
                 <span className="small dim">{g.members}</span>
@@ -128,10 +128,10 @@ export function DeputyPane({ id }: { id: string }) {
   const { voted, total } = d.participation
   return (
     <>
-      <div className="assemblee-profile">
+      <div className="parlement-profile">
         <img src={d.photo} alt="" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
-        <div className="assemblee-grow">
-          <h3 className="hi assemblee-title">
+        <div className="parlement-grow">
+          <h3 className="hi parlement-title">
             {d.name} <Star kind="deputies" id={d.id} />
           </h3>
           <p>
@@ -145,7 +145,7 @@ export function DeputyPane({ id }: { id: string }) {
           {d.profession && <p className="small dim">{d.profession}</p>}
         </div>
       </div>
-      <div className="rows assemblee-facts">
+      <div className="rows parlement-facts">
         {d.emails.length > 0 && (
           <div className="row">
             <span className="dim">courriel</span>
@@ -184,7 +184,7 @@ export function DeputyPane({ id }: { id: string }) {
       {d.roles.length > 0 && (
         <>
           <span className="label">fonctions</span>
-          <ul className="assemblee-roles">
+          <ul className="parlement-roles">
             {d.roles.map((r) => (
               <li key={r.organId}>
                 <span className="accent">{r.role}</span> · {r.organ}
@@ -201,12 +201,12 @@ export function DeputyPane({ id }: { id: string }) {
         </span>
       </p>
       {total > 0 && (
-        <span className="gauge assemblee-gauge">
+        <span className="gauge parlement-gauge">
           <i style={{ width: `${Math.min(100, (voted / total) * 100)}%` }} />
         </span>
       )}
       <BallotLines ballots={d.votes} showPosition />
-      <p className="assemblee-actions">
+      <p className="parlement-actions">
         <button className="btn small" onClick={() => nav.searchVideos({ speaker: `${d.lastName} ${d.firstName}` })}>
           ses interventions en vidéo
         </button>
@@ -236,7 +236,7 @@ export function GroupPane({ id }: { id: string }) {
   const { group: g, members } = group.data
   return (
     <>
-      <h3 className="hi assemblee-title">
+      <h3 className="hi parlement-title">
         <GroupMark color={g.color} /> {g.name} <span className="dim">({g.shortName})</span> <Star kind="groups" id={g.id} />
       </h3>
       <p className="dim">{members.length} députés</p>

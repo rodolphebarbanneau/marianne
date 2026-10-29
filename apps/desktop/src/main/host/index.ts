@@ -220,7 +220,7 @@ class ServiceHost extends EventEmitter {
   }
 }
 
-/** Engines see a service's tool as "<code>_<name>": assemblee_ballots. */
+/** Engines see a service's tool as "<code>_<name>": parlement_ballots. */
 const toolName = (m: ServiceManifest, name: string) => `${m.id}_${name}`
 
 export const services = new ServiceHost()

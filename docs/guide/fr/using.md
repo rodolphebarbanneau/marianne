@@ -18,7 +18,7 @@ Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à dr
 
 - **Actualités** : les nouvelles de plusieurs journaux, les rendez-vous du jour, quelques chiffres de la France.
 - **Démarches** : les domaines de votre vie administrative (impôts, santé, logement, famille…), chacun avec son tableau de bord et ses démarches guidées, étape par étape.
-- **Services** : les codes 3615, METEO, PEAGE, CARTE, ASSEMBLEE, ANNUAIRE. L’étoile met un service en favori. Un service qui a besoin d’une partie de votre profil, comme votre plaque d’immatriculation pour le péage, vous le demande d’abord.
+- **Services** : les codes 3615, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. L’étoile met un service en favori. Un service qui a besoin d’une partie de votre profil, comme votre plaque d’immatriculation pour le péage, vous le demande d’abord.
 
 ## Votre profil
 

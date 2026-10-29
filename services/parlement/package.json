@@ -1,7 +1,7 @@
 {
-  "name": "@marianne/service-assemblee",
+  "name": "@marianne/service-parlement",
   "version": "1.0.0",
-  "description": "3615 ASSEMBLEE · Assemblée nationale : vos députés, les scrutins, l’agenda, les séances en vidéo et en direct",
+  "description": "3615 PARLEMENT · Assemblée nationale et Sénat : vos élus, les scrutins, l’agenda, les séances en vidéo et en direct",
   "license": "MIT",
   "author": "Rodolphe Barbanneau",
   "private": true,
@@ -13,20 +13,24 @@
     "./sync": "./src/sync.ts"
   },
   "marianne": {
-    "code": "assemblee",
-    "name": "Assemblée nationale",
-    "description": "vos députés, les scrutins, l’agenda, les séances en vidéo et en direct",
+    "code": "parlement",
+    "name": "Parlement",
+    "description": "Assemblée nationale et Sénat : vos élus, les scrutins, l’agenda, les séances en vidéo et en direct",
     "category": "democracy",
     "keywords": [
+      "assemblée",
+      "sénat",
       "député",
+      "sénateur",
+      "élu",
       "scrutin",
       "vote",
+      "hémicycle",
       "séance",
       "vidéo",
       "direct",
-      "parlement",
       "loi",
-      "assembly"
+      "parliament"
     ],
     "hosts": [
       "data.assemblee-nationale.fr",

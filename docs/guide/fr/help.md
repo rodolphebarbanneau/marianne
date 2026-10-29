@@ -30,4 +30,4 @@ Ce qu’on aimerait que vous essayiez :
 3. Renseigner un peu de votre profil (Réglages › Moi), si vous le souhaitez : rien ne quitte votre ordinateur, et le moteur ne voit jamais vos numéros, seulement des jetons.
 4. Poser une vraie question à Marianne, sur une démarche que vous avez en cours.
 5. Suivre une démarche guidée (Démarches › un domaine).
-6. Parcourir les Actualités et les Services : 3615 METEO, CARTE, ASSEMBLEE, ANNUAIRE, PEAGE.
+6. Parcourir les Actualités et les Services : 3615 METEO, CARTE, PARLEMENT, ANNUAIRE, PEAGE.

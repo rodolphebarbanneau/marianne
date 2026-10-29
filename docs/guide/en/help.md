@@ -30,4 +30,4 @@ What we'd like you to try:
 3. Fill in a bit of your profile (Réglages › Moi), if you like: nothing leaves your computer, and the engine never sees your numbers, only tokens.
 4. Ask Marianne a real question, about a formality you have in progress.
 5. Follow a guided formality (Démarches › an area).
-6. Browse the news (Actualités) and the Services: 3615 METEO, CARTE, ASSEMBLEE, ANNUAIRE, PEAGE.
+6. Browse the news (Actualités) and the Services: 3615 METEO, CARTE, PARLEMENT, ANNUAIRE, PEAGE.

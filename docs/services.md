@@ -1,6 +1,6 @@
 # Services
 
-Services are the apps of the Services page, the 3615 codes: 3615 METEO, 3615 ASSEMBLEE… Each one is an add-on: a package of its own that depends on `@marianne/sdk` and on nothing of the app. Marianne hosts them; they never reach into it.
+Services are the apps of the Services page, the 3615 codes: 3615 METEO, 3615 PARLEMENT… Each one is an add-on: a package of its own that depends on `@marianne/sdk` and on nothing of the app. Marianne hosts them; they never reach into it.
 
 ## The repository
 
@@ -21,7 +21,7 @@ The repository is an npm workspace: `apps/*`, `packages/*` and `services/*`. A s
 
 ## Naming
 
-A service's code is lowercase letters and digits, without accents: `meteo`, `assemblee`. It is the folder's name, the package's name (`@marianne/service-meteo`), the service's id, and in capitals what follows 3615 (3615 METEO). The host refuses a package whose name and code disagree.
+A service's code is lowercase letters and digits, without accents: `meteo`, `parlement`. It is the folder's name, the package's name (`@marianne/service-meteo`), the service's id, and in capitals what follows 3615 (3615 METEO). The host refuses a package whose name and code disagree.
 
 ## The manifest
 
@@ -95,7 +95,7 @@ The context is all a service gets of Marianne:
 `activate` returns the runtime:
 
 - `methods`: what its view calls. Declare them as a `type` (an `interface` lacks the index signature `ServiceMethods` needs) in the package (`{ forecast(code: string): Forecast }`) and pass it to `defineService`: the view's calls are checked against it. Arguments and results cross processes: plain data only.
-- `tools`: tools the engines may call while the service is on. Engines see them as `<code>_<name>` (`assemblee_ballots`). `label` is French, as the conversation shows the call; `description` and results are English, for the model. Arguments never carry the user's identifiers: the host refuses `[[tokens]]` in them. Throw `ToolError` for a failure the model should read (nothing found, a missing argument).
+- `tools`: tools the engines may call while the service is on. Engines see them as `<code>_<name>` (`parlement_ballots`). `label` is French, as the conversation shows the call; `description` and results are English, for the model. Arguments never carry the user's identifiers: the host refuses `[[tokens]]` in them. Throw `ToolError` for a failure the model should read (nothing found, a missing argument).
 - `skills`: guides the engines read when a request calls for them, Markdown with a front matter (`name`, `title`, `description`); import them as text (`import guide from './skills/x.md?raw'`).
 - `instructions`: a few lines (English) added to the engines' instructions while the service is on.
 - `today(day)`: its lines of "Aujourd'hui" on the Actualités page (`TodayItem`); opening one opens the service with its `params`.

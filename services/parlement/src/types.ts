@@ -321,7 +321,7 @@ export interface DataStatus {
 }
 
 /** What the view may call (methods.ts implements it); a type, not an interface: ServiceMethods needs its index signature. */
-export type AssembleeMethods = {
+export type ParlementMethods = {
   status(): DataStatus
   /** Start a sync of the open data now; poll `status` for its progress. */
   sync(): DataStatus

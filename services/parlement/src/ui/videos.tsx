@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type RefObject } from 'react'
 import { Field, useHost } from '@marianne/sdk/view'
 import { videoPage } from '../links'
 import { addDays, clock, parisDay, parseClock } from '../time'
-import type { AssembleeMethods, Clip, LiveStream, VideoOpen, VideoQuery, VideoType } from '../types'
+import type { ParlementMethods, Clip, LiveStream, VideoOpen, VideoQuery, VideoType } from '../types'
 import { dateTime, Failure, Loading, useDebounced, useMethod, useNav, useStore } from './common'
 import { Player, type PlayerHandle } from './player'
 
@@ -32,7 +32,7 @@ export const DEFAULT_SEARCH: VideoSearch = { days: 7, text: '', speaker: '' }
 
 export function VideosTab({ search, setSearch }: { search: VideoSearch; setSearch: (s: VideoSearch) => void }) {
   const nav = useNav()
-  const host = useHost<AssembleeMethods>()
+  const host = useHost<ParlementMethods>()
   const text = useDebounced(search.text)
   const speaker = useDebounced(search.speaker)
   const query = useMemo((): VideoQuery => {
@@ -46,8 +46,8 @@ export function VideosTab({ search, setSearch }: { search: VideoSearch; setSearc
   return (
     <>
       {streams.length > 0 && <Streams streams={streams} />}
-      <div className="assemblee-filters">
-        <div className="assemblee-choices">
+      <div className="parlement-filters">
+        <div className="parlement-choices">
           {PERIODS.map((p) => (
             <button key={p.days} className={`chip${search.days === p.days ? ' on' : ''}`} onClick={() => setSearch({ ...search, days: p.days })}>
               {p.label}
@@ -60,7 +60,7 @@ export function VideosTab({ search, setSearch }: { search: VideoSearch; setSearc
             </button>
           ))}
         </div>
-        <div className="assemblee-fields">
+        <div className="parlement-fields">
           <Field label="mots du titre">
             <input value={search.text} onChange={(e) => setSearch({ ...search, text: e.target.value })} placeholder="budget, santé, logement…" />
           </Field>
@@ -76,15 +76,15 @@ export function VideosTab({ search, setSearch }: { search: VideoSearch; setSearc
       ) : !videos.data?.length ? (
         <p className="dim">Aucune vidéo publiée sur cette période avec ces critères.</p>
       ) : (
-        <div className="assemblee-videos">
+        <div className="parlement-videos">
           {videos.data.map((v) => (
-            <button key={v.id} className="assemblee-video" onClick={() => nav.open({ kind: 'video', id: v.id, ...(v.timecode ? { start: v.timecode } : {}) })}>
+            <button key={v.id} className="parlement-video" onClick={() => nav.open({ kind: 'video', id: v.id, ...(v.timecode ? { start: v.timecode } : {}) })}>
               {v.thumbnail ? (
                 <img src={v.thumbnail} alt="" loading="lazy" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
               ) : (
-                <span className="assemblee-noimg" />
+                <span className="parlement-noimg" />
               )}
-              <span className="assemblee-grow">
+              <span className="parlement-grow">
                 <span className="small dim">
                   {dateTime(v.date)} · {v.type}
                   {v.commission ? ` · ${v.commission}` : ''}
@@ -96,7 +96,7 @@ export function VideosTab({ search, setSearch }: { search: VideoSearch; setSearc
           ))}
         </div>
       )}
-      <p className="small dim assemblee-foot">
+      <p className="small dim parlement-foot">
         {videos.data ? `${videos.data.length} vidéos · ` : ''}elles restent en ligne environ un an ·{' '}
         <button className="link" onClick={() => host.openUrl('https://videos.assemblee-nationale.fr/')}>
           portail vidéo de l’Assemblée
@@ -110,11 +110,11 @@ export function VideosTab({ search, setSearch }: { search: VideoSearch; setSearc
 export function Streams({ streams }: { streams: LiveStream[] }) {
   const nav = useNav()
   return (
-    <div className="grid assemblee-streams">
+    <div className="grid parlement-streams">
       {streams.map((s) => (
         <button key={s.meetingId} className="card" onClick={() => nav.open({ kind: 'live', meetingId: s.meetingId })}>
           {s.poster && <img src={s.poster} alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />}
-          <span className="assemblee-live">● en direct</span>
+          <span className="parlement-live">● en direct</span>
           <span className="t">{s.organ}</span>
           <span className="l dim">{s.title || s.subject}</span>
         </button>
@@ -143,11 +143,11 @@ export function LivePane({ meetingId }: { meetingId: string }) {
   return (
     <>
       <p className="small">
-        <span className="assemblee-live">● en direct</span> · {stream.organ} · depuis {stream.start}
+        <span className="parlement-live">● en direct</span> · {stream.organ} · depuis {stream.start}
       </p>
-      <h3 className="hi assemblee-title">{stream.title || stream.subject}</h3>
+      <h3 className="hi parlement-title">{stream.title || stream.subject}</h3>
       <Player src={stream.hls} poster={stream.poster} autoPlay />
-      <p className="assemblee-actions">
+      <p className="parlement-actions">
         <button
           className="btn small"
           onClick={() => host.ask(`Que se passe-t-il en ce moment à l’Assemblée nationale (${stream.organ}) ? ${stream.title || stream.subject}`)}
@@ -197,13 +197,13 @@ export function VideoPane({ id, start, stopAt, clip }: { id: string; start?: num
   return (
     <>
       <p className="small dim">{[v.type, v.organ, dateTime(v.date), v.durationMs ? `durée ${clock(v.durationMs)}` : ''].filter(Boolean).join(' · ')}</p>
-      <h3 className="hi assemblee-title">{v.title}</h3>
+      <h3 className="hi parlement-title">{v.title}</h3>
       {v.hls ? (
         <Player ref={player} src={v.hls} poster={v.thumbnail} start={at} stopAt={stopAt} autoPlay={!!at} onTime={setTime} />
       ) : (
         <div className="box-note">La vidéo est en cours de traitement par l’Assemblée : elle sera visible un peu plus tard.</div>
       )}
-      <p className="assemblee-actions">
+      <p className="parlement-actions">
         {v.hls && !editing && (
           <button className="btn small" onClick={cut}>
             découper un extrait
@@ -228,7 +228,7 @@ export function VideoPane({ id, start, stopAt, clip }: { id: string; start?: num
       </p>
       {editing && <ClipEditor clip={editing} video={v} player={player} onDone={() => setEditing(null)} />}
       {v.chapters.length > 0 && (
-        <div className="assemblee-chapters">
+        <div className="parlement-chapters">
           <span className="label">ordre du jour et interventions</span>
           {v.chapters.map((c) => (
             <button
@@ -238,7 +238,7 @@ export function VideoPane({ id, start, stopAt, clip }: { id: string; start?: num
               onClick={() => c.timecode !== null && player.current?.seek(c.timecode)}
               style={{ paddingLeft: 8 + c.depth * 16 }}
             >
-              <span className="assemblee-tc">{c.timecode !== null ? clock(c.timecode) : ''}</span>
+              <span className="parlement-tc">{c.timecode !== null ? clock(c.timecode) : ''}</span>
               <span className={c.depth === 0 ? 'hi' : ''}>{c.title}</span>
             </button>
           ))}
@@ -274,13 +274,13 @@ function ClipEditor({ clip, video, player, onDone }: { clip: Clip; video: VideoO
   }
 
   return (
-    <div className="box-note assemblee-editor">
+    <div className="box-note parlement-editor">
       <Field label="titre de l’extrait" wide>
         <input value={title} onChange={(e) => setTitle(e.target.value)} />
       </Field>
-      <div className="assemblee-fields">
+      <div className="parlement-fields">
         <Field label="début">
-          <span className="assemblee-inline">
+          <span className="parlement-inline">
             <input value={start} onChange={(e) => setStart(e.target.value)} />
             <button className="btn small" onClick={() => here(setStart)}>
               position actuelle
@@ -288,7 +288,7 @@ function ClipEditor({ clip, video, player, onDone }: { clip: Clip; video: VideoO
           </span>
         </Field>
         <Field label="fin" error={error}>
-          <span className="assemblee-inline">
+          <span className="parlement-inline">
             <input value={end} onChange={(e) => setEnd(e.target.value)} />
             <button className="btn small" onClick={() => here(setEnd)}>
               position actuelle
@@ -296,7 +296,7 @@ function ClipEditor({ clip, video, player, onDone }: { clip: Clip; video: VideoO
           </span>
         </Field>
       </div>
-      <p className="assemblee-actions">
+      <p className="parlement-actions">
         <button className="btn small" disabled={!!error} onClick={() => player.current?.seek(from)}>
           revoir depuis le début
         </button>
