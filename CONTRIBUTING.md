@@ -46,7 +46,7 @@ Content changes are reviewed with extra care: skills go into the engines' instru
 
 ## Releases
 
-Releases are tagged `v*` from `main` by the maintainer. Their notes are written in English, with a link to the [user guide](docs/guide/README.md), in English and in French. GitHub groups the generated notes by label (`.github/release.yml`).
+Releases are tagged `v*` from `main` by the maintainer. Their notes are written in English, with a link to the [user guide](docs/guide/README.md), in English and in French. GitHub groups the generated notes by label (`.github/release.yml`). Publishing a release rebuilds the website ([`site/`](site/README.md#publishing)).
 
 ## License
 

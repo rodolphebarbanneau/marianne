@@ -29,3 +29,9 @@ The page guesses the visitor's system: Windows, Mac (Apple silicon, or Intel whe
 ## Publishing
 
 `SITE_URL` and `BASE_PATH` say where the site lives; by default, GitHub Pages: `https://rodolphebarbanneau.github.io/marianne/`. On a domain of its own: `SITE_URL=https://marianne.example BASE_PATH=/ npm run build`. The build is a folder of static files (`dist/`), for any host.
+
+The `Site` workflow (`.github/workflows/site.yml`) builds it into the `site` branch, which GitHub Pages serves: when a release is published, so the download buttons and the guide are the release's, or by hand (Actions → Site → Run workflow), from any branch or tag. The branch holds the build alone, in one commit replaced each time. The workflow asks Pages where the site lives, a domain of its own included, and builds for that address, with the `CNAME` file that keeps the domain: Pages reads it from the branch.
+
+To set it up, once: run the workflow, then in Settings → Pages, deploy from the `site` branch, at its root. For a domain of its own, enter it there, then run the workflow again so the site is built for it.
+
+The branch and the folder share a name: where git can't tell them apart, `git log site --` is the branch, `git log -- site` the folder.
