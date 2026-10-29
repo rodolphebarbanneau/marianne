@@ -24,6 +24,8 @@ Marianne opens the sites it needs in the folder's browser, on the right (the « 
 
 In Réglages › Moi (Settings › Me), you can fill in your identity, your household and your documents. It's optional: it helps Marianne prepare your formalities. See [Your data](privacy.md) for what the engine sees of it.
 
+In Réglages › Identité, you may also say which political groups you feel close to, and which themes matter to you, if you wish. Your leaning only serves to compare: 3615 PARLEMENT tells you whether your representatives vote as your ideas, without sorting or hiding anything. Your themes bring forward the news and the ballots about them. You choose which services may read them, and see when they did.
+
 ## The keys
 
 Like on a Minitel, the bottom bar shows the screen's keys:

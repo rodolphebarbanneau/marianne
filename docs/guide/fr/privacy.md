@@ -6,7 +6,7 @@ Tout ce que vous confiez à Marianne, vos dossiers, vos pièces et votre profil,
 
 ## Ce que voit le moteur
 
-Le moteur, Claude Code, Codex ou Mistral Vibe, travaille avec votre compte chez son éditeur. Il reçoit le texte de vos conversations et ce dont il a besoin pour vous aider, mais jamais vos identifiants en clair : numéro de sécurité sociale, numéro fiscal, nom, adresse, IBAN… sont remplacés par des jetons, et remis à leur place seulement sur votre écran. Les conditions de l’éditeur s’appliquent à ce qu’il reçoit.
+Le moteur, Claude Code, Codex ou Mistral Vibe, travaille avec votre compte chez son éditeur. Il reçoit le texte de vos conversations et ce dont il a besoin pour vous aider, mais jamais vos identifiants en clair : numéro de sécurité sociale, numéro fiscal, nom, adresse, IBAN… sont remplacés par des jetons, et remis à leur place seulement sur votre écran. Les conditions de l’éditeur s’appliquent à ce qu’il reçoit. Il ne reçoit jamais votre sensibilité politique ni vos thèmes.
 
 ## Ce qui va en ligne
 

@@ -19,6 +19,7 @@ packages/content/
   calendar.json                      dates that come back every year
   sites.json                         the public-service websites
   news-sources.json                  the news feeds of Actualités
+  parliament.json                    the political groups of both chambers, for the leaning
   signing-key.pem                    the project's public key, once it has one
   src/index.ts                       the formats, readContent and the bundle's text (pure)
   src/files.ts                       the files, as the app's build bundles them
@@ -149,6 +150,14 @@ The folder that follows a démarche shows its steps and the actions of the step 
 ## News sources
 
 `news-sources.json`: the feeds Actualités offers, RSS 2.0 or Atom; Marianne shows what a feed shows (title, time, link), never the article. `group`: `national`, `regional`, `broadcast` or `factcheck`. Check that the feed answers and carries articles before proposing one.
+
+## Parliamentary groups
+
+`parliament.json`: the groups of the Assemblée nationale and of the Sénat, from left to right in each hemicycle, that a user may say they lean to in Réglages › Identité. `chamber`: `an` or `se`. `acronym`: the chamber's own, as its open data writes it (3615 PARLEMENT compares votes by it). `color`: the chamber's, `#rrggbb` lowercase. An Assemblée group's `senate` names the Sénat group of its political family, proposed to the user when they pick it (theirs to change); leave it out when there is none. Non-attached members are not a leaning: they are not listed. Update the file when a group is formed, renamed or dissolved.
+
+```json
+{ "chamber": "an", "acronym": "EcoS", "name": "Écologiste et Social", "color": "#77aa79", "senate": "GEST" }
+```
 
 ## Checking a change
 

@@ -49,7 +49,14 @@ A service's code is lowercase letters and digits, without accents: `meteo`, `par
 - `hosts`: every host the service reaches, from any side. The main side's network, the sync job's downloads and the window's content policy only allow these.
 - `links`: URL prefixes the service opens itself; a link in an answer that starts with one opens the service with `params.url`.
 - `domains`: the domains it is useful for (`DOMAIN_IDS`: identity, family, health, taxes, work, retirement, housing, mobility, justice, business). Their dashboards show its line, and its deadlines must belong to one of them.
-- `permissions`: what of the user's profile it asks to read, among `PROFILE_FIELDS` (`vehicles.plate`, `vehicles.model`…), and what for, in one French line: `{ "profile": ["vehicles.plate"], "purpose": "retrouver vos passages en flux libre" }`. The first time the user opens the service, Marianne asks them, field by field; they can take it back in the settings. Nothing else of the profile is ever available to a service.
+- `permissions`: what of the user's profile it asks to read, among `PROFILE_FIELDS` (`vehicles.plate`, `vehicles.model`…, `opinions.leaning`, `opinions.themes`), and what for, in one French line: `{ "profile": ["vehicles.plate"], "purpose": "retrouver vos passages en flux libre" }`. The first time the user opens the service, Marianne asks them, field by field; they can take it back in the settings. Nothing else of the profile is ever available to a service.
+
+### Opinions
+
+The user may say, in Réglages › Identité, which political groups they feel close to (`opinions.leaning`: acronyms of each chamber's groups, from the content's `parliament.json`) and which themes matter to them (`opinions.themes`: ids of `THEMES`, `ecology`, `housing`…). Both are optional, never inferred, and the leaning is sensitive data (RGPD, article 9): a service reads them only when it asked and the user accepted, and Réglages › Identité lists those services with the day each last read them. Engines never receive them.
+
+- Use a leaning to compare, never to sort, hide or recommend: "votre députée a voté comme vos idées dans 82 % des cas", and offer the other side as well.
+- Themes say nothing of an opinion: they bring matching content forward. `themesOf(text, themes)` (`@marianne/sdk`) tells which themes a text is about, by their words.
 
 ## Domains, guided démarches and services
 
@@ -80,17 +87,17 @@ export const service = defineService<MeteoMethods>({
 
 The context is all a service gets of Marianne:
 
-| `ctx.`     | what                                                                                           |
-| ---------- | ---------------------------------------------------------------------------------------------- |
-| `manifest` | its manifest                                                                                   |
-| `http`     | `json`, `text`, `page` (as a browser): HTTPS to its declared hosts only, Marianne's user agent |
-| `log`      | Marianne's log, prefixed with the service                                                      |
-| `storage`  | the user's data for it (favorites…), in the encrypted archive; throws while locked             |
-| `dataDir`  | a folder of this computer for its public data (its sync job fills it); never personal data     |
-| `geo`      | `findCommunes`, `getCommune`: the communes of France                                           |
-| `home()`   | the commune of the user's address, or null                                                     |
-| `profile`  | `granted()`, `vehicles()`: the profile fields the user granted it, nothing else                |
-| `sync`     | `status()` and `run()` of its sync job                                                         |
+| `ctx.`     | what                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------ |
+| `manifest` | its manifest                                                                                     |
+| `http`     | `json`, `text`, `page` (as a browser): HTTPS to its declared hosts only, Marianne's user agent   |
+| `log`      | Marianne's log, prefixed with the service                                                        |
+| `storage`  | the user's data for it (favorites…), in the encrypted archive; throws while locked               |
+| `dataDir`  | a folder of this computer for its public data (its sync job fills it); never personal data       |
+| `geo`      | `findCommunes`, `getCommune`: the communes of France                                             |
+| `home()`   | the commune of the user's address, or null                                                       |
+| `profile`  | `granted()`, `vehicles()`, `leaning()`, `themes()`: the fields the user granted it, nothing else |
+| `sync`     | `status()` and `run()` of its sync job                                                           |
 
 `activate` returns the runtime:
 
@@ -118,7 +125,7 @@ runSync(async (ctx) => {
 })
 ```
 
-Marianne builds it as its own entry (`out/main/sync-<code>.js`) and runs it in an Electron utility process, away from the app: when the service is on and its data is older than `everyHours`, and when the user asks. Downloads are conditional (ETag) and limited to the declared hosts; temporary files are removed after the run. The last run is kept in `<dataDir>/sync.json`. Write the data atomically (a transaction, or a new file renamed over the old one): the main side may read while the job runs.
+Marianne builds it as its own entry (`out/main/sync-<code>.js`) and runs it in an Electron utility process, away from the app: when the service is on and its data is older than `everyHours`, and when the user asks. Downloads are conditional (ETag) and limited to the declared hosts; temporary files are removed after the run. `download(url, { force, label, optional })`: `force` downloads even when unchanged, `label` names it in the progress, `optional` returns null for a file the site doesn't have (404) instead of failing the run. The last run is kept in `<dataDir>/sync.json`. Write the data atomically (a transaction, or a new file renamed over the old one): the main side may read while the job runs.
 
 ## View
 

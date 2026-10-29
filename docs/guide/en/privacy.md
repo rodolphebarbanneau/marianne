@@ -6,7 +6,7 @@ Everything you give Marianne, your folders, your documents and your profile, is 
 
 ## What the engine sees
 
-The engine, Claude Code, Codex or Mistral Vibe, works with your account at its maker. It receives the text of your conversations and what it needs to help you, but never your identifiers in clear: social security number, tax number, name, address, IBAN… are replaced by tokens, and put back in place only on your screen. The maker's terms apply to what it receives.
+The engine, Claude Code, Codex or Mistral Vibe, works with your account at its maker. It receives the text of your conversations and what it needs to help you, but never your identifiers in clear: social security number, tax number, name, address, IBAN… are replaced by tokens, and put back in place only on your screen. The maker's terms apply to what it receives. It never receives your political leaning or your themes.
 
 ## What goes online
 
