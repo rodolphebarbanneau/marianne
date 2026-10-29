@@ -44,8 +44,17 @@
   --browser-w: 560px;
   /* The conversation's column, centred, and the composer under it. */
   --column: 760px;
-  /* One margin for every screen: the tabs above, the pages, a domain's dashboard, a service, a folder. */
-  --gutter: 20px;
+  /* One margin for every screen (the tabs above, the pages, a domain's dashboard, a service, a
+     folder), on the title bar's lines: its first icon on the left, 15px in as the sidebar's rows are;
+     the window's last button's glyph on the right (the ✕ the OS draws, 18px in). */
+  --gutter: 15px;
+  --gutter-end: 18px;
+  /* A scrollbar's room (::-webkit-scrollbar), kept on both sides by every page that scrolls: its
+     edges stay where they are and it stays centred, scrolling or not. Inside such a page, the
+     margins are what the bar's room leaves of them. */
+  --bar: 12px;
+  --gutter-in: calc(var(--gutter) - var(--bar));
+  --gutter-end-in: calc(var(--gutter-end) - var(--bar));
   /* A service's screen, centred in a wide window: as wide as reads well. */
   --content-width: 1280px;
 
@@ -64,6 +73,10 @@
   line-height: 1.55;
   color: var(--fg);
   background: var(--bg);
+}
+/* On macOS the window's buttons are on the left: on the right, the title bar's last icon (15px in). */
+:root[data-platform='darwin'] {
+  --gutter-end: 15px;
 }
 
 /* Minitel 1: the eight colours as eight levels of grey, on a faintly green phosphor. */
@@ -133,8 +146,8 @@ html[data-crt='on'] #root {
   text-shadow: 0 0 5px color-mix(in srgb, currentColor 32%, transparent);
 }
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: var(--bar);
+  height: var(--bar);
 }
 ::-webkit-scrollbar-thumb {
   background: var(--sel);
@@ -930,6 +943,7 @@ textarea.notes {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  scrollbar-gutter: stable both-edges;
 }
 .next-row {
   flex: none;
@@ -951,7 +965,12 @@ textarea.notes {
   color: var(--accent);
 }
 .section {
-  padding: var(--s4) var(--gutter) var(--s3);
+  padding: var(--s4) var(--gutter-end) var(--s3) var(--gutter);
+}
+/* In a page that scrolls, which keeps its bar's room. */
+.page-body > .section {
+  padding-left: var(--gutter-in);
+  padding-right: var(--gutter-end-in);
 }
 /* A page's head, the same everywhere: its title in pixel capitals, what it is about, its tools on the right. As tall
    as a search box, so the title sits at the same place whether the page has tools or not. */
@@ -1146,7 +1165,7 @@ button.ev:hover {
 
 /* A domain's dashboard: what the user has in it on the left, what helps on the right. */
 .domain-page {
-  padding: var(--s4) var(--gutter) var(--s6);
+  padding: var(--s4) var(--gutter-end-in) var(--s6) var(--gutter-in);
 }
 /* Its head in the page's own gutter, over what follows. */
 .domain-page > .service-head {
@@ -1248,6 +1267,16 @@ button.ev:hover {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* A phone-wide window: an article's buttons under its title, which keeps the width. */
+@media (max-width: 640px) {
+  .ni {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+  .ni .acts {
+    grid-column: 2;
+    flex-wrap: wrap;
+  }
+}
 /* A narrow window (a tablet held upright, a phone): the sidebar comes over the screen when it is
    open, instead of taking its width; choosing a screen puts it away (shell.tsx), as the panel button does. */
 @media (max-width: 900px) {
@@ -1341,8 +1370,9 @@ button.ev:hover {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  /* The bar's room on both sides (12px), so the screen stays centred whether it scrolls or not. */
-  padding: 0 calc(var(--gutter) - 12px) var(--s6);
+  /* The bar's room on both sides, so the screen stays centred whether it scrolls or not; the
+     gutters around it. */
+  padding: 0 var(--gutter-end-in) var(--s6) var(--gutter-in);
   scrollbar-gutter: stable both-edges;
 }
 .service-content {
@@ -1362,7 +1392,7 @@ button.ev:hover {
   display: flex;
   align-items: baseline;
   gap: 12px;
-  padding: 0 var(--gutter);
+  padding: 0 var(--gutter-end) 0 var(--gutter);
   margin-bottom: var(--s4);
   flex-wrap: wrap;
 }
@@ -1419,7 +1449,7 @@ button.ev:hover {
 .folder-head {
   position: relative;
   flex: none;
-  padding: 12px var(--gutter) 8px;
+  padding: 12px var(--gutter-end) 8px var(--gutter);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1488,8 +1518,8 @@ button.ev:hover {
 .conv {
   flex: 1;
   overflow: auto;
-  /* The bar's room on both sides (12px), so the column stays right above the composer, on the gutter. */
-  padding: 10px calc(var(--gutter) - 12px) 0;
+  /* The bar's room on both sides, so the column stays right above the composer, between the gutters. */
+  padding: 10px var(--gutter-end-in) 0 var(--gutter-in);
   scrollbar-gutter: stable both-edges;
 }
 .conv .column {
@@ -1585,7 +1615,7 @@ button.ev:hover {
 }
 .dock {
   flex: none;
-  padding: 8px var(--gutter) 12px;
+  padding: 8px var(--gutter-end) 12px var(--gutter);
   display: flex;
   justify-content: center;
 }
