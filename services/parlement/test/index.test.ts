@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { counts, filled, indexDeputies, indexMeetings, senateBallotNumbers } from '../src/indexer'
-import { memberCard } from '../src/present'
+import { counts, filled, indexBallots, indexDeputies, indexMeetings, senateBallotNumbers } from '../src/indexer'
+import { authorOf, memberCard } from '../src/present'
 import {
   attendanceOn,
   ballotsBetween,
@@ -15,6 +15,7 @@ import {
   findMembers,
   getBallot,
   getMeeting,
+  groupRecords,
   listGroups,
   meetingsOn,
   memberVotes,
@@ -24,7 +25,7 @@ import {
   votesIn
 } from '../src/queries'
 import { ParliamentIndex, DB_FILE, openWriter } from '../src/store'
-import { buildIndex, dumps, HEARING, MEETINGS, SITTING } from './fixtures'
+import { ballot, BALLOTS, buildIndex, dumps, HEARING, MEETINGS, SITTING } from './fixtures'
 
 let dir: string
 let file: string
@@ -49,7 +50,8 @@ const ids = (rows: Array<{ id: string }>) => rows.map((r) => r.id)
 describe('indexing', () => {
   it('fills every source: both chambers’ members and ballots, the agenda, bills and constituencies', () => {
     expect(counts(writer)).toEqual({ deputies: 5, senators: 3, ballots: 4, meetings: 6 })
-    for (const source of ['deputies', 'senators', 'ballots', 'meetings', 'bills', 'constituencies'] as const) expect(filled(writer, source)).toBe(true)
+    for (const source of ['deputies', 'former', 'senators', 'ballots', 'meetings', 'bills', 'constituencies'] as const)
+      expect(filled(writer, source)).toBe(true)
     expect(senateBallotNumbers(writer, 2026)).toEqual(new Set([1, 2]))
     const again = openWriter(file)
     expect(again.current).toBe(true)
@@ -147,6 +149,29 @@ describe('ballots', () => {
     expect(ids(searchBallots(writer, { authorGroup: 'SOC' }))).toEqual(['SE2026-1'])
     // The same day: the Assemblée first.
     expect(ids(searchBallots(writer, { result: 'adopted' }))).toEqual(['VTANR5L17V9097', 'SE2026-2'])
+  })
+
+  it('names the amendments of deputies who left office, with the group of that day, and any name no list has', () => {
+    indexBallots(
+      writer,
+      dumps([
+        ...BALLOTS,
+        ballot(8001, '2025-02-04', "l'amendement n° 12 de M. Amiel après l'article 3 du projet de loi de finances pour 2025", 'rejeté', []),
+        ballot(8002, '2025-06-10', "l'amendement n° 40 de M. Amiel à l'article 2 du projet de loi relatif à l'eau", 'adopté', []),
+        ballot(8003, '2025-06-11', "l'amendement n° 7 de Mme Anne-Cécile Gérard-Lévêque à l'article 1er", 'rejeté', [])
+      ]).ballots
+    )
+    const members = new Map(findMembers(writer, { chamber: 'an' }).map((m) => [`an:${m.id}`, m]))
+    const groups = groupRecords(writer)
+    const author = (n: number) => authorOf(getBallot(writer, 'an', n)!, members, groups)
+    // An RN deputy then, a SOC one later: the group of each vote's day.
+    expect(author(8001)).toMatchObject({ id: 'PA795950', name: 'M. David Amiel', groupId: 'PO845401', groupShort: 'RN', current: false })
+    expect(author(8002)).toMatchObject({ id: 'PA795950', groupShort: 'SOC', current: false })
+    expect(author(8003)).toEqual({ id: '', name: 'Mme Anne-Cécile Gérard-Lévêque', groupId: '', groupShort: '', groupColor: '', current: false })
+    // One in office: their page opens.
+    expect(author(9000)).toMatchObject({ id: 'PA841553', name: 'M. Thierry Tesson', current: true })
+    // Their amendments count with their group's.
+    expect(ids(searchBallots(writer, { chamber: 'an', authorGroup: 'PO845419' }))).toEqual(['VTANR5L17V8002'])
   })
 
   it('finds a ballot by its number, in either chamber', () => {

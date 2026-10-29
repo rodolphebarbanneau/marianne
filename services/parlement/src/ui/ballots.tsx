@@ -83,8 +83,9 @@ export function useGroups(): { an: GroupInfo[]; se: GroupInfo[]; byAcronym(chamb
 
 /** What a ballot is about, in a few words: its amendment, its article, the whole text. */
 export function ballotMeta(line: BallotLine): string {
-  if (line.kind === 'amendment')
-    return `amendement ${line.amendment || ''}${line.author && line.author.id !== line.author.groupId ? ` · ${line.author.name}` : ''}`.trim()
+  // A member's (in office or not), or a name only; the Government's and a committee's, the chip says.
+  const named = line.author && (line.author.id !== line.author.groupId || !line.author.groupId)
+  if (line.kind === 'amendment') return `amendement ${line.amendment || ''}${named ? ` · ${line.author!.name}` : ''}`.trim()
   if (line.kind === 'text') return 'vote sur l’ensemble du texte'
   if (line.kind === 'article') return 'vote sur un article'
   if (line.kind === 'motion') return 'motion'
@@ -121,10 +122,12 @@ export function BallotRow({
         <span className="small muted">n° {line.number}</span>
       </span>
       <span className="parlement-bt-author">
-        {line.author ? (
+        {line.author?.groupShort ? (
           <GroupChip short={line.author.groupShort} color={line.author.groupColor} name={line.author.name} small />
         ) : (
-          <span className="small muted">—</span>
+          <span className="small muted" title={line.author?.name}>
+            —
+          </span>
         )}
       </span>
       <span className="parlement-stack parlement-bt-obj">
@@ -271,14 +274,14 @@ export function BallotCard({ chamber, id, inHemicycle }: { chamber: Chamber; id:
         {b.author ? (
           <>
             <span className="dim">{b.kind === 'amendment' ? `amendement ${b.amendment} de` : 'de'}</span>{' '}
-            {b.author.id === b.author.groupId ? (
-              b.author.name
-            ) : (
+            {b.author.current ? (
               <button className="link" onClick={() => nav.open({ kind: 'member', chamber, id: b.author!.id })}>
                 {b.author.name}
               </button>
+            ) : (
+              b.author.name
             )}{' '}
-            <GroupChip short={b.author.groupShort} color={b.author.groupColor} small />
+            {b.author.groupShort && <GroupChip short={b.author.groupShort} color={b.author.groupColor} small />}
           </>
         ) : (
           <span className="dim">{ballotMeta(b)}</span>

@@ -28,6 +28,7 @@ function serve(): void {
   const zips = dumps()
   served = new Map<string, { body: string | Uint8Array; etag: string }>([
     [DUMPS.deputies, { body: zips.deputies, etag: '"d1"' }],
+    [DUMPS.former, { body: zips.former, etag: '"f1"' }],
     [DUMPS.ballots, { body: zips.ballots, etag: '"b1"' }],
     [DUMPS.meetings, { body: zips.meetings, etag: '"m1"' }],
     [DUMPS.bills, { body: zips.bills, etag: '"l1"' }],
@@ -134,6 +135,20 @@ describe('the sync job', () => {
     // The Assemblée's ballots hadn't changed: asked conditionally, not downloaded.
     expect(answered.get(DUMPS.ballots)).toBe(304)
     expect(answered.get(DUMPS.meetings)).toBe(200)
+  })
+
+  it('asks for the actors’ history only when the deputies changed, and then reads the ballots again', async () => {
+    await run()
+    expect(answered.get(DUMPS.former)).toBe(200)
+    await run()
+    expect(asked).not.toContain(DUMPS.former)
+    served.set(DUMPS.deputies, { body: dumps().deputies, etag: '"d2"' })
+    served.set(DUMPS.former, { body: dumps().former, etag: '"f2"' })
+    await run()
+    expect(asked).toContain(DUMPS.former)
+    expect(answered.get(DUMPS.former)).toBe(200)
+    // New deputies, a new history: amendments' authors matched again.
+    expect(answered.get(DUMPS.ballots)).toBe(200)
   })
 
   it('asks for every source again when the index is missing, whatever the ETags say', async () => {

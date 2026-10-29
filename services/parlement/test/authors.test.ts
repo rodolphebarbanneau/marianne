@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ballotAuthor, ballotKind, MemberNames, parseMention } from '../src/authors'
+import { ballotAuthor, ballotKind, groupOn, MemberNames, parseMention, writtenName } from '../src/authors'
 
 const NAMES = new MemberNames([
   { id: 'PA793980', groupId: 'EcoS', civility: 'M.', firstName: 'Charles', lastName: 'Fournier' },
@@ -111,6 +111,23 @@ describe('the author, and only the one of the amendment voted on', () => {
     expect(author('an', 'l’amendement de rédaction globale n° 9 de la commission des finances à l’article 1er')).toEqual({ author: 'COM', group: 'COM' })
   })
 
+  it('reads a rectified amendment’s author, and the subjects’ misspellings', () => {
+    expect(author('an', "l'amendement n° 19 rectifié de M. Fournier à l'article 1er bis")).toEqual({ author: 'PA793980', group: 'EcoS' })
+    expect(parseMention('an', "l'amendement n° 19 rectifié de M. Fournier à l'article 1er bis").amendment).toBe('19 rectifie')
+    expect(parseMention('an', "l'amendement n° 19 rect. bis de M. Fournier").amendment).toBe('19 rect. bis')
+    expect(author('an', "l'amendement n° 19 rect. bis de M. Fournier")).toEqual({ author: 'PA793980', group: 'EcoS' })
+    expect(author('an', "l'amendement de n° 2520 de M. Fournier et les amendements identiques suivants")).toEqual({ author: 'PA793980', group: 'EcoS' })
+    expect(author('an', "l'amendement de supression n° 249 de M. Le Fur à l'article 6")).toEqual({ author: 'PA8', group: 'DR' })
+    expect(author('an', "l'amendement de réécriture globale n° 11 de M. Le Fur à l'article 8")).toEqual({ author: 'PA8', group: 'DR' })
+    expect(author('an', "l'amendement n° 261 rectifé de M. Le Fur à l'article 5")).toEqual({ author: 'PA8', group: 'DR' })
+    expect(author('an', "l'amendement n° 479 de de M. Le Fur de suppression de l'article 1er ter")).toEqual({ author: 'PA8', group: 'DR' })
+    expect(author('an', "l'amendement n° 835 de M Fournier et l'amendement identique suivant")).toEqual({ author: 'PA793980', group: 'EcoS' })
+    expect(author('an', "l'amendement n° 65 M. Fournier et l'amendement identique suivant à l'article 3")).toEqual({ author: 'PA793980', group: 'EcoS' })
+    expect(author('an', "l'amendement n° 2 de du Gouvernement à l'article 31")).toEqual({ author: 'GOUV', group: 'GOUV' })
+    expect(author('an', "l'amendement n° 11 de de la commission des affaires étrangères à l'article unique")).toEqual({ author: 'COM', group: 'COM' })
+    expect(author('an', "l'amendement n° 791 rectifié du Gouvernement à l'article 23 ter")).toEqual({ author: 'GOUV', group: 'GOUV' })
+  })
+
   it('ends a name only on whole words', () => {
     expect(author('an', 'l’amendement n° 77 de M. Aurélien Taché après l’article 4')).toEqual({ author: 'PA7', group: 'EcoS' })
   })
@@ -119,5 +136,35 @@ describe('the author, and only the one of the amendment voted on', () => {
 describe('a member who left office', () => {
   it('is named as the ballot was indexed', () => {
     expect(ballotAuthor(parseMention('an', 'l’amendement n° 77 de M. Aurélien Taché après l’article 4'), NAMES).name).toBe('M. Aurélien Taché')
+  })
+})
+
+describe('a name no member list has', () => {
+  it('is kept as the subject writes it: its accents, its capitals', () => {
+    const title = 'l’amendement n° 12 de Mme Anne-Cécile Gérard-Lévêque après l’article 3'
+    const mention = parseMention('an', title)
+    expect(mention.author).toEqual({ type: 'member', name: 'mme anne cecile gerard leveque' })
+    expect(writtenName(title, 'mme anne cecile gerard leveque')).toBe('Mme Anne-Cécile Gérard-Lévêque')
+    expect(writtenName('l’amendement n° 3 de M.N’Diaye à l’article 2', "m. n'diaye")).toBe('M. N’Diaye')
+    // The first of several ("Mmes"): one civility, the name as written.
+    expect(writtenName('présenté par Mmes Gisèle Jourda et Viviane Malet', 'mme gisele jourda')).toBe('Mme Gisèle Jourda')
+    // Spelt otherwise: its words capitalised.
+    expect(writtenName('l’amendement n° 4 de Mme Colin-Osterlé', 'mme colin oesterle')).toBe('Mme Colin Oesterle')
+  })
+})
+
+describe('the group a deputy sat in on a day', () => {
+  const groups = [
+    { id: 'NI', from: '2024-07-08', to: '2024-07-18' },
+    { id: 'RN', from: '2024-07-19', to: '2025-03-31' },
+    { id: 'SOC', from: '2025-04-01', to: '2025-11-12' }
+  ]
+  it('is the membership that covers it, else the latest before', () => {
+    expect(groupOn(groups, '2024-07-10')).toBe('NI')
+    expect(groupOn(groups, '2025-03-31')).toBe('RN')
+    expect(groupOn(groups, '2025-06-10')).toBe('SOC')
+    // An amendment voted after they left: the last group.
+    expect(groupOn(groups, '2026-01-20')).toBe('SOC')
+    expect(groupOn(groups, '2024-01-01')).toBe('')
   })
 })
