@@ -1,0 +1,64 @@
+---
+import { words, type Lang } from '../i18n'
+
+interface Props {
+  lang: Lang
+}
+const { lang } = Astro.props
+const t = words(lang)
+---
+
+<section id="fonctions" class="block" data-section>
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="label">02 · {t.nav.features}</p>
+      <h2>{t.features.title}</h2>
+      <p>{t.features.lead}</p>
+    </div>
+    <div class="grid">
+      {t.features.items.map((f, i) => (
+        <article class="card reveal" style={`--d: ${i % 3}`}>
+          <span class="code">{f.code}</span>
+          <h3>{f.title}</h3>
+          <p>{f.text}</p>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 14px;
+  }
+  /* The app's cards (Services, Démarches): a raised block, its code in yellow. */
+  .card {
+    background: var(--bg-raised);
+    border: 1px solid var(--rule);
+    padding: 22px 22px 24px;
+    display: grid;
+    align-content: start;
+    gap: 12px;
+    transition:
+      border-color 0.15s,
+      transform 0.15s;
+  }
+  .card:hover {
+    border-color: var(--bleu);
+  }
+  .code {
+    justify-self: start;
+    font-size: 1.3rem;
+  }
+  h3 {
+    color: var(--hi);
+    font-size: 1.12rem;
+    font-weight: 500;
+  }
+  p {
+    color: var(--dim);
+    font-size: 0.95rem;
+  }
+</style>

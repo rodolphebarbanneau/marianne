@@ -1,0 +1,300 @@
+---
+import { Image } from 'astro:assets'
+import dossier from '../assets/screens/dossier.webp'
+import accord from '../assets/screens/accord.webp'
+import demarches from '../assets/screens/demarches.webp'
+import peage from '../assets/screens/peage.webp'
+import carte from '../assets/screens/carte.webp'
+import meteo from '../assets/screens/meteo.webp'
+import { words, type Lang } from '../i18n'
+
+// Screens of the real app (1440×900, captured at twice the pixels), on a test account: the data is
+// made up. They play like a short film, a tab every few seconds, until the visitor picks one; the
+// services' tab shows three of them in turn.
+interface Props {
+  lang: Lang
+}
+const { lang } = Astro.props
+const t = words(lang)
+const shots = [
+  { id: 'dossier', frames: [dossier] },
+  { id: 'accord', frames: [accord] },
+  { id: 'demarches', frames: [demarches] },
+  { id: 'services', frames: [peage, carte, meteo] }
+] as const
+---
+
+<section class="screens block" data-section aria-labelledby="screens-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="label">01 · {t.screens.title}</p>
+      <h2 id="screens-title" class="sr">
+        {t.screens.title}
+      </h2>
+      <p>{t.screens.lead}</p>
+    </div>
+
+    <div class="viewer reveal" style="--d: 1">
+      <div class="tabs" role="tablist" aria-label={t.screens.title}>
+        {shots.map((s, i) => (
+          <button
+            type="button"
+            role="tab"
+            id={`tab-${s.id}`}
+            aria-controls={`shot-${s.id}`}
+            aria-selected={i === 0 ? 'true' : 'false'}
+            tabindex={i === 0 ? 0 : -1}
+          >
+            {t.screens.items[s.id].tab}
+            <span class="progress" aria-hidden="true" />
+          </button>
+        ))}
+        <span class="sample">{t.screens.sample}</span>
+      </div>
+      <div class="window">
+        {shots.map((s, i) => (
+          <figure id={`shot-${s.id}`} role="tabpanel" aria-labelledby={`tab-${s.id}`} class:list={{ on: i === 0 }}>
+            {s.frames.map((src, n) => (
+              <Image
+                class:list={['screen', { on: n === 0 }]}
+                src={src}
+                alt={n === 0 ? t.screens.items[s.id].caption : ''}
+                widths={[720, 1200, 1800, 2400]}
+                sizes="(min-width: 1280px) 1200px, 94vw"
+                loading={i === 0 ? 'eager' : 'lazy'}
+                fetchpriority={i === 0 ? 'high' : 'auto'}
+              />
+            ))}
+          </figure>
+        ))}
+      </div>
+      <div class="caption">
+        <button type="button" class="nav" data-step="-1" aria-label={t.screens.prev}>
+          <span class="key">RETOUR</span>
+        </button>
+        <p aria-live="polite">
+          {shots.map((s, i) => (
+            <span data-caption={s.id} hidden={i !== 0}>
+              {t.screens.items[s.id].caption}
+            </span>
+          ))}
+        </p>
+        <button type="button" class="nav" data-step="1" aria-label={t.screens.next}>
+          <span class="key">SUITE</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const viewer = document.querySelector<HTMLElement>('.viewer')!
+  const tabs = [...viewer.querySelectorAll<HTMLButtonElement>('[role=tab]')]
+  const panels = [...viewer.querySelectorAll<HTMLElement>('[role=tabpanel]')]
+  const captions = [...viewer.querySelectorAll<HTMLElement>('[data-caption]')]
+  // A screen stays this long; a tab of several screens shows each of them for FRAME.
+  const DWELL = 6500
+  const FRAME = 3200
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches
+  let index = 0
+  let playing = !still
+  let hovered = false
+  let visible = false
+  let elapsed = 0
+  let shown = 0
+  let last = performance.now()
+
+  const frames = (i: number) => [...panels[i].querySelectorAll<HTMLElement>('.screen')]
+  const dwell = (i: number) => (frames(i).length > 1 ? frames(i).length * FRAME : DWELL)
+  const show = (i: number, focus = false) => {
+    index = (i + tabs.length) % tabs.length
+    tabs.forEach((t, n) => {
+      t.setAttribute('aria-selected', String(n === index))
+      t.tabIndex = n === index ? 0 : -1
+      t.style.setProperty('--p', '0')
+    })
+    panels.forEach((p, n) => p.classList.toggle('on', n === index))
+    captions.forEach((c, n) => (c.hidden = n !== index))
+    frames(index).forEach((f, n) => f.classList.toggle('on', n === 0))
+    elapsed = 0
+    shown = 0
+    if (focus) tabs[index].focus()
+  }
+  // Picked by hand, it stays: the film stops (a tab's own screens still take turns).
+  const pick = (i: number, focus = false) => {
+    playing = false
+    viewer.classList.add('stopped')
+    show(i, focus)
+  }
+  tabs.forEach((t, n) => t.addEventListener('click', () => pick(n)))
+  viewer.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((b) => b.addEventListener('click', () => pick(index + Number(b.dataset.step))))
+  viewer.querySelector('[role=tablist]')!.addEventListener('keydown', (e) => {
+    const k = (e as KeyboardEvent).key
+    if (k === 'ArrowRight' || k === 'ArrowLeft') {
+      e.preventDefault()
+      pick(index + (k === 'ArrowRight' ? 1 : -1), true)
+    }
+  })
+  viewer.addEventListener('pointerenter', () => (hovered = true))
+  viewer.addEventListener('pointerleave', () => (hovered = false))
+  new IntersectionObserver(([e]) => (visible = e.isIntersecting), { threshold: 0.35 }).observe(viewer)
+
+  const tick = (now: number) => {
+    const dt = now - last
+    last = now
+    if (visible && !hovered && !document.hidden && !still) {
+      const list = frames(index)
+      if (list.length > 1) {
+        shown += dt
+        const n = Math.floor(shown / FRAME) % list.length
+        list.forEach((f, k) => f.classList.toggle('on', k === n))
+      }
+      if (playing) {
+        elapsed += dt
+        tabs[index].style.setProperty('--p', String(Math.min(1, elapsed / dwell(index))))
+        if (elapsed >= dwell(index)) show(index + 1)
+      }
+    }
+    requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+  if (!playing) viewer.classList.add('stopped')
+</script>
+
+<style>
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .screens.block {
+    padding-top: clamp(64px, 8vw, 96px);
+  }
+  .screens .section-head {
+    margin-bottom: 20px;
+  }
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+  .tabs button {
+    position: relative;
+    font: inherit;
+    padding: 4px 12px;
+    border: 0;
+    background: none;
+    color: var(--dim);
+    cursor: pointer;
+  }
+  .tabs button:hover {
+    color: var(--hi);
+  }
+  .tabs button[aria-selected='true'] {
+    background: var(--accent);
+    color: var(--noir);
+  }
+  /* How long until the next screen, under the current tab. */
+  .progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -6px;
+    height: 2px;
+    background: var(--accent);
+    transform-origin: left;
+    transform: scaleX(var(--p, 0));
+  }
+  .stopped .progress,
+  [aria-selected='false'] .progress {
+    display: none;
+  }
+  .window {
+    position: relative;
+    aspect-ratio: 1440 / 900;
+    border: 1px solid var(--rule);
+    background: var(--bg-sunken);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      0 40px 120px -30px rgba(61, 90, 254, 0.55),
+      0 0 0 6px color-mix(in srgb, var(--bg-raised) 70%, transparent);
+    overflow: hidden;
+  }
+  figure {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    transition: opacity 0.35s steps(4);
+  }
+  figure.on {
+    opacity: 1;
+  }
+  figure :global(.screen) {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.35s steps(4);
+  }
+  figure :global(.screen.on) {
+    opacity: 1;
+  }
+  /* What the screens show is made up: said once, quietly, beside the tabs. */
+  .sample {
+    margin-left: auto;
+    align-self: center;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .caption {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 3.4em;
+  }
+  .caption p {
+    flex: 1;
+    color: var(--fg);
+    text-align: center;
+    text-wrap: balance;
+  }
+  .nav {
+    font: inherit;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+  }
+  .nav .key {
+    font-size: 1.15rem;
+  }
+  .nav:hover .key {
+    background: var(--accent);
+  }
+  @media (max-width: 640px) {
+    .caption {
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    .caption p {
+      order: -1;
+      flex-basis: 100%;
+    }
+    .tabs {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs button {
+      white-space: nowrap;
+    }
+  }
+</style>

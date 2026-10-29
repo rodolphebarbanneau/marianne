@@ -1,0 +1,67 @@
+---
+import Base from '../layouts/Base.astro'
+import Hero from './Hero.astro'
+import Screens from './Screens.astro'
+import Features from './Features.astro'
+import Privacy from './Privacy.astro'
+import Engines from './Engines.astro'
+import Services from './Services.astro'
+import Download from './Download.astro'
+import GuideContents from './GuideContents.astro'
+import { localized, words, type Lang } from '../i18n'
+import { buildRelease } from '../lib/build-release'
+import { guidePages } from '../lib/guide'
+
+interface Props {
+  lang: Lang
+}
+const { lang } = Astro.props
+const t = words(lang)
+const release = await buildRelease()
+const pages = await guidePages(lang)
+---
+
+<Base lang={lang}>
+  <script type="application/json" id="release-data" set:html={JSON.stringify(release)} />
+  <Hero lang={lang} release={release} />
+  <Screens lang={lang} />
+  <Features lang={lang} />
+  <Privacy lang={lang} />
+  <Engines lang={lang} />
+  <Services lang={lang} />
+  <Download lang={lang} release={release} />
+  <section id="guide" class="block" data-section>
+    <div class="wrap split">
+      <div class="section-head reveal">
+        <p class="label">07 · {t.nav.guide}</p>
+        <h2>{t.guide.title}</h2>
+        <p>{t.guide.lead}</p>
+        <p>
+          <a class="btn" href={localized(lang, 'guide/')}>
+            {t.guide.open} ›
+          </a>
+        </p>
+      </div>
+      <div class="reveal" style="--d: 1">
+        <GuideContents pages={pages} />
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: clamp(32px, 6vw, 72px);
+    align-items: start;
+  }
+  .split .btn {
+    margin-top: 10px;
+  }
+  @media (max-width: 900px) {
+    .split {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

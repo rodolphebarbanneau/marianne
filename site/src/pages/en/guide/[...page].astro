@@ -1,0 +1,12 @@
+---
+import GuidePage from '../../../components/GuidePage.astro'
+import { guidePages } from '../../../lib/guide'
+
+export async function getStaticPaths() {
+  const pages = await guidePages('en')
+  return pages.map((page) => ({ params: { page: page.slug || undefined }, props: { pages, page } }))
+}
+const { pages, page } = Astro.props
+---
+
+<GuidePage lang="en" pages={pages} page={page} />

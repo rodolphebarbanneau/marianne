@@ -1,0 +1,71 @@
+---
+import Logo from './Logo.astro'
+import { localized, words, type Lang } from '../i18n'
+
+interface Props {
+  lang: Lang
+}
+const { lang } = Astro.props
+const t = words(lang)
+const GH = 'https://github.com/rodolphebarbanneau/marianne'
+---
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="row">
+      <a class="mark" href={localized(lang)}>
+        <Logo size={48} />
+        <span class="wordmark">MARIANNE</span>
+      </a>
+      <p class="disclaimer dim">{t.footer.disclaimer}</p>
+    </div>
+    <div class="links">
+      <a href={localized(lang, 'guide/')}>{t.nav.guide}</a>
+      <a href={GH}>{t.footer.code}</a>
+      <a href={`${GH}/issues/new/choose`}>{t.footer.issues}</a>
+      <a href={`${GH}/blob/main/SECURITY.md`}>{t.footer.security}</a>
+      <a href={`${GH}/blob/main/LICENSE`}>{t.footer.license}</a>
+    </div>
+    <p class="credit">{t.footer.credit}</p>
+  </div>
+</footer>
+
+<style>
+  .foot {
+    margin-top: clamp(80px, 12vw, 140px);
+    border-top: 1px solid var(--rule);
+    padding: 40px 0 calc(var(--bar-h) + 40px);
+    background: color-mix(in srgb, var(--bg-sunken) 70%, transparent);
+  }
+  .row {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .mark {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .mark .wordmark {
+    font-size: 1.7rem;
+  }
+  .disclaimer {
+    flex: 1 1 420px;
+    font-size: 0.86rem;
+    max-width: 72ch;
+  }
+  .credit {
+    margin-top: 14px;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 22px;
+    margin-top: 28px;
+    font-size: 0.9rem;
+  }
+</style>

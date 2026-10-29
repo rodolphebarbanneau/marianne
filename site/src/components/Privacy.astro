@@ -1,0 +1,217 @@
+---
+import { words, type Lang } from '../i18n'
+
+interface Props {
+  lang: Lang
+}
+const { lang } = Astro.props
+const t = words(lang)
+
+// A message as the user writes it, and as the engine gets it: each identifier becomes its token
+// (packages/profile/src/tokens.ts), put back on the user's screen only. In French, as the app is.
+const message: (string | { value: string; token: string })[] = [
+  'Bonjour, je suis ',
+  { value: 'Camille', token: '[[first_names]]' },
+  ' ',
+  { value: 'Martin', token: '[[last_name]]' },
+  ', n° de sécurité sociale ',
+  { value: '2 85 05 33 063 042 17', token: '[[nir]]' },
+  '. Mon IBAN a changé : ',
+  { value: 'FR76 3000 6000 0112 3456 7890 189', token: '[[iban]]' },
+  '. Qui dois-je prévenir ?'
+]
+---
+
+<section id="vie-privee" class="block" data-section>
+  <div class="wrap split">
+    <div class="text">
+      <div class="section-head reveal">
+        <p class="label">03 · {t.nav.privacy}</p>
+        <h2>{t.privacy.title}</h2>
+        <p>{t.privacy.lead}</p>
+      </div>
+      <ul class="points">
+        {t.privacy.points.map((p, i) => (
+          <li class="reveal" style={`--d: ${i}`}>
+            <span class="ok" aria-hidden="true">
+              ✓
+            </span>
+            {p}
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <div class="demo reveal" style="--d: 2">
+      <div class="pane">
+        <p class="label head">{t.privacy.screen}</p>
+        <p class="msg" lang="fr">
+          {message.map((m) => (typeof m === 'string' ? m : <mark class="value">{m.value}</mark>))}
+        </p>
+      </div>
+      <div class="arrow" aria-hidden="true">
+        <span class="key">ENVOI</span>
+        <span class="line"></span>
+      </div>
+      <div class="pane engine">
+        <p class="label head">{t.privacy.engine}</p>
+        <div class="stack">
+          <p class="msg sizer" lang="fr" aria-hidden="true">
+            {message.map((m) => (typeof m === 'string' ? m : m.value))}
+          </p>
+          <p class="msg" lang="fr">
+            {message.map((m) =>
+              typeof m === 'string' ? (
+                m
+              ) : (
+                <span class="secret" data-value={m.value} data-token={m.token}>
+                  {m.token}
+                </span>
+              )
+            )}
+          </p>
+        </div>
+        <button type="button" class="replay">
+          {t.privacy.replay} ↻
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // The scrubbing, played when the demo comes into view: each identifier turns to mosaic blocks,
+  // then to its token.
+  const demo = document.querySelector<HTMLElement>('.demo')!
+  const secrets = [...demo.querySelectorAll<HTMLElement>('.secret')]
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+  const BLOCKS = '▓▒░█'
+  let running = false
+  const play = async () => {
+    if (running || still) return
+    running = true
+    secrets.forEach((s) => {
+      s.textContent = s.dataset.value!
+      s.classList.remove('masked')
+    })
+    // Time to read the values, then one identifier at a time, slowly enough to follow.
+    await wait(2000)
+    for (const s of secrets) {
+      const value = s.dataset.value!
+      for (let f = 0; f < 8; f++) {
+        s.textContent = [...value].map((c) => (c === ' ' ? ' ' : BLOCKS[(Math.random() * BLOCKS.length) | 0])).join('')
+        await wait(110)
+      }
+      s.textContent = s.dataset.token!
+      s.classList.add('masked')
+      await wait(900)
+    }
+    running = false
+  }
+  secrets.forEach((s) => s.classList.add('masked'))
+  new IntersectionObserver(
+    ([e], o) => {
+      if (e.isIntersecting) (play(), o.disconnect())
+    },
+    { threshold: 0.6 }
+  ).observe(demo)
+  demo.querySelector('.replay')!.addEventListener('click', play)
+</script>
+
+<style>
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(32px, 6vw, 72px);
+    align-items: center;
+  }
+  .points {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 14px;
+  }
+  .points li {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    color: var(--fg);
+  }
+  .demo {
+    display: grid;
+    gap: 0;
+  }
+  .pane {
+    position: relative;
+    background: var(--bg-raised);
+    border: 1px solid var(--rule);
+    padding: 16px 18px 20px;
+  }
+  .pane.engine {
+    background: var(--bg-sunken);
+    border-style: dashed;
+  }
+  .head {
+    margin-bottom: 10px;
+  }
+  .msg {
+    color: var(--hi);
+    line-height: 1.75;
+  }
+  /* The engine's message keeps the size of its longest form, the real values: an invisible copy of
+     them under it holds the card, so it doesn't shrink as the tokens replace them. */
+  .stack {
+    display: grid;
+  }
+  .stack > .msg {
+    grid-area: 1 / 1;
+  }
+  .sizer {
+    visibility: hidden;
+  }
+  /* On the user's screen, the real values stand out in yellow, as in the app. */
+  .value {
+    background: none;
+    color: var(--accent);
+  }
+  .secret {
+    color: var(--rouge);
+  }
+  .secret.masked {
+    color: var(--cyan);
+  }
+  .arrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0 12px 18px;
+  }
+  .arrow .key {
+    font-size: 1.1rem;
+  }
+  .arrow .line {
+    flex: 1;
+    height: 1px;
+    background: repeating-linear-gradient(90deg, var(--muted) 0 6px, transparent 6px 10px);
+  }
+  .replay {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font: inherit;
+    font-size: 0.8rem;
+    border: 0;
+    background: none;
+    color: var(--dim);
+    cursor: pointer;
+  }
+  .replay:hover {
+    color: var(--accent);
+  }
+  @media (max-width: 900px) {
+    .split {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
