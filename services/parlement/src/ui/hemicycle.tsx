@@ -119,10 +119,11 @@ export function HemicycleDrawing({ data, fill, detail, callout, center, compact 
       const scale = drawing.width / view.width
       const x = (leader.end.x - view.x) * scale
       const y = (leader.end.y - view.y) * scale
-      const [w, h, gap] = [el.offsetWidth, el.offsetHeight, 6]
-      let at = leader.side === 'above' ? { left: x - w / 2, top: y - h - gap } : { left: leader.side === 'left' ? x - w - gap : x + gap, top: y - h / 2 }
-      // Not enough room beside its line: above it.
-      if (at.left < 0 || at.left + w > drawing.width) at = { left: x - w / 2, top: y - h - gap }
+      const [w, h] = [el.offsetWidth, el.offsetHeight]
+      // The line runs into the label's edge: beside its end, or on it.
+      let at = leader.side === 'above' ? { left: x - w / 2, top: y - h } : { left: leader.side === 'left' ? x - w : x, top: y - h / 2 }
+      // Not enough room beside its line: on it.
+      if (at.left < 0 || at.left + w > drawing.width) at = { left: x - w / 2, top: y - h }
       const next = { left: Math.round(Math.max(0, Math.min(drawing.width - w, at.left))), top: Math.round(Math.max(0, at.top)) }
       setLabelAt((prev) => (prev && prev.left === next.left && prev.top === next.top ? prev : next))
     }
@@ -144,6 +145,7 @@ export function HemicycleDrawing({ data, fill, detail, callout, center, compact 
         role="img"
         aria-label={`hémicycle ${data.chamber === 'an' ? 'de l’Assemblée nationale' : 'du Sénat'}`}
       >
+        {leader && <polyline className="parlement-leader" points={leader.points.map((p) => `${p.x},${p.y}`).join(' ')} style={{ strokeWidth: r * 0.28 }} />}
         {seats.map((s) => {
           const color = fill(s.member, s.groupId)
           const style = color ? { fill: color } : { fill: 'none', stroke: 'var(--muted)', strokeWidth: r * 0.22 }
@@ -172,13 +174,6 @@ export function HemicycleDrawing({ data, fill, detail, callout, center, compact 
               style={{ strokeWidth: r * (own.has(s.member) ? 0.4 : 0.28) }}
             />
           ))}
-        {leader && (
-          <g className="parlement-leader">
-            <polyline className="halo" points={leader.points.map((p) => `${p.x},${p.y}`).join(' ')} style={{ strokeWidth: r * 0.95 }} />
-            <polyline points={leader.points.map((p) => `${p.x},${p.y}`).join(' ')} style={{ strokeWidth: r * 0.3 }} />
-            <circle cx={leader.end.x} cy={leader.end.y} r={r * 0.5} />
-          </g>
-        )}
         {center?.big && (
           <text className="parlement-center" x={plan.width / 2} y={base + r * 0.5} style={{ fontSize: r * (compact ? 11 : 8), fill: center.color }}>
             {center.big}
