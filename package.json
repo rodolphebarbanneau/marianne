@@ -1,6 +1,6 @@
 {
   "name": "marianne-workspace",
-  "description": "Marianne: the desktop app (apps/desktop), its SDK (packages/sdk), its content (content) and its built-in services (services).",
+  "description": "Marianne: the desktop app (apps/desktop), its SDK (packages/sdk), its content (packages/content) and its built-in services (services).",
   "author": "Rodolphe Barbanneau",
   "license": "MIT",
   "repository": {
@@ -32,7 +32,6 @@
   },
   "workspaces": [
     "apps/*",
-    "content",
     "packages/*",
     "services/*"
   ]
