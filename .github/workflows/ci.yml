@@ -28,6 +28,10 @@ jobs:
       - name: Format
         run: npm run format:check
 
+      # What each package may import (docs/design.md, "The code").
+      - name: Package boundaries
+        run: node scripts/check-boundaries.mjs
+
       - name: Typecheck
         run: npm run typecheck
 

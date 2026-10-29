@@ -1,19 +1,19 @@
 # Content
 
-Marianne's content is what it knows that anyone may improve: the engines' skills, the guided démarches, the official calendar, the catalog of public sites and the news sources of Actualités. It lives in the `content/` package (`@marianne/content`), is open to contributions **through review only**, ships built into the app, and is updated between releases as a bundle the project signs.
+Marianne's content is what it knows that anyone may improve: the engines' skills, the guided démarches, the official calendar, the catalog of public sites and the news sources of Actualités. It lives in the `packages/content/` package (`@marianne/content`), is open to contributions **through review only**, ships built into the app, and is updated between releases as a bundle the project signs.
 
 Review is not a formality: skills go into the engines' instructions (a guide that says the wrong thing is a prompt injection), and démarches are legal guidance read by people dealing with their administration. Every change is read by a maintainer, every claim has an official source, and the app only takes a bundle signed with the project's key.
 
 What is not content:
 
-- the app's assets (`apps/desktop/resources/`: icons) and its core data: the domains (`apps/desktop/src/shared/domains.ts`), the profile, the engines' instructions (`apps/desktop/src/main/engines/prompt.ts`);
+- the app's assets (`apps/desktop/resources/`: icons) and its core data: the domains and the profile (`@marianne/profile`, in `packages/profile/`), the engines' instructions (`apps/desktop/src/main/engines/prompt.ts`);
 - the services, the 3615 add-ons (see [services.md](services.md));
 - the user's own skills, in `~/.marianne/skills`: local, unsigned, never published.
 
 ## The package
 
 ```
-content/
+packages/content/
   skills/<name>.md                   method guides the engines read
   procedures/<domain>/<id>.md        guided démarches, one folder per domain
   calendar.json                      dates that come back every year
@@ -30,7 +30,7 @@ Names are English (`declare-income`, `labor-law`), lowercase words joined by hyp
 
 ## Rules for every file
 
-**Official sources.** Every web address in the content, in a text, a source, a site or a link, is `https://` on an official site: any host under `gouv.fr`, or a domain of `OFFICIAL_DOMAINS` (`content/src/index.ts`) or one of its subdomains: service-public.fr, ameli.fr, caf.fr, msa.fr, urssaf.fr, francetravail.fr, info-retraite.fr, lassuranceretraite.fr, agirc-arrco.fr, assemblee-nationale.fr, senat.fr, conseil-constitutionnel.fr, conseil-etat.fr, courdecassation.fr, defenseurdesdroits.fr, cnil.fr, insee.fr, justice.fr, telerecours.fr, inpi.fr, cnsa.fr, monespacesante.fr, demarches-simplifiees.fr, anil.org, vie-publique.fr. Adding a domain to that list is a change to review on its own. The news sources are the one exception: press sites, which need only be https.
+**Official sources.** Every web address in the content, in a text, a source, a site or a link, is `https://` on an official site: any host under `gouv.fr`, or a domain of `OFFICIAL_DOMAINS` (`packages/content/src/index.ts`) or one of its subdomains: service-public.fr, ameli.fr, caf.fr, msa.fr, urssaf.fr, francetravail.fr, info-retraite.fr, lassuranceretraite.fr, agirc-arrco.fr, assemblee-nationale.fr, senat.fr, conseil-constitutionnel.fr, conseil-etat.fr, courdecassation.fr, defenseurdesdroits.fr, cnil.fr, insee.fr, justice.fr, telerecours.fr, inpi.fr, cnsa.fr, monespacesante.fr, demarches-simplifiees.fr, anil.org, vie-publique.fr. Adding a domain to that list is a change to review on its own. The news sources are the one exception: press sites, which need only be https.
 
 **Metadata.** Skills and démarches say, in their front matter:
 
@@ -174,9 +174,9 @@ Every change goes through a pull request, read by a maintainer; the démarches o
 
 Between releases, newer content reaches the users as a bundle: `content.json`, every file of the content by its path and the bundle's `version` (the time it was built, ISO), and `content.json.sig`, its ed25519 signature.
 
-**The key**, once: `npm run content:key -- <path outside the repository>`. The private key goes to that path (the script refuses one inside the repository): whoever holds it can change what every Marianne tells its users, so keep it offline or in a secret store. The public key goes to `content/signing-key.pem`, to commit: the app is built with it. Without `signing-key.pem`, the app takes no bundle (it says so once in its log) and keeps the content it was built with. The script refuses to replace an existing public key: the apps already released only take bundles signed with theirs.
+**The key**, once: `npm run content:key -- <path outside the repository>`. The private key goes to that path (the script refuses one inside the repository): whoever holds it can change what every Marianne tells its users, so keep it offline or in a secret store. The public key goes to `packages/content/signing-key.pem`, to commit: the app is built with it. Without `signing-key.pem`, the app takes no bundle (it says so once in its log) and keeps the content it was built with. The script refuses to replace an existing public key: the apps already released only take bundles signed with theirs.
 
-**A bundle**: `MARIANNE_CONTENT_KEY=<private key> npm run content:bundle` writes `content/dist/content.json` and `content/dist/content.json.sig`. The script refuses content that doesn't validate, and a key that is in the repository or doesn't match `signing-key.pem`; without the variable it builds an unsigned bundle, for a look. Attach both files to the latest GitHub release, replacing the previous ones, and attach a fresh pair to every new release: the app downloads the latest release's.
+**A bundle**: `MARIANNE_CONTENT_KEY=<private key> npm run content:bundle` writes `packages/content/dist/content.json` and `packages/content/dist/content.json.sig`. The script refuses content that doesn't validate, and a key that is in the repository or doesn't match `signing-key.pem`; without the variable it builds an unsigned bundle, for a look. Attach both files to the latest GitHub release, replacing the previous ones, and attach a fresh pair to every new release: the app downloads the latest release's.
 
 **How the app picks its content** (`apps/desktop/src/main/content/`):
 
