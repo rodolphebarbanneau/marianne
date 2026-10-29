@@ -62,17 +62,20 @@ const pages = !!(prev || next)
 </div>
 
 <script>
-  // RETOUR and SUITE: the section above or below the one at the top of the screen.
+  // RETOUR and SUITE: the section above or below the one at the top of the screen. A section is at
+  // the top when it sits within SLACK of where scrolling leaves it, under the scroll padding: with a
+  // display scale, scrolling stops on a fraction of a pixel, so never exactly there.
+  const SLACK = 16
   const sections = () => [...document.querySelectorAll<HTMLElement>('main [data-section]')]
   document.querySelectorAll<HTMLButtonElement>('.keysbar [data-go]').forEach((b) =>
     b.addEventListener('click', () => {
       const go = Number(b.dataset.go)
-      const top = (document.querySelector('.top') as HTMLElement | null)?.offsetHeight ?? 0
-      const list = sections()
-      const y = window.scrollY + top + 16
-      const target = go > 0 ? list.find((s) => s.offsetTop > y + 4) : [...list].reverse().find((s) => s.offsetTop < y - 4)
-      if (target) target.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
-      else if (go < 0) window.scrollTo({ top: 0, behavior: 'smooth' })
+      const line = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0
+      const from = (s: HTMLElement) => s.getBoundingClientRect().top - line
+      const target = go > 0 ? sections().find((s) => from(s) > SLACK) : sections().findLast((s) => from(s) < -SLACK)
+      const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+      if (target) target.scrollIntoView({ behavior })
+      else if (go < 0) window.scrollTo({ top: 0, behavior })
     })
   )
 </script>
