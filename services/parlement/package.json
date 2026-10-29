@@ -10,6 +10,7 @@
     "./package.json": "./package.json",
     "./main": "./src/main.ts",
     "./view": "./src/view.tsx",
+    "./help": "./src/help.md",
     "./sync": "./src/sync.ts"
   },
   "marianne": {
@@ -17,6 +18,32 @@
     "name": "Parlement",
     "description": "Assemblée nationale et Sénat : vos élus, les scrutins, l’agenda, les séances en vidéo et en direct",
     "category": "democracy",
+    "tabs": [
+      {
+        "id": "home",
+        "label": "accueil"
+      },
+      {
+        "id": "hemicycle",
+        "label": "hémicycle"
+      },
+      {
+        "id": "ballots",
+        "label": "scrutins"
+      },
+      {
+        "id": "members",
+        "label": "élus"
+      },
+      {
+        "id": "videos",
+        "label": "vidéos"
+      },
+      {
+        "id": "agenda",
+        "label": "agenda"
+      }
+    ],
     "keywords": [
       "assemblée",
       "sénat",

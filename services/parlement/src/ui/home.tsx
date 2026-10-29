@@ -57,6 +57,8 @@ function Home() {
     const t = setInterval(reload, 60_000)
     return () => clearInterval(t)
   }, [reload])
+  const { mine } = useStore()
+  if (!mine || !day || (!result.data && !result.error)) return <Loading label="votre journée au Parlement" />
 
   const streams = (live.data ?? []).filter((s) => nav.shows(s.chamber))
   const now = new Date().toISOString()
@@ -94,11 +96,11 @@ function Home() {
         </div>
       </div>
       {result.error ? (
-        <Failure error={result.error} retry={result.reload} />
+        <Failure inline error={result.error} retry={result.reload} />
       ) : result.data ? (
         <Bulletin day={result.data} />
       ) : (
-        <Loading>les scrutins du jour…</Loading>
+        <Loading inline label="les scrutins du jour" />
       )}
     </>
   )
@@ -123,7 +125,7 @@ function Mine({ day }: { day: DayBallots | null }) {
   const host = useHost()
   const nav = useNav()
   const { mine } = useStore()
-  if (!mine) return <Loading />
+  if (!mine) return <Loading inline />
   if (!mine.commune)
     return (
       <div className="parlement-blk">
@@ -364,9 +366,9 @@ function Followed({ day }: { day: DayBallots | null }) {
       {!ids.length ? (
         <p className="small dim">Suivez des élus (☆ sur leur fiche, ou dans « à suivre ? ») pour voir ici ce qu’ils font chaque jour.</p>
       ) : people.error ? (
-        <Failure error={people.error} retry={people.reload} />
+        <Failure inline error={people.error} retry={people.reload} />
       ) : !people.data ? (
-        <Loading />
+        <Loading inline />
       ) : (
         <div className="parlement-lines">
           {shown.map((p) => {
@@ -476,9 +478,9 @@ export function Suggestions({ wide }: { wide?: boolean }) {
         <span className="small dim">{wide ? 'pourquoi : toujours dit, jamais deviné' : 'd’après votre adresse et vos thèmes'}</span>
       </div>
       {suggestions.error ? (
-        <Failure error={suggestions.error} retry={suggestions.reload} />
+        <Failure inline error={suggestions.error} retry={suggestions.reload} />
       ) : !suggestions.data ? (
-        <Loading />
+        <Loading inline />
       ) : list.length ? (
         <div className="parlement-lines">
           {list.map((s) => (
@@ -555,9 +557,9 @@ function Coming({ meetings, error }: { meetings: AgendaMeeting[] | null; error: 
         </button>
       </div>
       {error ? (
-        <Failure error={error} />
+        <Failure inline error={error} />
       ) : !meetings ? (
-        <Loading />
+        <Loading inline />
       ) : shown.length ? (
         shown.map((m) => {
           const isBig = BIG.test(m.items.join(' '))

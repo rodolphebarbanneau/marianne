@@ -66,7 +66,7 @@ function Members() {
           </button>
         </div>
         {!mine ? (
-          <Loading />
+          <Loading inline />
         ) : !mine.commune ? (
           <p className="small dim">Votre adresse n’est pas renseignée : vos députés et sénateurs se trouvent d’après elle, sur cet ordinateur.</p>
         ) : (
@@ -98,9 +98,9 @@ function Members() {
         {!ids.length ? (
           <p className="small dim">Personne pour l’instant : ☆ suivre, sur une fiche ou dans « à suivre ? ».</p>
         ) : followed.error ? (
-          <Failure error={followed.error} retry={followed.reload} />
+          <Failure inline error={followed.error} retry={followed.reload} />
         ) : !followed.data ? (
-          <Loading />
+          <Loading inline />
         ) : (
           <div className="parlement-cards">
             {followed.data
@@ -201,9 +201,9 @@ function Search() {
       </span>
       {search.length > 1 &&
         (byName.error ? (
-          <Failure error={byName.error} retry={byName.reload} />
+          <Failure inline error={byName.error} retry={byName.reload} />
         ) : !byName.data ? (
-          <Loading />
+          <Loading inline />
         ) : found.length ? (
           <MemberLines members={found} />
         ) : (
@@ -250,9 +250,9 @@ function GroupList({ chamber }: { chamber: Chamber }) {
         </span>
       </div>
       {groups.error ? (
-        <Failure error={groups.error} retry={groups.reload} />
+        <Failure inline error={groups.error} retry={groups.reload} />
       ) : !groups.data ? (
-        <Loading />
+        <Loading inline />
       ) : (
         <div className="parlement-lines">
           {groups.data.map((g) => (
@@ -294,7 +294,7 @@ function Member({ chamber, id }: { chamber: Chamber; id: string }) {
   const [contact, setContact] = useState(false)
   if (profile.error) return <Failure error={profile.error} retry={profile.reload} />
   const p = profile.data
-  if (!p) return <Loading />
+  if (!p) return <Loading label="la fiche" />
   const own = mine.some((m) => m.id === p.id)
   const a = p.analysis
   const lensGroup = groups.byAcronym(chamber, chamber === 'an' ? lens.an : lens.se)
@@ -477,9 +477,9 @@ function Member({ chamber, id }: { chamber: Chamber; id: string }) {
           </button>
         </div>
         {passages.error ? (
-          <Failure error={passages.error} retry={passages.reload} />
+          <Failure inline error={passages.error} retry={passages.reload} />
         ) : !passages.data ? (
-          <Loading>ses prises de parole…</Loading>
+          <Loading inline label="ses prises de parole" />
         ) : spoken.length ? (
           <div className="parlement-lines">
             {spoken.slice(0, 8).map((s) => (
@@ -618,7 +618,7 @@ function Group({ chamber, id }: { chamber: Chamber; id: string }) {
       {members.error ? (
         <Failure error={members.error} retry={members.reload} />
       ) : !members.data ? (
-        <Loading />
+        <Loading label="le groupe" />
       ) : (
         <>
           <p className="dim">{plural(members.data.length, chamber === 'an' ? 'député' : 'sénateur')}</p>

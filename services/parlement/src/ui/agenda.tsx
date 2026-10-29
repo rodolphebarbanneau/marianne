@@ -115,7 +115,7 @@ export function AgendaTab() {
       {agenda.error ? (
         <Failure error={agenda.error} retry={reload} />
       ) : !agenda.data ? (
-        <Loading>chargement de l’agenda…</Loading>
+        <Loading label="l’agenda" />
       ) : (
         <div className={nav.chambers === 'both' ? 'parlement-two' : ''}>
           {(['an', 'se'] as Chamber[])
@@ -219,7 +219,7 @@ export function MeetingPane({ id }: { id: string }) {
   const nav = useNav()
   const detail = useMethod('meeting', [id])
   if (detail.error) return <Failure error={detail.error} retry={detail.reload} />
-  if (!detail.data) return <Loading>chargement de la réunion…</Loading>
+  if (!detail.data) return <Loading label="la réunion" />
   const { meeting: m, stream, videos } = detail.data
   const past = Date.parse(m.start) < Date.now()
   return (

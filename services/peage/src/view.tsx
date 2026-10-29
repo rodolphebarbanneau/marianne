@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { errorText, Field, Spinner, useCall, useHost } from '@marianne/sdk/view'
+import { errorText, Failure, Field, Loading, Notice, useCall, useHost, useNow } from '@marianne/sdk/view'
 import { hostOf } from './networks'
 import { dueOf, leftText, paid, unpaid } from './schedule'
 import { fromParisInput, parisInput, when } from './time'
@@ -16,21 +16,12 @@ import './view.css'
 const PAID_SHOWN = 10
 const URGENT_MS = 24 * 3600_000
 
-/** The time, kept fresh: what is left to pay changes by the minute. */
-function useNow(everyMs = 30_000): Date {
-  const [now, setNow] = useState(() => new Date())
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), everyMs)
-    return () => clearInterval(t)
-  }, [everyMs])
-  return now
-}
-
 const plateOf = (vehicles: Vehicle[], id: string) => vehicles.find((v) => v.id === id)?.plate || ''
 
 export function View() {
   const host = useHost<PeageMethods>()
-  const now = useNow()
+  // What is left to pay changes by the minute.
+  const now = useNow(30_000)
   const networks = useCall<PeageMethods, 'networks'>('networks', [])
   const vehicles = useCall<PeageMethods, 'vehicles'>('vehicles', [])
   const loaded = useCall<PeageMethods, 'trips'>('trips', [])
@@ -56,109 +47,108 @@ export function View() {
     <div className="peage">
       <div className="peage-body">
         {vehicles.data && !vehicles.data.granted ? (
-          <div className="box-note">
-            3615 PEAGE n’a pas accès aux plaques de vos véhicules : il en a besoin pour noter vos trajets et vous rappeler les péages à payer.{' '}
-            <button className="link" onClick={() => host.openRoute('settings/services')}>
-              autoriser dans les réglages
-            </button>
-          </div>
+          <Notice action={{ label: 'autoriser dans les réglages', onClick: () => host.openRoute('settings/services') }}>
+            3615 PEAGE n’a pas accès aux plaques de vos véhicules : il en a besoin pour noter vos trajets et vous rappeler les péages à payer.
+          </Notice>
         ) : vehicles.data && !list.length ? (
-          <div className="box-note">
-            Aucun véhicule dans votre profil : ajoutez celui avec lequel vous empruntez l’autoroute.{' '}
-            <button className="link" onClick={() => host.openRoute('settings/household')}>
-              ajouter un véhicule
-            </button>
-          </div>
+          <Notice action={{ label: 'ajouter un véhicule', onClick: () => host.openRoute('settings/household') }}>
+            Aucun véhicule dans votre profil : ajoutez celui avec lequel vous empruntez l’autoroute.
+          </Notice>
         ) : null}
 
-        <section className="peage-section">
-          <h3 className="label">À payer</h3>
-          {loaded.error ? (
-            <div className="box-note">
-              Vos trajets sont indisponibles : {loaded.error}{' '}
-              <button className="link" onClick={loaded.reload}>
-                réessayer
-              </button>
-            </div>
-          ) : !trips || !networks.data ? (
-            <Spinner />
-          ) : unpaid(trips).length ? (
-            <div className="rows">
-              {unpaid(trips).map((t) => (
-                <DueRow
-                  key={t.id}
-                  trip={t}
-                  network={network(t.network)}
-                  plate={plateOf(list, t.vehicleId)}
-                  now={now}
-                  focused={t.id === focus}
-                  onPaid={() => void change(host.call('markPaid', t.id), 'trajet marqué payé')}
-                  onRemove={() => void change(host.call('removeTrip', t.id), 'trajet supprimé')}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="dim">Aucun trajet à payer.</p>
-          )}
-          <p className="small dim">
-            Marianne ne connaît pas les montants, le site officiel les affiche à partir de la plaque. Si vous avez un badge de télépéage bien fixé au
-            pare-brise, vous n’avez rien à noter : le passage est payé automatiquement.
-          </p>
-        </section>
-
-        <div className="box-note peage-scam">
-          <span className="hi">Faux SMS de péage.</span> Aucun lien de paiement officiel n’est envoyé par SMS. Ne payez jamais depuis un lien reçu par SMS ou
-          par e-mail : tapez vous-même l’adresse du site officiel{sites ? ` (${sites})` : ''}. Transférez le SMS suspect au 33700, puis supprimez-le.
-        </div>
-
-        {networks.data && list.length > 0 && (
-          <AddTrip
-            networks={networks.data}
-            vehicles={list}
-            onAdd={(trip) =>
-              host.call('addTrip', trip).then((next) => {
-                setChanged(next)
-                host.toast('trajet ajouté')
-              })
-            }
+        {/* One wait for the page: the trips and the free-flow sections. */}
+        {loaded.error || networks.error ? (
+          <Failure
+            title="Vos trajets sont indisponibles"
+            error={loaded.error || networks.error}
+            retry={() => {
+              loaded.reload()
+              networks.reload()
+            }}
           />
-        )}
+        ) : !trips || !networks.data ? (
+          <Loading label="vos trajets" />
+        ) : (
+          <>
+            <section className="peage-section">
+              <h3 className="label">À payer</h3>
+              {unpaid(trips).length ? (
+                <div className="rows">
+                  {unpaid(trips).map((t) => (
+                    <DueRow
+                      key={t.id}
+                      trip={t}
+                      network={network(t.network)}
+                      plate={plateOf(list, t.vehicleId)}
+                      now={now}
+                      focused={t.id === focus}
+                      onPaid={() => void change(host.call('markPaid', t.id), 'trajet marqué payé')}
+                      onRemove={() => void change(host.call('removeTrip', t.id), 'trajet supprimé')}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="dim">Aucun trajet à payer.</p>
+              )}
+              <p className="small dim">
+                Marianne ne connaît pas les montants, le site officiel les affiche à partir de la plaque. Si vous avez un badge de télépéage bien fixé au
+                pare-brise, vous n’avez rien à noter : le passage est payé automatiquement.
+              </p>
+            </section>
 
-        {trips && paid(trips).length > 0 && (
-          <section className="peage-section">
-            <h3 className="label">Payés</h3>
-            <div className="rows">
-              {paid(trips)
-                .slice(0, PAID_SHOWN)
-                .map((t) => (
-                  <div key={t.id} className="row peage-done">
-                    <span className="peage-what">
-                      <span>
-                        <span className="plate">{plateOf(list, t.vehicleId) || '—'}</span> {network(t.network)?.name ?? t.network}
-                      </span>
-                      <span className="small dim">passage {when(new Date(t.at))}</span>
-                    </span>
-                    <span className="small dim">payé {when(new Date(t.paidAt!))}</span>
-                    <span className="peage-acts">
-                      <button className="btn small" onClick={() => void change(host.call('markUnpaid', t.id), 'trajet remis à payer')}>
-                        annuler
-                      </button>
-                    </span>
-                  </div>
+            <div className="box-note peage-scam">
+              <span className="hi">Faux SMS de péage.</span> Aucun lien de paiement officiel n’est envoyé par SMS. Ne payez jamais depuis un lien reçu par SMS
+              ou par e-mail : tapez vous-même l’adresse du site officiel{sites ? ` (${sites})` : ''}. Transférez le SMS suspect au 33700, puis supprimez-le.
+            </div>
+
+            {list.length > 0 && (
+              <AddTrip
+                networks={networks.data}
+                vehicles={list}
+                onAdd={(trip) =>
+                  host.call('addTrip', trip).then((next) => {
+                    setChanged(next)
+                    host.toast('trajet ajouté')
+                  })
+                }
+              />
+            )}
+
+            {paid(trips).length > 0 && (
+              <section className="peage-section">
+                <h3 className="label">Payés</h3>
+                <div className="rows">
+                  {paid(trips)
+                    .slice(0, PAID_SHOWN)
+                    .map((t) => (
+                      <div key={t.id} className="row peage-done">
+                        <span className="peage-what">
+                          <span>
+                            <span className="plate">{plateOf(list, t.vehicleId) || '—'}</span> {network(t.network)?.name ?? t.network}
+                          </span>
+                          <span className="small dim">passage {when(new Date(t.at))}</span>
+                        </span>
+                        <span className="small dim">payé {when(new Date(t.paidAt!))}</span>
+                        <span className="peage-acts">
+                          <button className="btn small" onClick={() => void change(host.call('markUnpaid', t.id), 'trajet remis à payer')}>
+                            annuler
+                          </button>
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </section>
+            )}
+
+            <section className="peage-section">
+              <h3 className="label">Les autoroutes en flux libre</h3>
+              <div className="peage-networks">
+                {networks.data.map((n) => (
+                  <NetworkCard key={n.id} network={n} />
                 ))}
-            </div>
-          </section>
-        )}
-
-        {networks.data && (
-          <section className="peage-section">
-            <h3 className="label">Les autoroutes en flux libre</h3>
-            <div className="peage-networks">
-              {networks.data.map((n) => (
-                <NetworkCard key={n.id} network={n} />
-              ))}
-            </div>
-          </section>
+              </div>
+            </section>
+          </>
         )}
       </div>
     </div>

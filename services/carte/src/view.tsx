@@ -1,5 +1,5 @@
 import { memo, useMemo, useState, type MouseEvent } from 'react'
-import { departmentOf, formatNumber, Spinner, useCall, useHost, type Loaded } from '@marianne/sdk/view'
+import { departmentOf, Failure, formatNumber, Loading, Notice, useCall, useHost, type Loaded } from '@marianne/sdk/view'
 import { densityClasses, inhabitants, legend, perSquareKm, sortRows, squareKm, type Sort } from './display'
 import { projectOnMap } from './projection'
 import type { CarteMethods, CommuneFigures, DepartmentFigures, MapShape, MapView } from './types'
@@ -18,17 +18,14 @@ export function View() {
     <div className="carte">
       <div className="carte-body">
         {!host.home && (
-          <div className="box-note">
-            Renseignez votre adresse pour situer votre commune sur la carte.{' '}
-            <button className="link" onClick={() => host.openRoute('settings/identity')}>
-              renseigner mon adresse
-            </button>
-          </div>
+          <Notice action={{ label: 'renseigner mon adresse', onClick: () => host.openRoute('settings/identity') }}>
+            Renseignez votre adresse pour situer votre commune sur la carte.
+          </Notice>
         )}
         {map.error ? (
-          <div className="box-note">Carte indisponible : {map.error}</div>
+          <Failure title="Carte indisponible" error={map.error} retry={map.reload} />
         ) : !map.data ? (
-          <Spinner />
+          <Loading label="la carte de France" />
         ) : department ? (
           <Department
             key={department}
@@ -89,16 +86,9 @@ function France({ view, figures, onOpen }: { view: MapView; figures: Loaded<Depa
       </div>
       <div className="carte-pane">
         {figures.error ? (
-          <div className="box-note">
-            Chiffres indisponibles : {figures.error}{' '}
-            <button className="link" onClick={figures.reload}>
-              réessayer
-            </button>
-          </div>
+          <Failure inline title="Chiffres indisponibles" error={figures.error} retry={figures.reload} />
         ) : !figures.data ? (
-          <span className="dim">
-            <Spinner /> chiffres des départements…
-          </span>
+          <Loading inline label="les chiffres des départements" />
         ) : (
           <FiguresTable<DepartmentFigures>
             rows={rows}
@@ -134,6 +124,8 @@ function Department({ code, name, figures, onBack }: { code: string; name: strin
   const home = host.home && departmentOf(host.home.code) === code ? host.home.code : null
   const focus = hovered ?? selected
   const shown = focus ? (byCode.get(focus) ?? map.data?.shapes.find((s) => s.code === focus)) : null
+  // The map and the figures come together: one wait for both.
+  const waiting = (!map.data && !map.error) || (!communes.data && !communes.error)
 
   return (
     <>
@@ -151,81 +143,67 @@ function Department({ code, name, figures, onBack }: { code: string; name: strin
           </span>
         )}
       </div>
-      <div className="carte-split">
-        <div className="carte-pane">
-          <div className="carte-status">
-            {shown ? (
-              <>
-                <span className="hi">{shown.name}</span>
-                {'population' in shown && (
-                  <span className="dim">
-                    {shown.postalCodes.join(', ')} · {inhabitants(shown.population)} · {squareKm(shown.area)} · {perSquareKm(shown.density)}
-                  </span>
-                )}
-              </>
-            ) : (
-              <span className="dim">Survolez ou cliquez une commune.</span>
-            )}
-          </div>
-          {map.error ? (
-            <div className="box-note">
-              Carte indisponible : {map.error}{' '}
-              <button className="link" onClick={map.reload}>
-                réessayer
-              </button>
+      {waiting ? (
+        <Loading label={`les communes de ${name}`} />
+      ) : (
+        <div className="carte-split">
+          <div className="carte-pane">
+            <div className="carte-status">
+              {shown ? (
+                <>
+                  <span className="hi">{shown.name}</span>
+                  {'population' in shown && (
+                    <span className="dim">
+                      {shown.postalCodes.join(', ')} · {inhabitants(shown.population)} · {squareKm(shown.area)} · {perSquareKm(shown.density)}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="dim">Survolez ou cliquez une commune.</span>
+              )}
             </div>
-          ) : map.data ? (
-            <>
-              <MapSvg
-                view={map.data}
-                classes={shading.classes}
-                home={home}
-                selected={selected}
+            {map.error ? (
+              <Failure title="Carte indisponible" error={map.error} retry={map.reload} />
+            ) : map.data ? (
+              <>
+                <MapSvg
+                  view={map.data}
+                  classes={shading.classes}
+                  home={home}
+                  selected={selected}
+                  hovered={hovered}
+                  onHover={setHovered}
+                  onPick={(c) => setSelected(c === selected ? null : c)}
+                  label={`Communes : ${name}`}
+                />
+                <Legend thresholds={shading.thresholds} />
+                <span className="small dim">{map.data.credit}</span>
+              </>
+            ) : null}
+          </div>
+          <div className="carte-pane">
+            {communes.error ? (
+              <Failure title="Chiffres indisponibles" error={communes.error} retry={communes.reload} />
+            ) : communes.data ? (
+              <FiguresTable<CommuneFigures>
+                rows={rows}
+                columns={[
+                  { key: 'name', label: 'Commune' },
+                  { key: 'population', label: 'Population', numeric: true, format: (c) => formatNumber(c.population) },
+                  { key: 'area', label: 'km²', numeric: true, format: (c) => formatNumber(c.area, c.area < 100 ? 2 : 0) },
+                  { key: 'density', label: 'hab./km²', numeric: true, format: (c) => formatNumber(c.density, c.density < 100 ? 1 : 0) }
+                ]}
+                initial={{ key: 'population', desc: true }}
                 hovered={hovered}
+                selected={selected}
+                home={home}
                 onHover={setHovered}
                 onPick={(c) => setSelected(c === selected ? null : c)}
-                label={`Communes : ${name}`}
               />
-              <Legend thresholds={shading.thresholds} />
-              <span className="small dim">{map.data.credit}</span>
-            </>
-          ) : (
-            <span className="dim">
-              <Spinner /> contours des communes…
-            </span>
-          )}
+            ) : null}
+          </div>
         </div>
-        <div className="carte-pane">
-          {communes.error ? (
-            <div className="box-note">
-              Chiffres indisponibles : {communes.error}{' '}
-              <button className="link" onClick={communes.reload}>
-                réessayer
-              </button>
-            </div>
-          ) : communes.data ? (
-            <FiguresTable<CommuneFigures>
-              rows={rows}
-              columns={[
-                { key: 'name', label: 'Commune' },
-                { key: 'population', label: 'Population', numeric: true, format: (c) => formatNumber(c.population) },
-                { key: 'area', label: 'km²', numeric: true, format: (c) => formatNumber(c.area, c.area < 100 ? 2 : 0) },
-                { key: 'density', label: 'hab./km²', numeric: true, format: (c) => formatNumber(c.density, c.density < 100 ? 1 : 0) }
-              ]}
-              initial={{ key: 'population', desc: true }}
-              hovered={hovered}
-              selected={selected}
-              home={home}
-              onHover={setHovered}
-              onPick={(c) => setSelected(c === selected ? null : c)}
-            />
-          ) : (
-            <span className="dim">
-              <Spinner /> chiffres des communes…
-            </span>
-          )}
-        </div>
-      </div>
+      )}
     </>
   )
 }

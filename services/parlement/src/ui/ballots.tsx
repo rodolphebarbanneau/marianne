@@ -252,7 +252,7 @@ export function BallotCard({ chamber, id, inHemicycle }: { chamber: Chamber; id:
   const data = useMethod('hemicycle', [chamber])
   if (detail.error) return <Failure error={detail.error} retry={detail.reload} />
   const b = detail.data
-  if (!b) return <Loading />
+  if (!b) return <Loading label="le scrutin" />
   const lensGroup = groups.byAcronym(chamber, chamber === 'an' ? lens.an : lens.se)
   const lensPosition = lensGroup ? (b.groups.find((g) => g.groupId === lensGroup.id)?.position ?? null) : null
   // The comparison names the user's deputy only (they have several senators).
@@ -314,7 +314,7 @@ export function BallotCard({ chamber, id, inHemicycle }: { chamber: Chamber; id:
           />
         </div>
       ) : (
-        <Loading />
+        <Loading inline />
       )}
       <div className="parlement-keyrow dots">
         <span>
@@ -447,7 +447,7 @@ function Ballots() {
   const last = useBallotDay()
   const [picked, setPicked] = useState<string | null>(null)
   const day = picked ?? last
-  if (!day) return <Loading />
+  if (!day) return <Loading label="les scrutins" />
   const setDay = (d: string) => setPicked(d)
   return (
     <>
@@ -489,7 +489,7 @@ function DayBallotsView({ day }: { day: string }) {
   const [selected, setSelected] = useState<BallotLine | null>(null)
   if (result.error) return <Failure error={result.error} retry={result.reload} />
   const data = result.data
-  if (!data) return <Loading>les scrutins du jour…</Loading>
+  if (!data) return <Loading label="les scrutins du jour" />
   const lines = data.bills.filter((b) => nav.shows(b.chamber)).flatMap((b) => b.ballots)
   if (!lines.length)
     return (
@@ -610,7 +610,7 @@ function PresenceBlock({ day, data }: { day: string; data: DayBallots }) {
               center={{ big: String(Object.values(presence.data).filter((p) => p.voted > 0).length), small: 'ont voté aujourd’hui' }}
             />
           ) : (
-            <Loading />
+            <Loading inline />
           )}
           <div className="parlement-keyrow dots">
             <span>
@@ -783,7 +783,7 @@ function AnalysisView() {
       {analysis.error ? (
         <Failure error={analysis.error} retry={analysis.reload} />
       ) : !analysis.data ? (
-        <Loading>l’analyse des votes…</Loading>
+        <Loading label="l’analyse des votes" />
       ) : (
         <>
           <div className="parlement-matrix-wrap">
@@ -1037,9 +1037,9 @@ function SearchView() {
         </span>
       </div>
       {ballots.error ? (
-        <Failure error={ballots.error} retry={ballots.reload} />
+        <Failure inline error={ballots.error} retry={ballots.reload} />
       ) : !ballots.data ? (
-        <Loading>recherche des scrutins…</Loading>
+        <Loading inline label="recherche des scrutins" />
       ) : ballots.data.length ? (
         <div className={`parlement-bt-wrap${nav.wide ? '' : ' alone'}`}>
           <div className="parlement-btable">

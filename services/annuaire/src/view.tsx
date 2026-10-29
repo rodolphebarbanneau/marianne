@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { formatNumber, Spinner, useCall, useHost, type Loaded } from '@marianne/sdk/view'
+import { useState, type FormEvent } from 'react'
+import { Failure, formatNumber, Loading, Notice, Spinner, useCall, useHost, useNow, type Loaded } from '@marianne/sdk/view'
 import { dayHours, daySlotsLabel, openAt } from './hours'
 import type { AnnuaireMethods, NearbyOffices, OfficeAddress, OfficeQuery, OfficeResults, PublicOffice } from './types'
 import './view.css'
@@ -13,16 +13,6 @@ const NEAR_LIMIT = 10
 interface Search {
   commune: string
   text: string
-}
-
-/** The time, again every minute: whether an office is open changes with it. */
-function useNow(): Date {
-  const [now, setNow] = useState(() => new Date())
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 60_000)
-    return () => clearInterval(t)
-  }, [])
-  return now
 }
 
 const services = (n: number) => `${formatNumber(n)} service${n > 1 ? 's' : ''}`
@@ -49,6 +39,7 @@ function byKind(offices: PublicOffice[]): Array<{ label: string; offices: Public
 export function View() {
   const host = useHost<AnnuaireMethods>()
   const home = host.home
+  // Whether an office is open changes with the time.
   const now = useNow()
   const kinds = useCall<AnnuaireMethods, 'kinds'>('kinds', [])
   const [kind, setKind] = useState<string | null>(null)
@@ -85,12 +76,9 @@ export function View() {
     <div className="annuaire">
       <div className="annuaire-body">
         {!home && (
-          <div className="box-note">
-            Renseignez votre adresse pour voir les services publics près de chez vous.{' '}
-            <button className="link" onClick={() => host.openRoute('settings/identity')}>
-              renseigner mon adresse
-            </button>
-          </div>
+          <Notice action={{ label: 'renseigner mon adresse', onClick: () => host.openRoute('settings/identity') }}>
+            Renseignez votre adresse pour voir les services publics près de chez vous.
+          </Notice>
         )}
 
         <form className="annuaire-search" onSubmit={submit}>
@@ -143,16 +131,8 @@ export function View() {
 }
 
 function Nearby({ state, place, now }: { state: Loaded<NearbyOffices[]>; place: string; now: Date }) {
-  if (state.error)
-    return (
-      <div className="box-note">
-        Annuaire indisponible : {state.error}{' '}
-        <button className="link" onClick={state.reload}>
-          réessayer
-        </button>
-      </div>
-    )
-  if (!state.data) return <Spinner />
+  if (state.error) return <Failure title="Annuaire indisponible" error={state.error} retry={state.reload} />
+  if (!state.data) return <Loading label={`les services publics de ${place}`} />
   const empty = state.data.filter((g) => !g.offices.length)
   return (
     <div className={`annuaire-results${state.loading ? ' annuaire-stale' : ''}`}>
@@ -177,16 +157,8 @@ interface ResultsProps {
 }
 
 function Results({ results, error, loading, grouped, now, onRetry }: ResultsProps) {
-  if (error)
-    return (
-      <div className="box-note">
-        {error}{' '}
-        <button className="link" onClick={onRetry}>
-          réessayer
-        </button>
-      </div>
-    )
-  if (!results) return <Spinner />
+  if (error) return <Failure title="Recherche impossible" error={error} retry={onRetry} />
+  if (!results) return <Loading label="les services publics" />
   const more = results.total > results.offices.length ? ` · les ${results.offices.length} premiers` : ''
   const head = !results.offices.length
     ? `Aucun service trouvé${results.place ? ` pour ${results.place}` : ''}.`

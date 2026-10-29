@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { allowedUrl, departmentOf, foldText, ManifestError, readManifest, serviceCode, serviceMatches, sortServices, type ServiceManifest } from '../src/index'
+import {
+  allowedUrl,
+  departmentOf,
+  foldText,
+  ManifestError,
+  MAX_TABS,
+  readManifest,
+  serviceCode,
+  serviceMatches,
+  sortServices,
+  tabKey,
+  type ServiceManifest
+} from '../src/index'
 
 const pkg = (marianne: Record<string, unknown>, name = '@marianne/service-meteo') => ({
   name,
@@ -50,6 +62,42 @@ describe('readManifest', () => {
   })
 })
 
+describe('a screen’s tabs', () => {
+  it('reads them in their order, each with its function key from F2 (F1 is GUIDE)', () => {
+    const m = readManifest(
+      pkg({
+        tabs: [
+          { id: 'home', label: 'accueil' },
+          { id: 'ballots', label: ' scrutins ' }
+        ]
+      })
+    )
+    expect(m.tabs).toEqual([
+      { id: 'home', label: 'accueil' },
+      { id: 'ballots', label: 'scrutins' }
+    ])
+    expect(m.tabs.map((_, i) => tabKey(i))).toEqual(['F2', 'F3'])
+    expect(readManifest(pkg({})).tabs).toEqual([])
+  })
+
+  it('refuses ids that are not plain, a tab without a label, the same id twice, more than F9 reaches', () => {
+    expect(() => readManifest(pkg({ tabs: [{ id: 'Accueil', label: 'accueil' }] }))).toThrow(/lowercase/)
+    expect(() => readManifest(pkg({ tabs: [{ id: 'home', label: ' ' }] }))).toThrow(/label/)
+    expect(() =>
+      readManifest(
+        pkg({
+          tabs: [
+            { id: 'home', label: 'a' },
+            { id: 'home', label: 'b' }
+          ]
+        })
+      )
+    ).toThrow(/same id/)
+    const nine = Array.from({ length: MAX_TABS + 1 }, (_, i) => ({ id: `t${i}`, label: `onglet ${i}` }))
+    expect(() => readManifest(pkg({ tabs: nine }))).toThrow(/at most 8/)
+  })
+})
+
 describe('departmentOf', () => {
   it('reads the département of an INSEE code, overseas and Corsica included', () => {
     expect(['33063', '2A004', '97411', '01001'].map(departmentOf)).toEqual(['33', '2A', '974', '01'])
@@ -81,7 +129,8 @@ describe('search and order', () => {
     hosts: [],
     links: [],
     domains: [],
-    permissions: { profile: [], purpose: '' }
+    permissions: { profile: [], purpose: '' },
+    tabs: []
   })
   const meteo = manifest('meteo', 'Météo', 'daily', ['pluie'])
   const carte = manifest('carte', 'Carte de France', 'territory')

@@ -5,7 +5,7 @@
 - **Phrase de passe oubliée.** Sur l’écran de verrouillage, choisissez « phrase oubliée ? utiliser la clé de secours », puis une nouvelle phrase de passe.
 - **Le code ne marche plus.** Après 5 erreurs, il faut de nouveau la phrase de passe. Vous pourrez ensuite remettre un code.
 - **Marianne ne répond pas.** Vérifiez que votre moteur est installé et connecté : les témoins en bas à gauche, et Réglages › Moteurs.
-- **L’écran n’est pas à jour.** Rechargez la fenêtre, avec F5 ou le bouton en haut à droite. L’archive reste ouverte.
+- **L’écran n’est pas à jour.** Rechargez la fenêtre, avec ctrl+maj+R (cmd+maj+R sur macOS) ou le bouton en haut à droite. L’archive reste ouverte.
 - **L’archive est pleine.** Faites de la place dans Réglages › Place et emplacement.
 
 Dans l’application, F1 ouvre le guide, avec les liens vers le projet.

@@ -3,14 +3,16 @@ import type { ServiceManifest, ServiceMethods } from './index'
 
 /**
  * @marianne/sdk/view: a service's screen. The package exports `View`, a React component that
- * Marianne shows under its 3615 header; everything it needs of the app comes through its host
- * (`useHost`): calls to its main side, its stored data, handing a question to Marianne, opening
- * a link. The window's look comes with the shared blocks (Spinner, Field, Modal) and Marianne's
+ * Marianne shows in its frame: the 3615 header, and the tabs its manifest declares (`useTab` says
+ * which one is shown). Everything it needs of the app comes through its host (`useHost`): calls to
+ * its main side, its stored data, handing a question to Marianne, opening a link. The window's look
+ * comes with the shared blocks (Loading, Failure, Notice, Spinner, Field, Modal) and Marianne's
  * stylesheet; a service adds its own styles in a CSS file its view imports.
  */
 
 export * from './index'
-export { Field, floating, Modal, Spinner } from './ui'
+export { ServiceFrameProvider, ServiceTools, useTab, useTabBadges, type ServiceFrame } from './frame'
+export { Failure, Field, floating, Loading, Modal, Notice, Spinner } from './ui'
 
 /** Something a service hands to Marianne with a question: a page it shows. */
 export interface ShownPage {
@@ -125,4 +127,24 @@ export function useStored<T extends object>(key: string, defaults: T): [T, (patc
     [host, key]
   )
   return [value, update]
+}
+
+/** A value that follows another after a pause: a search as the user types, not at each key. */
+export function useDebounced<T>(value: T, ms = 250): T {
+  const [settled, setSettled] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(value), ms)
+    return () => clearTimeout(t)
+  }, [value, ms])
+  return settled
+}
+
+/** The time, kept fresh (every minute by default): what is open, or left to pay, changes with it. */
+export function useNow(everyMs = 60_000): Date {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), everyMs)
+    return () => clearInterval(t)
+  }, [everyMs])
+  return now
 }

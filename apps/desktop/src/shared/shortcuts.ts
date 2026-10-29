@@ -50,8 +50,8 @@ export const SHORTCUTS: ShortcutDef[] = [
   { id: 'sidebar', label: 'Replier la barre latérale', group: 'Application', accel: 'CommandOrControl+B' },
   { id: 'lock', label: 'Verrouiller la session', group: 'Application', accel: 'CommandOrControl+L' },
   { id: 'fullscreen', label: 'Plein écran', group: 'Application', accel: 'F11', mac: 'Control+CommandOrControl+F' },
-  // cmd+R is RÉPÉTITION's, like ctrl+R elsewhere.
-  { id: 'reload', label: 'Recharger la fenêtre', group: 'Application', accel: 'F5', mac: 'CommandOrControl+Shift+R' },
+  // ctrl+R is RÉPÉTITION's; F2 to F9 are a service's tabs.
+  { id: 'reload', label: 'Recharger la fenêtre', group: 'Application', accel: 'CommandOrControl+Shift+R' },
   { id: 'guide', label: 'Aide de l’écran (GUIDE)', group: 'Application', accel: 'F1' },
   { id: 'send', label: 'Envoyer (ENVOI)', group: 'Conversation', accel: 'Enter' },
   { id: 'stop', label: 'Arrêter Marianne (ANNULATION)', group: 'Conversation', accel: 'Escape' },

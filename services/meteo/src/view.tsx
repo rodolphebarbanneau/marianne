@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Spinner, useCall, useHost, useStored } from '@marianne/sdk/view'
+import { useState } from 'react'
+import { Failure, Loading, Notice, Spinner, useCall, useDebounced, useHost, useStored } from '@marianne/sdk/view'
 import { dayName, degrees, millimetres, weatherGlyph, wind } from './format'
 import type { Favorites, Forecast, MeteoMethods, Place, WeatherDay, WeatherNow } from './types'
 import './view.css'
@@ -9,16 +9,6 @@ import './view.css'
 type Spot = Favorites['communes'][number]
 
 const MODELS: Record<WeatherDay['model'], string> = { meteofrance: 'Météo-France', ecmwf: 'CEPMMT' }
-
-/** A value that follows another after a pause: searches as the user types, not at each key. */
-function useDebounced<T>(value: T, ms: number): T {
-  const [settled, setSettled] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setSettled(value), ms)
-    return () => clearTimeout(t)
-  }, [value, ms])
-  return settled
-}
 
 export function View() {
   const host = useHost<MeteoMethods>()
@@ -40,12 +30,9 @@ export function View() {
     <div className="meteo">
       <div className="meteo-body">
         {!home && (
-          <div className="box-note">
-            Renseignez votre adresse pour voir d’emblée le temps de votre commune.{' '}
-            <button className="link" onClick={() => host.openRoute('settings/identity')}>
-              renseigner mon adresse
-            </button>
-          </div>
+          <Notice action={{ label: 'renseigner mon adresse', onClick: () => host.openRoute('settings/identity') }}>
+            Renseignez votre adresse pour voir d’emblée le temps de votre commune.
+          </Notice>
         )}
 
         <div className="meteo-bar">
@@ -77,7 +64,7 @@ export function View() {
                   {shown.commune.departmentName} ({shown.commune.department}) · {Math.round(shown.elevation)} m
                 </span>
               )}
-              {forecast.loading && <Spinner />}
+              {forecast.loading && shown && <Spinner />}
               <span className="meteo-acts">
                 <button className="btn small" onClick={toggleFavorite}>
                   {starred ? '★ retirer des favoris' : '☆ ajouter aux favoris'}
@@ -88,15 +75,12 @@ export function View() {
               </span>
             </div>
             {forecast.error ? (
-              <div className="box-note">
-                Prévisions indisponibles : {forecast.error}{' '}
-                <button className="link" onClick={forecast.reload}>
-                  réessayer
-                </button>
-              </div>
+              <Failure title="Prévisions indisponibles" error={forecast.error} retry={forecast.reload} />
             ) : shown ? (
               <ForecastPanel forecast={shown} />
-            ) : null}
+            ) : (
+              <Loading label={`les prévisions de ${place.name}`} />
+            )}
           </>
         )}
       </div>
@@ -107,7 +91,7 @@ export function View() {
 function CommuneSearch({ onPick }: { onPick: (spot: Spot) => void }) {
   const [text, setText] = useState('')
   const [open, setOpen] = useState(false)
-  const term = useDebounced(text.trim(), 250)
+  const term = useDebounced(text.trim())
   const typed = text.trim().length >= 2 && term.length >= 2
   const found = useCall<MeteoMethods, 'communes'>('communes', typed ? [term] : null)
   const list = typed ? (found.data ?? []) : []

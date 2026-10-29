@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { THEMES, themesOf } from '@marianne/sdk'
 import type { FranceDigest, FranceItem, NewsDigest, NewsStory, TodayEvent } from '@shared/public'
 import { useApp } from '../app/context'
-import { PageHead, SearchField, Spinner } from '../components/ui'
+import { Loading, PageHead, SearchField } from '../components/ui'
 import { api, errorText } from '../lib/api'
 import { useNewsSources } from '../lib/content'
 import { clock, shortDate } from '../lib/format'
@@ -65,65 +65,67 @@ export function NewsPage() {
           <PageHead title="Actualités" detail={new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}>
             <SearchField value={query} onChange={setQuery} placeholder="chercher dans l’actualité" />
           </PageHead>
-          <div className="news">
-            <div className="srcs">
-              {(settings?.sources ?? []).map((id) => (
-                <span key={id} className="src">
-                  {sourceName(id)}
-                </span>
-              ))}
-              <button className="small link" onClick={() => app.openSettings('sources')}>
-                gérer les sources ›
-              </button>
-              <button className="small link" onClick={load} title="les flux sont relus toutes les quelques minutes">
-                actualiser
-              </button>
-              {themes.length > 0 && (
-                <span className="small dim news-themes">
-                  vos thèmes d’abord : {themes.map((t) => THEMES.find((x) => x.id === t)?.label ?? t).join(', ')} ·{' '}
-                  <button className="link" onClick={() => app.openSettings('identity')}>
-                    changer
-                  </button>
-                </span>
-              )}
-            </div>
-            <div className="news-cols">
-              <div>
-                <span className="label sub">À la une</span>
-                {!news && !error && <Spinner />}
-                {error && <p className="small accent">{error}</p>}
-                {news && !stories.length && <p className="small dim">{q ? 'Rien ne correspond.' : 'Aucun titre pour le moment.'}</p>}
-                {stories.map((s) => (
-                  <Story key={s.id} story={s} themes={themesOfStory(s)} sourceName={sourceName} onCopy={copy} onAsk={ask} />
+          {/* One wait for the page: the headlines, the day, what changes in France. */}
+          {(!news && !error) || !today || !france ? (
+            <Loading label="les actualités" />
+          ) : (
+            <div className="news">
+              <div className="srcs">
+                {(settings?.sources ?? []).map((id) => (
+                  <span key={id} className="src">
+                    {sourceName(id)}
+                  </span>
                 ))}
-                {!!news?.failed.length && <p className="small dim">sans réponse : {news.failed.map((f) => sourceName(f.source)).join(', ')}</p>}
+                <button className="small link" onClick={() => app.openSettings('sources')}>
+                  gérer les sources ›
+                </button>
+                <button className="small link" onClick={load} title="les flux sont relus toutes les quelques minutes">
+                  actualiser
+                </button>
+                {themes.length > 0 && (
+                  <span className="small dim news-themes">
+                    vos thèmes d’abord : {themes.map((t) => THEMES.find((x) => x.id === t)?.label ?? t).join(', ')} ·{' '}
+                    <button className="link" onClick={() => app.openSettings('identity')}>
+                      changer
+                    </button>
+                  </span>
+                )}
               </div>
-              <div>
-                <span className="label sub">Aujourd’hui</span>
-                {!today && <Spinner />}
-                {today && !today.length && <p className="small dim">Rien d’annoncé aujourd’hui.</p>}
-                {today?.map((e) => (
-                  <button key={e.id} className={`ev${e.cancelled ? ' cancelled' : ''}`} onClick={() => openToday(e)} title={e.source}>
-                    <span>{/^\d{4}-\d{2}-\d{2}$/.test(e.start) ? '—' : clock(e.start)}</span>
-                    <span>
-                      {e.live && <span className="live">en direct</span>} {e.title}
-                      {e.detail && <span className="small dim"> · {e.detail}</span>}
-                      {e.place && <span className="small dim"> · {e.place}</span>}
-                    </span>
-                  </button>
-                ))}
-                <span className="label sub">En France</span>
-                {!france && <Spinner />}
-                {france && ![...france.changes, ...france.news].length && <p className="small dim">Rien de neuf.</p>}
-                {france?.changes.map((c) => (
-                  <FranceLine key={c.id} item={c} />
-                ))}
-                {france?.news.slice(0, 6).map((c) => (
-                  <FranceLine key={c.id} item={c} />
-                ))}
+              <div className="news-cols">
+                <div>
+                  <span className="label sub">À la une</span>
+                  {error && <p className="small accent">{error}</p>}
+                  {news && !stories.length && <p className="small dim">{q ? 'Rien ne correspond.' : 'Aucun titre pour le moment.'}</p>}
+                  {stories.map((s) => (
+                    <Story key={s.id} story={s} themes={themesOfStory(s)} sourceName={sourceName} onCopy={copy} onAsk={ask} />
+                  ))}
+                  {!!news?.failed.length && <p className="small dim">sans réponse : {news.failed.map((f) => sourceName(f.source)).join(', ')}</p>}
+                </div>
+                <div>
+                  <span className="label sub">Aujourd’hui</span>
+                  {today && !today.length && <p className="small dim">Rien d’annoncé aujourd’hui.</p>}
+                  {today?.map((e) => (
+                    <button key={e.id} className={`ev${e.cancelled ? ' cancelled' : ''}`} onClick={() => openToday(e)} title={e.source}>
+                      <span>{/^\d{4}-\d{2}-\d{2}$/.test(e.start) ? '—' : clock(e.start)}</span>
+                      <span>
+                        {e.live && <span className="live">en direct</span>} {e.title}
+                        {e.detail && <span className="small dim"> · {e.detail}</span>}
+                        {e.place && <span className="small dim"> · {e.place}</span>}
+                      </span>
+                    </button>
+                  ))}
+                  <span className="label sub">En France</span>
+                  {france && ![...france.changes, ...france.news].length && <p className="small dim">Rien de neuf.</p>}
+                  {france?.changes.map((c) => (
+                    <FranceLine key={c.id} item={c} />
+                  ))}
+                  {france?.news.slice(0, 6).map((c) => (
+                    <FranceLine key={c.id} item={c} />
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
       <NextArrow page="news" />

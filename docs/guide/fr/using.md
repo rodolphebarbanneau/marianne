@@ -41,4 +41,4 @@ Comme sur un Minitel, la barre du bas montre les touches de l’écran :
 | SOMMAIRE   | le menu de l’application          | ctrl+espace |
 | GUIDE      | l’aide, les liens, vos raccourcis | F1          |
 
-Et aussi : ctrl+K pour les commandes, ctrl+alt+espace pour chercher partout, ctrl+, pour les réglages, F5 pour recharger la fenêtre. Sur macOS, cmd remplace ctrl, sauf pour le menu et la recherche, et recharger se fait avec cmd+maj+R. Tous se changent dans Réglages › Raccourcis clavier.
+Et aussi : ctrl+K pour les commandes, ctrl+alt+espace pour chercher partout, ctrl+, pour les réglages, ctrl+maj+R pour recharger la fenêtre. Dans un service, F2, F3… ouvrent ses onglets, et F1 son guide. Sur macOS, cmd remplace ctrl, sauf pour le menu et la recherche. Tous se changent dans Réglages › Raccourcis clavier.

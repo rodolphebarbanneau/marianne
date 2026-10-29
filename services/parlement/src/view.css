@@ -1,18 +1,12 @@
-/* 3615 PARLEMENT: its own blocks, on top of Marianne's classes (.tabs, .news, .btn, .chip, .rows, .box-note…).
-   Its tabs run the window's width (service-wide), what they show sits in Marianne's centred column
-   (at most --content-width), laid out by its width: @container service, at 1000px (one column), 760px
-   and 560px (small screens). */
+/* 3615 PARLEMENT: its own blocks, on top of Marianne's classes (.news, .btn, .chip, .rows, .box-note…).
+   Its tabs are Marianne's (its manifest declares them); what they show sits in Marianne's centred
+   column (at most --content-width), laid out by its width: @container service, at 1000px (one
+   column), 760px and 560px (small screens). */
 
 .parlement {
   display: flex;
   flex-direction: column;
   gap: var(--s3);
-}
-/* Its tabs run the window's width, as the 3615 header does; what they show sits in Marianne's centred column. */
-.parlement > :not(.parlement-tabs) {
-  width: 100%;
-  max-width: var(--content-width);
-  margin-inline: auto;
 }
 .parlement-body {
   display: flex;
@@ -104,19 +98,9 @@
   margin-top: 4px;
 }
 
-/* ---------- the tab bar: tabs, then "◐ mes idées" and the chamber ---------- */
+/* ---------- at the tab bar's end: "◐ mes idées" and the chamber ---------- */
 
-.parlement .parlement-tabs {
-  margin-bottom: 0;
-  align-items: flex-end;
-}
-.parlement-count {
-  color: var(--muted);
-  margin-left: 5px;
-}
 .parlement-chamber {
-  margin-left: auto;
-  margin-bottom: 5px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -142,20 +126,6 @@
   color: var(--hi);
 }
 .parlement-seg button.on {
-  background: var(--fg);
-  color: var(--noir);
-}
-/* In the tab bar, Marianne's tabs style its buttons: the segments keep theirs. */
-.parlement-tabs .parlement-seg button {
-  margin: 0;
-  padding: 1px 9px;
-  border: 0;
-  border-right: 1px solid var(--rule);
-}
-.parlement-tabs .parlement-seg button:last-child {
-  border-right: 0;
-}
-.parlement-tabs .parlement-seg button.on {
   background: var(--fg);
   color: var(--noir);
 }
@@ -1432,15 +1402,6 @@ button.parlement-ev:hover {
   display: flex;
   flex-direction: column;
   gap: var(--s2);
-}
-.parlement-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 420px;
-}
-.parlement-progress .gauge > i {
-  transition: width 0.3s;
 }
 
 /* ---------- narrower windows ---------- */

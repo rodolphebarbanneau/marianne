@@ -326,9 +326,9 @@ export function VideosTab({ search, setSearch }: { search: VideoSearch; setSearc
               </span>
             </div>
             {tab === 'all' && videos.error ? (
-              <Failure error={videos.error} retry={videos.reload} />
+              <Failure inline error={videos.error} retry={videos.reload} />
             ) : tab === 'all' && !videos.data ? (
-              <Loading>recherche des vidéos…</Loading>
+              <Loading inline label="recherche des vidéos" />
             ) : by === 'member' ? (
               <ByMember passages={spoken} byId={byId} loading={!!ids.length && !passages.data} />
             ) : list.length ? (
@@ -401,7 +401,7 @@ function Grouped({ videos, by, speakersOf }: { videos: VideoItem[]; by: 'day' | 
 }
 
 function ByMember({ passages, byId, loading }: { passages: Passage[]; byId: Map<string, MemberCard>; loading: boolean }) {
-  if (loading) return <Loading>les passages de vos élus…</Loading>
+  if (loading) return <Loading inline label="les passages de vos élus" />
   const members = [...new Set(passages.map((p) => p.member))]
   if (!members.length) return <p className="dim">Aucun passage de vos élus ni de vos suivis ces 7 derniers jours, d’après les chapitres des portails.</p>
   return (
@@ -658,7 +658,7 @@ export function LivePane({ chamber, id }: { chamber: Chamber; id: string }) {
   const nav = useNav()
   const live = useMethod('live', [])
   if (live.error) return <Failure error={live.error} retry={live.reload} />
-  if (!live.data) return <Loading />
+  if (!live.data) return <Loading label="le direct" />
   const stream = live.data.find((s) => s.chamber === chamber && s.id === id)
   if (!stream) return <p className="dim">Cette diffusion n’est plus en direct : la vidéo sera sur le portail un peu après la réunion.</p>
   return (
@@ -709,7 +709,7 @@ export function LiveAgenda({ stream }: { stream: LiveStream }) {
   const video = useMethod('video', stream.chamber === 'se' ? [`se:${stream.id}`] : null)
   const chapters = video.data?.chapters ?? []
   const items = stream.items ?? []
-  if (stream.chamber === 'se' && !video.data && !video.error) return <Loading />
+  if (stream.chamber === 'se' && !video.data && !video.error) return <Loading inline />
   if (!chapters.length && !items.length) return <p className="small dim">L’ordre du jour n’est pas publié pour cette diffusion.</p>
   return (
     <div className="parlement-chapters">
@@ -808,7 +808,7 @@ export function VideoPane({ refId, start, stopAt, clip }: { refId: string; start
   }, [clip, v]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (video.error) return <Failure error={video.error} retry={video.reload} />
-  if (!v || !item) return <Loading>chargement de la vidéo…</Loading>
+  if (!v || !item) return <Loading label="la vidéo" />
   const resumable = resume > 0 && (!length || resume < length * 0.95)
   const at = start ?? v.timecode ?? (resumable ? resume + offset : undefined)
   const link = (ms: number) => videoPage(v.chamber, v.id, ms)

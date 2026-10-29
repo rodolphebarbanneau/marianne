@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react'
+import { Failure } from '@marianne/sdk/view'
 import type { Usage } from '@shared/types'
 import { usePixelRatio } from '../lib/pixel-ratio'
 import { SearchIcon } from './icons'
@@ -81,7 +82,7 @@ export function SearchField({
 }
 
 // Shared with the services' views.
-export { Field, Modal, Spinner } from '@marianne/sdk/view'
+export { Failure, Field, Loading, Modal, Notice, Spinner } from '@marianne/sdk/view'
 
 /**
  * Keeps an error in one part of the window (a page, the conversation, a dialog) from blanking
@@ -100,14 +101,6 @@ export class Boundary extends Component<{ children: ReactNode; label: string }, 
 
   render() {
     if (!this.state.error) return this.props.children
-    return (
-      <div className="section">
-        <p className="bad">✗ {this.props.label} : une erreur est survenue.</p>
-        <p className="dim selectable">{this.state.error.message}</p>
-        <button className="btn small" onClick={() => this.setState({ error: null })}>
-          réessayer
-        </button>
-      </div>
-    )
+    return <Failure title={`${this.props.label} : une erreur est survenue`} error={this.state.error.message} retry={() => this.setState({ error: null })} />
   }
 }

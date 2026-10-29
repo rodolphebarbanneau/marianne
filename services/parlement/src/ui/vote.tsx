@@ -41,7 +41,7 @@ export function VoteView({ ballot, onPick }: { ballot: BallotRef | null; onPick:
       ) : latest.data ? (
         <p className="dim">Aucun scrutin public pour l’instant.</p>
       ) : (
-        <Loading />
+        <Loading label="le scrutin" />
       )}
     </>
   )
@@ -122,9 +122,9 @@ function BallotPicker({ current, onPick }: { current: BallotRef | null; onPick: 
             </span>
           </span>
           {found.error ? (
-            <Failure error={found.error} retry={found.reload} />
+            <Failure inline error={found.error} retry={found.reload} />
           ) : !found.data ? (
-            <Loading />
+            <Loading inline />
           ) : found.data.length ? (
             <div className="parlement-btable">
               {found.data.map((line) => (

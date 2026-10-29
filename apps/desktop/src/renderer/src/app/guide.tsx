@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react'
+import { serviceCode, tabKey, type ServiceState } from '@marianne/sdk'
 import { ENGINE_LABELS } from '@shared/config'
 import { CONTRIBUTORS, projectLinks, type ProjectLinkId } from '@shared/project'
 import type { AppInfo } from '@shared/types'
 import { BookIcon, BugIcon, CodeIcon, SparkIcon, TagIcon } from '../components/icons'
 import { Logo } from '../components/logo'
+import { Markdown } from '../components/markdown'
 import { Modal } from '../components/ui'
+import { useServices } from '../host'
+import { SERVICE_HELP } from '../host/registry'
 import { api } from '../lib/api'
 import { useShortcutLabel } from './commands'
 import { useApp } from './context'
@@ -127,8 +131,17 @@ export function Authors() {
   )
 }
 
-/** The guide of an open account: with the keys as the user set them, and a way to all of them. */
+/** The guide of an open account: on a service's screen, that service's; Marianne's otherwise, or when asked from it. */
 export function AppGuide() {
+  const app = useApp()
+  const services = useServices()
+  const [general, setGeneral] = useState(false)
+  const service = app.view.kind === 'service' ? services.find((s) => s.manifest.id === (app.view as { id: string }).id) : undefined
+  if (service && !general) return <ServiceGuide state={service} onGeneral={() => setGeneral(true)} onClose={() => app.openGuide(false)} />
+  return <MarianneGuide />
+}
+
+function MarianneGuide() {
   const app = useApp()
   const label = useShortcutLabel()
   const keys: [string, string][] = [
@@ -150,5 +163,90 @@ export function AppGuide() {
       }}
       onClose={() => app.openGuide(false)}
     />
+  )
+}
+
+/**
+ * A service's guide (F1 on its screen): Marianne's frame, the same for every service (its 3615
+ * code, its name, its keys, who makes it, the sites it reaches), around the few lines of help the
+ * service gives (its help.md).
+ */
+function ServiceGuide({ state, onGeneral, onClose }: { state: ServiceState; onGeneral: () => void; onClose: () => void }) {
+  const m = state.manifest
+  const help = SERVICE_HELP[m.id]?.trim()
+  // Échap closes the guide alone, before the screen under it would go back to the Services.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.preventDefault()
+      e.stopPropagation()
+      onClose()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [onClose])
+  const keys: [string, string][] = [
+    ...(m.tabs.length > 1 ? m.tabs.map((t, i): [string, string] => [t.label, tabKey(i)]) : []),
+    ['ce guide', 'F1'],
+    ['retour aux Services', 'échap']
+  ]
+  return (
+    <Modal>
+      <div className="in roomy guide">
+        <span className="label">Guide</span>
+        <div className="guide-head">
+          <span className="t service-guide-code">
+            <span className="inv">3615</span> {serviceCode(m)}
+          </span>
+          <span className="grow">
+            <span className="hi">{m.name}</span>
+            <span className="small dim">{m.description}</span>
+          </span>
+        </div>
+        {help ? <Markdown source={help} /> : <p className="dim">{m.description}</p>}
+        <div className="guide-cols">
+          <section>
+            <span className="label">Les touches</span>
+            <div className="guide-list">
+              {keys.map(([what, key]) => (
+                <span key={what}>
+                  <span>{what}</span>
+                  <span className="kbd">{key}</span>
+                </span>
+              ))}
+            </div>
+          </section>
+          <section>
+            <span className="label">Le service</span>
+            <div className="guide-list service-guide-facts">
+              <span>
+                <span>version</span>
+                <span className="dim">
+                  {m.version} · {state.builtIn ? 'fourni avec Marianne' : 'de la communauté'}
+                </span>
+              </span>
+              <span>
+                <span>auteur</span>
+                <span className="dim">{m.author || '—'}</span>
+              </span>
+              <span>
+                <span>sites</span>
+                <span className="dim">
+                  {m.hosts.length ? m.hosts.slice(0, 3).join(', ') + (m.hosts.length > 3 ? ` et ${m.hosts.length - 3} autres` : '') : 'aucun'}
+                </span>
+              </span>
+            </div>
+          </section>
+        </div>
+      </div>
+      <div className="foot">
+        <button className="link small" onClick={onGeneral}>
+          le guide de Marianne ›
+        </button>
+        <button className="btn primary" autoFocus onClick={onClose}>
+          fermer
+        </button>
+      </div>
+    </Modal>
   )
 }
