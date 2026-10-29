@@ -4,7 +4,8 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { EngineModel } from '../../shared/types'
 import { MCP_SERVER_NAME, mcp } from '../mcp'
-import { isMac, isWin, run } from '../util'
+import { runAside } from '../aside'
+import { isMac, isWin } from '../util'
 import { runStream } from './cli'
 import { VibeStream } from './events'
 import { vibeTranscript } from './transcripts'
@@ -114,13 +115,13 @@ async function keySource(env: NodeJS.ProcessEnv, home: string): Promise<string |
   }
   if (isMac) {
     // Without -w or -g, `security` prints the item's attributes, not the secret.
-    const r = await run('security', ['find-generic-password', '-s', KEYRING, '-a', KEY], { timeoutMs: 10_000 })
+    const r = await runAside('security', ['find-generic-password', '-s', KEYRING, '-a', KEY], { timeoutMs: 10_000 })
     return r.code === 0 ? 'trousseau macOS' : null
   }
   if (isWin) {
     // `cmdkey /list` shows targets, never secrets. Vibe uses the service, or `<account>@<service>`.
     for (const target of [KEYRING, `${KEY}@${KEYRING}`]) {
-      const r = await run('cmdkey', [`/list:${target}`], { timeoutMs: 10_000 })
+      const r = await runAside('cmdkey', [`/list:${target}`], { timeoutMs: 10_000 })
       if (new RegExp(`[:=]\\s*${target.replace(/[.@]/g, '\\$&')}\\s*$`, 'im').test(r.stdout)) return 'gestionnaire d’identification Windows'
     }
     return null

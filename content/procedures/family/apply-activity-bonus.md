@@ -3,7 +3,7 @@ id: apply-activity-bonus
 domain: family
 title: Demander la prime d'activité
 description: un complément de revenus pour les personnes qui travaillent
-when: dès que vos revenus d'activité sont modestes ; elle n'est pas rétroactive
+when: dès que vos revenus d'activité sont modestes, car elle n'est pas rétroactive
 duration: 20 minutes, puis une déclaration tous les trois mois
 documents: revenus des trois derniers mois de chaque membre du foyer; numéro allocataire si vous en avez un
 sources: N31477

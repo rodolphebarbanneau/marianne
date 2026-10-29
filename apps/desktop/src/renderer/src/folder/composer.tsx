@@ -3,7 +3,7 @@ import { ENGINE_LABELS } from '@shared/config'
 import { domainInfo } from '@shared/domains'
 import type { Procedure } from '@shared/profile'
 import type { Attachment, DomainId, EngineId } from '@shared/types'
-import { useApp } from '../app/context'
+import { useApp, type ComposerSeed } from '../app/context'
 import { api, errorText } from '../lib/api'
 
 /**
@@ -37,6 +37,7 @@ export function Composer({
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const box = useRef<HTMLTextAreaElement>(null)
+  const draft = useRef<ComposerSeed | null>(null)
 
   const usable = app.lights.filter((l) => l.ok)
   const fallback = engine ?? app.config.engines.default
@@ -54,13 +55,18 @@ export function Composer({
     box.current?.focus()
   }, [app, folderId])
 
-  // The box grows with its text.
+  // A new folder's draft survives a change of page: leaving, it becomes the seed it comes back with.
+  const { setSeed } = app
   useEffect(() => {
-    const el = box.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, window.innerHeight * 0.4)}px`
-  }, [text])
+    const empty = !text.trim() && !attachments.length && !procedure && !inDomain
+    draft.current = folderId || empty ? null : { text, attachments, procedure: procedure?.id, domain: inDomain ?? undefined }
+  })
+  useEffect(
+    () => () => {
+      if (draft.current) setSeed(draft.current)
+    },
+    [setSeed]
+  )
 
   const send = async () => {
     if (busy || running || (!text.trim() && !attachments.length && !procedure)) return
@@ -75,6 +81,8 @@ export function Composer({
         procedure: procedure?.id,
         domain: inDomain ?? undefined
       })
+      // Sent: nothing to keep, even if the composer goes before it renders empty.
+      draft.current = null
       setText('')
       setAttachments([])
       setProcedure(null)
@@ -128,7 +136,6 @@ export function Composer({
       )}
       <textarea
         ref={box}
-        rows={2}
         autoFocus={autoFocus}
         value={text}
         placeholder={placeholder}
@@ -144,7 +151,7 @@ export function Composer({
         }}
       />
       <div className="tools">
-        <button className="link" onClick={() => void attach()}>
+        <button className="attach" onClick={() => void attach()}>
           + pièce
         </button>
         {error && <span className="bad small">{error}</span>}

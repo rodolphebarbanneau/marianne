@@ -10,6 +10,7 @@ import { ARCHIVE_EXT, createArchive, openArchive, readHeader, recoverArchive, un
 import { PinStore, type Keystore } from './archive/pin'
 import { session, type LockReason } from './archive/session'
 import { accountSettings, configStore } from './config'
+import { samePath } from './files'
 import { paths } from './paths'
 import { isLinux } from './util'
 
@@ -78,10 +79,12 @@ class Accounts extends EventEmitter {
 
   /** Remember an archive picked anywhere (a USB key…). */
   addOther(file: string): AccountInfo {
-    if (!file.endsWith(ARCHIVE_EXT)) throw new Error('Ce fichier n’est pas une archive Marianne.')
+    if (!file.toLowerCase().endsWith(ARCHIVE_EXT)) throw new Error('Ce fichier n’est pas une archive Marianne.')
     const header = readHeader(file)
     if (!header) throw new Error('Ce fichier n’est pas une archive Marianne, ou il est déjà ouvert.')
-    if (dirname(file) !== configStore.get().archiveFolder) configStore.update({ otherArchives: [...new Set([...configStore.get().otherArchives, file])] })
+    const { archiveFolder, otherArchives } = configStore.get()
+    if (!samePath(dirname(file), archiveFolder) && !otherArchives.some((f) => samePath(f, file)))
+      configStore.update({ otherArchives: [...otherArchives, file] })
     this.emit('list')
     return info(file, header.id, header.display)
   }

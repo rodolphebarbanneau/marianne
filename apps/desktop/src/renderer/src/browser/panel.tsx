@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { BrowserState, KeychainEntry } from '@shared/types'
 import { useApp } from '../app/context'
 import { CloseIcon } from '../components/icons'
 import { api, errorText, useLive } from '../lib/api'
+import { overlay } from '../lib/overlay'
 
 const rect = (el: HTMLElement) => {
   const r = el.getBoundingClientRect()
@@ -32,12 +33,17 @@ export function BrowserPanel({ folderId }: { folderId: string }) {
   const [logins, setLogins] = useState<KeychainEntry[]>([])
   const [notice, setNotice] = useState('')
   const viewport = useRef<HTMLDivElement>(null)
+  // Dialogs and menus draw over the page: the native view hides while one is open.
+  const dialog = useSyncExternalStore(overlay.subscribe, overlay.get)
+  const covered = !!app.palette || !!app.settingsPage || dialog
+  const hidden = useRef(covered)
+  hidden.current = covered
 
-  // Tell the main process where to draw the page; nothing when the panel closes.
+  // Tell the main process where to draw the page; nothing when the panel closes or is covered.
   useLayoutEffect(() => {
     const el = viewport.current
     if (!el) return
-    const report = () => api.browserBounds(rect(el))
+    const report = () => !hidden.current && api.browserBounds(rect(el))
     report()
     const observer = new ResizeObserver(report)
     observer.observe(el)
@@ -49,11 +55,10 @@ export function BrowserPanel({ folderId }: { folderId: string }) {
     }
   }, [])
 
-  // Dialogs and menus draw over the page: hide the native view while one is open.
   useEffect(() => {
-    if (app.palette || app.settingsPage) api.browserBounds(null)
+    if (covered) api.browserBounds(null)
     else if (viewport.current) api.browserBounds(rect(viewport.current))
-  }, [app.palette, app.settingsPage])
+  }, [covered])
 
   useEffect(() => setAddress(state?.url ?? ''), [state?.url])
   useEffect(() => {
@@ -102,7 +107,7 @@ export function BrowserPanel({ folderId }: { folderId: string }) {
       <div className="viewport" ref={viewport}>
         {!state?.url && (
           <p className="dim small" style={{ padding: 14 }}>
-            Aucune page ouverte. Marianne ouvre ici les sites dont elle a besoin, ou tapez une adresse.
+            Aucune page ouverte. Marianne ouvre ici les sites dont elle a besoin. Vous pouvez aussi taper une adresse.
           </p>
         )}
       </div>

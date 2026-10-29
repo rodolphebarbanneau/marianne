@@ -83,7 +83,7 @@ export const DOMAINS: DomainInfo[] = [
     color: 'green',
     description: 'assurance maladie, complémentaire santé, arrêts de travail, handicap',
     sheets: ['F10027', 'F163', 'F265', 'F303'],
-    links: [{ label: 'ameli : remboursements et attestations', url: 'https://www.ameli.fr' }],
+    links: [{ label: 'Assurance maladie : remboursements et attestations', url: 'https://www.ameli.fr' }],
     entities: [],
     starters: [
       'Ai-je droit à la complémentaire santé solidaire ?',
@@ -101,7 +101,7 @@ export const DOMAINS: DomainInfo[] = [
     color: 'yellow',
     description: 'impôt sur le revenu, prélèvement à la source, taxe foncière, échéanciers de paiement',
     sheets: ['F358', 'F34009', 'F59', 'F110'],
-    links: [{ label: 'impots.gouv.fr : espace particulier', url: 'https://cfspart.impots.gouv.fr' }],
+    links: [{ label: 'Impôts : espace particulier', url: 'https://cfspart.impots.gouv.fr' }],
     entities: [],
     starters: [
       'Aide-moi à préparer ma déclaration de revenus.',
@@ -179,7 +179,7 @@ export const DOMAINS: DomainInfo[] = [
     color: 'red',
     description: 'recours contre une décision, délais, litiges, aide juridictionnelle',
     sheets: ['N20312', 'F2474', 'F18074', 'F1736'],
-    links: [{ label: 'Justice.fr : démarches judiciaires', url: 'https://www.justice.fr' }],
+    links: [{ label: 'Justice : démarches judiciaires', url: 'https://www.justice.fr' }],
     entities: [],
     starters: [
       'Je veux contester une décision : quels recours et quels délais ?',
@@ -198,8 +198,8 @@ export const DOMAINS: DomainInfo[] = [
     description: 'vos entreprises : urssaf, tva, cfe, comptes annuels, formalités',
     sheets: [],
     links: [
-      { label: 'Entreprendre.Service-Public : fiches pour les professionnels', url: 'https://entreprendre.service-public.gouv.fr' },
-      { label: 'Guichet unique INPI : formalités', url: 'https://procedures.inpi.fr' },
+      { label: 'Entreprendre : fiches pour les professionnels', url: 'https://entreprendre.service-public.gouv.fr' },
+      { label: 'Guichet unique : formalités des entreprises', url: 'https://procedures.inpi.fr' },
       { label: 'Annuaire des entreprises', url: 'https://annuaire-entreprises.data.gouv.fr' }
     ],
     entities: ['companies'],

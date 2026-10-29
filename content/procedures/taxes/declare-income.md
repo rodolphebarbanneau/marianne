@@ -38,6 +38,6 @@ Signez la déclaration en ligne et enregistrez l'accusé de réception dans vos 
 
 ## Vérifier l'avis
 
-L'avis d'impôt arrive l'été. Vérifiez-le ; une erreur se corrige en ligne pendant la période de correction, puis par réclamation.
+L'avis d'impôt arrive l'été. Vérifiez-le. Une erreur se corrige en ligne pendant la période de correction, puis par réclamation.
 
 > document: tax_notice | Ajouter l'avis d'impôt

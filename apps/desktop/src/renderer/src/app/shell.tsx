@@ -2,6 +2,7 @@ import { useActions, useShortcuts } from './commands'
 import { useApp } from './context'
 import { BottomBar } from './bottombar'
 import { AfterUnlock } from './after-unlock'
+import { AppGuide } from './guide'
 import { Palette } from './palette'
 import { Sidebar } from './sidebar'
 import { TitleBar } from './titlebar'
@@ -63,6 +64,7 @@ export function Shell() {
           <SettingsDialog />
         </Boundary>
       )}
+      {app.guideOpen && <AppGuide />}
       <AfterUnlock />
       {app.toastText && <div className="toast">{app.toastText}</div>}
     </div>

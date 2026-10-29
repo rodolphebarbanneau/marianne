@@ -77,7 +77,7 @@ export const NETWORKS: readonly TollNetwork[] = [
       'borne de paiement sur le parking après le portique de Boulay, en espèces'
     ],
     penalties:
-      'Passé 72 h après le premier passage : un rappel par courrier la première fois, sinon un avis de paiement avec une indemnité forfaitaire (90 €, ramenée à 10 € si vous payez sous 15 jours ; 375 € d’amende forfaitaire majorée sans paiement sous deux mois).',
+      'Passé 72 h après le premier passage : un rappel par courrier la première fois, sinon un avis de paiement avec une indemnité forfaitaire (90 €, ramenée à 10 € si vous payez sous 15 jours). Sans paiement sous deux mois, l’amende forfaitaire majorée est de 375 €.',
     phone: '09 708 08 709',
     sources: ['https://www.autoroutes.sanef.com/en/assistance/boulay/how-boulay-works', MINISTRY],
     checked: '2026-10-28'

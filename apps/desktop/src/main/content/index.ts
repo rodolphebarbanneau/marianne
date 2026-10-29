@@ -1,10 +1,12 @@
 import { createPublicKey, verify, type KeyObject } from 'node:crypto'
 import { EventEmitter } from 'node:events'
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { BUNDLE_FILE, ContentError, readBundle, readContent, SIGNATURE_FILE, type ContentSet, type Procedure } from '@marianne/content'
 import { files, signingKey } from '@marianne/content/files'
 import { DOCUMENT_TYPE_LABELS, SETUP_TARGETS } from '../../shared/profile'
+import { REPO_URL } from '../../shared/project'
+import { writeFileAtomic } from '../files'
 import { userAgent } from '../http'
 import { log } from '../log'
 import { paths } from '../paths'
@@ -17,7 +19,7 @@ import { paths } from '../paths'
  * taken is kept in paths.content for the next starts. Nothing personal: shared by the accounts.
  */
 
-export const CONTENT_URL = `https://github.com/rodolphebarbanneau/marianne/releases/latest/download/${BUNDLE_FILE}`
+export const CONTENT_URL = `${REPO_URL}/releases/latest/download/${BUNDLE_FILE}`
 
 const FIRST_CHECK_MS = 30_000
 const CHECK_EVERY_MS = 24 * 3600_000
@@ -242,9 +244,7 @@ export class ContentStore extends EventEmitter {
       [SIGNATURE_FILE, signature],
       [BUNDLE_FILE, data]
     ] as const) {
-      const file = join(this.opts.dir, name)
-      writeFileSync(`${file}.tmp`, bytes)
-      renameSync(`${file}.tmp`, file)
+      writeFileAtomic(join(this.opts.dir, name), bytes)
     }
   }
 

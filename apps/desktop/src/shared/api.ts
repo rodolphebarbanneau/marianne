@@ -83,6 +83,10 @@ export interface MarianneApi {
   /** The main process asks to show something: "folder:<id>", "settings:<page>", "news"… */
   onNavigate(cb: (route: string) => void): () => void
   toggleFullscreen(): void
+  /** Reload the screens (what the main process holds, the open archive first, stays). */
+  reloadWindow(): void
+  /** A dialog is over the screens: the system's window buttons dim with the title bar. */
+  dimTitleBar(dim: boolean): void
   onFullscreen(cb: (on: boolean) => void): () => void
   /** The user is active: postpones the automatic lock. */
   activity(): void
@@ -108,6 +112,10 @@ export interface MarianneApi {
   pickArchiveFolder(): Promise<string | null>
   /** Open an archive from anywhere (a USB key…). */
   pickArchiveFile(): Promise<AccountInfo | null>
+  /** The account of an archive opened from the system (a double-clicked .marianne file), given once; null when there is none. */
+  takeOpenedArchive(): Promise<string | null>
+  /** An archive was opened from the system: take it. */
+  onOpenArchive(cb: () => void): () => void
   createAccount(input: { password: string; display: string; avoid: string[] }): Promise<{ recoveryKey: string; state: SessionState }>
   unlock(accountId: string, secret: UnlockSecret): Promise<SessionState>
   lock(): void

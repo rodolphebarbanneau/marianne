@@ -3,7 +3,7 @@ id: appeal-decision
 domain: justice
 title: Contester une décision de l'administration
 description: recours gracieux, recours obligatoire, tribunal administratif
-when: dès réception de la décision ; les délais sont courts
+when: dès réception de la décision, car les délais sont courts
 duration: une heure pour le recours, puis le délai de réponse
 documents: la décision et son enveloppe (date de réception); les justificatifs de votre situation
 sources: F2474; N20312

@@ -136,6 +136,8 @@ export function Palette({ actions }: { actions: Actions }) {
         cmd('lock', 'Verrouiller la session'),
         cmd('account', 'Changer de compte', ''),
         cmd('fullscreen', 'Plein écran'),
+        cmd('reload', 'Recharger la fenêtre'),
+        cmd('guide', 'Aide et à propos de Marianne'),
         cmd('updates', 'Vérifier les mises à jour', '')
       ]
     }

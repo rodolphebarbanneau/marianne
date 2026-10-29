@@ -107,7 +107,7 @@ function AddressSearch({ onPick }: { onPick: (a: AddressSuggestion) => void }) {
   }, [query])
   return (
     <div style={{ position: 'relative' }}>
-      <input value={query} placeholder="chercher une adresse (Base Adresse Nationale)" onChange={(e) => setQuery(e.target.value)} style={{ width: '100%' }} />
+      <input value={query} placeholder="commencez à taper votre adresse…" onChange={(e) => setQuery(e.target.value)} style={{ width: '100%' }} />
       {hits.length > 0 && (
         <div className="menu" style={{ top: '100%', left: 0, right: 0 }}>
           {hits.map((h) => (
@@ -128,12 +128,6 @@ function AddressSearch({ onPick }: { onPick: (a: AddressSuggestion) => void }) {
   )
 }
 
-const initials = (p: Person) =>
-  [p.firstNames.split(/[\s,-]+/)[0], p.usedName || p.birthName]
-    .filter(Boolean)
-    .map((w) => `${w[0].toUpperCase()}.`)
-    .join('')
-
 export function IdentityPane() {
   const profile = useProfile()
   const { settings, setSettings } = useApp()
@@ -142,7 +136,7 @@ export function IdentityPane() {
   const p = profile.person
   const a = profile.address
   const person = (patch: Partial<Person>) => save({ type: 'person', patch })
-  const nirProblem = p.nir && !nirValid(p.nir) ? 'numéro ou clé invalide' : undefined
+  const nirProblem = p.nir && !nirValid(p.nir) ? 'ce numéro semble incorrect, vérifiez les 15 chiffres' : undefined
   const display = async (choice: DisplayChoice) => {
     await setSettings({ display: choice })
     await api.setDisplay(choice)
@@ -150,7 +144,8 @@ export function IdentityPane() {
   return (
     <>
       <div className="note">
-        Ce que vous saisissez ici reste dans votre archive chiffrée. Marianne ne transmet jamais vos numéros au moteur : il ne voit que des jetons.
+        Tout ce que vous saisissez ici reste dans votre archive chiffrée. Vos numéros ne sont jamais transmis au moteur, qui ne voit que des jetons à leur
+        place.
       </div>
       <div className="form-grid">
         <Field label="civilité">
@@ -171,7 +166,7 @@ export function IdentityPane() {
         <Field label="lieu de naissance">
           <Text value={p.birthPlace} onSave={(birthPlace) => person({ birthPlace })} placeholder="commune (département)" />
         </Field>
-        <Field label="n° de sécurité sociale" error={nirProblem} hint="15 chiffres, clé vérifiée">
+        <Field label="n° de sécurité sociale" error={nirProblem} hint="les 15 chiffres de votre carte Vitale, clé comprise">
           <Text value={p.nir} format={formatNir} onSave={(v) => person({ nir: compact(v) })} placeholder="_ __ __ __ ___ ___ __" />
         </Field>
         <Field label="situation familiale">
@@ -186,7 +181,11 @@ export function IdentityPane() {
         <Field
           label="adresse"
           wide
-          hint={a.street ? `${a.street}${a.complement ? `, ${a.complement}` : ''}, ${a.postcode} ${a.city}` : 'complétée par la Base Adresse Nationale'}
+          hint={
+            a.street
+              ? `${a.street}${a.complement ? `, ${a.complement}` : ''}, ${a.postcode} ${a.city}`
+              : 'les suggestions viennent de la Base adresse nationale'
+          }
         >
           <AddressSearch
             onPick={(h) =>
@@ -197,7 +196,7 @@ export function IdentityPane() {
         <Field label="complément d’adresse">
           <Text value={a.complement} onSave={(complement) => save({ type: 'address', address: { ...a, complement } })} placeholder="bâtiment, étage…" />
         </Field>
-        <Field label="depuis le">
+        <Field label="à cette adresse depuis le">
           <Text type="date" value={a.since} onSave={(since) => save({ type: 'address', address: { ...a, since } })} />
         </Field>
         <Field label="téléphone">
@@ -206,7 +205,7 @@ export function IdentityPane() {
         <Field label="courriel">
           <Text type="email" value={p.email} onSave={(email) => person({ email })} />
         </Field>
-        <Field label="IBAN" wide hint="pour les remboursements et les aides">
+        <Field label="IBAN" wide hint="le compte où vous recevez vos remboursements et vos aides">
           <Text
             value={p.iban}
             format={(v) => groups(v.toUpperCase(), 4)}
@@ -214,17 +213,13 @@ export function IdentityPane() {
             placeholder="FR76 ____ ____ ____ ____ ____ ___"
           />
         </Field>
-        <Field
-          label="affichage du compte"
-          wide
-          hint="sur l’écran de verrouillage ; l’identifiant du compte, tiré au hasard, ne contient aucune donnée personnelle"
-        >
+        <Field label="affichage sur l’écran de verrouillage" wide hint="l’identifiant du compte est tiré au hasard et ne dit rien de vous">
           <span>
             {(
               [
-                ['initials', `initiales${initials(p) ? ` « ${initials(p)} »` : ''}`],
+                ['initials', 'initiales'],
                 ['firstName', 'prénom'],
-                ['none', 'rien, l’identifiant seul']
+                ['none', 'identifiant']
               ] as Array<[DisplayChoice, string]>
             ).map(([k, label]) => (
               <label key={k} style={{ marginRight: 16 }}>
@@ -237,9 +232,13 @@ export function IdentityPane() {
         <Field
           label="notes pour Marianne"
           wide
-          hint="ce qu’elle doit savoir pour vous aider (« je suis malvoyant », « je travaille de nuit »…), donné comme contexte"
+          hint="ce qui l’aide à mieux vous répondre, par exemple « je vois mal » ou « je travaille de nuit ». Elle en tient compte dans tous vos dossiers."
         >
-          <textarea defaultValue={profile.notes} rows={3} onBlur={(e) => e.target.value !== profile.notes && save({ type: 'notes', notes: e.target.value })} />
+          <textarea
+            className="notes"
+            defaultValue={profile.notes}
+            onBlur={(e) => e.target.value !== profile.notes && save({ type: 'notes', notes: e.target.value })}
+          />
         </Field>
       </div>
       {error && <p className="bad small">{error}</p>}
@@ -258,7 +257,7 @@ const ENTITY_SPECS: Record<EntityKind, { label: string; spec: Spec; title: (x: R
       { key: 'name', label: 'dénomination' },
       { key: 'role', label: 'rôle', type: 'select', options: ROLE_LABELS },
       { key: 'regime', label: 'régime', type: 'select', options: REGIME_LABELS },
-      { key: 'yearEnd', label: 'clôture (JJ/MM)' }
+      { key: 'yearEnd', label: 'clôture de l’exercice (JJ/MM)' }
     ]
   },
   employers: {
@@ -270,7 +269,7 @@ const ENTITY_SPECS: Record<EntityKind, { label: string; spec: Spec; title: (x: R
       { key: 'position', label: 'poste' },
       { key: 'contract', label: 'contrat', type: 'select', options: CONTRACT_LABELS },
       { key: 'start', label: 'début', type: 'date' },
-      { key: 'idcc', label: 'convention (IDCC)' }
+      { key: 'idcc', label: 'convention collective (IDCC)' }
     ]
   },
   vehicles: {
@@ -413,7 +412,7 @@ export function HouseholdPane() {
         label={(m) => `${m.firstName} ${m.lastName}`.trim() || RELATION_LABELS[m.relation]}
         spec={[
           { key: 'firstName', label: 'prénom' },
-          { key: 'relation', label: 'lien', type: 'select', options: RELATION_LABELS },
+          { key: 'relation', label: 'lien avec vous', type: 'select', options: RELATION_LABELS },
           { key: 'birthDate', label: 'date de naissance', type: 'date' },
           { key: 'lastName', label: 'nom' }
         ]}
@@ -448,7 +447,7 @@ export function HouseholdPane() {
         />
       ))}
       <p className="dim small" style={{ marginTop: 12 }}>
-        Un SIREN suffit : <SirenLookup />
+        Vous avez un numéro SIREN ? Marianne remplit la fiche de l’entreprise pour vous : <SirenLookup />
       </p>
       {error && <p className="bad small">{error}</p>}
     </>
@@ -462,7 +461,7 @@ function SirenLookup() {
   const add = async () => {
     try {
       const c = await api.lookupSiren(siren.replace(/\s+/g, ''))
-      if (!c) return setMessage('aucune entreprise avec ce numéro')
+      if (!c) return setMessage('aucune entreprise ne porte ce numéro')
       const item: Company = {
         id: newKey(),
         siren: c.siren,
@@ -502,7 +501,9 @@ export function DocumentsPane() {
   const add = () => void api.addDocuments({ domain: 'identity' }).catch((err) => setError(errorText(err)))
   return (
     <>
-      <div className="note">Vos pièces sont scellées dans l’archive. Ouvrir une pièce en crée une copie passagère, effacée au verrouillage.</div>
+      <div className="note">
+        Vos pièces sont rangées dans l’archive chiffrée. Quand vous en ouvrez une, Marianne en fait une copie temporaire, effacée dès que vous verrouillez.
+      </div>
       <div className="rows">
         {documents.map((d) => (
           <div key={d.id} className="row">

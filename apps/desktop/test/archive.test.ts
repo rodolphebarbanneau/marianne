@@ -1,8 +1,9 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { accountFile, cloudSynced, defaultArchiveFolder, listAccounts, newAccountId, type Places } from '../src/main/archive/accounts'
+import { accountFile, archivesIn, cloudSynced, defaultArchiveFolder, listAccounts, newAccountId, type Places } from '../src/main/archive/accounts'
 import { createArchive, openArchive, readHeader, recoverArchive, unlockArchive, WrongSecretError } from '../src/main/archive/archive'
 import { normalizeRecoveryKey } from '../src/main/archive/crypto'
 import { PIN_ATTEMPTS, PinStore, WrongPinError, type Keystore } from '../src/main/archive/pin'
@@ -136,5 +137,18 @@ describe('default archive folder', () => {
     expect(defaultArchiveFolder(mac)).toBe(join('/Users/camille/Documents', 'Marianne'))
     const icloud = { ...mac, exists: (p: string) => p.endsWith(join('com~apple~CloudDocs', 'Documents')) }
     expect(defaultArchiveFolder(icloud)).toBe(join('/Users/camille', 'Marianne'))
+  })
+})
+
+describe('archives opened from the system', () => {
+  it('finds the archives on a command line, wherever they were named from', () => {
+    const cwd = join(dir, 'here')
+    const file = join(dir, 'cle', 'ABCD.marianne')
+    const argv = ['--hidden', '--original-process-start-time=13372', 'notes.txt', 'ABCD.MARIANNE', file, pathToFileURL(file).href]
+    expect(archivesIn(argv, cwd)).toEqual([join(cwd, 'ABCD.MARIANNE'), file, file])
+  })
+
+  it('finds none on a plain launch', () => {
+    expect(archivesIn(['.', '--user-data-dir=/tmp/marianne'], dir)).toEqual([])
   })
 })

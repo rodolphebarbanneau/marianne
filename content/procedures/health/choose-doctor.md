@@ -25,6 +25,6 @@ Demandez à un médecin généraliste (ou spécialiste) s'il accepte d'être vot
 
 ## Faire la déclaration
 
-Le plus souvent, le médecin la fait en ligne pendant la consultation, avec votre carte vitale. Vérifiez ensuite dans votre compte ameli que votre médecin traitant apparaît.
+Le plus souvent, le médecin la fait en ligne pendant la consultation, avec votre carte Vitale. Vérifiez ensuite dans votre compte ameli que votre médecin traitant apparaît.
 
 > open: ameli | Ouvrir ameli

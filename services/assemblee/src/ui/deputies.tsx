@@ -196,7 +196,9 @@ export function DeputyPane({ id }: { id: string }) {
       <span className="label">votes</span>
       <p>
         A pris part à {formatNumber(voted)} des {formatNumber(total)} scrutins publics depuis le début de son mandat.{' '}
-        <span className="small dim">Les votes à main levée ne sont pas nominatifs ; une absence peut tenir à des travaux en commission au même moment.</span>
+        <span className="small dim">
+          Les votes à main levée ne sont pas nominatifs. Une absence peut aussi venir d’une réunion de commission au même moment.
+        </span>
       </p>
       {total > 0 && (
         <span className="gauge assemblee-gauge">

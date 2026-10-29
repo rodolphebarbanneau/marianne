@@ -53,8 +53,8 @@ export function ServiceScreen({ id, params }: { id: string; params: Record<strin
   return (
     <div className="page service-page">
       <div className="service-head">
-        <button className="small dim" onClick={() => goPage('services')}>
-          ← Services
+        <button className="back dim" title="retour aux Services (échap)" aria-label="retour aux Services" onClick={() => goPage('services')}>
+          ←
         </button>
         <span className="t">
           <span className="inv">3615</span> {serviceCode(m)}
@@ -114,9 +114,11 @@ function Consent({ state }: { state: ServiceState }) {
         </label>
       ))}
       <span className="small dim">
-        pour : {m.permissions.purpose} · {m.hosts.length ? `il joint : ${m.hosts.join(', ')}` : 'il ne joint aucun site'}
+        pour : {m.permissions.purpose} · {m.hosts.length ? `il se connecte à : ${m.hosts.join(', ')}` : 'il ne se connecte à aucun site'}
       </span>
-      <span className="small dim">rien d’autre de votre profil, jamais vos identifiants masqués · révocable dans Réglages › Services</span>
+      <span className="small dim">
+        Il ne verra rien d’autre de votre profil, ni aucun de vos identifiants. Vous pourrez changer d’avis dans Réglages › Services.
+      </span>
       <span>
         <button className="btn small primary" disabled={!chosen.length} onClick={() => answer(chosen)}>
           autoriser

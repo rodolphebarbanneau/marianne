@@ -46,8 +46,8 @@ export interface PublicSourceStatus {
 export const PUBLIC_SOURCES: PublicSourceInfo[] = [
   {
     id: 'service-public',
-    label: 'Service-Public',
-    description: 'fiches pratiques, questions-réponses, formulaires cerfa et téléservices (≈ 7 000 documents, indexés sur cet ordinateur)',
+    label: 'Service public',
+    description: 'fiches pratiques, questions-réponses, formulaires Cerfa et téléservices (≈ 7 000 documents, indexés sur cet ordinateur)',
     kind: 'offline',
     defaultUrl: 'https://lecomarquage.service-public.fr/vdd/3.4/part/zip/vosdroits-latest.zip',
     homepage: 'https://www.service-public.gouv.fr',
@@ -56,7 +56,7 @@ export const PUBLIC_SOURCES: PublicSourceInfo[] = [
   {
     id: 'legifrance',
     label: 'Légifrance',
-    description: 'codes, lois et décrets en vigueur, jurisprudence · nécessite un accès api piste gratuit, rangé dans le trousseau',
+    description: 'codes, lois et décrets en vigueur, jurisprudence · demande un accès gratuit à l’API PISTE, à enregistrer dans Réglages › Sites et API',
     kind: 'live',
     defaultUrl: 'https://api.piste.gouv.fr/dila/legifrance/lf-engine-app',
     homepage: 'https://www.legifrance.gouv.fr',
@@ -74,8 +74,8 @@ export const PUBLIC_SOURCES: PublicSourceInfo[] = [
   },
   {
     id: 'datagouv',
-    label: 'data.gouv.fr',
-    description: 'catalogue national des données publiques, et lecture des fichiers csv sans les télécharger',
+    label: 'Données ouvertes',
+    description: 'catalogue national des données publiques (data.gouv.fr), et lecture des fichiers CSV sans les télécharger',
     kind: 'live',
     defaultUrl: 'https://www.data.gouv.fr/api',
     homepage: 'https://www.data.gouv.fr',
@@ -84,7 +84,7 @@ export const PUBLIC_SOURCES: PublicSourceInfo[] = [
   {
     id: 'entreprises',
     label: 'Annuaire des entreprises',
-    description: 'toutes les entreprises et associations : siren, siège, dirigeants, activité',
+    description: 'toutes les entreprises et associations : SIREN, siège, dirigeants, activité',
     kind: 'live',
     defaultUrl: 'https://recherche-entreprises.api.gouv.fr',
     homepage: 'https://annuaire-entreprises.data.gouv.fr',
@@ -93,7 +93,7 @@ export const PUBLIC_SOURCES: PublicSourceInfo[] = [
   {
     id: 'geo',
     label: 'Découpage administratif',
-    description: 'communes, codes postaux et insee, départements, régions, population, contours',
+    description: 'communes, codes postaux et INSEE, départements, régions, population, contours',
     kind: 'live',
     defaultUrl: 'https://geo.api.gouv.fr',
     homepage: 'https://geo.api.gouv.fr',
@@ -120,7 +120,7 @@ export const PUBLIC_SOURCES: PublicSourceInfo[] = [
   {
     id: 'openfisca',
     label: 'OpenFisca',
-    description: 'simulation des impôts et des prestations sociales (rsa, prime d’activité, aides au logement…)',
+    description: 'simulation des impôts et des prestations sociales (RSA, prime d’activité, aides au logement…)',
     kind: 'live',
     defaultUrl: 'https://api.fr.openfisca.org/latest',
     homepage: 'https://openfisca.org',

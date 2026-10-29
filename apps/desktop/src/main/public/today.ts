@@ -124,7 +124,7 @@ async function changeEvents(day: string): Promise<TodayEvent[]> {
       ...(c.when ? { detail: c.when } : {}),
       start: day,
       url: c.url,
-      source: 'Service-Public'
+      source: 'Service public'
     }))
 }
 

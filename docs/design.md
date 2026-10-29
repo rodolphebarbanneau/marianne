@@ -33,8 +33,8 @@ Marianne is a desktop citizen assistant for people living in France: their right
 - **Bottom bar**: the lock, then each enabled engine with its light (● ready, ◐ working, greyed ✕ enabled but not found); on the right, the Minitel keys of the screen.
 - **Pages**, in this order, each separate (scrolling never switches): Marianne (the composer), Actualités, Démarches, Services. ▼ at the bottom, SUITE pg↓ / RETOUR pg↑ and ctrl+↓/↑ go to the next or previous one, at once (a Minitel had no transitions).
 - **Settings**: a dialog over the app, grouped MOI (identity, household, documents), ARCHIVE (space, security, accounts), CONNEXIONS (sites, engines, browser, privacy, public data), PAGES (services, Actualités sources), APPLICATION (display, shortcuts, skills, about).
-- **Keyboard**: ctrl+k commands, ctrl+space the menu (the Minitel's SOMMAIRE), ctrl+shift+enter search, ctrl+enter Marianne, ctrl+1/2/3 Actualités / Démarches / Services. CommandOrControl everywhere (cmd on macOS); every shortcut can be changed.
-- **Look**: Minitel touches on a clean monospace screen: inverse blocks, codes, function keys; pixel font and screen effects are options.
+- **Keyboard**: ctrl+k commands, ctrl+space the menu (the Minitel's SOMMAIRE), ctrl+alt+space search, ctrl+enter Marianne, ctrl+1/2/3 Actualités / Démarches / Services. CommandOrControl everywhere (cmd on macOS); every shortcut can be changed.
+- **Look**: Minitel touches on a clean monospace screen: inverse blocks, codes, function keys; the pixel font for titles and codes only; the old screen's lines and glow are an option.
 
 ## Folders
 

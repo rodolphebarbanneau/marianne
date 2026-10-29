@@ -31,6 +31,7 @@ import { exportAll } from './export'
 import { folders } from './folders'
 import { keychain } from './keychain'
 import { searchAddress, searchCommunes, lookupSiren } from './lookup'
+import { openedArchives } from './opened-archives'
 import { paths } from './paths'
 import { documents, type DocumentPatch } from './profile/documents'
 import { profile } from './profile/store'
@@ -42,7 +43,7 @@ import { todayEvents } from './public/today'
 import { services } from './host'
 import { applyLoginItem } from './tray'
 import { updater } from './updater'
-import { broadcast, mainWindow } from './windows'
+import { broadcast, dimTitleBar, mainWindow } from './windows'
 
 /** When this run of the app started. */
 const STARTED_AT = new Date().toISOString()
@@ -124,6 +125,12 @@ export function registerIpc(): void {
     if (/^https?:\/\//.test(url)) void shell.openExternal(url)
   })
   on('toggleFullscreen', () => mainWindow?.setFullScreen(!mainWindow.isFullScreen()))
+  on('dimTitleBar', (dim: boolean) => dimTitleBar(!!dim))
+  // The screens from scratch, the archive still open. The browser panel is drawn here, over them: hidden until they show it again.
+  on('reloadWindow', () => {
+    browser.setBounds(null)
+    mainWindow?.webContents.reload()
+  })
   on('activity', () => session.touch())
 
   // ---------- updates ----------
@@ -152,6 +159,7 @@ export function registerIpc(): void {
     })
     return r.canceled || !r.filePaths[0] ? null : accounts.addOther(r.filePaths[0])
   })
+  handle('takeOpenedArchive', () => openedArchives.take())
   handle('createAccount', (input: { password: string; display: string; avoid: string[] }) => accounts.create(input))
   handle('unlock', (id: string, secret: UnlockSecret) => accounts.unlock(id, secret))
   on('lock', () => accounts.lock('user'))

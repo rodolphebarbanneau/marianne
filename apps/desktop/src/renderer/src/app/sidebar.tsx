@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { ENGINE_BADGES } from '@shared/config'
 import { DOMAINS } from '@shared/domains'
 import type { DomainId, FolderSummary, Usage } from '@shared/types'
+import { ArchivePath } from '../components/archive-path'
 import { FilterIcon, NewIcon } from '../components/icons'
-import { Gauge, Identicon } from '../components/ui'
+import { Gauge, Identicon, SearchField } from '../components/ui'
 import { lockIntent } from '../lib/after-unlock'
 import { api } from '../lib/api'
 import { accountLabel, bytes, daysFromNow, when } from '../lib/format'
@@ -55,7 +56,7 @@ export function Sidebar() {
   return (
     <aside className="side">
       <div className="side-search">
-        <input placeholder="⌕ Rechercher" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <SearchField value={query} onChange={setQuery} placeholder="chercher" />
         <button className={`icon-btn${filter.size ? ' accent' : ''}`} title="filtrer par domaine" onClick={() => setFilterOpen(!filterOpen)}>
           <FilterIcon />
         </button>
@@ -137,7 +138,7 @@ function FolderRow({ folder: f, on }: { folder: FolderSummary; on: boolean }) {
         <span className="l1">
           <span className={`badge${domain ? '' : ' none'}`}>{domain?.badge ?? '··'}</span>
           {f.pinned && <span className="pin" />}
-          <span>{domain?.label.toLowerCase() ?? 'question'}</span>
+          <span className="kind">{domain?.label.toLowerCase() ?? 'question'}</span>
           <span className={`right status st-${f.status}`}>{f.snoozedUntil ? `réveil le ${new Date(f.snoozedUntil).toLocaleDateString('fr-FR')}` : status}</span>
           <span className="right hover-actions">
             <button
@@ -259,7 +260,9 @@ function AccountSelector() {
                   {bytes(usage.used)} sur {bytes(usage.capacity)} · il reste {bytes(Math.max(0, usage.capacity - usage.used))}
                 </small>
               )}
-              <small>{account.file}</small>
+              <small>
+                <ArchivePath path={account.file} />
+              </small>
             </span>
           </div>
           <button onClick={go(() => app.openSettings('identity'))}>

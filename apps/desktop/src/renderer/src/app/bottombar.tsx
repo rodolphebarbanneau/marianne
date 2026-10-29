@@ -12,13 +12,13 @@ function useKeys(): Key[] {
   const { view, settingsPage } = useApp()
   const menu: Key[] = [
     ['SOMMAIRE', 'menu', 'menu', 'menu'],
-    ['GUIDE', 'guide', 'aide', null]
+    ['GUIDE', 'guide', 'aide', 'guide']
   ]
   if (settingsPage)
     return [
       ['ENVOI', 'CommandOrControl+S', 'enregistrer', null],
       ['ANNULATION', 'Escape', 'fermer', null],
-      ['GUIDE', 'guide', 'aide', null]
+      ['GUIDE', 'guide', 'aide', 'guide']
     ]
   if (view.kind === 'folder')
     return [
@@ -26,7 +26,7 @@ function useKeys(): Key[] {
       ['ANNULATION', 'stop', 'arrêter Marianne', null],
       ['CORRECTION', 'edit', 'modifier mon message', null],
       ['RÉPÉTITION', 'retry', 'refaire', null],
-      ['GUIDE', 'guide', 'aide', null]
+      ['GUIDE', 'guide', 'aide', 'guide']
     ]
   if (view.kind === 'service') return [['RETOUR', 'Escape', 'Services', 'prev'], ...menu]
   if (view.kind === 'domain') return [['RETOUR', 'Escape', 'Démarches', 'prev'], ...menu]

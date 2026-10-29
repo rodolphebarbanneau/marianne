@@ -88,7 +88,7 @@
     },
     {
       "id": "franceinfo",
-      "name": "franceinfo",
+      "name": "Franceinfo",
       "group": "broadcast",
       "feed": "https://www.franceinfo.fr/titres.rss",
       "homepage": "https://www.franceinfo.fr"
@@ -109,7 +109,7 @@
     },
     {
       "id": "tf1-info",
-      "name": "TF1 Info · LCI",
+      "name": "TF1 Info",
       "group": "broadcast",
       "feed": "https://www.tf1info.fr/feeds/rss-une.xml",
       "homepage": "https://www.tf1info.fr"
@@ -144,7 +144,7 @@
     },
     {
       "id": "vrai-ou-faux",
-      "name": "Vrai ou faux (franceinfo)",
+      "name": "Vrai ou faux (Franceinfo)",
       "group": "factcheck",
       "feed": "https://www.franceinfo.fr/vrai-ou-fake.rss",
       "homepage": "https://www.franceinfo.fr/vrai-ou-fake"

@@ -25,5 +25,25 @@ export const afterUnlock = {
   }
 }
 
-/** "Changer de compte": the lock screen opens on the list of accounts. */
-export const lockIntent = { list: false }
+/** What the lock screen opens on: the list of accounts ("changer de compte"), or one account (an archive opened from the system). */
+export const lockIntent: { list: boolean; account: string | null } = { list: false, account: null }
+
+let isOpening = false
+const openingListeners = new Set<() => void>()
+
+/**
+ * Set while the lock screen opens an account: the session opens first, and the window stays on the
+ * lock screen, its progress bar running, until the assistants are checked.
+ */
+export const opening = {
+  get: (): boolean => isOpening,
+  set(next: boolean): void {
+    if (next === isOpening) return
+    isOpening = next
+    for (const listener of openingListeners) listener()
+  },
+  subscribe(listener: () => void): () => void {
+    openingListeners.add(listener)
+    return () => openingListeners.delete(listener)
+  }
+}

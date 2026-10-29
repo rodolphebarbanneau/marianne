@@ -25,6 +25,12 @@ jobs:
 
       - run: npm ci
 
+      # The authors the app names: the repository's contributors on GitHub, as of this release.
+      - name: Contributors
+        run: npm run contributors -w apps/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Typecheck
         run: npm run typecheck
 

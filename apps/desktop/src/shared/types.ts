@@ -72,7 +72,6 @@ export interface DeviceConfig {
   ui: {
     theme: Theme
     fontSize: number
-    pixelFont: boolean
     crt: boolean
     sidebarOpen: boolean
     sidebarWidth: number

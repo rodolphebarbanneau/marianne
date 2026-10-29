@@ -22,7 +22,20 @@ export function FolderScreen({ id }: { id: string }) {
   const [view, setView] = useState<FolderView | null>(null)
   const [procedure, setProcedure] = useState<Procedure | null>(null)
   const conv = useRef<HTMLDivElement>(null)
+  const column = useRef<HTMLDivElement>(null)
+  /** Whether the conversation follows its end: until the user scrolls up to read. */
   const stick = useRef(true)
+  const [away, setAway] = useState(false)
+  const loaded = view !== null
+  const lastUserId = view ? [...view.messages].reverse().find((m) => m.role === 'user')?.id : undefined
+
+  const toEnd = () => {
+    const el = conv.current
+    if (!el) return
+    stick.current = true
+    setAway(false)
+    el.scrollTop = el.scrollHeight
+  }
 
   useEffect(() => {
     let alive = true
@@ -39,16 +52,34 @@ export function FolderScreen({ id }: { id: string }) {
     void api.listProcedures().then((list) => setProcedure(list.find((p) => p.id === view.folder.procedure) ?? null))
   }, [view?.folder.procedure])
 
-  // Follow the answer as it is written, unless the user scrolled up to read.
+  // Follow the end while the answer is written, the composer grows or the window changes, unless the user scrolled up to read.
   useEffect(() => {
     const el = conv.current
-    if (el && stick.current) el.scrollTop = el.scrollHeight
-  }, [view])
+    if (!loaded || !el || !column.current) return
+    const follow = new ResizeObserver(() => {
+      if (stick.current) el.scrollTop = el.scrollHeight
+    })
+    follow.observe(el)
+    follow.observe(column.current)
+    return () => follow.disconnect()
+  }, [loaded])
 
-  // ANNULATION stops Marianne, RÉPÉTITION writes the last answer again.
+  // A message sent (or the folder opened) brings the end back, wherever the user was reading.
+  useEffect(() => {
+    if (lastUserId) toEnd()
+  }, [lastUserId])
+
+  // ANNULATION stops Marianne, RÉPÉTITION writes the last answer again; pg↑ / pg↓ scroll the conversation, from the composer too.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (app.palette || app.settingsPage) return
+      const field = (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')
+      if ((e.key === 'PageUp' || e.key === 'PageDown') && !e.ctrlKey && !e.metaKey && !e.altKey && (!field || field.closest('.composer'))) {
+        const el = conv.current
+        if (!el) return
+        e.preventDefault()
+        el.scrollBy({ top: (e.key === 'PageDown' ? 1 : -1) * el.clientHeight * 0.9 })
+      }
       if (e.key === 'Escape' && view?.running) api.cancel(id)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r' && !view?.running) {
         e.preventDefault()
@@ -67,17 +98,27 @@ export function FolderScreen({ id }: { id: string }) {
   return (
     <div className="folder">
       <FolderHead view={view} procedure={procedure} />
-      <div
-        className="conv"
-        ref={conv}
-        onScroll={(e) => {
-          const el = e.currentTarget
-          stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60
-        }}
-      >
-        {messages.map((m) => (
-          <Message key={m.id} message={m} />
-        ))}
+      <div className="conv-frame">
+        <div
+          className="conv"
+          ref={conv}
+          onScroll={(e) => {
+            const el = e.currentTarget
+            stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60
+            setAway(!stick.current)
+          }}
+        >
+          <div className="column" ref={column}>
+            {messages.map((m) => (
+              <Message key={m.id} message={m} />
+            ))}
+          </div>
+        </div>
+        {away && (
+          <button className="btn to-end" title="aller au dernier message" onClick={toEnd}>
+            ↓
+          </button>
+        )}
       </div>
       <div className="dock">
         <Composer
@@ -126,7 +167,7 @@ function FolderHead({ view, procedure }: { view: FolderView; procedure: Procedur
         <button className={`btn${app.browserOpen ? ' primary' : ''}`} onClick={() => app.setBrowserOpen(!app.browserOpen)}>
           navigateur ◨
         </button>
-        <button className="icon-btn" title="plus" onClick={() => setMenu(menu ? null : 'more')}>
+        <button className={`btn more${menu ? ' primary' : ''}`} title="plus d’actions" onClick={() => setMenu(menu ? null : 'more')}>
           <MoreIcon />
         </button>
         {menu === 'more' && (

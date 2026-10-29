@@ -1,9 +1,10 @@
 import { EventEmitter } from 'node:events'
-import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { utilityProcess } from 'electron'
 import type { ServiceManifest, SyncStatus } from '@marianne/sdk'
 import type { SyncJob, SyncMessage } from '@marianne/sdk/sync'
+import { writeFileAtomic } from '../files'
 import { userAgent } from '../http'
 import { log } from '../log'
 import { paths } from '../paths'
@@ -108,8 +109,7 @@ export class ServiceSync extends EventEmitter {
         else if (m.type === 'error') finish(m.message)
         else {
           const saved: Saved = { syncedAt: new Date().toISOString(), summary: m.summary ?? previous?.summary ?? '', etags: m.etags }
-          writeFileSync(`${this.file}.tmp`, JSON.stringify(saved, null, 2))
-          renameSync(`${this.file}.tmp`, this.file)
+          writeFileAtomic(this.file, JSON.stringify(saved, null, 2))
           log.info(`Sync ${code}: ${m.summary ?? 'up to date'}`)
           if (m.summary !== null) this.onSynced()
           finish()

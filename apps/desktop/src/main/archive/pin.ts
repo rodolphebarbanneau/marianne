@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
+import { writeFileAtomic } from '../files'
 import { deriveKey, LIGHT_KDF, seal, unseal } from './crypto'
 
 /**
@@ -58,8 +59,7 @@ export class PinStore {
   private write(accountId: string, data: PinFile): void {
     mkdirSync(this.dir, { recursive: true })
     const file = this.file(accountId)
-    writeFileSync(`${file}.tmp`, JSON.stringify(data), { mode: 0o600 })
-    renameSync(`${file}.tmp`, file)
+    writeFileAtomic(file, JSON.stringify(data), { mode: 0o600 })
   }
 
   available(): boolean {

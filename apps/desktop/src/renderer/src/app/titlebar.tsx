@@ -1,11 +1,10 @@
-import { GearIcon, PanelIcon, SearchIcon } from '../components/icons'
-import { Logo } from '../components/logo'
+import { GearIcon, PanelIcon, ReloadIcon, SearchIcon } from '../components/icons'
 import { useShortcutLabel } from './commands'
 import { PAGE_LABELS, useApp, type PageId } from './context'
 
 const TABS: PageId[] = ['news', 'procedures', 'services']
 
-/** Sidebar toggle and MARIANNE on the left; the pages; search and settings before the window buttons. */
+/** Sidebar toggle and MARIANNE on the left; the pages; search, settings and reload before the window buttons. */
 export function TitleBar() {
   const app = useApp()
   const label = useShortcutLabel()
@@ -17,7 +16,6 @@ export function TitleBar() {
           <PanelIcon />
         </button>
         <button className="mark" title={`parler à Marianne : nouveau dossier (${label('marianne')})`} onClick={() => app.goPage('home')}>
-          <Logo />
           <span className="wordmark">MARIANNE</span>
         </button>
       </div>
@@ -38,6 +36,9 @@ export function TitleBar() {
         </button>
         <button className="icon-btn" title={`réglages (${label('settings')})`} onClick={() => app.openSettings('identity')}>
           <GearIcon />
+        </button>
+        <button className="icon-btn" title={`recharger la fenêtre (${label('reload')})`} onClick={app.reload}>
+          <ReloadIcon />
         </button>
       </div>
     </header>

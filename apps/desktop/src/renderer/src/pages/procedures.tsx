@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { DOMAIN_CATEGORIES, DOMAINS } from '@shared/domains'
 import { frDate, type Deadline } from '@shared/profile'
 import { useApp } from '../app/context'
+import { PageHead } from '../components/ui'
 import { api } from '../lib/api'
 import { useDocuments } from '../lib/profile'
 import { NextArrow } from './next'
@@ -17,10 +18,10 @@ export function ProceduresPage() {
     <div className="page">
       <div className="page-body">
         <div className="section">
-          <span className="section-title">DÉMARCHES</span>
+          <PageHead title="Démarches" />
           {DOMAIN_CATEGORIES.map((cat) => (
             <div key={cat.id} className="cat">
-              <span className="dim">{cat.label}</span>
+              <span className="label">{cat.label}</span>
               <div className="grid">
                 {DOMAINS.filter((d) => d.category === cat.id).map((d) => {
                   const folders = app.folders.filter((f) => f.domain === d.id && !f.settledAt)

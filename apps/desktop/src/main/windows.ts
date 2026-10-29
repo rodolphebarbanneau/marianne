@@ -20,6 +20,17 @@ const ACCENT = '#ffd23f'
 /** Height of the title bar drawn by the screens; the OS draws its window buttons over its right end. */
 export const TITLE_BAR_HEIGHT = 40
 
+/** The dialogs' overlay (.overlay in styles.css): its color, and how much of the page it covers. */
+const OVERLAY = { rgb: [3, 4, 15], alpha: 0.72 }
+const dimmed = (hex: string) =>
+  `#${OVERLAY.rgb
+    .map((c, i) =>
+      Math.round(c * OVERLAY.alpha + parseInt(hex.slice(1 + 2 * i, 3 + 2 * i), 16) * (1 - OVERLAY.alpha))
+        .toString(16)
+        .padStart(2, '0')
+    )
+    .join('')}`
+
 /** Windows picks the right size from the multi-resolution .ico; elsewhere a PNG is used. */
 export const appIcon = () => resource(isWin ? 'icon.ico' : 'icon.png')
 
@@ -101,6 +112,15 @@ export function showMain(focus = true): void {
   win.webContents.on('will-navigate', (e) => e.preventDefault())
   load(win)
   for (const fn of onCreated) fn(win)
+}
+
+/**
+ * A dialog over the screens dims the title bar, and the system's window buttons with it: Windows
+ * and Linux draw them in our colors, so they take the overlay's; macOS keeps its own.
+ */
+export function dimTitleBar(dim: boolean): void {
+  if (isMac || !mainWindow || mainWindow.isDestroyed()) return
+  mainWindow.setTitleBarOverlay({ color: dim ? dimmed(BACKGROUND) : BACKGROUND, symbolColor: dim ? dimmed(FOREGROUND) : FOREGROUND })
 }
 
 /** Send an event to the screens. */

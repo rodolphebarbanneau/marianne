@@ -1,17 +1,30 @@
 import { Component, type ReactNode } from 'react'
 import type { Usage } from '@shared/types'
+import { usePixelRatio } from '../lib/pixel-ratio'
+import { SearchIcon } from './icons'
 
-/** The account as a 5×5 symmetric mosaic, from its random id. */
+/**
+ * The account as a 5×5 symmetric mosaic, from its random id, in its frame. Laid out in screen
+ * pixels, as near `size` as whole ones allow: every cell the same number of them, the frame as thick
+ * as the window's other lines. A grid of CSS pixels would put some edges between two screen pixels
+ * (at 125 %, an 18px mosaic is 22.5 of them) and draw one column a pixel wider than the others.
+ */
 export function Identicon({ id, size = 18 }: { id: string; size?: number }) {
+  const ratio = usePixelRatio()
   const bits = parseInt(id.slice(0, 4) || '0', 16)
+  const frame = Math.max(1, Math.round(ratio))
+  const cell = Math.max(1, Math.round((size * ratio - 2 * frame) / 5))
+  const n = 5 * cell + 2 * frame
   const cells = []
-  for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) cells.push((bits >> (r * 3 + Math.min(c, 4 - c))) & 1)
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) if ((bits >> (r * 3 + Math.min(c, 4 - c))) & 1) cells.push([r, c])
   return (
-    <span className="identicon" style={{ width: size, height: size }} aria-hidden>
-      {cells.map((on, i) => (
-        <i key={i} className={on ? 'on' : ''} />
+    <svg className="identicon" width={n / ratio} height={n / ratio} viewBox={`0 0 ${n} ${n}`} shapeRendering="crispEdges" aria-hidden>
+      <rect className="frame" width={n} height={n} />
+      <rect className="ground" x={frame} y={frame} width={5 * cell} height={5 * cell} />
+      {cells.map(([r, c]) => (
+        <rect key={r * 5 + c} className="on" x={frame + c * cell} y={frame + r * cell} width={cell} height={cell} />
       ))}
-    </span>
+    </svg>
   )
 }
 
@@ -22,6 +35,48 @@ export function Gauge({ usage, title }: { usage: Usage; title?: string }) {
     <span className={`gauge${ratio >= 1 ? ' full' : ratio >= 0.8 ? ' warn' : ''}`} title={title}>
       <i style={{ width: `${Math.min(100, ratio * 100)}%` }} />
     </span>
+  )
+}
+
+/** A page's head, the same on every page: its title (shown in pixel capitals), what it is about, its tools on the right. */
+export function PageHead({ title, detail, children }: { title: string; detail?: ReactNode; children?: ReactNode }) {
+  return (
+    <div className="page-head">
+      <h1 className="section-title">{title}</h1>
+      {detail && <span className="detail">{detail}</span>}
+      {children && <span className="tools">{children}</span>}
+    </div>
+  )
+}
+
+/** A search box: the magnifier, then the text, in a frame that lights up while typing. Échap empties it first. */
+export function SearchField({
+  value,
+  onChange,
+  placeholder,
+  className
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  className?: string
+}) {
+  return (
+    <label className={`search-field${className ? ` ${className}` : ''}`}>
+      <SearchIcon />
+      <input
+        value={value}
+        placeholder={placeholder}
+        spellCheck={false}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Escape' || !value) return
+          // Taken: a dialog around it closes on the next Échap only.
+          e.preventDefault()
+          onChange('')
+        }}
+      />
+    </label>
   )
 }
 

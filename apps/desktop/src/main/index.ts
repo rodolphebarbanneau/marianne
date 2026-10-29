@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { app, powerMonitor, session as electronSession } from 'electron'
 import type { DeviceConfig } from '../shared/types'
 import { accounts, checkKeystore } from './account'
-import { defaultArchiveFolder } from './archive/accounts'
+import { archivesIn, defaultArchiveFolder } from './archive/accounts'
 import { session } from './archive/session'
 import { browser } from './browser'
 import { configStore } from './config'
@@ -13,6 +13,7 @@ import { registerIpc } from './ipc'
 import { keychain } from './keychain'
 import { log } from './log'
 import { mcp } from './mcp'
+import { openedArchives } from './opened-archives'
 import { ensureDirs, paths } from './paths'
 import { sync } from './public/sync'
 import { services } from './host'
@@ -46,7 +47,16 @@ if (!app.requestSingleInstanceLock()) {
   console.error(`Marianne is already running (${app.getPath('userData')}): its window was brought to the front.`)
   app.quit()
 } else {
-  app.on('second-instance', () => showMain())
+  // A .marianne file opened from the system: a second launch hands over its arguments (Windows,
+  // Linux), macOS sends an event, possibly before the app is ready. The first launch's come below.
+  app.on('second-instance', (_e, argv, cwd) => {
+    showMain()
+    for (const file of archivesIn(argv, cwd)) openedArchives.open(file)
+  })
+  app.on('open-file', (e, file) => {
+    e.preventDefault()
+    openedArchives.open(file)
+  })
   // Started at login: stay in the tray until the user opens the window.
   const hidden = process.argv.includes('--hidden')
   if (isWin) app.setAppUserModelId(APP_ID)
@@ -89,6 +99,8 @@ if (!app.requestSingleInstanceLock()) {
     registerIpc()
     whenWindow((win) => browser.attach(win))
     showMain(!hidden)
+    for (const file of archivesIn(process.argv.slice(1), process.cwd())) openedArchives.open(file)
+    openedArchives.ready()
     startBackground()
 
     configStore.on('change', (next: DeviceConfig, prev: DeviceConfig) => {
