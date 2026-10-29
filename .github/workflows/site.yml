@@ -1,0 +1,80 @@
+name: Site
+
+# The website (site/), built into the `site` branch that GitHub Pages serves: when a release is
+# published, so its download buttons and the guide are the release's, or by hand, from any branch or tag.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: read
+
+concurrency:
+  group: site
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - run: npm ci
+        working-directory: site
+
+      # Where Pages serves the site, a domain of its own included: the build's SITE_URL and BASE_PATH,
+      # and the CNAME file that keeps the domain (Pages reads it from the branch, which each run
+      # replaces). Before Pages is set up, the build's defaults.
+      - name: Address
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! pages=$(gh api "repos/$GITHUB_REPOSITORY/pages" 2>"$RUNNER_TEMP/pages.log"); then
+            grep -q 'HTTP 404' "$RUNNER_TEMP/pages.log" || { cat "$RUNNER_TEMP/pages.log" >&2; exit 1; }
+            echo "Pages isn't set up yet: building for the defaults."
+            exit 0
+          fi
+          url=$(jq -r .html_url <<<"$pages")
+          url=${url/#http:/https:}
+          origin=$(grep -oE '^https://[^/]+' <<<"$url")
+          path=${url#"$origin"}
+          path=${path%/}
+          echo "SITE_URL=$origin" >> "$GITHUB_ENV"
+          echo "BASE_PATH=${path:-/}" >> "$GITHUB_ENV"
+          echo "CNAME=$(jq -r '.cname // empty' <<<"$pages")" >> "$GITHUB_ENV"
+          echo "Building for $origin${path:-/}"
+
+      # The token only lifts GitHub's rate limit on the releases.
+      - name: Build
+        working-directory: site
+        run: npm run build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # The branch holds the build alone, in one commit replaced each time, written from dist/ through
+      # the checkout's own repository (and its credentials). .nojekyll: Pages serves the files as they
+      # are (Jekyll would drop _astro/).
+      - name: Publish
+        working-directory: site/dist
+        env:
+          GIT_DIR: ${{ github.workspace }}/.git
+          GIT_WORK_TREE: .
+          GIT_INDEX_FILE: ${{ runner.temp }}/site.index
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          touch .nojekyll
+          if [ -n "$CNAME" ]; then echo "$CNAME" > CNAME; fi
+          git add -A
+          commit=$(git commit-tree "$(git write-tree)" -m "Site built from $GITHUB_REF_NAME (${GITHUB_SHA::7})")
+          git push --force origin "$commit:refs/heads/site"
