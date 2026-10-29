@@ -43,9 +43,14 @@ interface AppValue {
   openPalette: (mode: PaletteMode | null) => void
   settingsPage: string | null
   openSettings: (page: string | null) => void
+  /** GUIDE (F1): what Marianne is, its keys, its links, its authors. */
+  guideOpen: boolean
+  openGuide: (open: boolean) => void
   browserOpen: boolean
   setBrowserOpen: (open: boolean) => void
   toggleSidebar: () => void
+  /** Reload the window, back on this screen. */
+  reload: () => void
   seed: ComposerSeed | null
   setSeed: (seed: ComposerSeed | null) => void
   toast: (text: string) => void
@@ -53,6 +58,24 @@ interface AppValue {
 }
 
 const AppContext = createContext<AppValue | null>(null)
+
+/** What a reload keeps of the screen, in the window's session storage until the screens come back. */
+const RELOAD_KEY = 'marianne:reload'
+interface Kept {
+  account: string
+  view: View
+  settingsPage: string | null
+  browserOpen: boolean
+}
+let kept: Kept | null = (() => {
+  const raw = sessionStorage.getItem(RELOAD_KEY)
+  sessionStorage.removeItem(RELOAD_KEY)
+  try {
+    return raw ? (JSON.parse(raw) as Kept) : null
+  } catch {
+    return null
+  }
+})()
 
 export function useApp(): AppValue {
   const value = useContext(AppContext)
@@ -64,10 +87,14 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
   const folders = useLive(api.listFolders, api.onFolders) ?? []
   const lights = useLive(api.engineLights, api.onEngineLights) ?? []
   const settings = useLive(api.getAccountSettings, api.onAccountSettings)
-  const [view, setView] = useState<View>({ kind: 'page', page: 'home' })
+  // Back from a reload: the same screen, for the same account only.
+  const restored = kept?.account === session.account?.id ? kept : null
+  const [view, setView] = useState<View>(restored?.view ?? { kind: 'page', page: 'home' })
   const [palette, setPalette] = useState<PaletteMode | null>(null)
-  const [settingsPage, setSettingsPage] = useState<string | null>(null)
-  const [browserOpen, setBrowserOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
+  const [settingsPage, setSettingsPage] = useState<string | null>(restored?.settingsPage ?? null)
+  const [browserOpen, setBrowserOpen] = useState(restored?.browserOpen ?? false)
+  useEffect(() => void (kept = null), [])
   const [seed, setSeed] = useState<ComposerSeed | null>(null)
   const [toastText, setToastText] = useState('')
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -109,6 +136,12 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
 
   const toggleSidebar = useCallback(() => void api.setConfig({ ui: { sidebarOpen: !config.ui.sidebarOpen } }), [config.ui.sidebarOpen])
 
+  const account = session.account?.id
+  const reload = useCallback(() => {
+    if (account) sessionStorage.setItem(RELOAD_KEY, JSON.stringify({ account, view, settingsPage, browserOpen } satisfies Kept))
+    api.reloadWindow()
+  }, [account, view, settingsPage, browserOpen])
+
   // A route names a screen: "folder:<id>", "settings:<page>", "service:<code>", "news"… The
   // main process sends them (a notification, the tray), and Marianne links to them (marianne:news).
   const openRoute = useCallback(
@@ -147,9 +180,12 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
       openPalette: setPalette,
       settingsPage,
       openSettings: setSettingsPage,
+      guideOpen,
+      openGuide: setGuideOpen,
       browserOpen,
       setBrowserOpen,
       toggleSidebar,
+      reload,
       seed,
       setSeed,
       toast,
@@ -170,8 +206,10 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
       step,
       palette,
       settingsPage,
+      guideOpen,
       browserOpen,
       toggleSidebar,
+      reload,
       seed,
       toast,
       toastText

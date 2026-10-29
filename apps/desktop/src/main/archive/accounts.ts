@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { existsSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { ARCHIVE_EXT, readHeader } from './archive'
 
 /**
@@ -17,6 +18,13 @@ export interface AccountFile {
 }
 
 export const accountFile = (folder: string, id: string) => join(folder, `${id}${ARCHIVE_EXT}`)
+
+/** The archive files named on a command line: paths from where it was typed, or file URLs (Linux launchers). */
+export function archivesIn(argv: readonly string[], cwd: string): string[] {
+  return argv
+    .filter((arg) => !arg.startsWith('-') && arg.toLowerCase().endsWith(ARCHIVE_EXT))
+    .map((arg) => (arg.startsWith('file://') ? fileURLToPath(arg) : resolve(cwd, arg)))
+}
 
 export function listAccounts(folder: string): AccountFile[] {
   if (!folder || !existsSync(folder)) return []

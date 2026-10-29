@@ -39,6 +39,8 @@ export default defineConfig({
           index: resolve('src/main/index.ts'),
           // The index worker parses the Service-Public dump off the main thread (see main/public/worker.ts).
           worker: resolve('src/main/public/worker.ts'),
+          // The runner starts short commands off the main process (see main/aside.ts).
+          runner: resolve('src/main/runner.ts'),
           ...syncEntries
         }
       }

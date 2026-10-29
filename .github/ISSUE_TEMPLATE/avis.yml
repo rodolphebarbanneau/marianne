@@ -1,5 +1,5 @@
-name: Un avis, une idée
-description: Ce qui vous a plu, gêné, manqué.
+name: Un avis
+description: Ce qui vous a plu, gêné ou surpris.
 labels: [avis]
 body:
   - type: markdown

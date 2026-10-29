@@ -20,7 +20,7 @@ Regardez la date d'expiration de votre carte d'identité et de votre passeport. 
 
 ## Faire la prédemande en ligne
 
-La prédemande se fait sur le site de l'ANTS ; elle vous donne un numéro à présenter au rendez-vous. Pour un passeport, achetez le timbre fiscal électronique au même moment.
+La prédemande se fait sur le site de l'ANTS. Elle vous donne un numéro à présenter au rendez-vous. Pour un passeport, achetez le timbre fiscal électronique au même moment.
 
 > open: ants | Ouvrir le site de l'ANTS
 > sheet: N360 | Lire la fiche passeport

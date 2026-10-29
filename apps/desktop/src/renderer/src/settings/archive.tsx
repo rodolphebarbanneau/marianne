@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import type { Usage } from '@shared/types'
 import { useApp } from '../app/context'
 import { OfferPin, RecoveryKey } from '../app/after-unlock'
+import { ArchivePath } from '../components/archive-path'
 import { Field, Identicon, Spinner } from '../components/ui'
 import { lockIntent } from '../lib/after-unlock'
 import { api, errorText, useLive } from '../lib/api'
 import { accountLabel, bytes } from '../lib/format'
 import { useDocuments } from '../lib/profile'
-import { NewPassword, passwordProblem } from '../screens/password'
+import { NewPassword, PasswordInput, passwordProblem } from '../screens/password'
 
 const pct = (n: number, total: number) => `${Math.max(0.3, (n / total) * 100)}%`
 
@@ -34,7 +35,7 @@ export function SpacePane() {
       <div className="space">
         <span className="big">il reste {bytes(left)}</span>
         <span className="dim">
-          {bytes(usage.used)} utilisés sur {bytes(usage.capacity)} · comme une clé USB
+          {bytes(usage.used)} utilisés sur {bytes(usage.capacity)}. Comme une clé USB, l’archive a une taille fixe.
         </span>
         <div className="sbar">
           <span className="documents" style={{ width: pct(usage.documents, usage.capacity) }} title={`pièces · ${bytes(usage.documents)}`} />
@@ -62,10 +63,10 @@ export function SpacePane() {
         </div>
         <span className={`small ${ratio >= 0.8 ? 'accent' : 'dim'}`}>
           {ratio >= 1
-            ? 'L’archive est pleine : Marianne refuse les nouvelles pièces. Libérez de la place.'
+            ? 'L’archive est pleine. Libérez de la place pour pouvoir ajouter de nouvelles pièces.'
             : ratio >= 0.8
-              ? 'Plus de 80 % : pensez à libérer de la place.'
-              : 'À 80 % Marianne vous prévient ; à 100 % elle refuse les nouvelles pièces.'}
+              ? 'L’archive est remplie à plus de 80 %. Pensez à faire un peu de place.'
+              : 'Marianne vous prévient quand l’archive est remplie à 80 %. Une fois pleine, elle n’accepte plus de nouvelles pièces.'}
         </span>
       </div>
       <span className="label sub">Les plus grosses pièces</span>
@@ -89,21 +90,21 @@ export function SpacePane() {
       <div className="rows">
         <div className="row">
           <span>archive</span>
-          <span className="path">{app.session.account?.file}</span>
+          {app.session.account && <ArchivePath path={app.session.account.file} boxed />}
           <button className="btn small" onClick={() => api.showArchive()}>
             montrer
           </button>
         </div>
         <div className="row">
           <span>copie de sauvegarde</span>
-          <span className="dim small">une copie de l’archive, toujours chiffrée, à ranger ailleurs</span>
+          <span className="dim small">une copie chiffrée de l’archive, à garder ailleurs, sur une clé USB ou un autre disque</span>
           <button className="btn small" onClick={run(api.backupArchive, (p) => `copie enregistrée : ${p}`)}>
             exporter
           </button>
         </div>
         <div className="row">
           <span>tout exporter</span>
-          <span className="dim small">des fichiers ordinaires, en clair : vos pièces, vos conversations, votre profil</span>
+          <span className="dim small">vos pièces, vos conversations et votre profil, en fichiers ordinaires et non chiffrés</span>
           <button className="btn small" onClick={run(api.exportAll, (p) => `exporté dans ${p}`)}>
             exporter
           </button>
@@ -131,7 +132,7 @@ export function SecurityPane() {
     try {
       await api.changePassword(current, next)
       setCurrent('')
-      setMessage('Phrase de passe changée. Les codes des ordinateurs restent valables.')
+      setMessage('Phrase de passe changée. Les codes déjà activés sur vos ordinateurs marchent toujours.')
     } catch (err) {
       setMessage(errorText(err))
     } finally {
@@ -143,7 +144,7 @@ export function SecurityPane() {
       <span className="label sub">Changer la phrase de passe</span>
       <div className="form-grid">
         <Field label="phrase de passe actuelle" wide>
-          <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} />
+          <PasswordInput value={current} onChange={(e) => setCurrent(e.target.value)} />
         </Field>
         <div className="wide">
           <NewPassword
@@ -156,19 +157,21 @@ export function SecurityPane() {
         </div>
       </div>
       <p>
-        <button className="btn primary" disabled={busy} onClick={() => void change()}>
-          {busy ? <Spinner /> : 'changer'}
+        <button className="btn primary" disabled={busy} aria-busy={busy} onClick={() => void change()}>
+          {busy && <Spinner />}
+          changer
         </button>
       </p>
       <span className="label sub">Clé de secours</span>
-      <p className="dim small">Une nouvelle clé remplace l’ancienne, qui ne marche plus.</p>
+      <p className="dim small">Si vous refaites la clé de secours, l’ancienne cesse aussitôt de marcher.</p>
       <button className="btn" onClick={() => void api.renewRecoveryKey().then(setRecovery)}>
         refaire la clé de secours
       </button>
       <span className="label sub">Code sur cet ordinateur</span>
       {!app.session.pinAvailable ? (
         <p className="dim small">
-          Le trousseau du système n’est pas disponible ici : pas de code possible, la phrase de passe est demandée à chaque ouverture.
+          Le trousseau du système n’est pas disponible sur cet ordinateur. Un code n’est donc pas possible ici, et la phrase de passe est demandée à chaque
+          ouverture.
         </p>
       ) : account.hasPin ? (
         <p>
@@ -199,17 +202,17 @@ export function SecurityPane() {
           <span />
         </div>
         <div className="row">
-          <span>veille, écran verrouillé</span>
+          <span>mise en veille</span>
           <label>
             <input type="checkbox" checked={app.config.lockOnSleep} onChange={(e) => void app.setConfig({ lockOnSleep: e.target.checked })} />
-            verrouiller aussi l’archive
+            verrouiller l’archive quand l’ordinateur se met en veille ou que l’écran se verrouille
           </label>
           <span />
         </div>
       </div>
       {message && <p className="small dim">{message}</p>}
       {recovery && <RecoveryKey value={recovery} onDone={() => setRecovery('')} />}
-      {pin && <OfferPin onDone={() => setPin(false)} />}
+      {pin && <OfferPin dismiss="annuler" onDone={() => setPin(false)} />}
     </>
   )
 }
@@ -245,7 +248,7 @@ export function AccountsPane() {
         ))}
       </div>
       <p className="dim small">
-        Archives rangées dans <span className="path">{app.config.archiveFolder}</span>
+        Vos archives sont rangées dans <ArchivePath path={app.config.archiveFolder} boxed />
       </p>
       <p style={{ display: 'flex', gap: 8 }}>
         <button className="btn" onClick={switchTo}>

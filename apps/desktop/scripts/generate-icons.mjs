@@ -1,7 +1,8 @@
 // Generates the app icons (no dependencies): node scripts/generate-icons.mjs
 // Design: a Minitel screen tile, deep navy with a faint dot matrix, showing a mosaic "M" (Videotex
-// blocks with a hairline gap, like the "disjoint" mosaic mode) above a blue-white-red bar. Each size
-// is laid out on whole pixels, and the Windows .ico / macOS .icns carry one image per size.
+// blocks with a hairline gap, like the "disjoint" mosaic mode) in the French colours: blue left stem,
+// white V, red right stem. Each size is laid out on whole pixels, and the Windows .ico / macOS .icns
+// carry one image per size.
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -13,6 +14,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 /** The "M", on a grid of mosaic blocks. */
 const GLYPH = ['W.....W', 'WW...WW', 'W.W.W.W', 'W..W..W', 'W.....W', 'W.....W']
+/** A narrower "M" for tiles too small to give the full one 2px blocks and a margin (16px). */
+const SMALL_GLYPH = ['W...W', 'WW.WW', 'W.W.W', 'W...W', 'W...W']
 const COLS = GLYPH[0].length
 const ROWS = GLYPH.length
 
@@ -20,40 +23,49 @@ const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), pa
 const TILE = hex('#0a0f2e')
 const DOT = hex('#1b2560')
 const WHITE = hex('#f2f4ff')
-const BLUE = hex('#3d5afe')
+// Lighter than the UI's blue (#3d5afe): on the navy tile it contrasts as much as the red (5:1).
+const BLUE = hex('#5b78ff')
 const RED = hex('#ff4757')
 
 /**
- * Block layout at `size`: whole-pixel blocks, the glyph and its bar centered. Small sizes drop the
- * gap between blocks (it would eat the strokes) and the dot matrix.
+ * Block layout at `size`: whole-pixel blocks, the glyph exactly centered. Small sizes drop the gap
+ * between blocks (it would eat the strokes) and the dot matrix. The full glyph needs 2px blocks at
+ * least; where those would fill more than 3/4 of the tile, the narrower one keeps the "M" off its
+ * edges. The in-app logo (src/renderer/src/components/logo.tsx) follows this same layout.
  */
-function layout(size) {
-  const content = size * 0.6
-  const block = Math.max(2, Math.floor(content / COLS))
+function layout(size, { glyph = 2 * COLS <= size * 0.75 ? GLYPH : SMALL_GLYPH, fill = 0.66 } = {}) {
+  const cols = glyph[0].length
+  const rows = glyph.length
+  const block = Math.max(2, Math.floor((size * fill) / cols))
   const gap = block >= 6 ? Math.max(1, Math.round(block * 0.1)) : 0
-  const width = block * COLS
-  const barHeight = Math.max(1, Math.round(block * 0.75))
-  const height = block * ROWS + block + barHeight
-  const ox = Math.floor((size - width) / 2)
-  const oy = Math.floor((size - height) / 2)
+  // The last block's gap is not part of the "M". And whole pixels can't split an odd margin
+  // evenly: then the middle column (the tip of the V) and the bottom row (the stems' feet) give up
+  // a pixel, so the "M" sits exactly in the middle at every size.
+  const trimX = (size - (block * cols - gap)) % 2
+  const trimY = (size - (block * rows - gap)) % 2
+  const ox = (size - (block * cols - gap - trimX)) / 2
+  const oy = (size - (block * rows - gap - trimY)) / 2
+  const mid = (cols - 1) / 2
   const rects = []
-  GLYPH.forEach((row, y) =>
+  glyph.forEach((row, y) =>
     [...row].forEach((c, x) => {
-      if (c === 'W') rects.push([WHITE, ox + x * block, oy + y * block, block - gap, block - gap])
+      if (c !== 'W') return
+      const color = x === 0 ? BLUE : x === cols - 1 ? RED : WHITE
+      const left = ox + x * block - (x > mid ? trimX : 0)
+      rects.push([color, left, oy + y * block, block - gap - (x === mid ? trimX : 0), block - gap - (y === rows - 1 ? trimY : 0)])
     })
   )
-  // Bar under the glyph, in three equal parts (the middle one takes the rounding).
-  const third = Math.round(width / 3)
-  const barY = oy + block * ROWS + block
-  rects.push([BLUE, ox, barY, third, barHeight], [WHITE, ox + third, barY, width - 2 * third, barHeight], [RED, ox + width - third, barY, third, barHeight])
   return { rects, dots: size >= 96 }
 }
 
 // ---------------------------------------------------------------- rendering
 
-/** Coverage of a rounded square tile (4×4 supersampled; the glyph itself is pixel-exact). */
-function tileCoverage(size, x, y) {
-  const m = size * 0.04
+/**
+ * Coverage of a rounded square tile (4×4 supersampled; the glyph itself is pixel-exact). Its margin
+ * is whole pixels, so only the corners are soft: a fractional one leaves a faint half-transparent
+ * line along each side, which looks frayed at tray sizes.
+ */
+function tileCoverage(size, m, x, y) {
   const r = size * 0.18
   let hits = 0
   for (let sy = 0; sy < 4; sy++) {
@@ -68,20 +80,80 @@ function tileCoverage(size, x, y) {
   return hits / 16
 }
 
-function render(size) {
-  const { rects, dots } = layout(size)
+/**
+ * The tray's tile fills its whole slot and carries the narrow "M" in bigger blocks: with the app
+ * icon's margin and thin strokes, it looked smaller than the icons next to it (3px strokes instead of
+ * 2 at 20px, 125 %).
+ */
+const TRAY = { margin: 0, glyph: SMALL_GLYPH, fill: 0.84 }
+
+function render(size, { margin = Math.round(size * 0.04), ...options } = {}) {
+  const { rects, dots } = layout(size, options)
   const rgba = Buffer.alloc(size * size * 4)
   const pitch = Math.max(4, Math.round(size / 64))
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const a = tileCoverage(size, x, y)
+      const a = tileCoverage(size, margin, x, y)
       if (!a) continue
       const dot = dots && x % pitch === pitch >> 1 && y % pitch === pitch >> 1
       rgba.set([...(dot ? DOT : TILE), Math.round(a * 255)], (y * size + x) * 4)
     }
   }
+  // The glyph keeps the tile's alpha: nothing of it can show outside the rounded square.
   for (const [color, x, y, w, h] of rects) {
-    for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) rgba.set([...color, 255], (yy * size + xx) * 4)
+    for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) rgba.set(color, (yy * size + xx) * 4)
+  }
+  return png(size, rgba)
+}
+
+// The archive's document icon: a page with a folded corner, the tile's navy and the same mosaic "M".
+// A light edge sets the page apart on dark folders; on light ones, its navy does.
+const EDGE = hex('#9aa6e8')
+const FLAP = hex('#2c3a8f')
+
+function renderDocument(size) {
+  const w = Math.round(size * 0.76)
+  const h = Math.round(size * 0.94)
+  const x0 = Math.floor((size - w) / 2)
+  const y0 = Math.floor((size - h) / 2)
+  const fold = Math.max(3, Math.round(w * 0.3))
+  const fx = x0 + w - fold
+  const edge = Math.max(1, Math.round(size / 64))
+  const pitch = Math.max(4, Math.round(size / 64))
+  // Which part of the page a point is in: 0 outside (and the corner folded away), 1 the edge, 2 the flap, 3 the page.
+  const part = (px, py) => {
+    if (px < x0 || px >= x0 + w || py < y0 || py >= y0 + h) return 0
+    const corner = px >= fx && py < y0 + fold
+    const beyond = px - fx - (py - y0) // > 0 past the fold's diagonal
+    if (corner && beyond > 0) return 0
+    const inset = Math.min(px - x0, x0 + w - px, py - y0, y0 + h - py, corner ? -beyond / Math.SQRT2 : Infinity)
+    if (inset < edge || (corner && (px - fx < edge || y0 + fold - py < edge))) return 1
+    return corner ? 2 : 3
+  }
+  const rgba = Buffer.alloc(size * size * 4)
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const fill = size >= 96 && x % pitch === pitch >> 1 && y % pitch === pitch >> 1 ? DOT : TILE
+      const colors = [null, EDGE, FLAP, fill]
+      const sum = [0, 0, 0]
+      let hits = 0
+      for (let sy = 0; sy < 4; sy++) {
+        for (let sx = 0; sx < 4; sx++) {
+          const c = colors[part(x + (sx + 0.5) / 4, y + (sy + 0.5) / 4)]
+          if (!c) continue
+          hits++
+          for (let i = 0; i < 3; i++) sum[i] += c[i]
+        }
+      }
+      if (hits) rgba.set([...sum.map((s) => Math.round(s / hits)), Math.round((hits / 16) * 255)], (y * size + x) * 4)
+    }
+  }
+  // The "M" laid out as on a tile as wide as the page, below the fold.
+  const g = w
+  const ox = x0 + Math.floor((w - g) / 2)
+  const oy = Math.min(y0 + h - g, Math.max(y0 + fold, Math.round(y0 + h * 0.56 - g / 2)))
+  for (const [color, x, y, rw, rh] of layout(g).rects) {
+    for (let yy = y; yy < y + rh; yy++) for (let xx = x; xx < x + rw; xx++) rgba.set([...color, 255], ((oy + yy) * size + ox + xx) * 4)
   }
   return png(size, rgba)
 }
@@ -165,33 +237,40 @@ const out = (rel, data) => {
   console.log('wrote', rel)
 }
 
-// Every size Windows requests at 100–200 % scaling (shell, taskbar, alt-tab).
-const appIco = ico([16, 20, 24, 30, 32, 36, 40, 48, 60, 64, 72, 80, 96, 128, 256].map((size) => ({ size, data: render(size) })))
+// Every size Windows requests at 100–200 % scaling (shell, taskbar, alt-tab, tray).
+const appIco = ico([16, 20, 24, 28, 30, 32, 36, 40, 48, 56, 60, 64, 72, 80, 96, 128, 256].map((size) => ({ size, data: render(size) })))
+// The .icns entries, each size and its Retina variant (ic11–ic14: 16, 32, 128 and 256 points at 2×).
+const ICNS_SIZES = [
+  ['icp4', 16],
+  ['icp5', 32],
+  ['icp6', 64],
+  ['ic07', 128],
+  ['ic08', 256],
+  ['ic09', 512],
+  ['ic10', 1024],
+  ['ic11', 32],
+  ['ic12', 64],
+  ['ic13', 256],
+  ['ic14', 512]
+]
 
 out('build/icon.png', render(1024)) // Linux + fallback
 out('build/icon.ico', appIco)
-out(
-  'build/icon.icns',
-  icns([
-    ['icp4', render(16)],
-    ['icp5', render(32)],
-    ['icp6', render(64)],
-    ['ic07', render(128)],
-    ['ic08', render(256)],
-    ['ic09', render(512)],
-    ['ic10', render(1024)],
-    ['ic11', render(32)],
-    ['ic12', render(64)],
-    ['ic13', render(256)],
-    ['ic14', render(512)]
-  ])
-)
+out('build/icon.icns', icns(ICNS_SIZES.map(([type, size]) => [type, render(size)])))
+
+// The archive's icon, for .marianne files: Windows and macOS take it from build/ (fileAssociations in
+// electron-builder.yml), Linux from the icon theme, one PNG per size (the .deb installs them).
+out('build/archive.ico', ico([16, 20, 24, 32, 40, 48, 64, 96, 128, 256].map((size) => ({ size, data: renderDocument(size) }))))
+out('build/archive.icns', icns(ICNS_SIZES.map(([type, size]) => [type, renderDocument(size)])))
+for (const size of [16, 24, 32, 48, 64, 128, 256, 512]) out(`build/mime/${size}.png`, renderDocument(size))
 out('resources/icon.png', render(256))
 out('resources/icon.ico', appIco)
 
-// Tray: the tile on Windows and Linux; on macOS a black "M" template the menu bar recolors.
-out('resources/tray.png', render(16))
-out('resources/tray@2x.png', render(32))
+// Tray: on Linux, the tile; on Windows, an .ico of it with every scaling's size (16px at 100 %, 20 at
+// 125 %, where a PNG gets stretched); on macOS, a black "M" template the menu bar recolors.
+out('resources/tray.png', render(16, TRAY))
+out('resources/tray@2x.png', render(32, TRAY))
+out('resources/tray.ico', ico([16, 20, 24, 28, 32, 36, 40, 48].map((size) => ({ size, data: render(size, TRAY) }))))
 for (const [size, suffix] of [
   [18, ''],
   [36, '@2x']

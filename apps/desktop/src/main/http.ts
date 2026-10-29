@@ -1,4 +1,5 @@
 import { app, net } from 'electron'
+import { REPO_URL } from '../shared/project'
 
 /** HTTP for the data sources: a timeout, an honest user agent, and a short cache for GETs. */
 
@@ -26,7 +27,7 @@ interface Options {
 const CACHE_MAX = 200
 const cache = new Map<string, { at: number; ttl: number; text: string }>()
 
-export const userAgent = () => `Marianne/${app.getVersion()} (+https://github.com/rodolphebarbanneau/marianne)`
+export const userAgent = () => `Marianne/${app.getVersion()} (+${REPO_URL})`
 
 export async function fetchText(url: string, opts: Options = {}): Promise<string> {
   const method = opts.method ?? (opts.json !== undefined || opts.form ? 'POST' : 'GET')

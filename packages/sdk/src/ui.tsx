@@ -27,7 +27,10 @@ export function Field({ label, hint, error, wide, children }: { label: string; h
   )
 }
 
-/** A dialog over the window. Échap or a click outside closes it. */
+/**
+ * A dialog over the window. Its buttons close it, and échap like its cancel button; a click beside
+ * it doesn't, so a stray click loses nothing typed in it.
+ */
 export function Modal({ children, onClose }: { children: ReactNode; onClose?: () => void }) {
   useEffect(() => {
     if (!onClose) return
@@ -36,7 +39,7 @@ export function Modal({ children, onClose }: { children: ReactNode; onClose?: ()
     return () => window.removeEventListener('keydown', key)
   }, [onClose])
   return (
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
+    <div className="overlay">
       <div className="modal">{children}</div>
     </div>
   )

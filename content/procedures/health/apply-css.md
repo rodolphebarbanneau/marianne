@@ -3,7 +3,7 @@ id: apply-css
 domain: health
 title: Demander la complémentaire santé solidaire
 description: la complémentaire santé gratuite ou à moins d'un euro par jour, selon les ressources
-when: à tout moment ; à renouveler chaque année
+when: à tout moment, puis à renouveler chaque année
 duration: 20 minutes
 documents: ressources des 12 derniers mois de chaque membre du foyer; numéro de sécurité sociale
 sources: F10027
@@ -22,7 +22,7 @@ Le droit dépend des ressources du foyer sur les douze derniers mois. Les alloca
 
 La demande se fait le plus simplement depuis votre compte ameli, avec votre numéro de sécurité sociale.
 
-> setup: account:ameli | Configurer ameli
+> setup: account:ameli | Configurer l’Assurance maladie
 > open: ameli | Ouvrir ameli
 
 ## Faire la demande

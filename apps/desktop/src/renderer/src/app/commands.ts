@@ -26,6 +26,8 @@ export function useActions(): Actions {
       lock: () => api.lock(),
       account: () => api.lock(),
       fullscreen: () => api.toggleFullscreen(),
+      reload: app.reload,
+      guide: () => app.openGuide(!app.guideOpen),
       browser: () => app.setBrowserOpen(!app.browserOpen)
     }),
     [app]
@@ -45,8 +47,12 @@ export function useShortcuts(actions: Actions, recording: boolean): void {
     const onKey = (e: KeyboardEvent) => {
       if (recording) return
       api.activity()
-      const typing = !!(e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')
+      const field = (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')
+      const typing = !!field
       const onPage = app.view.kind !== 'folder' && !app.palette && !app.settingsPage
+      // SUITE / RETOUR work from the pages' text boxes too (the composer keeps what was written); a list
+      // keeps its keys, and so do a dashboard's and a service's forms, which would lose what was typed.
+      const turning = onPage && (!field || (app.view.kind === 'page' && (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement)))
       // RETOUR: from a domain's dashboard or a service's screen, échap goes back to its page.
       if (onPage && !typing && e.key === 'Escape' && (app.view.kind === 'domain' || app.view.kind === 'service')) {
         e.preventDefault()
@@ -54,7 +60,7 @@ export function useShortcuts(actions: Actions, recording: boolean): void {
         return
       }
       // ctrl+↓ / ctrl+↑ also change page, for keyboards without page keys.
-      if (onPage && !typing && e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      if (turning && e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
         e.preventDefault()
         app.step(e.key === 'ArrowDown' ? 'next' : 'prev')
         return
@@ -62,8 +68,8 @@ export function useShortcuts(actions: Actions, recording: boolean): void {
       for (const def of SHORTCUTS) {
         const run = actions[def.id]
         if (!run || !matches(e, accelOf(def.id, isMac, app.config.shortcuts), isMac)) continue
-        // In a folder, pg↑ / pg↓ scroll the conversation as usual; in a text box they move the caret.
-        if ((def.id === 'next' || def.id === 'prev') && (!onPage || typing)) continue
+        // In a folder, pg↑ / pg↓ scroll the conversation (the folder handles them).
+        if ((def.id === 'next' || def.id === 'prev') && !turning) continue
         e.preventDefault()
         run()
         return

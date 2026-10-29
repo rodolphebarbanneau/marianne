@@ -216,7 +216,7 @@ describe('context view', () => {
     expect(view).toContain('Nantes (code insee 44109)')
     expect(view).toContain('[[nir]]')
     expect(view).toContain('[[iban]]')
-    expect(view).toContain('impots.gouv.fr ✓')
+    expect(view).toContain('Impôts ✓')
     expect(view).toContain(
       'micro-entreprise, EI, activité 74.10Z, créée le 2021-03-01, déclarations urssaf trimestrielles, tva franchise en base, rôle entrepreneur'
     )

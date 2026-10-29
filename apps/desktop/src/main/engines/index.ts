@@ -8,7 +8,8 @@ import { session } from '../archive/session'
 import { configStore } from '../config'
 import { content } from '../content'
 import { log } from '../log'
-import { run, shellEnv } from '../util'
+import { runAside } from '../aside'
+import { shellEnv } from '../util'
 import { claude } from './claude'
 import { expandHome, findCli, openInTerminal } from './cli'
 import { codex } from './codex'
@@ -65,7 +66,7 @@ export async function engineStatus(id: EngineId, refresh = false): Promise<Engin
   if (cli) {
     const env = { ...shellEnv(), ...homeEnv(id) }
     try {
-      status.version = (await run(cli, ['--version'], { env, timeoutMs: 15_000 })).stdout.trim().split('\n')[0]
+      status.version = (await runAside(cli, ['--version'], { env, timeoutMs: 15_000 })).stdout.trim().split('\n')[0]
       Object.assign(status, await engine.account(cli, env, engineHome(id)))
     } catch (err) {
       status.error = `Impossible de lire l’état de ${label} : ${(err as Error).message}`

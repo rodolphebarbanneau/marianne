@@ -63,8 +63,8 @@ export function DomainPage({ id }: { id: DomainId }) {
     <div className="page">
       <div className="page-body domain-page">
         <div className="service-head">
-          <button className="small dim" onClick={() => app.goPage('procedures')}>
-            ← Démarches
+          <button className="back dim" title="retour aux Démarches (échap)" aria-label="retour aux Démarches" onClick={() => app.goPage('procedures')}>
+            ←
           </button>
           <span className="badge">{d.badge}</span>
           <span className="t">{capitalize(d.label)}</span>

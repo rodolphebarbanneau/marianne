@@ -3,7 +3,8 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { EngineModel } from '../../shared/types'
 import { MCP_SERVER_NAME, mcp } from '../mcp'
-import { isMac, isWin, run } from '../util'
+import { runAside } from '../aside'
+import { isMac, isWin } from '../util'
 import { contentFile, runStream } from './cli'
 import { CodexStream } from './events'
 import { codexTranscript } from './transcripts'
@@ -81,7 +82,7 @@ export const codex: Engine = {
   site: 'developers.openai.com/codex',
   async account(cli, env) {
     // e.g. "Logged in using ChatGPT" / "Not logged in"
-    const a = await run(cli, ['login', 'status'], { env, timeoutMs: 15_000 })
+    const a = await runAside(cli, ['login', 'status'], { env, timeoutMs: 15_000 })
     const line =
       `${a.stdout}\n${a.stderr}`
         .trim()

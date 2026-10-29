@@ -1,7 +1,8 @@
 import { EventEmitter } from 'node:events'
-import { readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { DEFAULT_ACCOUNT_SETTINGS, DEFAULT_CONFIG } from '../shared/config'
 import type { AccountSettings, DeepPartial, DeviceConfig } from '../shared/types'
+import { writeFileAtomic } from './files'
 import { log } from './log'
 import { paths } from './paths'
 
@@ -71,9 +72,7 @@ class ConfigStore extends EventEmitter {
   }
 
   private save(): void {
-    const tmp = paths.config + '.tmp'
-    writeFileSync(tmp, JSON.stringify(this.config, null, 2))
-    renameSync(tmp, paths.config)
+    writeFileAtomic(paths.config, JSON.stringify(this.config, null, 2))
   }
 }
 

@@ -6,7 +6,7 @@ export const DEFAULT_CONFIG: DeviceConfig = {
   archiveFolder: '',
   otherArchives: [],
   lastAccount: '',
-  ui: { theme: 'minitel', fontSize: 14, pixelFont: false, crt: false, sidebarOpen: true, sidebarWidth: 270, browserWidth: 560 },
+  ui: { theme: 'minitel', fontSize: 14, crt: false, sidebarOpen: true, sidebarWidth: 270, browserWidth: 560 },
   shortcuts: {},
   engines: {
     default: 'claude',

@@ -101,8 +101,8 @@ export function View() {
             <p className="dim">Aucun trajet à payer.</p>
           )}
           <p className="small dim">
-            Marianne ne connaît pas les montants : le site officiel les affiche à partir de la plaque. Avec un badge de télépéage bien fixé au pare-brise, il
-            n’y a rien à noter : le passage est payé automatiquement.
+            Marianne ne connaît pas les montants, le site officiel les affiche à partir de la plaque. Si vous avez un badge de télépéage bien fixé au
+            pare-brise, vous n’avez rien à noter : le passage est payé automatiquement.
           </p>
         </section>
 
@@ -270,7 +270,7 @@ function AddTrip({
             ))}
           </select>
         </Field>
-        <Field label="autoroute" hint={chosen ? `${chosen.deadlineHours} h après le passage pour payer · ${chosen.operator}` : undefined}>
+        <Field label="autoroute" hint={chosen ? `vous avez ${chosen.deadlineHours} h après le passage pour payer · ${chosen.operator}` : undefined}>
           <select value={networkId} onChange={(e) => setNetworkId(e.target.value)}>
             {networks.map((n) => (
               <option key={n.id} value={n.id}>
@@ -279,7 +279,7 @@ function AddTrip({
             ))}
           </select>
         </Field>
-        <Field label="passage (heure de Paris)" error={error}>
+        <Field label="date du passage (heure de Paris)" error={error}>
           <input type="datetime-local" value={at} max={parisInput(new Date())} onChange={(e) => setAt(e.target.value)} />
         </Field>
         {/* An empty label, so the button lines up with the fields whatever their hint. */}

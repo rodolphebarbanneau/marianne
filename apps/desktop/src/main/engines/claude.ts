@@ -5,7 +5,8 @@ import { join } from 'node:path'
 import type { EngineModel } from '../../shared/types'
 import { MCP_SERVER_NAME, mcp } from '../mcp'
 import { paths } from '../paths'
-import { isMac, isWin, run } from '../util'
+import { runAside } from '../aside'
+import { isMac, isWin } from '../util'
 import { contentFile, runStream } from './cli'
 import { ClaudeStream } from './events'
 import { claudeLeftovers, claudeProject, claudeTranscript } from './transcripts'
@@ -101,7 +102,7 @@ export const claude: Engine = {
   candidates,
   site: 'claude.com/claude-code',
   async account(cli, env) {
-    const a = await run(cli, ['auth', 'status', '--json'], { env, timeoutMs: 15_000 })
+    const a = await runAside(cli, ['auth', 'status', '--json'], { env, timeoutMs: 15_000 })
     const json = JSON.parse(a.stdout.slice(a.stdout.indexOf('{')))
     return { loggedIn: !!json.loggedIn, account: [json.email, json.subscriptionType].filter(Boolean).join(' · ') || undefined }
   },

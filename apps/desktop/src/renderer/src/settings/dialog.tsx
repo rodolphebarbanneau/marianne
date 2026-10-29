@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
-import { Boundary } from '../components/ui'
+import { Boundary, SearchField } from '../components/ui'
 import { AccountsPane, SecurityPane, SpacePane } from './archive'
 import { BrowserPane, DataPane, EnginesPane, PrivacyPane, SitesPane } from './connections'
 import { AboutPane, DisplayPane, ShortcutsPane, SkillsPane } from './application'
@@ -57,7 +57,7 @@ export function SettingsDialog() {
       <div className="settings">
         <nav className="settings-nav">
           <span className="title px">RÉGLAGES</span>
-          <input placeholder="⌕ chercher un réglage" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <SearchField value={query} onChange={setQuery} placeholder="chercher un réglage" />
           {SETTINGS_GROUPS.map((g) => {
             const pages = g.pages.filter((p) => !q || norm(p.label).includes(q) || norm(g.label).includes(q))
             if (!pages.length) return null

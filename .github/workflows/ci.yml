@@ -55,10 +55,35 @@ jobs:
 
       - run: npm ci
 
-      - name: Package (unpacked)
+      # Unpacked, except on Linux: the real .deb, to check what it installs.
+      - name: Package
         shell: bash
         working-directory: apps/desktop
         run: |
-          args=()
+          args=(--dir)
           if [ "$RUNNER_OS" = macOS ]; then args+=(-c.mac.identity=null); fi
-          npm run build && npx electron-builder --dir --publish never "${args[@]}"
+          if [ "$RUNNER_OS" = Linux ]; then args=(--linux deb); fi
+          npm run build && npx electron-builder --publish never "${args[@]}"
+
+      # .marianne files get their type and icon from the package (electron-builder.yml).
+      - name: Check the archive file type
+        if: runner.os != 'Windows'
+        shell: bash
+        working-directory: apps/desktop
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            deb=$(ls dist/*.deb)
+            contents=$(dpkg-deb -c "$deb")
+            grep -q 'usr/share/mime/packages/marianne.xml' <<<"$contents"
+            for size in 16 24 32 48 64 128 256 512; do grep -q "hicolor/${size}x${size}/mimetypes/application-x-marianne.png" <<<"$contents"; done
+            dpkg-deb --fsys-tarfile "$deb" | tar -xO --wildcards './usr/share/applications/*.desktop' | grep -q 'MimeType=application/x-marianne;'
+          else
+            app=$(ls -d dist/mac*/Marianne.app | head -1)
+            test -f "$app/Contents/Resources/archive.icns"
+            plutil -convert json -o - "$app/Contents/Info.plist" | node -e '
+              const plist = JSON.parse(require("fs").readFileSync(0, "utf8"))
+              const doc = plist.CFBundleDocumentTypes?.find((t) => t.CFBundleTypeExtensions?.includes("marianne"))
+              const uti = plist.UTExportedTypeDeclarations?.find((t) => t.UTTypeTagSpecification?.["public.filename-extension"]?.includes("marianne"))
+              if (doc?.CFBundleTypeIconFile !== "archive.icns" || uti?.UTTypeIconFile !== "archive.icns") throw new Error("the .marianne type is not declared: " + JSON.stringify({ doc, uti }))
+            '
+          fi

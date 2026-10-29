@@ -3,7 +3,7 @@ id: claim-pension
 domain: retirement
 title: Préparer et demander sa retraite
 description: vérifier sa carrière, choisir sa date, faire la demande unique en ligne
-when: commencez plusieurs années avant ; faites la demande au moins six mois avant la date choisie
+when: commencez plusieurs années avant, et faites la demande au moins six mois avant la date choisie
 duration: plusieurs étapes sur quelques mois
 documents: numéro de sécurité sociale; bulletins de salaire des périodes manquantes; justificatifs d'enfants, de service militaire, de chômage
 sources: N381

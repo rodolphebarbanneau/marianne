@@ -4,7 +4,7 @@
   "sites": [
     {
       "id": "service-public",
-      "name": "Service-Public",
+      "name": "Service public",
       "url": "https://www.service-public.gouv.fr",
       "domain": "identity",
       "login": "franceconnect",
@@ -36,7 +36,7 @@
     },
     {
       "id": "impots",
-      "name": "impots.gouv.fr",
+      "name": "Impôts",
       "url": "https://www.impots.gouv.fr",
       "domain": "taxes",
       "login": "account",
@@ -68,11 +68,11 @@
     },
     {
       "id": "dvf",
-      "name": "Prix immobiliers (DVF)",
+      "name": "Prix immobiliers",
       "url": "https://explore.data.gouv.fr/fr/immobilier",
       "domain": "housing",
       "login": "none",
-      "description": "les ventes immobilières réelles, parcelle par parcelle"
+      "description": "les ventes immobilières réelles (DVF), parcelle par parcelle"
     },
     {
       "id": "caf",
@@ -80,12 +80,12 @@
       "url": "https://www.caf.fr",
       "domain": "family",
       "login": "account",
-      "description": "allocations familiales, aides au logement, rsa, prime d’activité, simulateurs",
+      "description": "allocations familiales, aides au logement, RSA, prime d’activité, simulateurs",
       "fields": [
         {
           "key": "caf_number",
           "label": "numéro allocataire",
-          "hint": "7 chiffres, sur vos courriers de la caf",
+          "hint": "7 chiffres, sur vos courriers de la Caf",
           "pattern": "^[0-9]{7}$"
         }
       ]
@@ -109,7 +109,7 @@
     },
     {
       "id": "mes-aides",
-      "name": "1 jeune 1 solution · mes aides",
+      "name": "1 jeune 1 solution",
       "url": "https://www.1jeune1solution.gouv.fr/mes-aides",
       "domain": "family",
       "login": "none",
@@ -125,11 +125,11 @@
     },
     {
       "id": "ameli",
-      "name": "ameli",
+      "name": "Assurance maladie",
       "url": "https://www.ameli.fr",
       "domain": "health",
       "login": "account",
-      "description": "assurance maladie : remboursements, attestations, arrêts de travail, complémentaire santé solidaire",
+      "description": "votre compte ameli : remboursements, attestations, arrêts de travail, complémentaire santé solidaire",
       "needsNir": true
     },
     {
@@ -143,7 +143,7 @@
     },
     {
       "id": "mdph",
-      "name": "MDPH en ligne",
+      "name": "MDPH",
       "url": "https://mdphenligne.cnsa.fr",
       "domain": "health",
       "login": "account",
@@ -176,7 +176,7 @@
       "url": "https://www.moncompteformation.gouv.fr",
       "domain": "work",
       "login": "franceconnect",
-      "description": "vos droits à la formation (cpf) et le catalogue des formations",
+      "description": "vos droits à la formation (CPF) et le catalogue des formations",
       "needsNir": true
     },
     {
@@ -198,7 +198,7 @@
     },
     {
       "id": "assurance-retraite",
-      "name": "L’Assurance retraite",
+      "name": "Assurance retraite",
       "url": "https://www.lassuranceretraite.fr",
       "domain": "retirement",
       "login": "account",
@@ -216,7 +216,7 @@
     },
     {
       "id": "logement-social",
-      "name": "Demande de logement social",
+      "name": "Logement social",
       "url": "https://www.demande-logement-social.gouv.fr",
       "domain": "housing",
       "login": "account",
@@ -235,15 +235,15 @@
       "url": "https://france-renov.gouv.fr",
       "domain": "housing",
       "login": "none",
-      "description": "aides à la rénovation énergétique, maprimerénov’"
+      "description": "aides à la rénovation énergétique, MaPrimeRénov’"
     },
     {
       "id": "anil",
-      "name": "ANIL · ADIL",
+      "name": "ANIL",
       "url": "https://www.anil.org",
       "domain": "housing",
       "login": "none",
-      "description": "conseil juridique gratuit sur le logement : bail, loyers, copropriété"
+      "description": "conseil juridique gratuit sur le logement, avec l’ADIL de votre département : bail, loyers, copropriété"
     },
     {
       "id": "georisques",
@@ -255,7 +255,7 @@
     },
     {
       "id": "justice",
-      "name": "Justice.fr",
+      "name": "Justice",
       "url": "https://www.justice.fr",
       "domain": "justice",
       "login": "none",
@@ -319,7 +319,7 @@
       "fields": [
         {
           "key": "micro_siret",
-          "label": "siret de la micro-entreprise",
+          "label": "SIRET de la micro-entreprise",
           "hint": "14 chiffres",
           "pattern": "^[0-9]{14}$"
         }
@@ -327,7 +327,7 @@
     },
     {
       "id": "mon-entreprise",
-      "name": "mon-entreprise",
+      "name": "Mon entreprise",
       "url": "https://mon-entreprise.urssaf.fr",
       "domain": "business",
       "login": "none",
@@ -335,11 +335,11 @@
     },
     {
       "id": "guichet-unique",
-      "name": "Guichet unique INPI",
+      "name": "Guichet unique",
       "url": "https://procedures.inpi.fr",
       "domain": "business",
       "login": "account",
-      "description": "créer, modifier ou fermer une entreprise"
+      "description": "créer, modifier ou fermer une entreprise, sur le site de l’INPI"
     },
     {
       "id": "annuaire-entreprises",
@@ -383,11 +383,11 @@
     },
     {
       "id": "data-gouv",
-      "name": "data.gouv.fr",
+      "name": "Données ouvertes",
       "url": "https://www.data.gouv.fr",
       "domain": "identity",
       "login": "none",
-      "description": "toutes les données publiques ouvertes"
+      "description": "toutes les données publiques ouvertes, sur data.gouv.fr"
     },
     {
       "id": "ma-securite",

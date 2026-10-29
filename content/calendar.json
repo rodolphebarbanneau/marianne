@@ -5,7 +5,7 @@
     {
       "id": "income-declaration",
       "domain": "taxes",
-      "title": "déclarer vos revenus (service en ligne ouvert mi-avril ; date limite entre fin mai et début juin selon le département)",
+      "title": "déclarer vos revenus (service en ligne ouvert mi-avril, date limite entre fin mai et début juin selon le département)",
       "monthDay": "05-21",
       "applies": "always",
       "indicative": true,

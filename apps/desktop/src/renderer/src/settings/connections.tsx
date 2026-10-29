@@ -38,8 +38,8 @@ export function SitesPane() {
   return (
     <>
       <div className="note">
-        Facultatif. Avec une API, Marianne interroge le service directement. Sans API, elle ouvre le site dans son navigateur avec vos identifiants ; vous
-        regardez, vous pouvez prendre la main, et rien n’est envoyé, payé ou signé sans votre accord.
+        Tout est facultatif. Quand un service a une API, Marianne l’interroge directement. Sinon, elle ouvre le site dans son navigateur avec vos identifiants.
+        Vous voyez ce qu’elle fait, vous pouvez prendre la main à tout moment, et rien n’est envoyé, payé ou signé sans votre accord.
       </div>
       <div className="rows">
         {sites.map((s) => {
@@ -110,7 +110,10 @@ function SiteEditor({ site, entry, onClose }: { site: Site; entry?: KeychainEntr
             <Field label="identifiant">
               <input value={username} onChange={(e) => setUsername(e.target.value)} />
             </Field>
-            <Field label="mot de passe" hint={entry ? 'laissez vide pour garder celui enregistré' : 'gardé dans l’archive, jamais envoyé au moteur'}>
+            <Field
+              label="mot de passe"
+              hint={entry ? 'laissez vide pour garder le mot de passe enregistré' : 'gardé dans votre archive, il n’est jamais envoyé au moteur'}
+            >
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
             </Field>
           </>
@@ -168,7 +171,7 @@ function ApiKeyForm() {
           <Field label="identifiant client">
             <input value={username} onChange={(e) => setUsername(e.target.value)} />
           </Field>
-          <Field label="secret">
+          <Field label="secret client">
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </Field>
         </div>
@@ -208,8 +211,8 @@ export function EnginesPane() {
   return (
     <>
       <div className="note">
-        Quel que soit le moteur, c’est Marianne qui répond, avec les mêmes outils et le même masquage. Avec plusieurs moteurs, vous choisissez dans le champ de
-        saisie, pour chaque dossier.
+        Quel que soit le moteur, c’est Marianne qui répond, avec les mêmes outils et la même protection de vos données. Si vous en avez plusieurs, vous
+        choisissez lequel utiliser pour chaque dossier, à côté du bouton envoyer.
       </div>
       {ENGINES.map((id) => {
         const engine = config.engines[id]
@@ -267,8 +270,9 @@ export function EnginesPane() {
               )}
             </span>
             <span className="hint">
-              {ENGINE_HOMES[id].env} · {engine.home ? 'personnalisé' : 'par défaut'} · la connexion du moteur et ses réglages sont dans ce dossier
-              {engine.enabled && s && !s.found ? ' · installez le programme, puis réessayez' : ''}
+              {ENGINE_HOMES[id].env} · {engine.home ? 'dossier personnalisé' : 'dossier par défaut'} · c’est là que le moteur garde votre connexion et ses
+              réglages
+              {engine.enabled && s && !s.found ? ' · installez-le, puis réessayez' : ''}
               {s?.error ? ` · ${s.error}` : ''}
             </span>
             {(models[id]?.length ?? 0) > 0 && (
@@ -315,7 +319,9 @@ export function EnginesPane() {
           <span />
         </div>
       </div>
-      <p className="small dim">barre du bas : ● prêt · ◐ travaille · grisé ✕ activé mais introuvable ou déconnecté · un moteur désactivé n’y apparaît pas</p>
+      <p className="small dim">
+        Dans la barre du bas : ● prêt, ◐ au travail, ✕ grisé si le moteur est introuvable ou déconnecté. Un moteur désactivé n’y apparaît pas.
+      </p>
     </>
   )
 }
@@ -333,15 +339,15 @@ export function BrowserPane() {
             demander une fois par dossier
           </label>
           <label>
-            <input type="radio" checked={settings.browser.askOnline === 'site'} onChange={() => void setSettings({ browser: { askOnline: 'site' } })} />à chaque
-            site
+            <input type="radio" checked={settings.browser.askOnline === 'site'} onChange={() => void setSettings({ browser: { askOnline: 'site' } })} />
+            demander pour chaque nouveau site
           </label>
         </span>
         <span />
       </div>
       <div className="row">
         <span>signer, payer, envoyer</span>
-        <span className="dim">toujours votre accord (non modifiable)</span>
+        <span className="dim">toujours avec votre accord, sans exception</span>
         <span />
       </div>
       <div className="row">
@@ -349,13 +355,13 @@ export function BrowserPane() {
         <select value={settings.browser.show} onChange={(e) => void setSettings({ browser: { show: e.target.value as 'ask' | 'always' | 'never' } })}>
           <option value="ask">quand Marianne le propose</option>
           <option value="always">toujours</option>
-          <option value="never">jamais (hors de vue)</option>
+          <option value="never">jamais, il travaille hors de vue</option>
         </select>
         <span />
       </div>
       <div className="row">
         <span>connexions aux sites</span>
-        <span className="dim">gardées en mémoire, oubliées au verrouillage</span>
+        <span className="dim">gardées le temps de la session, oubliées dès que vous verrouillez</span>
         <span />
       </div>
     </div>
@@ -366,8 +372,8 @@ export function PrivacyPane() {
   return (
     <>
       <div className="note">
-        Avant d’envoyer quoi que ce soit au moteur, Marianne remplace vos identifiants par des jetons ([[nir]], [[iban]]…) et les remet chez vous, dans les
-        courriers et les formulaires.
+        Avant d’envoyer quoi que ce soit au moteur, Marianne remplace vos identifiants par des jetons, comme [[nir]] ou [[iban]]. Elle remet les vrais numéros
+        chez vous, dans les courriers et les formulaires.
       </div>
       <div className="rows">
         <div className="row">
@@ -377,17 +383,17 @@ export function PrivacyPane() {
         </div>
         <div className="row">
           <span>les pièces</span>
-          <span>lues par Marianne, masquées, puis données au moteur ; les scans sans texte ne partent qu’avec votre accord</span>
+          <span>Marianne les lit et les masque avant de les donner au moteur. Un scan sans texte n’est envoyé qu’avec votre accord.</span>
           <span />
         </div>
         <div className="row">
           <span>ce que le moteur voit quand même</span>
-          <span className="dim">le contenu : montants, situation, santé…</span>
+          <span className="dim">le reste du contenu : montants, situation familiale, santé…</span>
           <span />
         </div>
         <div className="row">
           <span>sur le disque</span>
-          <span className="dim">rien en clair : l’archive est chiffrée ; les copies de travail des moteurs sont effacées au verrouillage</span>
+          <span className="dim">rien en clair. L’archive est chiffrée, et les copies de travail des moteurs sont effacées dès que vous verrouillez.</span>
           <span />
         </div>
       </div>
@@ -425,8 +431,9 @@ export function DataPane() {
               {st?.error && <span className="bad"> · {st.error}</span>}
             </span>
             {s.kind === 'offline' && enabled ? (
-              <button className="btn small" disabled={!!st?.syncing} onClick={() => void api.syncPublicSource(s.id)}>
-                {st?.syncing ? <Spinner /> : 'mettre à jour'}
+              <button className="btn small" disabled={!!st?.syncing} aria-busy={!!st?.syncing} onClick={() => void api.syncPublicSource(s.id)}>
+                {st?.syncing && <Spinner />}
+                mettre à jour
               </button>
             ) : (
               <span />

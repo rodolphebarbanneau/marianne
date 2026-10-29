@@ -76,16 +76,17 @@ function ResetPassword({ onDone }: { onDone: () => void }) {
       </div>
       <div className="foot">
         <span />
-        <button className="btn primary" disabled={busy} onClick={() => (problem ? setError(problem) : void save())}>
-          {busy ? <Spinner /> : 'enregistrer'}
+        <button className="btn primary" disabled={busy} aria-busy={busy} onClick={() => (problem ? setError(problem) : void save())}>
+          {busy && <Spinner />}
+          enregistrer
         </button>
       </div>
     </Modal>
   )
 }
 
-/** A PIN to open this account on this computer without the whole phrase. */
-export function OfferPin({ onDone }: { onDone: () => void }) {
+/** A PIN to open this account on this computer without the whole phrase: offered after unlocking ("plus tard"), or set from the settings ("annuler"). */
+export function OfferPin({ dismiss = 'plus tard', onDone }: { dismiss?: string; onDone: () => void }) {
   const [pin, setPin] = useState('')
   const [again, setAgain] = useState('')
   const [busy, setBusy] = useState(false)
@@ -103,15 +104,14 @@ export function OfferPin({ onDone }: { onDone: () => void }) {
   }
   const digits = (v: string) => v.replace(/\D/g, '').slice(0, 12)
   return (
-    <Modal onClose={onDone}>
+    <Modal onClose={busy ? undefined : onDone}>
       <div className="in">
         <span className="label">Déverrouiller avec un code sur cet ordinateur</span>
         <p>
-          La prochaine fois, un code suffira pour ouvrir l’archive ici. Il ne marche que sur cet ordinateur (il s’appuie sur le trousseau du système), et après
-          5 erreurs la phrase de passe redevient nécessaire.
+          La prochaine fois, un simple code suffira pour ouvrir l’archive sur cet ordinateur. Il ne marche qu’ici, car il s’appuie sur le trousseau du système.
+          Après 5 erreurs, il faudra de nouveau la phrase de passe.
         </p>
         <input
-          className="pin-input"
           type="password"
           inputMode="numeric"
           autoFocus
@@ -119,23 +119,17 @@ export function OfferPin({ onDone }: { onDone: () => void }) {
           value={pin}
           onChange={(e) => setPin(digits(e.target.value))}
         />
-        <input
-          className="pin-input"
-          type="password"
-          inputMode="numeric"
-          placeholder="le même, une seconde fois"
-          value={again}
-          onChange={(e) => setAgain(digits(e.target.value))}
-        />
+        <input type="password" inputMode="numeric" placeholder="retapez-le pour confirmer" value={again} onChange={(e) => setAgain(digits(e.target.value))} />
         {problem && <p className="dim small">{problem}</p>}
         {error && <p className="bad small">{error}</p>}
       </div>
       <div className="foot">
-        <button className="btn" onClick={onDone}>
-          plus tard
+        <button className="btn" disabled={busy} onClick={onDone}>
+          {dismiss}
         </button>
-        <button className="btn primary" disabled={!pin || !!problem || pin !== again || busy} onClick={() => void save()}>
-          {busy ? <Spinner /> : 'activer le code'}
+        <button className="btn primary" disabled={!pin || !!problem || pin !== again || busy} aria-busy={busy} onClick={() => void save()}>
+          {busy && <Spinner />}
+          activer le code
         </button>
       </div>
     </Modal>

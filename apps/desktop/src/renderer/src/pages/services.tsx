@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { SERVICE_CATEGORIES, serviceCode, serviceMatches, sortServices, type ServiceState } from '@marianne/sdk'
 import { useApp } from '../app/context'
+import { PageHead, SearchField } from '../components/ui'
 import { useServices } from '../host'
 
 /** Services: apps with a code, favorites first, then by category. Not tied to any folder. */
@@ -34,19 +35,12 @@ export function ServicesPage() {
     <div className="page">
       <div className="page-body">
         <div className="section">
-          <div className="section-bar">
-            <span className="section-title">Services</span>
-            <input
-              className="filter"
-              value={query}
-              placeholder="filtrer : un code, un nom, un mot…"
-              spellCheck={false}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
+          <PageHead title="Services">
+            <SearchField value={query} onChange={setQuery} placeholder="filtrer : un code, un nom, un mot…" />
+          </PageHead>
           {starred.length > 0 && (
             <div className="cat">
-              <span className="dim">★ vos favoris</span>
+              <span className="label">★ vos favoris</span>
               <div className="grid">{starred.map(tile)}</div>
             </div>
           )}
@@ -55,7 +49,7 @@ export function ServicesPage() {
             return (
               list.length > 0 && (
                 <div key={c.id} className="cat">
-                  <span className="dim">{c.label}</span>
+                  <span className="label">{c.label}</span>
                   <div className="grid">{list.map(tile)}</div>
                 </div>
               )

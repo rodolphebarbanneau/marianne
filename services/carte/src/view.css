@@ -38,11 +38,16 @@
   flex-basis: 520px;
   max-width: 720px;
 }
+/* Two lines, always: the name, then its figures. Whatever the pointer passes over, the map below stays put. */
 .carte-status {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--s2);
-  min-height: 1.5em;
+  flex-direction: column;
+  height: 3.1em;
+}
+.carte-status > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* The map: density in five shades, the user's place in the accent colour. */

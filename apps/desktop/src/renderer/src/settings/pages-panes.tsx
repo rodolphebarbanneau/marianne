@@ -24,8 +24,9 @@ export function ServicesPane() {
   return (
     <>
       <div className="note">
-        Les services sont des applications d’information, chacune avec son code (3615 METEO…). Ils ne voient jamais vos identifiants ; certains connaissent la
-        commune de votre adresse. Chacun ne joint que les sites qu’il déclare.
+        Les services sont de petites applications d’information, chacune avec son code, comme 3615 METEO. Ils ne voient jamais vos identifiants. Ils connaissent
+        la commune de votre adresse, pour vous montrer ce qui est près de chez vous. Ceux qui veulent lire autre chose de votre profil vous le demandent
+        d’abord. Chacun ne se connecte qu’aux sites qu’il annonce.
       </div>
       <div className="rows">
         {services.map((s) => {
@@ -47,7 +48,7 @@ export function ServicesPane() {
                 <span className="small dim">
                   {m.description}
                   <br />
-                  joint : {m.hosts.join(', ')} · version {m.version}
+                  {m.hosts.length ? `se connecte à : ${m.hosts.join(', ')}` : 'ne se connecte à aucun site'} · version {m.version}
                   {s.access.asked.length > 0 && <Access state={s} />}
                   {s.error && <span className="bad"> · n’a pas pu démarrer : {s.error}</span>}
                   {!s.available && !s.error && <span className="bad"> · une connexion dont il dépend est désactivée</span>}
@@ -71,8 +72,9 @@ export function ServicesPane() {
                   {s.starred ? '★' : '☆'}
                 </button>{' '}
                 {s.sync && s.on && (
-                  <button className="btn small" disabled={!!running} onClick={() => sync(s)}>
-                    {running ? <Spinner /> : 'mettre à jour'}
+                  <button className="btn small" disabled={!!running} aria-busy={!!running} onClick={() => sync(s)}>
+                    {running && <Spinner />}
+                    mettre à jour
                   </button>
                 )}
               </span>
@@ -93,17 +95,17 @@ function Access({ state }: { state: ServiceState }) {
     <>
       <br />
       {granted === null ? (
-        'lit votre profil : à demander à la première ouverture'
+        'vous demandera l’accès à votre profil à la première ouverture'
       ) : granted.length ? (
         <>
-          lit : {granted.map((f) => PROFILE_FIELDS[f]).join(', ')}{' '}
+          peut lire : {granted.map((f) => PROFILE_FIELDS[f]).join(', ')}{' '}
           <button className="link" onClick={() => set([])}>
             retirer l’accès
           </button>
         </>
       ) : (
         <>
-          accès au profil refusé{' '}
+          vous lui avez refusé l’accès à votre profil{' '}
           <button className="link" onClick={() => set(asked)}>
             autoriser ({asked.map((f) => PROFILE_FIELDS[f]).join(', ')})
           </button>
@@ -135,7 +137,7 @@ export function NewsSourcesPane() {
   return (
     <>
       <div className="note">
-        Choisissez vos sources. Marianne affiche le titre, l’heure et le lien, jamais l’article entier ; pour en savoir plus, demandez-lui.
+        Choisissez vos sources. Marianne affiche le titre, l’heure et le lien de chaque article, jamais l’article entier. Pour en savoir plus, demandez-lui.
       </div>
       {groups.map((g) => (
         <div key={g}>
@@ -172,8 +174,8 @@ export function NewsSourcesPane() {
           </div>
         ))}
         <div className="row">
-          <input value={name} placeholder="nom" onChange={(e) => setName(e.target.value)} />
-          <input value={url} placeholder="https://… (flux RSS ou Atom)" onChange={(e) => setUrl(e.target.value)} />
+          <input value={name} placeholder="nom du flux" onChange={(e) => setName(e.target.value)} />
+          <input value={url} placeholder="adresse du flux RSS ou Atom (https://…)" onChange={(e) => setUrl(e.target.value)} />
           <button className="btn small" disabled={!validFeed} onClick={addFeed}>
             ajouter
           </button>
@@ -195,8 +197,8 @@ export function NewsSourcesPane() {
         <div className="row">
           <span>même sujet</span>
           <label>
-            <input type="checkbox" checked={news.group} onChange={(e) => void setSettings({ news: { group: e.target.checked } })} /> regrouper les sources qui
-            en parlent (« aussi chez … »)
+            <input type="checkbox" checked={news.group} onChange={(e) => void setSettings({ news: { group: e.target.checked } })} /> regrouper les articles qui
+            parlent de la même chose, avec « aussi chez … »
           </label>
           <span />
         </div>

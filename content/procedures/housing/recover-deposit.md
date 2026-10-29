@@ -19,7 +19,7 @@ Comparez-le à l'état des lieux d'entrée, pièce par pièce. Notez toute rése
 
 ## Remettre les clés et donner votre adresse
 
-Remettez les clés contre un reçu daté, et donnez votre nouvelle adresse au bailleur. Le délai de restitution court à partir de la remise des clés ; il est plus court quand l'état des lieux de sortie est conforme à celui d'entrée.
+Remettez les clés contre un reçu daté, et donnez votre nouvelle adresse au bailleur. Le délai de restitution court à partir de la remise des clés. Il est plus court quand l'état des lieux de sortie est conforme à celui d'entrée.
 
 > document: contract | Ajouter le bail et les états des lieux
 

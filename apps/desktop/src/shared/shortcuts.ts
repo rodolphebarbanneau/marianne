@@ -1,7 +1,7 @@
 /**
  * Keyboard shortcuts, stored as Electron accelerators like in the user's other app (speak):
  * CommandOrControl is ctrl on Windows and Linux, cmd on macOS. Shown lowercase, terminal style
- * (ctrl+maj+entrée, cmd+k). Every shortcut can be changed in Réglages › Raccourcis clavier.
+ * (ctrl+alt+espace, cmd+k). Every shortcut can be changed in Réglages › Raccourcis clavier.
  */
 
 export type CommandId =
@@ -18,6 +18,7 @@ export type CommandId =
   | 'sidebar'
   | 'lock'
   | 'fullscreen'
+  | 'reload'
   | 'guide'
   | 'send'
   | 'stop'
@@ -43,11 +44,14 @@ export const SHORTCUTS: ShortcutDef[] = [
   { id: 'commands', label: 'Commandes', group: 'Fenêtres', accel: 'CommandOrControl+K' },
   // cmd+space is Spotlight on macOS, so the menu takes ctrl+space there.
   { id: 'menu', label: 'Menu de l’application (SOMMAIRE)', group: 'Fenêtres', accel: 'CommandOrControl+Space', mac: 'Control+Space' },
-  { id: 'search', label: 'Chercher partout', group: 'Fenêtres', accel: 'CommandOrControl+Shift+Enter' },
+  // cmd+option+space opens the Finder's search on macOS, so search takes ctrl+option+space there.
+  { id: 'search', label: 'Chercher partout', group: 'Fenêtres', accel: 'CommandOrControl+Alt+Space', mac: 'Control+Alt+Space' },
   { id: 'settings', label: 'Réglages', group: 'Application', accel: 'CommandOrControl+,' },
   { id: 'sidebar', label: 'Replier la barre latérale', group: 'Application', accel: 'CommandOrControl+B' },
   { id: 'lock', label: 'Verrouiller la session', group: 'Application', accel: 'CommandOrControl+L' },
   { id: 'fullscreen', label: 'Plein écran', group: 'Application', accel: 'F11', mac: 'Control+CommandOrControl+F' },
+  // cmd+R is RÉPÉTITION's, like ctrl+R elsewhere.
+  { id: 'reload', label: 'Recharger la fenêtre', group: 'Application', accel: 'F5', mac: 'CommandOrControl+Shift+R' },
   { id: 'guide', label: 'Aide de l’écran (GUIDE)', group: 'Application', accel: 'F1' },
   { id: 'send', label: 'Envoyer (ENVOI)', group: 'Conversation', accel: 'Enter' },
   { id: 'stop', label: 'Arrêter Marianne (ANNULATION)', group: 'Conversation', accel: 'Escape' },

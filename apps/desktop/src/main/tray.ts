@@ -6,7 +6,7 @@ import { log } from './log'
 import { resource } from './paths'
 import { deadlines } from './deadlines'
 import { profile } from './profile/store'
-import { isMac } from './util'
+import { isMac, isWin } from './util'
 import { navigate, setKeepInTray, showMain } from './windows'
 
 /**
@@ -53,8 +53,10 @@ function refresh(): void {
   )
 }
 
+// On Windows the .ico: the system takes the image drawn for its scaling (20px at 125 %), where it
+// would stretch a PNG's 16 or 32px one and blur the mosaic.
 function icon(): Electron.NativeImage {
-  const img = nativeImage.createFromPath(resource(isMac ? 'tray-mac.png' : 'tray.png'))
+  const img = nativeImage.createFromPath(resource(isMac ? 'tray-mac.png' : isWin ? 'tray.ico' : 'tray.png'))
   if (isMac) img.setTemplateImage(true)
   return img
 }

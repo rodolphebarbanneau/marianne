@@ -28,6 +28,8 @@
   --accent: var(--jaune);
   --link: var(--cyan);
   --dot: rgba(130, 150, 255, 0.26);
+  /* Over the sidebar: a shade of black, the page's dots dimmed under it (in every theme). */
+  --side-shade: rgba(0, 0, 0, 0.45);
 
   --s1: 4px;
   --s2: 8px;
@@ -40,6 +42,10 @@
   --bar-h: 30px;
   --side-w: 270px;
   --browser-w: 560px;
+  /* The conversation's column, centred, and the composer under it. */
+  --column: 760px;
+  /* One margin for every screen: the tabs above, the pages, a domain's dashboard, a service, a folder. */
+  --gutter: 20px;
 
   --text-size: 14px;
   --retro: 'VT323', 'JetBrains Mono Variable', ui-monospace, monospace;
@@ -50,6 +56,8 @@
 
   color-scheme: dark;
   font-family: var(--font);
+  /* One character per cell, like a Minitel: no ligatures joining __ into a line or -> into an arrow. */
+  font-variant-ligatures: none;
   font-size: var(--text-size);
   line-height: 1.55;
   color: var(--fg);
@@ -75,13 +83,6 @@ html[data-theme='monochrome'] {
   --dim: #8a908c;
   --fg: #cfd5d1;
   --dot: rgba(210, 235, 220, 0.17);
-}
-
-/* Option: the pixel font everywhere, like a real Minitel. */
-html[data-font='pixel'] {
-  --font: var(--retro);
-  font-size: var(--pixel-size);
-  line-height: 1.3;
 }
 
 /* The Minitel touches. */
@@ -222,9 +223,11 @@ button:disabled {
   opacity: 0.35;
   cursor: default;
 }
+/* Focus turns the frame itself yellow: drawn outside the border, it would make a second frame.
+   A field without a frame of its own draws none either; its container shows the focus. */
 :focus-visible {
   outline: 1px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: -1px;
 }
 .btn {
   display: inline-flex;
@@ -255,6 +258,15 @@ button:disabled {
 .btn.small {
   padding: 1px 7px;
   font-size: 0.86em;
+}
+/* At work: its label stays, the spinner in front of it in the button's own color (the accent would
+   vanish on a primary button), and not faded like a button that can't be pressed. */
+.btn .spinner {
+  color: inherit;
+}
+.btn[aria-busy='true']:disabled {
+  opacity: 1;
+  cursor: progress;
 }
 .icon-btn {
   width: 30px;
@@ -289,14 +301,53 @@ select {
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: var(--bleu);
+  border-color: var(--accent);
 }
 input::placeholder,
 textarea::placeholder {
   color: var(--muted);
 }
+/* A text box grows with what it holds, between the heights its place gives it. */
 textarea {
   resize: none;
+  field-sizing: content;
+}
+/* A search box, ghost like the icon buttons beside it (and as tall): the magnifier and the words only, a frame under the
+   pointer, lit while typing. */
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  color: var(--dim);
+  cursor: text;
+}
+.search-field:hover {
+  border-color: var(--rule);
+}
+.search-field:focus-within {
+  border-color: var(--accent);
+}
+.search-field svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.search-field input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+}
+.search-field input::placeholder {
+  color: var(--dim);
 }
 input[type='checkbox'],
 input[type='radio'] {
@@ -339,6 +390,11 @@ input[type='radio'] {
 }
 .form-grid .wide {
   grid-column: 1 / -1;
+}
+/* The notes for Marianne: room for a few lines from the start, up to half the window. */
+textarea.notes {
+  min-height: 8em;
+  max-height: 50vh;
 }
 .rows {
   max-width: 800px;
@@ -383,21 +439,24 @@ input[type='radio'] {
 .gauge.full > i {
   background: var(--rouge);
 }
+/* An account's mosaic (drawn in whole screen pixels, see Identicon): its frame and its blocks in the
+   text's color, on a sunken ground. */
 .identicon {
-  display: inline-grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: inline-block;
   flex: none;
-  border: 1px solid var(--fg);
-  background: var(--bg-sunken);
+  vertical-align: middle;
 }
-.identicon i.on {
-  background: var(--fg);
+.identicon .frame,
+.identicon .on {
+  fill: var(--fg);
+}
+.identicon .ground {
+  fill: var(--bg-sunken);
 }
 .chip {
   display: inline-block;
   padding: 3px 10px;
   border: 1px dashed var(--rule);
-  border-radius: 12px;
   color: var(--dim);
 }
 .chip:hover {
@@ -452,28 +511,33 @@ input[type='radio'] {
 .titlebar input {
   -webkit-app-region: no-drag;
 }
+/* On the sidebar's two lines, like its search field and rows below: frames 6px from the edge, their
+   content 15px (1px border, 8px padding). Hence a sidebar button 34px wide: its frame on the first
+   line, its icon, centered, on the second. */
 .brand {
   width: var(--side-w);
   flex: none;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 8px;
+  padding: 0 8px 0 6px;
   border-right: 1px solid var(--rule);
+}
+.brand > .icon-btn {
+  width: 34px;
 }
 .app.folded .brand,
 .app.bare .brand {
   width: auto;
   border-right: 0;
 }
+/* No sidebar button before the name: the name itself on the content line. */
+.app.bare .brand {
+  padding-left: 15px;
+}
 .mark {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-.mark .logo {
-  flex: none;
-  display: block;
 }
 .wordmark {
   letter-spacing: 0.25em;
@@ -482,11 +546,13 @@ input[type='radio'] {
 .mark:hover .wordmark {
   color: var(--accent);
 }
+/* The first tab's words on the gutter, in line with the page's title below them (its block reaching
+   out by its padding). */
 .tabs-bar {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 8px;
+  padding: 0 var(--gutter) 0 calc(var(--gutter) - 10px);
 }
 .tabs-bar button {
   padding: 2px 10px;
@@ -522,6 +588,15 @@ input[type='radio'] {
 
 /* ---------- sidebar ---------- */
 
+/* Darker than the page, like the column of folders of a chat app: with the title bar's part above it. */
+.side,
+.brand {
+  background-color: var(--side-shade);
+}
+.app.folded .brand,
+.app.bare .brand {
+  background-color: transparent;
+}
 .side {
   width: var(--side-w);
   flex: none;
@@ -534,31 +609,33 @@ input[type='radio'] {
 .app.folded .side {
   display: none;
 }
+/* Up through the title bar too, where the column's border goes on: lit from the top of the window,
+   and taken there too (out of the bar's dragging, which would move the window instead). */
 .splitter {
   position: absolute;
-  top: 0;
+  top: calc(-1 * var(--titlebar-h));
   bottom: 0;
   right: -5px;
   width: 9px;
   cursor: col-resize;
   z-index: 3;
+  -webkit-app-region: no-drag;
 }
 .splitter:hover,
 .splitter.drag {
   background: linear-gradient(var(--accent), var(--accent)) center / 1px 100% no-repeat;
 }
+/* The search box lines up with the folder rows below it (6px in), the two buttons at its end. */
 .side-search {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 6px 6px 6px 10px;
+  padding: 8px 6px 6px;
 }
-.side-search input {
+.side-search .search-field {
   flex: 1;
   min-width: 0;
-  border: 0;
-  background: transparent;
-  padding: 3px 0;
+  margin-right: 4px;
 }
 .side-list {
   flex: 1;
@@ -623,10 +700,19 @@ input[type='radio'] {
 .fi:hover .status {
   display: none;
 }
+/* Under the pointer, the actions take the status' place: lower than its line of text (1.25em + borders under 1.55em),
+   they never make the row taller, and the domain gives up its end rather than push them out. */
 .fi .hover-actions button {
   border: 1px solid var(--rule);
   padding: 0 5px;
+  line-height: 1.25;
   color: var(--dim);
+}
+.fi .kind {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .fi .hover-actions button:hover {
   color: var(--hi);
@@ -818,7 +904,8 @@ input[type='radio'] {
   padding: 0 5px;
   letter-spacing: 0.04em;
 }
-.keys .sc {
+/* A key's shortcut, beside what it does: the same in the bottom bar and at the foot of the pages. */
+.sc {
   color: var(--muted);
   font-size: 0.86em;
 }
@@ -862,13 +949,33 @@ input[type='radio'] {
   color: var(--accent);
 }
 .section {
-  padding: var(--s6) var(--s5) var(--s3);
+  padding: var(--s4) var(--gutter) var(--s3);
+}
+/* A page's head, the same everywhere: its title in pixel capitals, what it is about, its tools on the right. As tall
+   as a search box, so the title sits at the same place whether the page has tools or not. */
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 28px;
+  margin-bottom: var(--s3);
 }
 .section-title {
-  display: block;
   color: var(--hi);
   letter-spacing: 0.12em;
-  margin-bottom: var(--s3);
+  text-transform: uppercase;
+}
+.page-head .detail {
+  color: var(--dim);
+}
+.page-head .tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.page-head .search-field {
+  width: min(320px, 40vw);
 }
 .hero {
   min-height: 100%;
@@ -893,7 +1000,8 @@ input[type='radio'] {
 .cat {
   margin: 6px 0 var(--s4);
 }
-.cat > .dim {
+/* A category's heading: small capitals, like the headings of Actualités. */
+.cat > .label {
   display: block;
   margin-bottom: 6px;
 }
@@ -941,7 +1049,7 @@ button.card:hover {
   background: transparent;
 }
 
-/* Actualités, in a Minitel frame. */
+/* Actualités, in a Minitel frame: its edge on the gutter, like the cards of the other pages. */
 .news {
   border: 3px double var(--rule);
   padding: 10px 14px 12px;
@@ -951,15 +1059,13 @@ button.card:hover {
   flex-direction: column;
   gap: 10px;
 }
-.news-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+/* Each column's headings on their own line, even while what follows them is still loading. */
+.news-cols .label {
+  display: block;
+  margin-bottom: 6px;
 }
-.news-head input {
-  min-width: 260px;
+.news-cols .label:not(:first-child) {
+  margin-top: var(--s4);
 }
 .srcs {
   display: flex;
@@ -1035,7 +1141,7 @@ button.ev:hover {
 
 /* A domain's dashboard: what the user has in it on the left, what helps on the right. */
 .domain-page {
-  padding: var(--s4) var(--s5) var(--s6);
+  padding: var(--s4) var(--gutter) var(--s6);
 }
 .domain-ask {
   display: flex;
@@ -1138,16 +1244,6 @@ button.ev:hover {
 }
 
 /* The Services page: favorites first, then by category. */
-.section-bar {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: var(--s3);
-}
-.section-bar .filter {
-  width: min(320px, 50%);
-}
 .service-card {
   position: relative;
   padding: 0;
@@ -1190,7 +1286,7 @@ button.ev:hover {
 
 /* A service's own page: the one place with the 3615 nod. */
 .service-page {
-  padding: var(--s4) var(--s5) 0;
+  padding: var(--s4) var(--gutter) 0;
 }
 /* The service's own screen scrolls under its 3615 header. */
 .service-body {
@@ -1206,9 +1302,19 @@ button.ev:hover {
   margin-bottom: var(--s4);
   flex-wrap: wrap;
 }
+/* A domain's or a service's title: the pages' own style (pixel capitals), after the way back. */
 .service-head .t {
   color: var(--hi);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+/* The way back, an arrow alone (its page in its title): a little larger than the text, to be easy to hit. */
+.service-head .back {
+  font-size: 1.15em;
+  line-height: 1;
+}
+.service-head .back:hover {
+  color: var(--hi);
 }
 .service-head .star {
   margin-left: auto;
@@ -1243,7 +1349,7 @@ button.ev:hover {
 .folder-head {
   position: relative;
   flex: none;
-  padding: 12px 20px 8px;
+  padding: 12px var(--gutter) 8px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1264,6 +1370,18 @@ button.ev:hover {
 }
 .folder-head .title input {
   width: 100%;
+}
+/* The folder's menu: framed like « navigateur » beside it, and as tall. */
+.folder-head .more {
+  align-self: stretch;
+  padding: 0 9px;
+}
+.folder-head .more svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
 }
 .steps {
   display: flex;
@@ -1289,18 +1407,35 @@ button.ev:hover {
   color: var(--muted);
   font-style: normal;
 }
+/* The conversation scrolls across the whole width (its bar at the window's edge), its messages in a centred column. */
+.conv-frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 .conv {
   flex: 1;
   overflow: auto;
-  padding: 10px 20px 16px;
+  /* The bar's room on both sides (12px), so the column stays right above the composer, on the gutter. */
+  padding: 10px calc(var(--gutter) - 12px) 0;
+  scrollbar-gutter: stable both-edges;
+}
+.conv .column {
+  width: min(var(--column), 100%);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  /* Air between the last message and the composer. */
+  padding-bottom: 32px;
 }
 .msg {
-  max-width: min(760px, 92%);
+  min-width: 0;
 }
 .msg.me {
+  max-width: 85%;
   align-self: flex-end;
   border: 1px solid var(--rule);
   background: var(--bg-raised);
@@ -1380,12 +1515,23 @@ button.ev:hover {
 }
 .dock {
   flex: none;
-  padding: 8px 20px 12px;
+  padding: 8px var(--gutter) 12px;
   display: flex;
   justify-content: center;
 }
+/* Back to the end of the conversation, when the user scrolled up: centred above the composer. */
+.to-end {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  justify-content: center;
+  min-width: 34px;
+  border-color: var(--fg);
+}
 .composer {
-  width: min(760px, 100%);
+  width: min(var(--column), 100%);
   border: 1px solid var(--fg);
   background: var(--bg-raised);
   padding: 10px 12px 8px;
@@ -1393,13 +1539,19 @@ button.ev:hover {
   flex-direction: column;
   gap: 8px;
 }
+/* Writing lights up the whole composer, not only its box. */
+.composer:has(textarea:focus) {
+  border-color: var(--accent);
+}
 .composer textarea {
   border: 0;
   background: transparent;
   padding: 0;
   min-height: 3.2em;
   max-height: 40vh;
+  outline: none;
 }
+/* One line of controls of one height and one size of text: the attachment, the engine, sending. */
 .composer .tools {
   display: flex;
   align-items: center;
@@ -1408,9 +1560,42 @@ button.ev:hover {
 .composer .tools .grow {
   flex: 1;
 }
+.composer .tools > button,
+.composer .tools > select {
+  height: 30px;
+}
+/* The attachment: a ghost button, its frame (under the pointer) on the composer's edge like the
+   text above it and the send button's frame on the other side. */
+.composer .attach {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  color: var(--link);
+}
+.composer .attach:hover {
+  color: var(--accent);
+  border-color: var(--rule);
+}
+/* The engine: a ghost button too. */
 .composer select {
-  padding: 1px 6px;
-  font-size: 0.86em;
+  padding: 0 6px;
+  color: var(--dim);
+  background: transparent;
+  border-color: transparent;
+  cursor: pointer;
+}
+.composer select:hover {
+  color: var(--hi);
+  border-color: var(--rule);
+}
+.composer select:focus {
+  color: var(--hi);
+  border-color: var(--accent);
+}
+.composer select option {
+  background: var(--bg-raised);
+  color: var(--hi);
 }
 .attachments {
   display: flex;
@@ -1559,11 +1744,15 @@ button.ev:hover {
   padding: 3px 8px;
   background: var(--bg-sunken);
 }
+.palette .phead:has(input:focus) {
+  border-color: var(--accent);
+}
 .palette .phead input {
   flex: 1;
   border: 0;
   background: transparent;
   padding: 3px 0;
+  outline: none;
 }
 .palette .crumbs {
   flex: none;
@@ -1656,6 +1845,9 @@ button.ev:hover {
   background: var(--sel);
   color: var(--hi);
 }
+.menu > button.bad {
+  color: var(--rouge);
+}
 .menu hr {
   border: 0;
   border-top: 1px dashed var(--rule);
@@ -1663,12 +1855,13 @@ button.ev:hover {
 }
 .overlay {
   position: absolute;
-  /* Under the title bar, whose right end (left on macOS) holds the system's window buttons. */
-  inset: var(--titlebar-h) 0 var(--bar-h);
+  /* Over the title bar too: the system's window buttons dim with it (dimTitleBar, in the main
+     process, from this color). The bottom bar stays lit, with the dialog's keys. */
+  inset: 0 0 var(--bar-h);
   z-index: 35;
   background: rgba(3, 4, 15, 0.72);
   display: flex;
-  padding: 26px 40px 32px;
+  padding: calc(var(--titlebar-h) + 26px) 40px 32px;
 }
 .settings {
   flex: 1;
@@ -1691,11 +1884,8 @@ button.ev:hover {
   letter-spacing: 0.15em;
   color: var(--hi);
 }
-.settings-nav input {
-  display: block;
-  width: calc(100% - 20px);
+.settings-nav .search-field {
   margin: 0 10px 6px;
-  padding: 3px 6px;
 }
 .settings-nav .g {
   display: block;
@@ -1738,6 +1928,33 @@ button.ev:hover {
   display: block;
   margin: var(--s4) 0 6px;
 }
+/* A page's subtitle, close under its title: what the page is about, in a sentence or two. */
+.settings-page .psub {
+  max-width: 800px;
+  margin: -8px 0 var(--s5);
+  color: var(--dim);
+}
+/* À propos: the version on its own, with what there is to do about updates. */
+.about-version {
+  max-width: 800px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  margin-bottom: var(--s5);
+  border: 1px solid var(--fg);
+}
+.about-version .grow {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.about-version .big {
+  font-size: 1.3em;
+  color: var(--hi);
+}
 .space {
   max-width: 800px;
   border: 1px solid var(--fg);
@@ -1772,11 +1989,14 @@ button.ev:hover {
 .sbar .other {
   background: var(--muted);
 }
+/* The 80 % mark: its label above the bar, its line through it down to its bottom edge (its own
+   height, not the segments' 100 %, or the line would stop just inside the bar). */
 .sbar .tick {
   position: absolute;
   left: 80%;
   top: -14px;
-  bottom: -4px;
+  bottom: -1px;
+  height: auto;
   border-left: 1px dashed var(--accent);
   min-width: 0;
   font-size: 10px;
@@ -1857,6 +2077,80 @@ button.ev:hover {
   padding: 10px 16px;
   border-top: 1px dashed var(--rule);
 }
+/* GUIDE: wider than the other dialogs, its keys beside its links and authors. */
+.modal:has(.guide) {
+  width: min(820px, 100%);
+}
+.guide-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.guide-head .grow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.guide-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px 28px;
+}
+.guide-cols section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.guide-cols section > .label:not(:first-child) {
+  margin-top: 10px;
+}
+/* Its lists, all alike: a row per entry, what it is on the left, its key or its link on the right. */
+.guide-list {
+  align-self: stretch;
+  border-top: 1px solid var(--rule);
+}
+.guide-list > * {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 30px;
+  padding: 3px 4px;
+  border-bottom: 1px dashed var(--rule);
+}
+/* A link: the whole row, lit under the pointer. */
+.guide-list > button {
+  white-space: normal;
+}
+.guide-list > button:hover {
+  background: var(--hover);
+}
+.guide-list .to {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--link);
+}
+.guide-list .to svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.guide-list > button:hover .to {
+  color: var(--accent);
+}
+/* The authors in Réglages › À propos: one per line. */
+.authors {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
 .toast {
   position: absolute;
   z-index: 50;
@@ -1877,17 +2171,29 @@ button.ev:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* Safe: a screen taller than the window scrolls from its top instead of losing it. */
+  justify-content: safe center;
   gap: var(--s4);
   padding: var(--s6) var(--s5);
 }
+/* The logo, large, with the name under it. */
 .big-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s3);
   font-family: var(--retro);
-  font-size: calc(var(--pixel-size) * 2);
+  font-size: calc(var(--pixel-size) * 1.5);
+  line-height: 1;
   letter-spacing: 0.3em;
   color: var(--hi);
-  border: 1px solid var(--fg);
-  padding: 4px 18px 4px 24px;
+}
+.big-mark .logo {
+  display: block;
+}
+/* The spacing follows the last letter too: as much before the first one centers the name. */
+.big-mark span {
+  padding-left: 0.3em;
 }
 /* The first screen: what Marianne is, then one obvious thing to do. */
 .lock-screen .lead {
@@ -1899,11 +2205,6 @@ button.ev:hover {
   border-style: dashed;
   background: transparent;
 }
-.big-btn {
-  align-self: flex-start;
-  padding: 7px 20px;
-  font-size: 1.05em;
-}
 .step {
   width: min(620px, 100%);
   border: 1px solid var(--rule);
@@ -1914,11 +2215,52 @@ button.ev:hover {
   padding: 6px 12px;
   border-bottom: 1px dashed var(--rule);
 }
+/* Its rows run edge to edge (their own padding on the label's line), a dashed rule between them. */
 .step .in {
-  padding: 12px;
+  padding: 4px 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+}
+/* A row of these screens, like an account: what it is on top, a smaller line under it, its button
+   on the right. The buttons of a block share one width, so they line up. */
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+}
+.choice + .choice {
+  border-top: 1px dashed var(--rule);
+}
+.choice .grow {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  line-height: 1.3;
+}
+.choice > .btn:not(.small) {
+  flex: none;
+  min-width: 13em;
+  justify-content: center;
+}
+/* A whole row to click: an account. */
+button.choice:hover {
+  background: var(--hover);
+}
+.choice-note {
+  padding: 0 12px 10px;
+}
+/* Where the archives are, under the accounts: the sentence, the folder in full, then the link. */
+.folder-note {
+  width: min(620px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
 }
 .path {
   border: 1px solid var(--rule);
@@ -1928,20 +2270,74 @@ button.ev:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.acc-row {
+/* An archive's path, in full: it wraps after its separators (and inside a name too long for a line). */
+.archive-path {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  vertical-align: bottom;
+}
+/* Its own breaks, whatever the text around it does (a menu breaking anywhere, say). */
+.archive-path .text {
+  min-width: 0;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+/* Truncated: 48 characters at most, cut at its start ("…" before the file's name). The text runs
+   right to left so the cut falls on the left; the <bdi> keeps the path itself in order. */
+.archive-path.truncate {
+  max-width: min(48ch, 100%);
+}
+.archive-path.truncate .text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+}
+.archive-path .text bdi {
+  direction: ltr;
+}
+/* Boxed, it wraps inside its frame: no cut, unlike the other paths in frames. */
+.path.archive-path {
+  overflow: visible;
+  white-space: normal;
+}
+/* Its place kept, shown on hover: the text doesn't move under the pointer. */
+.archive-path .copy {
+  flex: none;
+  display: inline-flex;
+  color: var(--dim);
+  visibility: hidden;
+}
+.archive-path:hover .copy,
+.archive-path .copy:focus-visible {
+  visibility: visible;
+}
+.archive-path .copy:hover {
+  color: var(--hi);
+}
+.archive-path .copy svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+/* An account named in a dialog: its mosaic, its name, where its file is. */
+.account-line {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 4px;
-  border-bottom: 1px dashed var(--rule);
-  width: 100%;
+  padding-top: 4px;
 }
-.acc-row .grow {
+.account-line .grow {
   flex: 1;
   min-width: 0;
 }
-.acc-row:hover {
-  background: var(--hover);
+.account-line .file {
+  display: block;
 }
 .unlock-box {
   width: min(380px, 100%);
@@ -1950,19 +2346,146 @@ button.ev:hover {
   align-items: center;
   gap: 12px;
 }
-.unlock-box input {
+/* The account being opened: its mosaic and name, on a panel's background. */
+.account-panel {
+  width: 176px;
+  height: 176px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--bg-raised);
+  border: 1px solid var(--rule);
+  margin-bottom: 4px;
+}
+/* The identifier, and under it the initials or first name (a long one wraps inside the panel). */
+.account-name {
+  max-width: 100%;
+  padding: 0 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.unlock-box input,
+.unlock-box .reveal {
   width: 100%;
   text-align: center;
 }
-.pin-input {
-  letter-spacing: 0.5em;
-  font-size: 1.3em;
+/* As much room on the left as its button takes on the right: the dots stay in the middle. */
+.unlock-box .reveal input {
+  padding-left: 84px;
+}
+/* Centered too, its copy button's room balanced on the left. */
+.unlock-box .archive-path {
+  padding-left: 16px;
+  text-align: center;
+}
+/* The other ways in, centered: two on the first line, the last one under them. */
+.unlock-ways {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+/* The field, the button and the links, or the opening bar in their place: in the same cell, the
+   first keeping their room (hidden) while the bar runs, so the panel above doesn't move. */
+.unlock-zone {
+  width: 100%;
+  display: grid;
+}
+.unlock-controls,
+.unlock-opening {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.unlock-controls.away {
+  visibility: hidden;
+}
+/* Opening: blocks filled step by step, the next one blinking; what it's doing under them. */
+.opening-bar {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-top: 6px;
+}
+.opening-bar .meter {
+  width: 100%;
+  height: 14px;
+  display: grid;
+  grid-template-columns: repeat(32, 1fr);
+  gap: 2px;
+}
+.opening-bar .meter i {
+  background: var(--rule);
+}
+.opening-bar .meter i.on {
+  background: var(--accent);
+}
+.opening-bar .meter i.now {
+  animation: blink 1.2s steps(1) infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
 }
 .strength {
   display: flex;
   flex-direction: column;
   gap: 4px;
   font-size: 0.86em;
+}
+/* A password field and, inside its frame on the right, the button to show what is typed. */
+.reveal {
+  position: relative;
+  display: flex;
+}
+.reveal input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 84px;
+}
+.reveal button {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  padding: 1px 6px;
+  border: 1px solid transparent;
+  font-size: 0.82em;
+  color: var(--dim);
+}
+.reveal button:hover {
+  color: var(--hi);
+  border-color: var(--rule);
+}
+/* Choices side by side, on one line when they fit. */
+.radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  padding: 2px 0;
+}
+/* A dialog with several parts: a little more room between them, and inside them. */
+.modal .in.roomy {
+  gap: 18px;
+}
+.roomy .field {
+  gap: 7px;
+}
+.roomy .strength {
+  gap: 6px;
+  margin-top: 2px;
 }
 /* How far the password is from the target strength. */
 .pw-meter {

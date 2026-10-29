@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FranceDigest, FranceItem, NewsDigest, NewsStory, TodayEvent } from '@shared/public'
 import { useApp } from '../app/context'
-import { Spinner } from '../components/ui'
+import { PageHead, SearchField, Spinner } from '../components/ui'
 import { api, errorText } from '../lib/api'
 import { useNewsSources } from '../lib/content'
 import { clock, shortDate } from '../lib/format'
@@ -55,14 +55,10 @@ export function NewsPage() {
     <div className="page">
       <div className="page-body">
         <div className="section">
-          <span className="section-title">Actualités</span>
+          <PageHead title="Actualités" detail={new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}>
+            <SearchField value={query} onChange={setQuery} placeholder="chercher dans l’actualité" />
+          </PageHead>
           <div className="news">
-            <div className="news-head">
-              <span>
-                <span className="inv">ACTUALITÉS</span> {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-              </span>
-              <input value={query} placeholder="⌕ chercher dans l’actualité" spellCheck={false} onChange={(e) => setQuery(e.target.value)} />
-            </div>
             <div className="srcs">
               {(settings?.sources ?? []).map((id) => (
                 <span key={id} className="src">

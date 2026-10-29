@@ -2,7 +2,7 @@
 
 Merci de tester Marianne. C’est une version alpha : elle sert à trouver ce qui ne va pas avant une vraie sortie.
 
-Marianne est un assistant citoyen pour votre ordinateur : vos droits, vos démarches, vos papiers et vos échéances, l’information publique. Elle travaille avec votre propre Claude Code, Codex ou Mistral Vibe, et garde tout dans une archive chiffrée, sur votre ordinateur. Marianne est un projet indépendant, sans lien avec l’État ni avec aucune administration ; elle aide à comprendre et à préparer, elle ne remplace ni l’administration ni un conseil juridique.
+Marianne est un assistant citoyen pour votre ordinateur : vos droits, vos démarches, vos papiers et vos échéances, l’information publique. Elle travaille avec votre propre Claude Code, Codex ou Mistral Vibe, et garde tout dans une archive chiffrée, sur votre ordinateur. Marianne est un projet indépendant, sans lien avec l’État ni avec aucune administration. Elle vous aide à comprendre et à préparer vos démarches, sans remplacer l’administration ni un conseil juridique.
 
 ## Avant de commencer
 
@@ -29,10 +29,10 @@ Sur Windows et Linux, les versions suivantes s’installeront d’elles-mêmes (
 
 ## Bon à savoir
 
-- C’est une alpha : des choses vont casser. Une version alpha suivante pourrait ne pas relire l’archive de celle-ci ; n’y mettez rien que vous ne puissiez ressaisir.
+- C’est une alpha : des choses vont casser. Une version alpha suivante pourrait ne pas relire l’archive de celle-ci, alors n’y mettez rien que vous ne puissiez ressaisir.
 - Mistral Vibe n’a pas encore été essayé avec une vraie installation.
 - Le navigateur intégré demande votre accord avant d’aller en ligne, et toujours avant de signer, payer ou envoyer. Vous pouvez « prendre la main » à tout moment.
 
 ## Nous dire ce qui ne va pas
 
-Ouvrez un ticket sur [github.com/rodolphebarbanneau/marianne/issues](https://github.com/rodolphebarbanneau/marianne/issues/new/choose) : « Un problème » ou « Un avis, une idée ». N’y écrivez **aucune donnée personnelle** : les tickets sont publics.
+Ouvrez un ticket sur [github.com/rodolphebarbanneau/marianne/issues](https://github.com/rodolphebarbanneau/marianne/issues/new/choose) : « Un problème », « Une idée » ou « Un avis ». N’y écrivez **aucune donnée personnelle** : les tickets sont publics.

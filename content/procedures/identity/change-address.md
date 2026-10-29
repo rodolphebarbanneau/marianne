@@ -5,7 +5,7 @@ title: Déclarer un déménagement
 description: prévenir les organismes, la carte grise, les listes électorales
 when: dans le mois qui suit le déménagement
 duration: 30 minutes
-documents: nouvelle adresse; justificatif de domicile; références de vos dossiers (caf, impôts, ameli…)
+documents: nouvelle adresse; justificatif de domicile; références de vos dossiers (Caf, impôts, Assurance maladie…)
 sources: F1367; https://demarches.service-public.gouv.fr/mademarche/JeChangeDeCoordonnees/demarche
 updated: 2026-10-28
 owner: marianne
@@ -19,7 +19,7 @@ Renseignez votre nouvelle adresse dans Marianne : vos services locaux, votre dé
 
 ## Prévenir plusieurs organismes à la fois
 
-Le service « Je change de coordonnées » de Service-Public transmet votre nouvelle adresse en une seule fois à de nombreux organismes : caisse d'allocations familiales, assurance maladie, impôts, France Travail, caisses de retraite, fournisseurs d'énergie partenaires.
+Le service « Je change de coordonnées » de Service public transmet votre nouvelle adresse en une seule fois à de nombreux organismes : caisse d'allocations familiales, assurance maladie, impôts, France Travail, caisses de retraite, fournisseurs d'énergie partenaires.
 
 > open: https://demarches.service-public.gouv.fr/mademarche/JeChangeDeCoordonnees/demarche | Ouvrir le service
 
