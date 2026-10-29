@@ -8,6 +8,8 @@
  * - sync: optionally, the background job that keeps its offline data, with @marianne/sdk/sync;
  * - view: its screen, built with @marianne/sdk/view.
  *
+ * Its tests get the context Marianne would give its main side from @marianne/sdk/testing.
+ *
  * This entry point is what both sides share: the manifest, its categories, and plain helpers.
  * See docs/services.md.
  */

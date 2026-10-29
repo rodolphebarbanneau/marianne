@@ -1,10 +1,11 @@
 import { ToolError, type ServiceTool } from '@marianne/sdk/main'
+import { fakeContext } from '@marianne/sdk/testing'
 import { describe, expect, it } from 'vitest'
 import * as z from 'zod'
+import pkg from '../package.json'
 import { service } from '../src/main'
 import type { NearbyOffices, OfficeKind, OfficeResults } from '../src/types'
-import { fakeContext, whereOf } from './context'
-import { BORDEAUX, CAF_BELCIER, LORMONT, MAIRIE_BORDEAUX } from './fixtures'
+import { BORDEAUX, CAF_BELCIER, LORMONT, MAIRIE_BORDEAUX, whereOf } from './fixtures'
 
 const page = (results: unknown[], total = results.length) => ({ total_count: total, results })
 
@@ -17,7 +18,7 @@ function directory(url: URL) {
 }
 
 const setup = (answer: (url: URL) => unknown = directory) => {
-  const { ctx, urls } = fakeContext(answer, [BORDEAUX, LORMONT])
+  const { ctx, urls } = fakeContext(pkg, { answer, communes: [BORDEAUX, LORMONT] })
   const runtime = service.activate(ctx)
   const tool = runtime.tools?.find((t) => t.name === 'find_office') as ServiceTool
   // As Marianne's MCP server does: the arguments are parsed with the tool's input first.

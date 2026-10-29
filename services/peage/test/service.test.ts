@@ -1,17 +1,19 @@
 import { ToolError, type ServiceTool } from '@marianne/sdk/main'
+import { fakeContext, type FakeContextOptions } from '@marianne/sdk/testing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as z from 'zod'
+import pkg from '../package.json'
 import { service } from '../src/main'
 import { NETWORKS } from '../src/networks'
 import type { PeageMethods, Trip, Vehicles } from '../src/types'
-import { CLIO, fakeContext, GRANTED } from './context'
+import { CLIO, GRANTED } from './fixtures'
 
 /** 28 October 2026, 15:00 in Paris. */
 const NOW = new Date('2026-10-28T14:00:00Z')
 const PASSAGE = '2026-10-28T13:30:00.000Z'
 
-const setup = (profile: Parameters<typeof fakeContext>[0] = GRANTED) => {
-  const { ctx, stored } = fakeContext(profile)
+const setup = (profile: FakeContextOptions['profile'] = GRANTED) => {
+  const { ctx, stored } = fakeContext(pkg, { profile })
   const runtime = service.activate(ctx)
   // The service answers at once: its methods' results are the declared ones, not promises.
   const methods = runtime.methods as unknown as PeageMethods

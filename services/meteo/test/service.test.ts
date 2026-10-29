@@ -1,13 +1,14 @@
 import { ToolError, type ServiceTool } from '@marianne/sdk/main'
+import { fakeContext } from '@marianne/sdk/testing'
 import { describe, expect, it } from 'vitest'
 import * as z from 'zod'
+import pkg from '../package.json'
 import { service } from '../src/main'
 import type { Forecast, Place } from '../src/types'
-import { fakeContext } from './context'
 import { BORDEAUX, BORDEAUX_SAINT_CLAIR, FIXTURE } from './fixtures'
 
 const setup = (communes = [BORDEAUX, BORDEAUX_SAINT_CLAIR]) => {
-  const { ctx, urls } = fakeContext(() => FIXTURE, communes)
+  const { ctx, urls } = fakeContext(pkg, { answer: () => FIXTURE, communes })
   const runtime = service.activate(ctx)
   const tool = runtime.tools?.find((t) => t.name === 'forecast') as ServiceTool
   // As Marianne's MCP server does: the arguments are parsed with the tool's input first.
@@ -20,7 +21,7 @@ describe('meteo_forecast', () => {
     const { run, urls } = setup([BORDEAUX])
     const text = await run({ commune: ' 33063 ' })
     expect(urls).toHaveLength(1)
-    const url = new URL(urls[0])
+    const url = urls[0]
     expect(url.origin + url.pathname).toBe('https://api.open-meteo.com/v1/forecast')
     expect(Object.fromEntries(url.searchParams)).toMatchObject({
       latitude: '44.862',
