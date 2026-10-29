@@ -200,6 +200,9 @@ export interface LiveStream {
   poster: string
   /** Its page on the chamber's portal. */
   url: string
+  /** The meeting it shows, when the agenda says which (liveMeetings), and its agenda. */
+  meeting?: string
+  items?: string[]
 }
 
 export interface VideoQuery {

@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { departmentOf, THEMES, type ServiceImpl } from '@marianne/sdk'
+import { departmentOf, foldText, THEMES, type ServiceImpl } from '@marianne/sdk'
 import type { ServiceContext } from '@marianne/sdk/main'
 import { agreement, analyse, groupPositions, groupsByAuthor } from './analysis'
 import { searchKey } from './assembly'
@@ -93,16 +93,47 @@ export async function senateMeetings(ctx: Pick<ServiceContext, 'http' | 'log'>, 
     }))
 }
 
+/**
+ * The meetings today's live broadcasts show, by meeting id. A public sitting's broadcast shows the
+ * sitting under way, the latest started, whatever meeting the chamber names: the Assemblée's API
+ * names the day's first sitting all day long, the Sénat's none. A committee's shows the meeting the
+ * Assemblée names, or at the Sénat the latest started of that committee. A broadcast whose meeting
+ * the agenda doesn't have keeps the id it came with.
+ */
+export function liveMeetings(meetings: Meeting[], streams: LiveStream[], now = Date.now()): Map<string, LiveStream> {
+  const today = parisDay(new Date(now))
+  const started = (m: Meeting) => m.state !== 'cancelled' && m.start.slice(0, 10) === today && Date.parse(m.start) <= now
+  const sameOrgan = (a = '', b = '') => !!a && !!b && (foldText(a).includes(foldText(b)) || foldText(b).includes(foldText(a)))
+  const found = new Map<string, LiveStream>()
+  for (const s of streams.filter((x) => x.live)) {
+    // The latest started; between meetings that started together (the Sénat lists a day's sitting as
+    // several points at its opening hour), the one whose agenda shares most words with the broadcast.
+    const words = new Set(
+      foldText(`${s.title} ${s.subject}`)
+        .split(/\W+/)
+        .filter((w) => w.length > 3)
+    )
+    const shared = (m: Meeting) =>
+      foldText(m.items.join(' '))
+        .split(/\W+/)
+        .filter((w) => words.has(w)).length
+    const latest = (list: Meeting[]) => [...list].sort((a, b) => b.start.localeCompare(a.start) || shared(b) - shared(a))[0]
+    const named = meetings.find((m) => m.id === s.id)
+    const own = meetings.filter((m) => m.chamber === s.chamber && started(m))
+    const sitting = s.organ === 'Séance publique' || named?.kind === 'sitting'
+    const shown = sitting
+      ? (latest(own.filter((m) => m.kind === 'sitting')) ?? named)
+      : (named ?? (s.chamber === 'se' ? latest(own.filter((m) => m.kind !== 'sitting' && sameOrgan(m.organ, s.organ))) : undefined))
+    found.set(shown?.id ?? s.id, s)
+  }
+  return found
+}
+
 /** The agenda of some days in both chambers, with the broadcasts of today; `db` null: the Assemblée's isn't synced yet. */
 export function agendaOf(db: DatabaseSync | null, from: string, to: string, senate: Meeting[], streams: LiveStream[]): Agenda {
-  const live = new Set(streams.filter((s) => s.live).map((s) => s.id))
-  const senateLiveNow = streams.some((s) => s.chamber === 'se' && s.live)
-  const now = Date.now()
-  const meetings: AgendaMeeting[] = [
-    ...(db ? meetingsBetween(db, from, to) : []).map((m) => ({ ...m, live: live.has(m.id) })),
-    // The Sénat's broadcasts don't name its meetings: its sitting under way is the live one.
-    ...senate.map((m) => ({ ...m, live: senateLiveNow && m.kind === 'sitting' && Date.parse(m.start) <= now && m.start.slice(0, 10) === parisDay() }))
-  ].sort((a, b) => a.start.localeCompare(b.start))
+  const assembly = db ? meetingsBetween(db, from, to) : []
+  const live = liveMeetings([...assembly, ...senate], streams)
+  const meetings: AgendaMeeting[] = [...assembly, ...senate].map((m) => ({ ...m, live: live.has(m.id) })).sort((a, b) => a.start.localeCompare(b.start))
   return { from, to, indexed: !!db, meetings }
 }
 
@@ -642,17 +673,19 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
 
     async meeting(id): Promise<MeetingDetail> {
       const streams = await todayStreams(ctx)
+      const day = parisDay()
       if (/^SE-/i.test(id)) {
-        const day = parisDay()
-        const found = (await senateMeetings(ctx, addDays(day, -30), addDays(day, 30))).find((m) => m.id === id)
+        const around = await senateMeetings(ctx, addDays(day, -30), addDays(day, 30))
+        const found = around.find((m) => m.id === id)
         if (!found) throw new Error(`Réunion introuvable : ${id}`)
-        const stream = found.kind === 'sitting' ? (streams.find((s) => s.chamber === 'se' && s.live) ?? null) : null
+        const stream = liveMeetings(around, streams).get(id) ?? null
         const videos = await meetingVideos(ctx.http, found, '').catch(() => [])
         return { meeting: found, stream, videos }
       }
       const opened = index.open()
       const indexed = opened ? getMeeting(opened, id) : null
-      const stream = streams.find((s) => s.id === id) ?? null
+      // Known only from its broadcast (the agenda isn't synced): the broadcast that names it.
+      const stream = (opened ? liveMeetings(meetingsBetween(opened, day, day), streams).get(id) : streams.find((s) => s.id === id && s.live)) ?? null
       const meeting = indexed ?? (stream ? streamMeeting(stream) : null)
       if (!meeting) throw new Error(opened ? `Réunion introuvable : ${id}` : NOT_SYNCED)
       const code = opened ? (getOrgans(opened, [meeting.organId]).get(meeting.organId)?.code ?? '') : ''
@@ -672,7 +705,21 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
       return parsed.timecode ? { ...detail, timecode: parsed.timecode } : detail
     },
 
-    live: () => todayStreams(ctx).then((streams) => streams.filter((s) => s.live)),
+    // What is broadcast now, each with the meeting it shows and its agenda (the panel beside the player).
+    async live() {
+      const streams = (await todayStreams(ctx)).filter((s) => s.live)
+      const day = parisDay()
+      const opened = index.open()
+      const today = [...(opened ? meetingsBetween(opened, day, day) : []), ...(await senateMeetings(ctx, day, day))]
+      const shown = new Map([...liveMeetings(today, streams)].map(([id, s]) => [s, today.find((m) => m.id === id)]))
+      return streams.map((s) => {
+        const m = shown.get(s)
+        if (!m) return s
+        // Shown as another meeting than the one it names (the Assemblée names its first sitting all day): that meeting's time and agenda.
+        const moved = m.id !== s.id && s.chamber === 'an'
+        return { ...s, meeting: m.id, items: m.items, ...(moved ? { startAt: m.start, title: m.items[0] ?? s.title, subject: m.items.join(' ; ') } : {}) }
+      })
+    },
 
     async passages(asked, days) {
       const opened = db()

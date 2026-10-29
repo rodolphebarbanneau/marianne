@@ -6,6 +6,7 @@ import { ToolError, type Commune, type HomeCommune, type ServiceContext, type Se
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import pkg from '../package.json'
 import { service } from '../src/main'
+import { liveMeetings } from '../src/methods'
 import { DB_FILE, openWriter } from '../src/store'
 import { todayItems } from '../src/today'
 import type { Favorites, LiveStream, Meeting, ParlementMethods } from '../src/types'
@@ -411,5 +412,72 @@ describe('today’s lines', () => {
   it('cut a long agenda', () => {
     const long = todayItems('2026-10-28', [meeting({ items: ['x '.repeat(400)] })], [])
     expect(long[0].detail!.length).toBeLessThanOrEqual(240)
+  })
+})
+
+describe('the meetings live broadcasts show', () => {
+  const at = (day: string, hour: string) => `${day}T${hour}:00+01:00`
+  const meeting = (id: string, chamber: 'an' | 'se', kind: Meeting['kind'], start: string, organ = kind === 'sitting' ? 'Séance publique' : ''): Meeting => ({
+    id,
+    chamber,
+    kind,
+    state: 'confirmed',
+    start,
+    organId: '',
+    organ,
+    place: '',
+    items: [id],
+    video: true
+  })
+  const stream = (id: string, chamber: 'an' | 'se', organ: string): LiveStream => ({
+    id,
+    chamber,
+    organ,
+    start: '',
+    startAt: '',
+    title: '',
+    subject: '',
+    place: '',
+    live: true,
+    hls: 'https://x/live.m3u8',
+    poster: '',
+    url: ''
+  })
+  const day = '2026-10-29'
+  const meetings = [
+    meeting('AN-0900', 'an', 'sitting', at(day, '09:00')),
+    meeting('AN-1500', 'an', 'sitting', at(day, '15:00')),
+    meeting('AN-2130', 'an', 'sitting', at(day, '21:30')),
+    meeting('SE-1030', 'se', 'sitting', at(day, '10:30')),
+    meeting('SE-2130', 'se', 'sitting', at(day, '21:30')),
+    meeting('SE-COM', 'se', 'committee', at(day, '21:00'), 'Commission des affaires sociales')
+  ]
+  const now = Date.parse('2026-10-29T22:15:00+01:00')
+
+  it('is the sitting under way, whatever meeting the chamber names (the Assemblée names its first of the day)', () => {
+    const live = liveMeetings(meetings, [stream('AN-0900', 'an', 'Séance publique'), stream('5981480_x', 'se', 'Séance publique')], now)
+    expect([...live.keys()].sort()).toEqual(['AN-2130', 'SE-2130'])
+  })
+
+  it('is, for a committee, the meeting named, or at the Sénat the latest of that committee', () => {
+    expect([...liveMeetings(meetings, [stream('AN-COM', 'an', 'Commission des lois')], now).keys()]).toEqual(['AN-COM'])
+    expect([...liveMeetings(meetings, [stream('5981999_y', 'se', 'Affaires sociales')], now).keys()]).toEqual(['SE-COM'])
+  })
+
+  it('picks, between sittings started together, the one whose agenda the broadcast speaks of', () => {
+    const together = [
+      { ...meeting('SE-CONV', 'se', 'sitting', at(day, '10:30')), items: ['1 convention internationale'] },
+      { ...meeting('SE-PJL', 'se', 'sitting', at(day, '10:30')), items: ['Suite PJL Protection des enfants'] }
+    ]
+    const live = { ...stream('5981480_x', 'se', 'Séance publique'), subject: 'Projet de loi · Protection des enfants (discussion des articles)' }
+    expect([...liveMeetings(together, [live], now).keys()]).toEqual(['SE-PJL'])
+  })
+
+  it('leaves sittings not yet started, cancelled, or of another day', () => {
+    const early = Date.parse('2026-10-29T12:00:00+01:00')
+    expect([...liveMeetings(meetings, [stream('AN-0900', 'an', 'Séance publique')], early).keys()]).toEqual(['AN-0900'])
+    const cancelled = meetings.map((m) => (m.id === 'AN-2130' ? { ...m, state: 'cancelled' as const } : m))
+    expect([...liveMeetings(cancelled, [stream('AN-0900', 'an', 'Séance publique')], now).keys()]).toEqual(['AN-1500'])
+    expect([...liveMeetings([], [stream('AN-0900', 'an', 'Séance publique')], now).keys()]).toEqual(['AN-0900'])
   })
 })
