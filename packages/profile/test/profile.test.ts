@@ -194,6 +194,14 @@ describe('context view', () => {
     // Unconfigured sites are listed with their target.
     expect(view).toContain('cible « account:caf »')
   })
+
+  it('never says what the user leans to, nor their themes', () => {
+    const view = (p: Profile) => contextView(p, { sites: SITES, tokens: tokensOf(p, SITES), deadlines: [], hasLogin: () => true, now: new Date(2026, 9, 28) })
+    const p = sample()
+    const told = structuredClone(p)
+    told.opinions = { leaning: { assembly: ['EcoS'], senate: ['GEST'] }, themes: ['housing'] }
+    expect(view(told)).toBe(view(p))
+  })
 })
 
 describe('setup', () => {

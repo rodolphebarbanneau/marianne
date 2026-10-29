@@ -24,6 +24,8 @@ Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à dr
 
 Dans Réglages › Moi, vous pouvez renseigner votre identité, votre foyer et vos pièces. C’est facultatif : cela aide Marianne à préparer vos démarches. Voir [Vos données](privacy.md) pour ce que le moteur en voit.
 
+Dans Réglages › Identité, vous pouvez aussi indiquer, si vous le souhaitez, les groupes politiques dont vous vous sentez proche, et les thèmes qui comptent pour vous. Votre sensibilité sert seulement à comparer : 3615 PARLEMENT vous dit si vos élus votent comme vos idées, sans rien trier ni cacher. Vos thèmes font remonter les actualités et les scrutins qui en parlent. Vous choisissez quels services peuvent les lire, et voyez quand ils l’ont fait.
+
 ## Les touches
 
 Comme sur un Minitel, la barre du bas montre les touches de l’écran :
