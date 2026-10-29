@@ -73,11 +73,15 @@ export function ServiceScreen({ id, params }: { id: string; params: Record<strin
   return (
     <div className="page service-page">
       <div className="service-head">
-        <button className="back dim" title="retour aux Services (échap)" aria-label="retour aux Services" onClick={() => goPage('services')}>
-          ←
-        </button>
+        {/* The way back is the 3615 block itself: a click anywhere on it, as échap. */}
         <span className="t">
-          <span className="inv">3615</span> {serviceCode(m)}
+          <button className="inv service-back" title="retour aux Services (échap)" aria-label="retour aux Services" onClick={() => goPage('services')}>
+            <span className="arrow" aria-hidden>
+              ←
+            </span>
+            3615
+          </button>{' '}
+          {serviceCode(m)}
         </span>
         <span className="small dim">{m.name} · rattaché à aucun dossier</span>
         <button className={`star${state.starred ? ' on' : ''}`} onClick={star} title={state.starred ? 'retirer des favoris' : 'mettre en favori'}>
