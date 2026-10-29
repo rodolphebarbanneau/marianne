@@ -58,7 +58,6 @@ interface DrawProps {
 /** One chamber's hemicycle, drawn. */
 export function HemicycleDrawing({ data, fill, detail, callout, center, compact }: DrawProps) {
   const nav = useNav()
-  const { prefs } = useStore()
   const { mine, ids } = useFollowed()
   const [tip, setTip] = useState<{ x: number; y: number; left: boolean; seat: HemicycleData['seats'][number] } | null>(null)
   const box = useRef<HTMLDivElement>(null)
@@ -66,7 +65,6 @@ export function HemicycleDrawing({ data, fill, detail, callout, center, compact 
   const own = new Set(mine.map((m) => m.id))
   const followed = new Set(ids)
   const groups = new Map(data.groups.map((g) => [g.id, g]))
-  const mosaic = prefs.style === 'mosaic'
   const r = plan.r
   const pad = r * 4
   const seats = useMemo(
@@ -148,11 +146,17 @@ export function HemicycleDrawing({ data, fill, detail, callout, center, compact 
         {seats.map((s) => {
           const color = fill(s.member, s.groupId)
           const style = color ? { fill: color } : { fill: 'none', stroke: 'var(--muted)', strokeWidth: r * 0.22 }
-          const props = { key: s.seat, style, onMouseMove: hover(s), onClick: () => nav.open({ kind: 'member', chamber: data.chamber, id: s.member }) }
-          return mosaic ? (
-            <rect {...props} x={s.x - r * 0.85} y={s.y - r * 0.85} width={r * 1.7} height={r * 1.7} shapeRendering="crispEdges" />
-          ) : (
-            <circle {...props} cx={s.x} cy={s.y} r={color ? r : r * 0.85} />
+          return (
+            <circle
+              key={s.seat}
+              className="parlement-seat"
+              style={style}
+              cx={s.x}
+              cy={s.y}
+              r={color ? r : r * 0.85}
+              onMouseMove={hover(s)}
+              onClick={() => nav.open({ kind: 'member', chamber: data.chamber, id: s.member })}
+            />
           )
         })}
         {seats
@@ -271,7 +275,7 @@ export function HemicycleTab() {
 
 function Hemicycles() {
   const nav = useNav()
-  const { prefs, setPrefs, mine } = useStore()
+  const { mine } = useStore()
   const lens = useLens()
   const [reading, setReading] = useState<Reading>('groups')
   const [ballot, setBallot] = useState<{ chamber: Chamber; id: string } | null>(null)
@@ -291,18 +295,6 @@ function Hemicycles() {
               {r.id === 'lens' && <LensIcon />} {r.label}
             </button>
           ))}
-        </span>
-        <span className="parlement-grow" />
-        <span className="parlement-row nowrap">
-          <span className="small dim">style</span>
-          <span className="parlement-seg">
-            <button className={prefs.style === 'dots' ? 'on' : ''} onClick={() => setPrefs({ style: 'dots' })}>
-              ● points
-            </button>
-            <button className={prefs.style === 'mosaic' ? 'on' : ''} onClick={() => setPrefs({ style: 'mosaic' })}>
-              ▪ mosaïque
-            </button>
-          </span>
         </span>
       </div>
       {current === 'vote' && (
@@ -428,7 +420,7 @@ function ChamberReading({ chamber, reading, ballot }: { chamber: Chamber; readin
 function ReadingKey({ reading, chamber, lensGroup }: { reading: Reading; chamber: Chamber; lensGroup: string | null }) {
   if (reading === 'vote')
     return (
-      <div className="parlement-keyrow">
+      <div className="parlement-keyrow dots">
         <span>
           <i style={{ background: 'var(--vert)' }} />
           pour
@@ -450,7 +442,7 @@ function ReadingKey({ reading, chamber, lensGroup }: { reading: Reading; chamber
   if (reading === 'presence')
     return (
       <>
-        <div className="parlement-keyrow">
+        <div className="parlement-keyrow dots">
           <span>
             <i style={{ background: 'var(--fg)' }} />a voté en personne
           </span>
@@ -471,7 +463,7 @@ function ReadingKey({ reading, chamber, lensGroup }: { reading: Reading; chamber
   if (reading === 'deputy' || reading === 'lens')
     return (
       <>
-        <div className="parlement-keyrow">
+        <div className="parlement-keyrow dots">
           <span>vote rarement {reading === 'lens' ? 'comme vos idées' : 'comme lui'}</span>
           <span className="parlement-ramp" />
           <span>presque toujours</span>

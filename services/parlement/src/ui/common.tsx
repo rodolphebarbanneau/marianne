@@ -74,8 +74,6 @@ export function useNav(): Nav {
 export interface Prefs {
   /** The lens is on: comparisons with the leaning the user declared. */
   lens: boolean
-  /** The hemicycle's seats: round dots, or square mosaic blocks. */
-  style: 'dots' | 'mosaic'
 }
 
 export interface Store {
