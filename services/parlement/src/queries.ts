@@ -258,6 +258,10 @@ export function searchBallots(db: DatabaseSync, q: BallotQuery): BallotRecord[] 
       args.push(value as string)
     }
   if (q.result) where.push(q.result === 'adopted' ? "b.result like 'adopt%'" : "b.result like 'rejet%'")
+  if (q.number) {
+    where.push('b.number = ?')
+    args.push(q.number)
+  }
   return all<BallotRecord>(
     db,
     `select ${BALLOT_COLUMNS} from ${from} ${where.length ? `where ${where.join(' and ')}` : ''} order by b.date desc, b.chamber, b.key desc limit ?`,

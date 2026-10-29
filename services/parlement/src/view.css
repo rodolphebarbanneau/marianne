@@ -780,13 +780,11 @@ button.parlement-bt-row:hover {
   padding: 14px 8px 6px;
   border-bottom: 1px solid var(--rule);
 }
+/* Kept in view by StickyPanel (its top), with no scroll bar of its own. */
 .parlement-bt-detail {
   position: sticky;
   top: 10px;
   min-width: 0;
-  max-height: calc(100vh - 190px);
-  overflow-y: auto;
-  scrollbar-width: thin;
 }
 .parlement-card {
   border: 1px solid var(--rule);
@@ -949,6 +947,38 @@ button.parlement-bt-row:hover {
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 22px;
   align-items: start;
+}
+/* A ballot in its hemicycle: its card beside it, as wide as in the day's table. */
+.parlement-hemi-side.with-aside {
+  grid-template-columns: minmax(0, 1fr) 400px;
+}
+.parlement-nowrap {
+  white-space: nowrap;
+}
+/* The ballot shown, and the way to choose another. */
+.parlement-picker {
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+}
+.parlement-picker.open {
+  border-color: var(--fg);
+}
+.parlement-picker-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 10px;
+}
+.parlement-picker-head .btn {
+  flex: none;
+}
+.parlement-picker-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 10px;
+  border-top: 1px dashed var(--rule);
 }
 .parlement-hemi {
   position: relative;
@@ -1407,6 +1437,7 @@ button.parlement-ev:hover {
   .parlement-two,
   .parlement-presence,
   .parlement-hemi-side,
+  .parlement-hemi-side.with-aside,
   .parlement-watch {
     grid-template-columns: minmax(0, 1fr);
   }

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Spinner, useCall, type Loaded } from '@marianne/sdk/view'
 import { ordinal } from '../links'
 import { parisDay } from '../time'
@@ -45,6 +45,8 @@ export type Target =
   | { kind: 'meeting'; id: string }
   | { kind: 'live'; chamber: Chamber; id: string }
   | { kind: 'video'; ref: string; start?: number; stopAt?: number; clip?: string }
+  /** A ballot in its hemicycle, with its card beside it. */
+  | { kind: 'vote'; chamber: Chamber; id: string }
 
 /** Which chambers the screen shows: both, or one. */
 export type Chambers = 'both' | Chamber
@@ -134,6 +136,32 @@ export function FollowButton({ id, kind = 'members' }: { id: string; kind?: keyo
 }
 
 // ---------------------------------------------------------------- blocks
+
+/**
+ * A side panel kept in view while what it details scrolls, without a scroll bar of its own: taller
+ * than the window, it scrolls with the page until its end shows, then stays.
+ */
+export function StickyPanel({ className, children }: { className?: string; children: ReactNode }) {
+  const panel = useRef<HTMLDivElement>(null)
+  const [top, setTop] = useState(10)
+  useEffect(() => {
+    const el = panel.current
+    if (!el) return
+    let scroller: HTMLElement | null = null
+    for (let p = el.parentElement; p && !scroller; p = p.parentElement) if (/auto|scroll/.test(getComputedStyle(p).overflowY)) scroller = p
+    const place = () => setTop(Math.min(10, (scroller?.clientHeight ?? window.innerHeight) - el.offsetHeight - 10))
+    place()
+    const observer = new ResizeObserver(place)
+    observer.observe(el)
+    if (scroller) observer.observe(scroller)
+    return () => observer.disconnect()
+  }, [])
+  return (
+    <div ref={panel} className={className} style={{ top }}>
+      {children}
+    </div>
+  )
+}
 
 export function Loading({ children = 'chargement…' }: { children?: ReactNode }) {
   return (

@@ -384,6 +384,8 @@ export interface BallotQuery {
   chamber?: Chamber
   /** Words of the title. */
   text?: string
+  /** Its number (at the Sénat, one per session: the newest first). */
+  number?: number
   /** A member's id: each ballot comes with their vote. */
   member?: string
   /** YYYY-MM-DD */

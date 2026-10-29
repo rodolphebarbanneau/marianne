@@ -10,6 +10,7 @@ import { HemicycleTab } from './ui/hemicycle'
 import { HomeTab } from './ui/home'
 import { GroupPane, MemberPane, MembersTab } from './ui/members'
 import { DEFAULT_SEARCH, LivePane, VideoPane, VideosTab, type VideoSearch } from './ui/videos'
+import { VotePane } from './ui/vote'
 import './view.css'
 
 /**
@@ -240,6 +241,8 @@ function Pane({ target }: { target: Target }) {
       return <GroupPane chamber={target.chamber} id={target.id} />
     case 'ballot':
       return <BallotPane chamber={target.chamber} id={target.id} />
+    case 'vote':
+      return <VotePane chamber={target.chamber} id={target.id} />
     case 'meeting':
       return <MeetingPane id={target.id} />
     case 'live':
