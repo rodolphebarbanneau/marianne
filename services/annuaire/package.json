@@ -9,7 +9,8 @@
   "exports": {
     "./package.json": "./package.json",
     "./main": "./src/main.ts",
-    "./view": "./src/view.tsx"
+    "./view": "./src/view.tsx",
+    "./help": "./src/help.md"
   },
   "marianne": {
     "code": "annuaire",

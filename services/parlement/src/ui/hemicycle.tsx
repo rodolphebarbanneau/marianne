@@ -355,7 +355,7 @@ export function ChamberReading({ chamber, reading, ballot, aside }: { chamber: C
     [data.data, reading, votes.data, presence.data, shares.data]
   )
   if (data.error) return <Failure error={data.error} retry={data.reload} />
-  if (!data.data || !fill) return <Loading />
+  if (!data.data || !fill) return <Loading label="l’hémicycle" />
   const counts = (code: string) => Object.values(votes.data ?? {}).filter((v) => v.toLowerCase() === code).length
   const voted = Object.values(presence.data ?? {}).filter((p) => p.voted > 0).length
   const center =

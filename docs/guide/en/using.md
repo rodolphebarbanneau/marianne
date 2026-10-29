@@ -41,4 +41,4 @@ Like on a Minitel, the bottom bar shows the screen's keys:
 | SOMMAIRE   | the app's menu              | ctrl+space |
 | GUIDE      | help, links, your shortcuts | F1         |
 
-Also: ctrl+K for commands, ctrl+alt+space to search everywhere, ctrl+, for settings, F5 to reload the window. On macOS, cmd replaces ctrl, except for the menu and search, and reloading is cmd+shift+R. All of them can be changed in Réglages › Raccourcis clavier (Settings › Keyboard shortcuts).
+Also: ctrl+K for commands, ctrl+alt+space to search everywhere, ctrl+, for settings, ctrl+shift+R to reload the window. In a service, F2, F3… open its tabs, and F1 its guide. On macOS, cmd replaces ctrl, except for the menu and search. All of them can be changed in Réglages › Raccourcis clavier (Settings › Keyboard shortcuts).

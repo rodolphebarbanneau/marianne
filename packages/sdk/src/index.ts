@@ -100,6 +100,23 @@ export const SERVICE_CODE = /^[a-z0-9]+$/
 /** Service packages are named after their code: @marianne/service-meteo. */
 export const SERVICE_PACKAGE_PREFIX = '@marianne/service-'
 
+/**
+ * A tab of a service's screen, as its manifest declares it: Marianne draws the bar (under the 3615
+ * header, fixed while the content scrolls), gives each tab its function key (F2, F3…: F1 is GUIDE)
+ * and tells the view which one is shown (`useTab`). `label`: French, lowercase, a word or two.
+ */
+export interface ServiceTab {
+  /** Lowercase letters, digits and hyphens: "home", "ballots". */
+  id: string
+  label: string
+}
+
+/** At most this many tabs: F2 to F9. One tab, or none, and the screen has no bar. */
+export const MAX_TABS = 8
+
+/** The function key of a service's tab, by its place: F2 for the first (F1 is GUIDE). */
+export const tabKey = (index: number) => `F${index + 2}`
+
 /** What a service declares in the `marianne` field of its package.json. */
 export interface ServiceDeclaration {
   /** Its code, and its folder's name. */
@@ -120,6 +137,8 @@ export interface ServiceDeclaration {
   domains?: DomainId[]
   /** What of the user's profile it asks to read, and what for (French, one line); the user decides. */
   permissions?: { profile: ProfileField[]; purpose: string }
+  /** The tabs of its screen, in their order; none (or one) for a screen of one page. */
+  tabs?: ServiceTab[]
 }
 
 /** The fields of a service's package.json that Marianne reads. */
@@ -146,6 +165,7 @@ export interface ServiceManifest {
   links: string[]
   domains: DomainId[]
   permissions: { profile: ProfileField[]; purpose: string }
+  tabs: ServiceTab[]
 }
 
 export class ManifestError extends Error {
@@ -153,6 +173,7 @@ export class ManifestError extends Error {
 }
 
 const HOST = /^(?:[a-z0-9-]+\.)+[a-z]{2,}$/
+const TAB_ID = /^[a-z][a-z0-9-]*$/
 const isStrings = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string')
 
 /** The manifest of a service package; throws a ManifestError saying what is wrong. */
@@ -177,6 +198,13 @@ export function readManifest(pkg: unknown): ServiceManifest {
   const permissions = m.permissions ?? { profile: [], purpose: '' }
   for (const f of permissions.profile ?? []) if (!(f in PROFILE_FIELDS)) fail(`unknown profile field "${f}"`)
   if (permissions.profile?.length && !permissions.purpose?.trim()) fail('"marianne.permissions.purpose" must say what the profile fields are for')
+  const tabs = m.tabs ?? []
+  if (!Array.isArray(tabs) || tabs.length > MAX_TABS) fail(`"marianne.tabs" must list at most ${MAX_TABS} tabs`)
+  for (const t of tabs) {
+    if (typeof t?.id !== 'string' || !TAB_ID.test(t.id)) fail(`tab "${String(t?.id)}": its id must be lowercase letters, digits and hyphens`)
+    if (typeof t.label !== 'string' || !t.label.trim()) fail(`tab "${t.id}" has no label`)
+  }
+  if (new Set(tabs.map((t) => t.id)).size !== tabs.length) fail('two tabs have the same id')
   const author = typeof p.author === 'string' ? p.author : (p.author?.name ?? '')
   return {
     id: code,
@@ -191,7 +219,8 @@ export function readManifest(pkg: unknown): ServiceManifest {
     hosts: m.hosts as string[],
     links: m.links ?? [],
     domains: m.domains ?? [],
-    permissions: { profile: permissions.profile ?? [], purpose: permissions.purpose ?? '' }
+    permissions: { profile: permissions.profile ?? [], purpose: permissions.purpose ?? '' },
+    tabs: tabs.map((t) => ({ id: t.id, label: t.label.trim() }))
   }
 }
 

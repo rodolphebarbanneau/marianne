@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useHost, useStored } from '@marianne/sdk/view'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { ServiceTools, useHost, useStored, useTab, useTabBadges } from '@marianne/sdk/view'
 import { parseVideoRef, videoKey } from './links'
 import type { Clips, Favorites, ParlementMethods, Shelf, VideoItem } from './types'
 import { AgendaTab, MeetingPane } from './ui/agenda'
@@ -15,9 +15,10 @@ import './view.css'
 
 /**
  * 3615 PARLEMENT's screen: the user's members and the day at the Parlement, the hemicycles, the
- * public ballots, the members, the videos and the agenda of both chambers. A member, a ballot, a
- * meeting or a video opens over the tabs, with a way back. "◐ mes idées" compares with the leaning
- * the user declared (only when they did, and let the service read it).
+ * public ballots, the members, the videos and the agenda of both chambers, in the tabs its manifest
+ * declares (Marianne draws them). A member, a ballot, a meeting or a video opens over the tab, with
+ * a way back. At the bar's end, "◐ mes idées" compares with the leaning the user declared (only when
+ * they did, and let the service read it), and the chamber shown.
  */
 
 const NO_FAVORITES: Favorites = { members: [], groups: [] }
@@ -47,19 +48,22 @@ export function View() {
   )
 }
 
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: 'home', label: 'accueil' },
-  { id: 'hemicycle', label: 'hémicycle' },
-  { id: 'ballots', label: 'scrutins' },
-  { id: 'members', label: 'élus' },
-  { id: 'videos', label: 'vidéos' },
-  { id: 'agenda', label: 'agenda' }
-]
-
 function Screen() {
   const host = useHost<ParlementMethods>()
   const { status } = useData()
-  const [{ tab, stack }, setView] = useState(() => opening(host.params))
+  const [first] = useState(() => opening(host.params))
+  const [stack, setStack] = useState<Target[]>(first.stack)
+  const scrolls = useRef<number[]>([])
+  // The user picked a tab (a click, its key), the one shown too: that tab, its panes closed.
+  const { tab: shown, open } = useTab(() => {
+    scrolls.current = []
+    setStack([])
+  })
+  const tab = (shown || 'home') as Tab
+  // Opened on a tab of its own (a video, a meeting of "Aujourd'hui"): that one, before the first paint.
+  useLayoutEffect(() => {
+    if (first.tab !== shown) open(first.tab)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [chambers, setChambers] = useState<Chambers>('both')
   const [videoSearch, setVideoSearch] = useState<VideoSearch>(DEFAULT_SEARCH)
   const [favorites, setFavorites] = useStored<Favorites & { deputies?: string[] }>('favorites', NO_FAVORITES)
@@ -78,7 +82,6 @@ function Screen() {
 
   // A pane opens at the top of the page; "retour" brings the page back where it was, its tab as it was left.
   const root = useRef<HTMLDivElement>(null)
-  const scrolls = useRef<number[]>([])
   const scroller = (): HTMLElement | null => {
     for (let el = root.current?.parentElement ?? null; el; el = el.parentElement) if (/auto|scroll/.test(getComputedStyle(el).overflowY)) return el
     return null
@@ -96,20 +99,20 @@ function Screen() {
   }, [])
   const wide = width >= 1000
   const back = () => {
-    setView((v) => ({ ...v, stack: v.stack.slice(0, -1) }))
+    setStack((s) => s.slice(0, -1))
     scrollTo(scrolls.current.pop() ?? 0)
   }
   const goTab = (id: Tab) => {
     scrolls.current = []
-    setView({ tab: id, stack: [] })
-    scrollTo(0)
+    setStack([])
+    open(id)
   }
 
   const nav = useMemo<Nav>(
     () => ({
       open: (target) => {
         scrolls.current.push(scroller()?.scrollTop ?? 0)
-        setView((v) => ({ ...v, stack: [...v.stack, target] }))
+        setStack((s) => [...s, target])
         scrollTo(0)
       },
       tab: goTab,
@@ -152,23 +155,17 @@ function Screen() {
 
   const declared = !!(mine.data?.leaning && (mine.data.leaning.an.length || mine.data.leaning.se.length))
   const lensName = declared ? [mine.data!.leaning!.an[0], mine.data!.leaning!.se[0]].filter(Boolean).join(' · ') : ''
-  const counts: Partial<Record<Tab, string>> = {
+  useTabBadges({
     members: favorites.members.length ? String(favorites.members.length) : '',
     videos: shelf.pinned.length ? `${shelf.pinned.length} à voir` : ''
-  }
+  })
   const top = stack.at(-1)
 
   return (
     <NavContext.Provider value={nav}>
       <StoreContext.Provider value={store}>
-        <div ref={root} className="parlement service-wide">
-          <div className="tabs parlement-tabs">
-            {TABS.map((t) => (
-              <button key={t.id} className={tab === t.id && !top ? 'on' : ''} onClick={() => goTab(t.id)}>
-                {t.label}
-                {counts[t.id] && <span className="parlement-count">{counts[t.id]}</span>}
-              </button>
-            ))}
+        <div ref={root} className="parlement">
+          <ServiceTools>
             <span className="parlement-chamber">
               {declared && (
                 <span className="parlement-seg">
@@ -196,7 +193,7 @@ function Screen() {
                 ))}
               </span>
             </span>
-          </div>
+          </ServiceTools>
           {top && (
             <div key={JSON.stringify(top)} className="parlement-body">
               <button className="small dim parlement-back" onClick={back}>

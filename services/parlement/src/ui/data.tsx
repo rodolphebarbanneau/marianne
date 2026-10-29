@@ -64,47 +64,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
 function progressText(status: DataStatus): string {
   const p = status.sync.running
   if (!p) return ''
-  const what = p.label ? ` ${p.label}` : ''
+  // "les députés" → "des députés", "le … " → "du …", "l’agenda" → "de l’agenda".
+  const what = p.label
+    ? ` ${p.label
+        .replace(/^les /, 'des ')
+        .replace(/^le /, 'du ')
+        .replace(/^(?!des |du )/, 'de ')}`
+    : ''
   if (p.phase === 'download') return `téléchargement${what}… ${megabytes(p.done)}${p.total ? ` sur ${megabytes(p.total)}` : ''}`
   return `indexation${what}… ${p.total ? Math.floor((p.done / p.total) * 100) : 0} %`
 }
 
-function Progress({ status }: { status: DataStatus }) {
-  const p = status.sync.running
-  const share = p?.total ? Math.min(1, p.done / p.total) : 0
-  return (
-    <div className="parlement-progress">
-      <span className="gauge">
-        <i style={{ width: `${share * 100}%` }} />
-      </span>
-      <span className="small dim">{progressText(status)}</span>
-    </div>
-  )
-}
-
-/** The children once the open data is there; before, a way to download it. */
+/** The children once the open data is there; before, a way to download it, and the download as it goes. */
 export function NeedsData({ children }: { children: ReactNode }) {
   const { status, update } = useData()
-  if (!status) return <Loading />
+  if (!status) return <Loading label="l’état des données" />
   if (status.ready) return <>{children}</>
+  const p = status.sync.running
+  if (p)
+    return <Loading label="les données de l’Assemblée et du Sénat" progress={p.total ? Math.min(1, p.done / p.total) : null} detail={progressText(status)} />
   return (
     <div className="box-note parlement-sync">
       <p>
         Les députés, les sénateurs, leurs scrutins et l’agenda viennent des données ouvertes de l’Assemblée nationale et du Sénat, gardées sur cet ordinateur et
         mises à jour chaque jour. Elles ne sont pas encore téléchargées (une centaine de Mo la première fois).
       </p>
-      {status.sync.running ? (
-        <Progress status={status} />
-      ) : (
-        <>
-          {status.sync.error && <p className="bad">La dernière mise à jour a échoué : {status.sync.error}</p>}
-          <p>
-            <button className="btn primary" onClick={update}>
-              mettre à jour
-            </button>
-          </p>
-        </>
-      )}
+      {status.sync.error && <p className="bad">La dernière mise à jour a échoué : {status.sync.error}</p>}
+      <p>
+        <button className="btn primary" onClick={update}>
+          mettre à jour
+        </button>
+      </p>
     </div>
   )
 }

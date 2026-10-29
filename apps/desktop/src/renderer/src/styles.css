@@ -437,6 +437,81 @@ textarea.notes {
   width: 1ch;
   color: var(--accent);
 }
+
+/* What a page, a tab or a pane shows while its content comes (Loading), or when it couldn't
+   (Failure): a box in the middle of the space it is given, as a Minitel's message; a line, for a
+   part of a page already shown. */
+.state {
+  display: grid;
+  place-items: center;
+  /* Most of the page's height: the box near its middle, a little above, where the eye goes. */
+  min-height: clamp(160px, 64vh, 640px);
+  padding: var(--s5) 0;
+}
+.state-box {
+  width: min(380px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 14px;
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+}
+.state-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.state-what {
+  color: var(--hi);
+}
+.state-box.failed {
+  border-color: var(--rouge);
+}
+.state-box.failed .label {
+  color: var(--rouge);
+}
+.state-box.failed .state-what {
+  color: var(--fg);
+}
+/* The bar, in cells as the screen's mosaics: filled to the share when it is known, a wave going
+   through it otherwise. */
+.state-bar {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 3px;
+  height: 8px;
+}
+.state-bar i {
+  background: var(--sel);
+}
+.state-bar i.on {
+  background: var(--accent);
+}
+.state-bar.moving i {
+  animation: state-wave 1.32s ease-in-out infinite;
+}
+@keyframes state-wave {
+  0%,
+  100% {
+    background: var(--sel);
+  }
+  30% {
+    background: var(--accent);
+  }
+  60% {
+    background: var(--sel);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .state-bar.moving i {
+    animation: none;
+  }
+}
+.state-line {
+  margin: 0;
+}
 .gauge {
   display: block;
   height: 8px;
@@ -1361,10 +1436,90 @@ button.ev:hover {
   max-width: 900px;
 }
 
-/* A service's own page: the one place with the 3615 nod. Its head runs the window's width; its body
-   scrolls at the window's edge, the screen centred in it (as the conversation's column is). */
+/* A service's own page: the one place with the 3615 nod. Its head and its tabs run the window's
+   width and stay where they are; its body scrolls under them at the window's edge, the screen
+   centred in it (as the conversation's column is). */
 .service-page {
   padding-top: var(--s4);
+}
+/* The tabs its manifest declares, each with its key (F2…) and the count its view gives; the view's
+   tools at the end (ServiceTools). */
+/* Narrower than the tabs and the tools: the tools go above (wrap-reverse), so the tabs keep the line;
+   narrower than the tabs: they scroll sideways, on one line. */
+.service-tabs {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap-reverse;
+  align-items: flex-start;
+  margin: 0 var(--gutter-end) 0 var(--gutter);
+  border-bottom: 1px solid var(--rule);
+}
+/* Over the bar's line by a pixel: the tab shown covers it, open onto what it shows. */
+.service-tab-list {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  margin-bottom: -1px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.service-tab {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  color: var(--dim);
+}
+.service-tab:hover {
+  color: var(--hi);
+}
+.service-tab.on {
+  border-color: var(--rule);
+  background: var(--bg);
+  color: var(--hi);
+}
+/* Its key, as the footer shows the keys after what they do: muted, out of the way; lit on the tab shown. */
+.service-tab .fkey {
+  font-size: 0.8em;
+  color: var(--muted);
+}
+.service-tab:hover .fkey {
+  color: var(--dim);
+}
+.service-tab.on .fkey {
+  color: var(--accent);
+}
+.service-tab .count {
+  font-size: 0.86em;
+  color: var(--muted);
+}
+.service-tools {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.service-tools:empty {
+  display: none;
+}
+.service-tabs .service-tools {
+  padding: 0 0 5px 12px;
+}
+@media (max-width: 560px) {
+  .service-tab {
+    padding: 5px 9px;
+  }
+}
+.service-head .service-tools:not(:empty) + .star {
+  margin-left: 0;
+}
+.service-tabs + .service-body {
+  padding-top: var(--s3);
 }
 .service-body {
   flex: 1;
@@ -1379,14 +1534,10 @@ button.ev:hover {
   /* Services lay out by their own width (@container service), whatever the sidebar leaves them. */
   container: service / inline-size;
 }
-/* A service's screen, centred, as wide as reads well; one with tabs of its own (service-wide) lets
-   them run the window's width, as the 3615 header does, and centres what they show itself. */
+/* A service's screen, centred, as wide as reads well. */
 .service-content > * {
   max-width: var(--content-width);
   margin-inline: auto;
-}
-.service-content > .service-wide {
-  max-width: none;
 }
 .service-head {
   display: flex;
@@ -2357,6 +2508,22 @@ button.ev:hover {
   display: flex;
   align-items: center;
   gap: 14px;
+}
+/* A service's guide: its 3615 code where Marianne's has her logo. */
+.service-guide-code {
+  font-family: var(--retro);
+  font-size: var(--pixel-size);
+  color: var(--hi);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+/* What it is on one line, what it says beside, on as many as it needs. */
+.service-guide-facts > span > span:first-child {
+  white-space: nowrap;
+}
+.service-guide-facts > span > span:last-child {
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 .guide-head .grow {
   display: flex;

@@ -1,8 +1,11 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { Spinner, useCall, type Loaded } from '@marianne/sdk/view'
+import { useCall, type Loaded } from '@marianne/sdk/view'
 import { ordinal } from '../links'
 import { parisDay } from '../time'
 import type { BallotLine, Chamber, Clip, Favorites, MemberCard, MemberVote, Mine, ParlementMethods, Position, Shelf, VideoItem, VideoQuery } from '../types'
+
+// The SDK's blocks and hooks, for the screen's modules.
+export { Failure, Loading, useDebounced } from '@marianne/sdk/view'
 
 /** What the view's parts share: typed calls, navigation, the user's stored data, French formats, the small marks. */
 
@@ -21,16 +24,6 @@ export function useBallotDay(): string | null {
   if (!latest.data) return null
   const day = latest.data[0]?.date.slice(0, 10)
   return day && day < parisDay() ? day : parisDay()
-}
-
-/** A value that settles: searches wait for the typing to pause. */
-export function useDebounced<T>(value: T, ms = 350): T {
-  const [settled, setSettled] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setSettled(value), ms)
-    return () => clearTimeout(t)
-  }, [value, ms])
-  return settled
 }
 
 // ---------------------------------------------------------------- navigation
@@ -160,30 +153,6 @@ export function StickyPanel({ className, children }: { className?: string; child
     <div ref={panel} className={className} style={{ top }}>
       {children}
     </div>
-  )
-}
-
-export function Loading({ children = 'chargement…' }: { children?: ReactNode }) {
-  return (
-    <p className="dim">
-      <Spinner /> {children}
-    </p>
-  )
-}
-
-export function Failure({ error, retry }: { error: string; retry?: () => void }) {
-  return (
-    <p className="bad">
-      ✗ {error}
-      {retry && (
-        <>
-          {' '}
-          <button className="link" onClick={retry}>
-            réessayer
-          </button>
-        </>
-      )}
-    </p>
   )
 }
 

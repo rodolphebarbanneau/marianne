@@ -8,6 +8,7 @@ import type { DomainId, EngineId, Folder, FolderView } from '@shared/types'
 import { useApp } from '../app/context'
 import { Popover, SnoozeMenu } from '../app/sidebar'
 import { MoreIcon } from '../components/icons'
+import { Loading } from '../components/ui'
 import { useServices } from '../host'
 import { api, errorText } from '../lib/api'
 import { useSites } from '../lib/content'
@@ -90,7 +91,7 @@ export function FolderScreen({ id }: { id: string }) {
     return () => window.removeEventListener('keydown', key)
   }, [id, view?.running, app.palette, app.settingsPage])
 
-  if (!view) return <div className="section dim">ouverture du dossier…</div>
+  if (!view) return <Loading label="le dossier" />
   const { folder, messages, running } = view
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')
   const lastUserText = lastUser?.parts.map((p) => (p.type === 'text' ? p.text : '')).join('\n')
