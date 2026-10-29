@@ -1,0 +1,25 @@
+# Marianne
+
+Marianne is a citizen assistant for your computer, for people living in France. It helps you understand your rights, prepare your formalities (démarches), keep your papers in order and follow your deadlines, and brings you useful public information. It works with your own AI assistant, Claude Code, Codex or Mistral Vibe, and keeps everything you give it in an encrypted archive, on your computer.
+
+Marianne is an independent project, not affiliated with the French State or any administration. It helps you understand and prepare your formalities, without replacing the administration or legal advice.
+
+The app itself is in French: this guide quotes its labels as they appear on screen, with their meaning in English.
+
+## What it does
+
+- **Folders (dossiers).** Each subject has its folder: a conversation with Marianne that keeps the question, the documents and the steps.
+- **Guided formalities (démarches guidées).** Declaring your income, renewing your ID card, appealing a decision… Marianne walks you through them step by step.
+- **News (Actualités).** The news from several newspapers, the day's events and a few figures about France.
+- **Services.** Small public-information tools, with their 3615 codes: the weather, free-flow motorway tolls, the map of France, the National Assembly, the directory of public services.
+- **Your papers.** Your documents and your profile stay in the archive, and help prepare your formalities.
+
+## The guide
+
+- [Installing Marianne](install.md)
+- [Getting started](getting-started.md): creating your archive, the passphrase, the recovery key, the PIN.
+- [Using Marianne](using.md): folders, pages, the browser, the keys.
+- [Your data](privacy.md): what stays on your computer, what the engine sees, backups.
+- [Help](help.md): when something goes wrong, writing to us, testing the alpha.
+
+In the app, the F1 key also opens a guide, with your shortcuts.

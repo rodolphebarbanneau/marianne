@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import pkg from '../package.json'
 import { CONTRIBUTORS, issueUrl, projectLinks, REPO_URL } from '../src/shared/project'
@@ -19,16 +19,20 @@ describe('the project the app names', () => {
     expect(new Set(CONTRIBUTORS.map((c) => c.login)).size).toBe(CONTRIBUTORS.length)
   })
 
-  it('links to pages of its repository only', () => {
-    for (const link of projectLinks('0.1.0')) expect(link.url.startsWith(REPO_URL)).toBe(true)
+  it('links to pages of its repository only, and to files of it that exist', () => {
+    for (const link of projectLinks('0.1.0')) {
+      expect(link.url.startsWith(REPO_URL)).toBe(true)
+      const file = link.url.match(/\/blob\/main\/(.+)$/)?.[1]
+      if (file) expect(existsSync(new URL(`../../../${file}`, import.meta.url))).toBe(true)
+    }
   })
 
   it('opens new issues on forms of the repository, their version filled in', () => {
-    for (const name of ['probleme', 'idee'] as const) {
+    for (const name of ['bug', 'idea'] as const) {
       // The form exists, and has the field the version goes in.
       expect(form(name)).toMatch(/^\s+id: version$/m)
       expect(issueUrl(name, '0.1.0-alpha.1')).toBe(`${REPO_URL}/issues/new?template=${name}.yml&version=0.1.0-alpha.1`)
     }
-    expect(issueUrl('idee')).toBe(`${REPO_URL}/issues/new?template=idee.yml`)
+    expect(issueUrl('idea')).toBe(`${REPO_URL}/issues/new?template=idea.yml`)
   })
 })
