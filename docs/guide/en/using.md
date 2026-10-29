@@ -18,7 +18,7 @@ Marianne opens the sites it needs in the folder's browser, on the right (the « 
 
 - **Actualités** (news): the news from several newspapers, the day's events, a few figures about France.
 - **Démarches** (formalities): the areas of your administrative life (taxes, health, housing, family…), each with its dashboard and its guided formalities, step by step.
-- **Services**: the 3615 codes, METEO, PEAGE, CARTE, ASSEMBLEE, ANNUAIRE. The star makes a service a favorite. A service that needs part of your profile, like your license plate for the tolls, asks you first.
+- **Services**: the 3615 codes, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. The star makes a service a favorite. A service that needs part of your profile, like your license plate for the tolls, asks you first.
 
 ## Your profile
 

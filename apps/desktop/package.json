@@ -44,7 +44,7 @@
     "@marianne/profile": "*",
     "@marianne/sdk": "*",
     "@marianne/service-annuaire": "*",
-    "@marianne/service-assemblee": "*",
+    "@marianne/service-parlement": "*",
     "@marianne/service-carte": "*",
     "@marianne/service-meteo": "*",
     "@marianne/service-peage": "*",

@@ -12,7 +12,7 @@ import { addDays, parisDay } from './time'
 import type { DeputyRow } from './types'
 import { liveStreams, searchVideos, videoDetail } from './videos'
 
-/** The tools engines see as assemblee_<name>: deputies, ballots and the agenda from the index; videos and live streams from the portal. */
+/** The tools engines see as parlement_<name>: deputies, ballots and the agenda from the index; videos and live streams from the portal. */
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/
 const day = (what: string) => z.string().regex(DAY, 'YYYY-MM-DD').optional().describe(what)
@@ -23,7 +23,7 @@ export function notSynced(status: ReturnType<ServiceContext['sync']['status']>):
   return [
     "The Assemblée nationale's open data (deputies, ballots, agenda) is not downloaded yet.",
     status.error ? `The last attempt failed: ${status.error}.` : '',
-    'Tell the user they can download it from the 3615 ASSEMBLEE service (Services page, « mettre à jour »). Videos (assemblee_videos, assemblee_video) and live streams (assemblee_live) work meanwhile.'
+    'Tell the user they can download it from the 3615 PARLEMENT service (Services page, « mettre à jour »). Videos (parlement_videos, parlement_video) and live streams (parlement_live) work meanwhile.'
   ]
     .filter(Boolean)
     .join(' ')
@@ -40,7 +40,7 @@ export function createTools(ctx: ServiceContext, index: AssemblyIndex): ServiceT
   const oneDeputy = (opened: DatabaseSync, text: string): DeputyRow => {
     const key = text.trim()
     const found = /^PA\d+$/i.test(key) ? findDeputies(opened, { ids: [key] }) : findDeputies(opened, { text: key, limit: 8 })
-    if (!found.length) throw new ToolError(`No sitting deputy matches "${text}". Search with assemblee_deputies (by département, group or part of the name).`)
+    if (!found.length) throw new ToolError(`No sitting deputy matches "${text}". Search with parlement_deputies (by département, group or part of the name).`)
     if (found.length > 1) {
       const names = found.map((r) => `${deputyName(r.deputy)} (${r.deputy.id}, ${r.deputy.department}, ${r.group?.shortName || 'non-attached'})`)
       throw new ToolError(`Several sitting deputies match "${text}": ${names.join('; ')}. Ask again with their id (PA…).`)
@@ -129,7 +129,7 @@ export function createTools(ctx: ServiceContext, index: AssemblyIndex): ServiceT
       async run({ ballot, deputy }) {
         const opened = db()
         const found = getBallot(opened, ballot)
-        if (!found) throw new ToolError(`No public ballot ${ballot} in this legislature. Search with assemblee_ballots.`)
+        if (!found) throw new ToolError(`No public ballot ${ballot} in this legislature. Search with parlement_ballots.`)
         return formatBallot(ballotDetail(opened, found, deputy ? [oneDeputy(opened, deputy).deputy.id] : []))
       }
     }),

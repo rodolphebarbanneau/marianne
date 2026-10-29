@@ -22,23 +22,23 @@ export function ClipsTab() {
     )
   return (
     <>
-      <div className="assemblee-clips">
+      <div className="parlement-clips">
         {clips.map((c) => (
-          <div key={c.id} className="assemblee-clip">
-            <button className="assemblee-thumb" onClick={() => nav.open({ kind: 'video', id: c.video, start: c.start, stopAt: c.end })}>
+          <div key={c.id} className="parlement-clip">
+            <button className="parlement-thumb" onClick={() => nav.open({ kind: 'video', id: c.video, start: c.start, stopAt: c.end })}>
               {c.thumbnail ? (
                 <img src={c.thumbnail} alt="" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
               ) : (
-                <span className="assemblee-noimg" />
+                <span className="parlement-noimg" />
               )}
             </button>
-            <span className="assemblee-grow">
+            <span className="parlement-grow">
               <span className="hi">{c.title}</span>
               <span className="small dim">
                 {c.videoTitle} · {shortDate(c.date)} · {clock(c.start)} → {clock(c.end)}
               </span>
             </span>
-            <span className="assemblee-acts">
+            <span className="parlement-acts">
               <button className="btn small" onClick={() => nav.open({ kind: 'video', id: c.video, start: c.start, stopAt: c.end })}>
                 regarder
               </button>

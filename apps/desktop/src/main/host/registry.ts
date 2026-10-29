@@ -1,8 +1,8 @@
 import type { ServiceModule } from '@marianne/sdk/main'
 import annuaire from '@marianne/service-annuaire/package.json'
 import { service as annuaireMain } from '@marianne/service-annuaire/main'
-import assemblee from '@marianne/service-assemblee/package.json'
-import { service as assembleeMain } from '@marianne/service-assemblee/main'
+import parlement from '@marianne/service-parlement/package.json'
+import { service as parlementMain } from '@marianne/service-parlement/main'
 import carte from '@marianne/service-carte/package.json'
 import { service as carteMain } from '@marianne/service-carte/main'
 import meteo from '@marianne/service-meteo/package.json'
@@ -18,7 +18,7 @@ import { service as peageMain } from '@marianne/service-peage/main'
 export const BUILTIN_SERVICES: Array<{ pkg: unknown; module: ServiceModule }> = [
   { pkg: meteo, module: meteoMain },
   { pkg: annuaire, module: annuaireMain },
-  { pkg: assemblee, module: assembleeMain },
+  { pkg: parlement, module: parlementMain },
   { pkg: carte, module: carteMain },
   { pkg: peage, module: peageMain }
 ]

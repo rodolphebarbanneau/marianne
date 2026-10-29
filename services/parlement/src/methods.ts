@@ -6,7 +6,7 @@ import { ballotDetail, ballotSummary, deputyCard, deputyProfile } from './presen
 import { counts, findDeputies, getBallot, getDeputy, getMeeting, getOrgans, listGroups, meetingsOn, searchBallots } from './queries'
 import type { AssemblyIndex } from './store'
 import { parisDay } from './time'
-import type { AgendaDay, AssembleeMethods, DataStatus, LiveStream, Meeting, MeetingDetail, VideoItem } from './types'
+import type { AgendaDay, ParlementMethods, DataStatus, LiveStream, Meeting, MeetingDetail, VideoItem } from './types'
 import { liveStreams, searchVideos, videoDetail, type Http } from './videos'
 
 /** What the view calls: the index (once synced), the video portal, the sync job. Errors are in French: the view shows them. */
@@ -68,7 +68,7 @@ export async function meetingVideos(http: Http, meeting: Meeting, organCode: str
   return candidates.filter((_, i) => details[i]?.meetingIds.includes(meeting.id))
 }
 
-export function createMethods(ctx: ServiceContext, index: AssemblyIndex): ServiceImpl<AssembleeMethods> {
+export function createMethods(ctx: ServiceContext, index: AssemblyIndex): ServiceImpl<ParlementMethods> {
   /** Why the last run couldn't start, when the host's status can't say (no job built…). */
   let failure = ''
   const db = () => {

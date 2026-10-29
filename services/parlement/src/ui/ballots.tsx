@@ -17,13 +17,13 @@ const resultClass = (result: string) => (/^adopt/i.test(result) ? 'ok' : /^rejet
 export function BallotLines({ ballots, showPosition }: { ballots: BallotSummary[]; showPosition?: boolean }) {
   const nav = useNav()
   return (
-    <div className="assemblee-ballots">
+    <div className="parlement-ballots">
       {ballots.map((b) => (
-        <button key={b.id} className="assemblee-ballot" onClick={() => nav.open({ kind: 'ballot', id: b.id })}>
+        <button key={b.id} className="parlement-ballot" onClick={() => nav.open({ kind: 'ballot', id: b.id })}>
           <span className="small dim">
             {shortDate(b.date)} · n° {b.number}
           </span>
-          <span className="assemblee-ballot-title">{b.title}</span>
+          <span className="parlement-ballot-title">{b.title}</span>
           <span className={`small ${resultClass(b.result)}`}>{b.result}</span>
           {showPosition && <span className={`small ${positionClass(b.position)}`}>{positionText(b.position, b.proxy)}</span>}
         </button>
@@ -50,7 +50,7 @@ function Ballots() {
 
   return (
     <>
-      <div className="assemblee-fields">
+      <div className="parlement-fields">
         <Field label="sujet" hint="mots du titre : retraites, loi de finances…">
           <input value={text} onChange={(e) => setText(e.target.value)} placeholder="loi de finances 2027" />
         </Field>
@@ -78,7 +78,7 @@ function Ballots() {
       ) : (
         <p className="dim">Aucun scrutin public trouvé.</p>
       )}
-      <p className="small dim assemblee-foot">Seuls les scrutins publics sont nominatifs : beaucoup de votes se font à main levée.</p>
+      <p className="small dim parlement-foot">Seuls les scrutins publics sont nominatifs : beaucoup de votes se font à main levée.</p>
     </>
   )
 }
@@ -98,13 +98,13 @@ export function BallotPane({ id }: { id: string }) {
       <p className="small dim">
         scrutin n° {b.number} · {shortDate(b.date)} · {b.type}
       </p>
-      <h3 className="hi assemblee-title">{b.title}</h3>
+      <h3 className="hi parlement-title">{b.title}</h3>
       {b.billTitle && <p className="dim">{b.billTitle}</p>}
       <p>
         <span className={resultClass(b.result)}>{b.result}</span> · {formatNumber(b.voters)} votants : {formatNumber(b.for)} pour, {formatNumber(b.against)}{' '}
         contre, {formatNumber(b.abstentions)} abstentions
       </p>
-      <div className="assemblee-count" title="pour · contre · abstentions">
+      <div className="parlement-count" title="pour · contre · abstentions">
         <i className="for" style={{ width: share(b.for) }} />
         <i className="against" style={{ width: share(b.against) }} />
         <i className="abstention" style={{ width: share(b.abstentions) }} />
@@ -126,7 +126,7 @@ export function BallotPane({ id }: { id: string }) {
       {b.groups.length > 0 && (
         <>
           <span className="label">les groupes</span>
-          <table className="assemblee-table">
+          <table className="parlement-table">
             <thead>
               <tr>
                 <th>groupe</th>
@@ -154,7 +154,7 @@ export function BallotPane({ id }: { id: string }) {
           </table>
         </>
       )}
-      <p className="assemblee-actions">
+      <p className="parlement-actions">
         <button
           className="btn small"
           onClick={() =>

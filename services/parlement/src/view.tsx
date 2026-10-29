@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useHost, useStored } from '@marianne/sdk/view'
 import { parseVideoRef } from './links'
-import type { AssembleeMethods, Clips, DeputyCard, Favorites } from './types'
+import type { ParlementMethods, Clips, DeputyCard, Favorites } from './types'
 import { BallotPane, BallotsTab } from './ui/ballots'
 import { ClipsTab } from './ui/clips'
 import { NavContext, StoreContext, useMethod, type Nav, type Store, type Tab, type Target } from './ui/common'
@@ -12,7 +12,7 @@ import { DEFAULT_SEARCH, LivePane, VideoPane, VideosTab, type VideoSearch } from
 import './view.css'
 
 /**
- * 3615 ASSEMBLEE's screen: the agenda and what is live, the user's deputies and favorites, the
+ * 3615 PARLEMENT's screen: the agenda and what is live, the user's deputies and favorites, the
  * public ballots, the videos and the passages the user kept. A deputy, a ballot, a meeting or a
  * video opens over the tabs, with a way back.
  */
@@ -33,7 +33,7 @@ function opening(params: Record<string, string | number>): { tab: Tab; stack: Ta
 }
 
 export function View() {
-  const host = useHost<AssembleeMethods>()
+  const host = useHost<ParlementMethods>()
   // Opened again with other params (another link, another line of the day): a fresh screen.
   return (
     <DataProvider>
@@ -43,7 +43,7 @@ export function View() {
 }
 
 function Screen() {
-  const host = useHost<AssembleeMethods>()
+  const host = useHost<ParlementMethods>()
   const { status } = useData()
   const [{ tab, stack }, setView] = useState(() => opening(host.params))
   const [videoSearch, setVideoSearch] = useState<VideoSearch>(DEFAULT_SEARCH)
@@ -89,7 +89,7 @@ function Screen() {
   return (
     <NavContext.Provider value={nav}>
       <StoreContext.Provider value={store}>
-        <div className="assemblee">
+        <div className="parlement">
           <div className="tabs">
             {tabs.map((t) => (
               <button key={t.id} className={tab === t.id ? 'on' : ''} onClick={() => setView({ tab: t.id, stack: [] })}>
@@ -98,15 +98,15 @@ function Screen() {
             ))}
           </div>
           {top ? (
-            <div key={JSON.stringify(top)} className="assemblee-body">
-              <button className="small dim assemblee-back" onClick={() => setView((v) => ({ ...v, stack: v.stack.slice(0, -1) }))}>
+            <div key={JSON.stringify(top)} className="parlement-body">
+              <button className="small dim parlement-back" onClick={() => setView((v) => ({ ...v, stack: v.stack.slice(0, -1) }))}>
                 ← retour
               </button>
               <Pane target={top} />
             </div>
           ) : (
             // A sync that brings new data shows it: the tab loads again.
-            <div key={status?.sync.syncedAt ?? ''} className="assemblee-body">
+            <div key={status?.sync.syncedAt ?? ''} className="parlement-body">
               {content(tab, videoSearch, setVideoSearch)}
             </div>
           )}

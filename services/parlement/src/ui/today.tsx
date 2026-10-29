@@ -23,7 +23,7 @@ const title = (m: Meeting) => (m.kind === 'sitting' ? 'Séance publique' : m.org
 function States({ m }: { m: Meeting & { live?: boolean } }) {
   return (
     <>
-      {m.live && <span className="assemblee-live">● en direct</span>}
+      {m.live && <span className="parlement-live">● en direct</span>}
       {m.state === 'cancelled' && <span className="bad">annulée</span>}
       {m.state === 'tentative' && <span className="accent">à confirmer</span>}
       {m.video && !m.live && m.state !== 'cancelled' && <span className="dim">filmée</span>}
@@ -52,7 +52,7 @@ export function TodayTab() {
 
   return (
     <>
-      <div className="assemblee-day">
+      <div className="parlement-day">
         <button className="btn small" onClick={() => setDay(addDays(day, -1))}>
           ‹ veille
         </button>
@@ -74,7 +74,7 @@ export function TodayTab() {
         <Loading>chargement de l’agenda…</Loading>
       ) : (
         <NeedsData>
-          <div className="assemblee-choices">
+          <div className="parlement-choices">
             {KINDS.map((k) => (
               <button key={k.id} className={`chip${kind === k.id ? ' on' : ''}`} onClick={() => setKind(k.id)}>
                 {k.label}
@@ -91,14 +91,14 @@ export function TodayTab() {
 function Agenda({ meetings }: { meetings: AgendaMeeting[] }) {
   const nav = useNav()
   return (
-    <div className="assemblee-agenda">
+    <div className="parlement-agenda">
       {meetings.map((m) => (
-        <button key={m.id} className={`assemblee-meeting${m.state === 'cancelled' ? ' off' : ''}`} onClick={() => nav.open({ kind: 'meeting', id: m.id })}>
-          <span className="assemblee-hour">
+        <button key={m.id} className={`parlement-meeting${m.state === 'cancelled' ? ' off' : ''}`} onClick={() => nav.open({ kind: 'meeting', id: m.id })}>
+          <span className="parlement-hour">
             {hour(m.start)}
             {m.end ? <span className="dim">–{hour(m.end)}</span> : null}
           </span>
-          <span className="assemblee-grow">
+          <span className="parlement-grow">
             <span className="hi">{title(m)}</span>
             {m.items.slice(0, 2).map((item, i) => (
               <span key={i} className="small">
@@ -106,7 +106,7 @@ function Agenda({ meetings }: { meetings: AgendaMeeting[] }) {
               </span>
             ))}
             {m.items.length > 2 && <span className="small dim">… et {m.items.length - 2} autres points</span>}
-            <span className="small dim assemblee-states">
+            <span className="small dim parlement-states">
               {m.kind !== 'sitting' && m.place && <span>{m.place}</span>}
               <States m={m} />
             </span>
@@ -129,14 +129,14 @@ export function MeetingPane({ id }: { id: string }) {
   const past = Date.parse(m.start) < Date.now()
   return (
     <>
-      <p className="small dim assemblee-states">
+      <p className="small dim parlement-states">
         <span>{dateTime(m.start)}</span>
         {m.kind !== 'sitting' && m.place && <span>{m.place}</span>}
         <States m={{ ...m, live: !!stream?.live }} />
       </p>
-      <h3 className="hi assemblee-title">{title(m)}</h3>
+      <h3 className="hi parlement-title">{title(m)}</h3>
       {m.items.length > 0 && (
-        <ol className="assemblee-items">
+        <ol className="parlement-items">
           {m.items.map((item, i) => (
             <li key={i}>{item}</li>
           ))}
@@ -148,16 +148,16 @@ export function MeetingPane({ id }: { id: string }) {
         <div className="box-note">Diffusion en direct annoncée le {stream.start}.</div>
       ) : null}
       {videos.length > 0 && (
-        <div className="assemblee-videos">
+        <div className="parlement-videos">
           <span className="label">en vidéo</span>
           {videos.map((v) => (
-            <button key={v.id} className="assemblee-video" onClick={() => nav.open({ kind: 'video', id: v.id })}>
+            <button key={v.id} className="parlement-video" onClick={() => nav.open({ kind: 'video', id: v.id })}>
               {v.thumbnail ? (
                 <img src={v.thumbnail} alt="" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
               ) : (
-                <span className="assemblee-noimg" />
+                <span className="parlement-noimg" />
               )}
-              <span className="assemblee-grow">
+              <span className="parlement-grow">
                 <span className="small dim">{dateTime(v.date)}</span>
                 <span className="hi">{v.title}</span>
               </span>
@@ -168,7 +168,7 @@ export function MeetingPane({ id }: { id: string }) {
       {!videos.length && !stream && m.video && past && m.state !== 'cancelled' && (
         <p className="dim">La vidéo n’est pas encore sur le portail : elle y arrive un peu après la réunion.</p>
       )}
-      <p className="assemblee-actions">
+      <p className="parlement-actions">
         <button
           className="btn small"
           onClick={() => host.ask(`Explique-moi cette réunion de l’Assemblée nationale (${title(m)}, ${dateTime(m.start)}) : ${m.items.join(' ; ')}`)}

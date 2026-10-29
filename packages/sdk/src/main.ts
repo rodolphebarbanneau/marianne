@@ -113,7 +113,7 @@ export interface ToolCall {
 }
 
 export interface ServiceTool<S extends z.ZodRawShape = z.ZodRawShape> {
-  /** Unique in the service; engines see it as "<code>_<name>" (assemblee_ballots). */
+  /** Unique in the service; engines see it as "<code>_<name>" (parlement_ballots). */
   name: string
   /** In French, as the conversation shows the call ("assemblée · scrutins"). */
   label: string

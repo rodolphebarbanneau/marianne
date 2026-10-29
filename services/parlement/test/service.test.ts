@@ -9,7 +9,7 @@ import { indexDumps } from '../src/indexer'
 import { service } from '../src/main'
 import { DB_FILE, openWriter } from '../src/store'
 import { todayItems } from '../src/today'
-import type { AssembleeMethods, LiveStream, Meeting } from '../src/types'
+import type { ParlementMethods, LiveStream, Meeting } from '../src/types'
 import { dumps, fakeHttp, HEARING, SITTING } from './fixtures'
 
 const LIVE = 'https://www.assemblee-nationale.fr/dyn/api/live/streams'
@@ -100,7 +100,7 @@ function context(): ServiceContext {
       status: () => status,
       run: async () => {
         runs++
-        if (runFails) throw new Error('No sync job built for assemblee')
+        if (runFails) throw new Error('No sync job built for parlement')
       }
     }
   }
@@ -115,12 +115,12 @@ function synced(): void {
 }
 
 let runtime: ServiceRuntime
-let methods: ServiceImpl<AssembleeMethods>
+let methods: ServiceImpl<ParlementMethods>
 const tool = (name: string) => runtime.tools!.find((t) => t.name === name)!
 const call = (name: string, args: Record<string, unknown> = {}) => tool(name).run(args as never, {})
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'marianne-assemblee-service-'))
+  dir = mkdtempSync(join(tmpdir(), 'marianne-parlement-service-'))
   home = { code: BORDEAUX.code, name: 'Bordeaux', postcode: '33000' }
   status = {}
   runs = 0
@@ -128,7 +128,7 @@ beforeEach(() => {
   geoFails = false
   vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-28T19:00:00Z') })
   runtime = service.activate(context())
-  methods = runtime.methods as ServiceImpl<AssembleeMethods>
+  methods = runtime.methods as ServiceImpl<ParlementMethods>
 })
 
 afterEach(() => {
@@ -139,7 +139,7 @@ afterEach(() => {
 
 describe('the service', () => {
   it('declares a valid manifest, a daily sync, its tools, guide and instructions', () => {
-    expect(readManifest(pkg)).toMatchObject({ id: 'assemblee', category: 'democracy', links: ['https://videos.assemblee-nationale.fr/'] })
+    expect(readManifest(pkg)).toMatchObject({ id: 'parlement', name: 'Parlement', category: 'democracy', links: ['https://videos.assemblee-nationale.fr/'] })
     expect(service.sync).toEqual({ everyHours: 24 })
     expect(runtime.tools!.map((t) => [t.name, t.label])).toEqual([
       ['deputies', 'députés'],
@@ -154,7 +154,9 @@ describe('the service', () => {
     expect(runtime.tools!.every((t) => t.readOnly)).toBe(true)
     const guide = runtime.skills![0]
     expect(guide).toMatch(/^---\nname: national-assembly\n/)
-    for (const name of guide.match(/`assemblee_[a-z]+`/g) ?? []) expect(runtime.tools!.map((t) => `\`assemblee_${t.name}\``)).toContain(name)
+    const named = guide.match(/`parlement_[a-z]+`/g) ?? []
+    expect(named.length).toBeGreaterThan(0)
+    for (const name of named) expect(runtime.tools!.map((t) => `\`parlement_${t.name}\``)).toContain(name)
     expect(guide).not.toMatch(/`(depute|deputes|scrutins?|videos_assemblee|video_assemblee|direct_assemblee)`/)
     expect(runtime.instructions).toContain('?timecode=<milliseconds>')
   })
@@ -165,7 +167,7 @@ describe('before the first sync', () => {
     for (const name of ['deputies', 'deputy', 'ballots', 'ballot', 'agenda']) {
       const failure = call(name, { department: '33', deputy: 'David', ballot: 1 })
       await expect(failure).rejects.toBeInstanceOf(ToolError)
-      await expect(failure).rejects.toThrow(/3615 ASSEMBLEE/)
+      await expect(failure).rejects.toThrow(/3615 PARLEMENT/)
     }
     status = { running: { phase: 'download', done: 1, total: 2 } }
     await expect(call('deputies', { department: '33' })).rejects.toThrow(/being downloaded/)

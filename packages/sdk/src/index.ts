@@ -1,6 +1,6 @@
 /**
  * @marianne/sdk: the contract between Marianne and its services, the apps of the Services page
- * (the 3615 codes: 3615 METEO, 3615 ASSEMBLEE…). A service is a package of its own, which
+ * (the 3615 codes: 3615 METEO, 3615 PARLEMENT…). A service is a package of its own, which
  * depends on this SDK and on nothing of the app:
  *
  * - package.json: its manifest, in the `marianne` field (see ServicePackage);

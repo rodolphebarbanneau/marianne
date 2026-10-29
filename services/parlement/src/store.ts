@@ -2,12 +2,12 @@ import { existsSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 
 /**
- * The offline index of the Assemblée's open data: <dataDir>/assemblee.db. The sync job writes it
+ * The offline index of the Assemblée's open data: <dataDir>/parlement.db. The sync job writes it
  * in one transaction (WAL: the main side keeps reading meanwhile); the main side opens it
  * read-only. It is a cache: a new schema version drops it, and the next sync fills it again.
  */
 
-export const DB_FILE = 'assemblee.db'
+export const DB_FILE = 'parlement.db'
 
 export const SCHEMA_VERSION = 1
 
