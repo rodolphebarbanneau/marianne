@@ -23,7 +23,7 @@ const NO_FAVORITES: Favorites = { members: [], groups: [] }
 const NO_CLIPS: Clips = { items: [] }
 const NO_SHELF: Shelf = { pinned: [], starred: [], progress: {} }
 const NO_VIDEOS: { items: Record<string, VideoItem> } = { items: {} }
-const DEFAULT_PREFS: Prefs = { lens: true, style: 'dots' }
+const DEFAULT_PREFS: Prefs = { lens: true }
 
 /** What the screen opens on: a portal link (a video cited in an answer), a video at a passage, a meeting of "Aujourd'hui". */
 function opening(params: Record<string, string | number>): { tab: Tab; stack: Target[] } {

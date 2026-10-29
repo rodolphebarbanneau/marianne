@@ -469,6 +469,10 @@
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--muted);
 }
+/* The key of a hemicycle: its seats are dots. */
+.parlement-keyrow.dots i {
+  border-radius: 50%;
+}
 .parlement-keyrow i.half {
   background: linear-gradient(135deg, var(--vert) 0 50%, transparent 50%);
   box-shadow: inset 0 0 0 1px var(--vert);
@@ -955,12 +959,10 @@ button.parlement-bt-row:hover {
   height: auto;
   overflow: visible;
 }
-.parlement-hemi svg circle:not(.parlement-ring),
-.parlement-hemi svg rect {
+.parlement-seat {
   cursor: pointer;
 }
-.parlement-hemi svg circle:not(.parlement-ring):hover,
-.parlement-hemi svg rect:hover {
+.parlement-seat:hover {
   stroke: var(--hi);
   stroke-width: 0.6;
 }

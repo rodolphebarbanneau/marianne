@@ -309,7 +309,7 @@ export function BallotCard({ chamber, id, sticky }: { chamber: Chamber; id: stri
       ) : (
         <Loading />
       )}
-      <div className="parlement-keyrow">
+      <div className="parlement-keyrow dots">
         <span>
           <i style={{ background: 'var(--vert)' }} />
           pour {b.for}
@@ -600,7 +600,7 @@ function PresenceBlock({ day, data }: { day: string; data: DayBallots }) {
           ) : (
             <Loading />
           )}
-          <div className="parlement-keyrow">
+          <div className="parlement-keyrow dots">
             <span>
               <i style={{ background: 'var(--fg)' }} />a voté en personne
             </span>
