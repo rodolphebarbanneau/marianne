@@ -1,10 +1,11 @@
 import { ToolError, type ServiceTool } from '@marianne/sdk/main'
+import { fakeContext } from '@marianne/sdk/testing'
 import { describe, expect, it } from 'vitest'
 import * as z from 'zod'
+import pkg from '../package.json'
 import { service } from '../src/main'
 import { sumDepartments, Territory, toCommuneFigures, toCommuneProfile } from '../src/territory'
 import type { CommuneFigures, DepartmentFigures, MapView } from '../src/types'
-import { fakeContext } from './context'
 import { ALL_COMMUNES, BORDEAUX, BORDEAUX_SAINT_CLAIR, DEPARTMENTS, GIRONDE_COMMUNES } from './fixtures'
 
 /** geo.api.gouv.fr as the tests have it. */
@@ -55,7 +56,7 @@ function geoApi(url: URL): unknown {
 }
 
 const setup = (answer: (url: URL) => unknown = geoApi) => {
-  const { ctx, urls } = fakeContext(answer)
+  const { ctx, urls } = fakeContext(pkg, { answer })
   const runtime = service.activate(ctx)
   const tool = runtime.tools?.find((t) => t.name === 'figures') as ServiceTool
   // As Marianne's MCP server does: the arguments are parsed with the tool's input first.
@@ -90,9 +91,11 @@ describe('figures', () => {
 
   it('computes the national figures once, and again after a failure', async () => {
     let fail = true
-    const { ctx, urls } = fakeContext((url) => {
-      if (fail && url.pathname === '/communes') throw new Error('HTTP 503 de geo.api.gouv.fr')
-      return geoApi(url)
+    const { ctx, urls } = fakeContext(pkg, {
+      answer: (url) => {
+        if (fail && url.pathname === '/communes') throw new Error('HTTP 503 de geo.api.gouv.fr')
+        return geoApi(url)
+      }
     })
     const territory = new Territory(ctx.http)
     await expect(territory.departmentFigures()).rejects.toThrow('503')
@@ -105,7 +108,7 @@ describe('figures', () => {
   })
 
   it('finds communes by postal code, most populated first, else by INSEE code', async () => {
-    const { ctx, urls } = fakeContext(geoApi)
+    const { ctx, urls } = fakeContext(pkg, { answer: geoApi })
     const territory = new Territory(ctx.http)
     expect((await territory.findCommunes('33000')).map((c) => c.code)).toEqual(['33063'])
     expect((await territory.findCommunes('33063')).map((c) => c.code)).toEqual(['33063'])

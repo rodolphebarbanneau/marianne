@@ -83,3 +83,6 @@ export const office = (id: string, kind: string, longitude: number, latitude: nu
   url_service_public: `https://lannuaire.service-public.gouv.fr/x/${id}`,
   pivot: JSON.stringify([{ type_service_local: kind, code_insee_commune: [] }])
 })
+
+/** The `where` of a directory request. */
+export const whereOf = (url: URL) => url.searchParams.get('where') ?? ''

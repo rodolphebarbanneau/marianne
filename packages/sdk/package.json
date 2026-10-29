@@ -1,7 +1,7 @@
 {
   "name": "@marianne/sdk",
   "version": "0.1.0",
-  "description": "Build services for Marianne: the manifest, and the contracts of their main-process side, background sync and window view.",
+  "description": "Build services for Marianne: the manifest, the contracts of their main-process side, background sync and window view, and a fake context for their tests.",
   "license": "MIT",
   "author": "Rodolphe Barbanneau",
   "private": true,
@@ -10,6 +10,7 @@
     ".": "./src/index.ts",
     "./main": "./src/main.ts",
     "./sync": "./src/sync.ts",
+    "./testing": "./src/testing.ts",
     "./view": "./src/view.tsx"
   },
   "scripts": {
