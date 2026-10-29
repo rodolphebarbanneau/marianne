@@ -1023,21 +1023,13 @@ button.parlement-bt-row:hover {
   text-align: center;
   margin-top: 2px;
 }
-/* "votre député": a line from the seat, out of the hemicycle, to a label in the Videotex codes' style. */
+/* "votre député": a thread from the seat's ring, under the seats (it shows between them, cuts none),
+   out of the hemicycle, into a label in the Videotex codes' style. */
 .parlement-leader {
-  pointer-events: none;
-}
-.parlement-leader polyline {
   fill: none;
   stroke: var(--accent);
-  stroke-linecap: round;
   stroke-linejoin: round;
-}
-.parlement-leader polyline.halo {
-  stroke: var(--bg);
-}
-.parlement-leader circle {
-  fill: var(--accent);
+  pointer-events: none;
 }
 .parlement-callout {
   position: absolute;
