@@ -91,38 +91,102 @@ function Select<T extends string>({ value, options, onSave }: { value: T; option
   )
 }
 
-function AddressSearch({ onPick }: { onPick: (a: AddressSuggestion) => void }) {
-  const [query, setQuery] = useState('')
+/** "11 Chemin des Sablons, 78820 Juziers": an address as the field shows it. */
+const addressLine = (a: { street: string; postcode: string; city: string }) => [a.street, `${a.postcode} ${a.city}`.trim()].filter(Boolean).join(', ')
+
+/**
+ * The address in its field: the one saved, as it reads. Typing searches the Base adresse nationale;
+ * a suggestion picked (click, or ↑ ↓ and entrée) is saved and shows in the field. Échap, or leaving
+ * the field without picking, puts the saved address back: nothing changes by accident.
+ */
+function AddressField({ value, onPick }: { value: string; onPick: (a: AddressSuggestion) => void }) {
+  // What is typed; null: the field shows the saved address (or the one just picked, until it is saved).
+  const [draft, setDraft] = useState<string | null>(null)
+  const [picked, setPicked] = useState<string | null>(null)
   const [hits, setHits] = useState<AddressSuggestion[]>([])
+  const [searched, setSearched] = useState('')
+  const [active, setActive] = useState(0)
+  const query = draft?.trim() ?? ''
+  useEffect(() => setPicked(null), [value])
   useEffect(() => {
-    if (query.trim().length < 4) return setHits([])
+    if (query.length < 4) {
+      setHits([])
+      setSearched('')
+      return
+    }
     const t = setTimeout(
       () =>
         void api
           .searchAddress(query)
-          .then(setHits)
+          .then((found) => {
+            setHits(found)
+            setActive(0)
+            setSearched(query)
+          })
           .catch(() => setHits([])),
       250
     )
     return () => clearTimeout(t)
   }, [query])
+  const close = () => {
+    setDraft(null)
+    setHits([])
+    setSearched('')
+  }
+  const pick = (h: AddressSuggestion) => {
+    onPick(h)
+    setPicked(addressLine(h))
+    close()
+  }
+  const open = draft !== null && (hits.length > 0 || (searched === query && query.length >= 4))
   return (
     <div style={{ position: 'relative' }}>
-      <input value={query} placeholder="commencez à taper votre adresse…" onChange={(e) => setQuery(e.target.value)} style={{ width: '100%' }} />
-      {hits.length > 0 && (
-        <div className="menu" style={{ top: '100%', left: 0, right: 0 }}>
-          {hits.map((h) => (
-            <button
-              key={h.label}
-              onClick={() => {
-                onPick(h)
-                setQuery('')
-                setHits([])
-              }}
-            >
-              {h.label}
-            </button>
-          ))}
+      <input
+        value={draft ?? picked ?? value}
+        placeholder="commencez à taper votre adresse…"
+        spellCheck={false}
+        role="combobox"
+        aria-expanded={open}
+        aria-autocomplete="list"
+        style={{ width: '100%' }}
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={close}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && draft !== null) {
+            e.preventDefault()
+            close()
+          } else if (e.key === 'ArrowDown' && hits.length) {
+            e.preventDefault()
+            setActive((active + 1) % hits.length)
+          } else if (e.key === 'ArrowUp' && hits.length) {
+            e.preventDefault()
+            setActive((active - 1 + hits.length) % hits.length)
+          } else if (e.key === 'Enter' && hits[active]) {
+            e.preventDefault()
+            pick(hits[active])
+          }
+        }}
+      />
+      {open && (
+        <div className="menu" role="listbox" style={{ top: '100%', left: 0, right: 0 }}>
+          {hits.length ? (
+            hits.map((h, i) => (
+              // Before the field's blur: the click picks it.
+              <button
+                key={h.label}
+                role="option"
+                aria-selected={i === active}
+                className={i === active ? 'on' : ''}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pick(h)}
+              >
+                {h.label}
+              </button>
+            ))
+          ) : (
+            <span className="item dim">aucune adresse ne correspond</span>
+          )}
         </div>
       )}
     </div>
@@ -179,16 +243,9 @@ export function IdentityPane() {
         <Field label="nationalité">
           <Text value={p.nationality} onSave={(nationality) => person({ nationality })} />
         </Field>
-        <Field
-          label="adresse"
-          wide
-          hint={
-            a.street
-              ? `${a.street}${a.complement ? `, ${a.complement}` : ''}, ${a.postcode} ${a.city}`
-              : 'les suggestions viennent de la Base adresse nationale'
-          }
-        >
-          <AddressSearch
+        <Field label="adresse" wide hint="tapez-en le début : les suggestions viennent de la Base adresse nationale">
+          <AddressField
+            value={addressLine(a)}
             onPick={(h) =>
               save({ type: 'address', address: { ...a, street: h.street, postcode: h.postcode, city: h.city, inseeCode: h.inseeCode, lat: h.lat, lon: h.lon } })
             }
