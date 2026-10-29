@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import type { AddressSuggestion } from '@shared/api'
-import { DOMAINS } from '@shared/domains'
 import {
   CIVILITY_LABELS,
   CONTRACT_LABELS,
   DOCUMENT_TYPE_LABELS,
+  DOMAINS,
   FAMILY_STATUS_LABELS,
   formatNir,
   ID_DOCUMENT_LABELS,
@@ -22,7 +21,8 @@ import {
   type IdDocument,
   type Person,
   type ProfileOp
-} from '@shared/profile'
+} from '@marianne/profile'
+import type { AddressSuggestion } from '@shared/api'
 import type { DisplayChoice } from '@shared/types'
 import { useApp } from '../app/context'
 import { Field } from '../components/ui'

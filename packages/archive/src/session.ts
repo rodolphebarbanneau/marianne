@@ -4,7 +4,8 @@ import type { Archive } from './archive'
 /**
  * The open account. Everything personal goes through `session.archive`, which throws once
  * locked: locking drops the data key and closes the file, and listeners (the engines' scratch
- * folders, the built-in browser's session, the stores' caches) clean up after it.
+ * folders, the built-in browser's session, the stores' caches) clean up after it. The app holds
+ * one session for its process (apps/desktop/src/main/session.ts).
  */
 
 export class LockedError extends Error {
@@ -15,7 +16,7 @@ export class LockedError extends Error {
 
 export type LockReason = 'user' | 'idle' | 'system' | 'quit' | 'switch'
 
-class Session extends EventEmitter {
+export class Session extends EventEmitter {
   private current: Archive | null = null
   private idleTimer: NodeJS.Timeout | null = null
   private idleMinutes = 15
@@ -65,5 +66,3 @@ class Session extends EventEmitter {
     this.touch()
   }
 }
-
-export const session = new Session()

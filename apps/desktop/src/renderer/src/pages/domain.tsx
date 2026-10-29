@@ -1,19 +1,19 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { serviceCode, type ServiceState, type ServiceSummary } from '@marianne/sdk'
-import { domainInfo } from '@shared/domains'
+import type { Procedure } from '@marianne/content'
 import {
   CONTRACT_LABELS,
   DOCUMENT_TYPE_LABELS,
   daysUntil,
+  domainInfo,
   frDate,
   PROPERTY_STATUS_LABELS,
   PROPERTY_USE_LABELS,
   ROLE_LABELS,
   type Deadline,
   type EntityKind,
-  type Procedure,
   type Profile
-} from '@shared/profile'
+} from '@marianne/profile'
+import { serviceCode, type ServiceState, type ServiceSummary } from '@marianne/sdk'
 import type { DomainId } from '@shared/types'
 import { useApp } from '../app/context'
 import { api } from '../lib/api'

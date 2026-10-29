@@ -1,10 +1,8 @@
 import { EventEmitter } from 'node:events'
-import { EMPTY_PROFILE, newKey, today, type Deadline, type Profile, type ProfileOp } from '../../shared/profile'
+import { computeDeadlines, EMPTY_PROFILE, newKey, today, tokensOf, type Deadline, type Profile, type ProfileOp, type TokenDef } from '@marianne/profile'
 import type { DomainId } from '../../shared/types'
-import { session } from '../archive/session'
 import { content } from '../content'
-import { computeDeadlines } from './rules'
-import { tokensOf, type TokenDef } from './tokens'
+import { session } from '../session'
 
 /**
  * The profile of the open account: one record of its archive, read on first use and kept in

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
+import { redact } from '@marianne/profile'
 import type { ApprovalPart, ChatMessage, EngineId, Folder, ProgressPart, SendRequest, SetupPart, TextPart, ToolPart } from '../shared/types'
 import { approvals } from './approvals'
 import { configStore } from './config'
@@ -8,7 +9,6 @@ import { listSkills, runTurn, systemPrompt, userMessage, type EngineEvent } from
 import { folders, titleFrom } from './folders'
 import { log } from './log'
 import { profile } from './profile/store'
-import { redact } from './profile/tokens'
 import { services } from './host'
 import { legifranceReady } from './tools'
 

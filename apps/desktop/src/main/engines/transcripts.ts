@@ -2,8 +2,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmdirSync, rmSync, wr
 import { dirname, join } from 'node:path'
 import { unzipSync, zipSync } from 'fflate'
 import type { EngineId } from '../../shared/types'
-import { session } from '../archive/session'
 import { log } from '../log'
+import { session } from '../session'
 import type { TranscriptFiles } from './types'
 
 /**

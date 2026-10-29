@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import type { ChatMessage, EngineId, Folder, FolderStatus, FolderSummary } from '../shared/types'
-import { session } from './archive/session'
 import { content } from './content'
+import { session } from './session'
 
 /**
  * Folders: one folder = one conversation, a unit of work (a branch and its pull request). Each

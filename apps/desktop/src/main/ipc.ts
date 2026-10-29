@@ -1,7 +1,9 @@
 import { writeFile } from 'node:fs/promises'
+import { ARCHIVE_EXT } from '@marianne/archive'
+import { display, type ProfileOp } from '@marianne/profile'
+import type { ProfileField } from '@marianne/sdk'
 import { app, dialog, ipcMain, shell } from 'electron'
 import type { Rect, UnlockSecret } from '../shared/api'
-import type { ProfileOp } from '../shared/profile'
 import type {
   AccountSettings,
   AppInfo,
@@ -16,11 +18,8 @@ import type {
   PublicSourceId,
   SendRequest
 } from '../shared/types'
-import type { ProfileField } from '@marianne/sdk'
 import { accounts } from './account'
 import { approvals } from './approvals'
-import { ARCHIVE_EXT } from './archive/archive'
-import { session } from './archive/session'
 import { browser } from './browser'
 import { chat } from './chat'
 import { configStore } from './config'
@@ -35,12 +34,12 @@ import { openedArchives } from './opened-archives'
 import { paths } from './paths'
 import { documents, type DocumentPatch } from './profile/documents'
 import { profile } from './profile/store'
-import { display } from './profile/tokens'
 import { franceDigest } from './public/france'
 import { fetchNews } from './public/news'
 import { sync } from './public/sync'
 import { todayEvents } from './public/today'
 import { services } from './host'
+import { session } from './session'
 import { applyLoginItem } from './tray'
 import { updater } from './updater'
 import { broadcast, dimTitleBar, mainWindow } from './windows'

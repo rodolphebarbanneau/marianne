@@ -1,8 +1,8 @@
 import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { writeFileAtomic } from '../files'
 import { deriveKey, LIGHT_KDF, seal, unseal } from './crypto'
+import { writeFileAtomic } from './files'
 
 /**
  * Quick unlock with a PIN, on one computer. After the master password opened an archive here,
@@ -13,7 +13,7 @@ import { deriveKey, LIGHT_KDF, seal, unseal } from './crypto'
 
 export const PIN_ATTEMPTS = 5
 
-/** The OS keystore (Electron safeStorage), injected so this module runs without Electron in tests. */
+/** The OS keystore, injected: the app gives Electron's safeStorage, the tests a fake. */
 export interface Keystore {
   /** False when there is no real keystore (Linux without a keyring): no PIN then. */
   available(): boolean

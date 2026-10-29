@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { join } from 'node:path'
 import { BUNDLE_FILE, ContentError, readBundle, readContent, SIGNATURE_FILE, type ContentSet, type Procedure } from '@marianne/content'
 import { files, signingKey } from '@marianne/content/files'
-import { DOCUMENT_TYPE_LABELS, SETUP_TARGETS } from '../../shared/profile'
+import { DOCUMENT_TYPE_LABELS, SETUP_TARGETS } from '@marianne/profile'
 import { REPO_URL } from '../../shared/project'
 import { writeFileAtomic } from '../files'
 import { userAgent } from '../http'

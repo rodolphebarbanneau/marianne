@@ -39,7 +39,9 @@
   "devDependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@fontsource/vt323": "^5.3.0",
+    "@marianne/archive": "*",
     "@marianne/content": "*",
+    "@marianne/profile": "*",
     "@marianne/sdk": "*",
     "@marianne/service-annuaire": "*",
     "@marianne/service-assemblee": "*",

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { DOMAINS } from '@marianne/profile'
 import { ENGINE_BADGES } from '@shared/config'
-import { DOMAINS } from '@shared/domains'
 import type { DomainId, FolderSummary, Usage } from '@shared/types'
 import { ArchivePath } from '../components/archive-path'
 import { FilterIcon, NewIcon } from '../components/icons'

@@ -1,17 +1,29 @@
 import { mkdirSync, statSync } from 'node:fs'
 import { basename, dirname } from 'node:path'
 import { EventEmitter } from 'node:events'
+import {
+  accountFile,
+  ARCHIVE_EXT,
+  createArchive,
+  listAccounts,
+  newAccountId,
+  openArchive,
+  PinStore,
+  readHeader,
+  recoverArchive,
+  unlockArchive,
+  type Archive,
+  type Keystore,
+  type LockReason
+} from '@marianne/archive'
 import { safeStorage } from 'electron'
 import { DEFAULT_ACCOUNT_SETTINGS } from '../shared/config'
 import { checkPassword, checkPin } from '../shared/password'
 import type { AccountInfo, AccountSettings, DeepPartial, SessionState, Usage } from '../shared/types'
-import { accountFile, listAccounts, newAccountId } from './archive/accounts'
-import { ARCHIVE_EXT, createArchive, openArchive, readHeader, recoverArchive, unlockArchive, type Archive } from './archive/archive'
-import { PinStore, type Keystore } from './archive/pin'
-import { session, type LockReason } from './archive/session'
 import { accountSettings, configStore } from './config'
 import { samePath } from './files'
 import { paths } from './paths'
+import { session } from './session'
 import { isLinux } from './util'
 
 /**

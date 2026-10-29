@@ -1,0 +1,20 @@
+{
+  "name": "@marianne/profile",
+  "version": "0.1.0",
+  "description": "The user's personal file: its model and labels, the domains, the masking of identifiers into [[tokens]], the deadlines computed from it and the engines' view of it.",
+  "license": "MIT",
+  "author": "Rodolphe Barbanneau",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@marianne/content": "*",
+    "@marianne/sdk": "*"
+  }
+}

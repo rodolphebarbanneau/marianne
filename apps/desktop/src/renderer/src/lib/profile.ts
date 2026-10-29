@@ -1,4 +1,4 @@
-import type { DocumentMeta, Profile } from '@shared/profile'
+import type { DocumentMeta, Profile } from '@marianne/profile'
 import { api, useLive } from './api'
 
 /** The profile, kept up to date. */

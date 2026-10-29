@@ -3,10 +3,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { accountFile, archivesIn, cloudSynced, defaultArchiveFolder, listAccounts, newAccountId, type Places } from '../src/main/archive/accounts'
-import { createArchive, openArchive, readHeader, recoverArchive, unlockArchive, WrongSecretError } from '../src/main/archive/archive'
-import { normalizeRecoveryKey } from '../src/main/archive/crypto'
-import { PIN_ATTEMPTS, PinStore, WrongPinError, type Keystore } from '../src/main/archive/pin'
+import { accountFile, archivesIn, cloudSynced, defaultArchiveFolder, listAccounts, newAccountId, type Places } from '../src/accounts'
+import { createArchive, openArchive, readHeader, recoverArchive, unlockArchive, WrongSecretError } from '../src/archive'
+import { normalizeRecoveryKey } from '../src/crypto'
+import { PIN_ATTEMPTS, PinStore, WrongPinError, type Keystore } from '../src/pin'
 
 const dir = mkdtempSync(join(tmpdir(), 'marianne-archive-'))
 afterAll(() => rmSync(dir, { recursive: true, force: true }))

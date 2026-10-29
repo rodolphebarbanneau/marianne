@@ -1,9 +1,8 @@
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+import type { Archive } from '@marianne/archive'
 import { afterAll, describe, expect, it, vi } from 'vitest'
-import type { Archive } from '../src/main/archive/archive'
-import { session } from '../src/main/archive/session'
 import { ClaudeStream, CodexStream, resultText, VibeStream, type EngineEvent } from '../src/main/engines/events'
 import { recap, systemPrompt, userMessage } from '../src/main/engines/prompt'
 import { clearScratch, scratchDir, scratchName } from '../src/main/engines/scratch'
@@ -21,6 +20,7 @@ import {
 } from '../src/main/engines/transcripts'
 import { projectFiles } from '../src/main/engines/vibe'
 import { paths } from '../src/main/paths'
+import { session } from '../src/main/session'
 import type { ChatMessage } from '../src/shared/types'
 
 // ~/.marianne points at a temporary folder, before paths.ts reads it.

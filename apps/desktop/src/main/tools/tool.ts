@@ -1,5 +1,5 @@
+import { DOMAINS } from '@marianne/profile'
 import type * as z from 'zod'
-import { DOMAINS } from '../../shared/domains'
 import { PUBLIC_SOURCES } from '../../shared/public'
 import type { DomainId, PublicSourceId } from '../../shared/types'
 import { configStore } from '../config'

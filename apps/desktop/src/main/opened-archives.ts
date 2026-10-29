@@ -1,7 +1,7 @@
 import { dialog } from 'electron'
 import { accounts } from './account'
-import { session } from './archive/session'
 import { samePath } from './files'
+import { session } from './session'
 import { broadcast, showMain } from './windows'
 
 /**

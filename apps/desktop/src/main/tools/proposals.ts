@@ -1,7 +1,7 @@
-import { DOMAINS } from '../../shared/domains'
 import {
   CIVILITY_LABELS,
   CONTRACT_LABELS,
+  DOMAINS,
   FAMILY_STATUS_LABELS,
   FREQUENCY_LABELS,
   frDate,
@@ -28,7 +28,7 @@ import {
   type ProfileOp,
   type Property,
   type Vehicle
-} from '../../shared/profile'
+} from '@marianne/profile'
 import type { Site } from '../../shared/sites'
 import type { DomainId } from '../../shared/types'
 import { fold, ToolError } from './tool'
