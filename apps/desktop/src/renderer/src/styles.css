@@ -1908,7 +1908,8 @@ button.ev:hover {
   padding: 6px 10px;
   color: var(--fg);
 }
-.menu > button:hover {
+.menu > button:hover,
+.menu > button.on {
   background: var(--sel);
   color: var(--hi);
 }
