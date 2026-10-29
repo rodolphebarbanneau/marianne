@@ -57,6 +57,8 @@ export interface Nav {
   chambers: Chambers
   /** Whether the screen shows a chamber. */
   shows(chamber: Chamber): boolean
+  /** Wide enough for a list and its detail side by side; narrower, a detail opens as a pane. */
+  wide: boolean
 }
 
 export const NavContext = createContext<Nav | null>(null)
@@ -112,7 +114,8 @@ export function useLens(): { an: string | null; se: string | null; on: boolean; 
 /** The members whose votes the screens follow: the user's own, then those they follow. */
 export function useFollowed(): { mine: MemberCard[]; ids: string[] } {
   const { mine, favorites } = useStore()
-  const own = mine ? [...mine.deputies, ...mine.senators] : []
+  // A split commune whose address doesn't tell the constituency: none of its deputies is "yours".
+  const own = mine ? [...(mine.exact ? mine.deputies : []), ...mine.senators] : []
   return { mine: own, ids: [...new Set([...own.map((m) => m.id), ...favorites.members])] }
 }
 
@@ -282,6 +285,9 @@ export const megabytes = (bytes: number) => `${(bytes / 1e6).toLocaleString('fr-
 
 /** "75 %" */
 export const percent = (share: number) => `${Math.round(share * 100)} %`
+
+/** "1 scrutin public", "3 scrutins publics", "0 scrutin public": French counts take the plural from 2. */
+export const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString('fr-FR')} ${n > 1 ? many : one}`
 
 /** "votre députée", "votre sénateur" */
 export const yourTitle = (m: Pick<MemberCard, 'chamber' | 'female'>) =>

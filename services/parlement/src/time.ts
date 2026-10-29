@@ -17,7 +17,11 @@ export function parisOffset(date: Date): string {
 export function parisIso(local: string): string {
   const [day, time = '00:00:00'] = local.trim().split(/[ T]/)
   const hms = time.length === 5 ? `${time}:00` : time.slice(0, 8)
-  return `${day}T${hms}${parisOffset(new Date(`${day}T${hms}Z`))}`
+  // The offset at the instant that time is in Paris: read once at the time taken as UTC, then at the instant it gives.
+  const asUtc = new Date(`${day}T${hms}Z`)
+  const minutes = (offset: string) => (offset.startsWith('-') ? -1 : 1) * (Number(offset.slice(1, 3)) * 60 + Number(offset.slice(4, 6)))
+  const offset = parisOffset(new Date(asUtc.getTime() - minutes(parisOffset(asUtc)) * 60_000))
+  return `${day}T${hms}${offset}`
 }
 
 /** A day (YYYY-MM-DD) moved by a number of days. */

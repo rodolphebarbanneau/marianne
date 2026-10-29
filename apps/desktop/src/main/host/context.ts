@@ -9,6 +9,7 @@ import { log } from '../log'
 import { paths } from '../paths'
 import { profile } from '../profile/store'
 import { findCommunes, getCommune } from '../public/geo'
+import { parisDay } from '../public/time'
 import { session } from '../session'
 import type { ServiceSync } from './sync'
 
@@ -52,8 +53,10 @@ function vehicles(m: ServiceManifest): Vehicle[] {
  * written once a day at most.
  */
 function noteRead(m: ServiceManifest): void {
-  const day = new Date().toISOString().slice(0, 10)
-  if (accounts.settings().services.reads[m.id] !== day) accounts.updateSettings({ services: { reads: { [m.id]: day } } })
+  const day = parisDay()
+  const { reads } = accounts.settings().services
+  // `reads` is an open record: a patch replaces it whole, so the other services' days come along.
+  if (reads[m.id] !== day) accounts.updateSettings({ services: { reads: { ...reads, [m.id]: day } } })
 }
 
 /** The groups the user leans to, when they granted it and said something. */

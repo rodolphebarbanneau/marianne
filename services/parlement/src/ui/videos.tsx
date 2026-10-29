@@ -13,6 +13,7 @@ import {
   hour,
   Loading,
   longDay,
+  plural,
   shortDate,
   shortDay,
   useDebounced,
@@ -197,7 +198,9 @@ export function VideosTab({ search, setSearch }: { search: VideoSearch; setSearc
   const { shelf, clips, videos: kept } = useStore()
   const { ids } = useFollowed()
   const [tab, setTab] = useState<Shelf>('all')
-  const [by, setBy] = useState<By>('day')
+  const [sortBy, setBy] = useState<By>('day')
+  // By member: the passages of the user's members, a shelf of "toutes" only.
+  const by: By = sortBy === 'member' && tab !== 'all' ? 'day' : sortBy
   const text = useDebounced(search.text.trim())
   const chamber = nav.chambers === 'both' ? search.chamber : nav.chambers
   const query = useMemo((): VideoQuery => {
@@ -253,22 +256,16 @@ export function VideosTab({ search, setSearch }: { search: VideoSearch; setSearc
         </span>
         <span className="parlement-grow" />
         {tab !== 'clips' && (
-          <>
+          <span className="parlement-row nowrap">
             <span className="small dim">ranger par</span>
             <span className="parlement-seg">
-              {(
-                [
-                  ['day', 'jour'],
-                  ['text', 'texte'],
-                  ['member', 'élu']
-                ] as Array<[By, string]>
-              ).map(([id, label]) => (
+              {([['day', 'jour'], ['text', 'texte'], ...(tab === 'all' ? [['member', 'élu']] : [])] as Array<[By, string]>).map(([id, label]) => (
                 <button key={id} className={by === id ? 'on' : ''} onClick={() => setBy(id)}>
                   {label}
                 </button>
               ))}
             </span>
-          </>
+          </span>
         )}
       </div>
       {tab !== 'clips' && (
@@ -280,6 +277,11 @@ export function VideosTab({ search, setSearch }: { search: VideoSearch; setSearc
               </button>
             ))}
           </span>
+          {search.chamber && nav.chambers === 'both' && (
+            <button className="chip on" onClick={() => setSearch({ ...search, chamber: undefined })} title="voir les vidéos des deux chambres">
+              {search.chamber === 'an' ? 'Assemblée seulement' : 'Sénat seulement'} ✕
+            </button>
+          )}
           <span className="parlement-grow" />
           {tab === 'all' && (
             <>
@@ -289,7 +291,7 @@ export function VideosTab({ search, setSearch }: { search: VideoSearch; setSearc
                 </svg>
                 <input
                   value={search.text}
-                  onChange={(e) => setSearch({ ...search, text: e.target.value })}
+                  onChange={(e) => setSearch({ ...search, text: e.target.value, ...(e.target.value ? {} : { chamber: undefined }) })}
                   placeholder={search.speaker ? 'un orateur : nom, ou « nom prénom »' : 'mots du titre'}
                 />
               </label>
@@ -319,7 +321,7 @@ export function VideosTab({ search, setSearch }: { search: VideoSearch; setSearc
             <div className="parlement-h">
               <span className="label">{tab === 'all' ? 'toutes les vidéos' : tab === 'pinned' ? 'à voir' : 'favoris'}</span>
               <span className="small dim">
-                {by === 'member' ? `${spoken.length} passages de vos élus` : `${list.length} vidéos`} · rangées par{' '}
+                {by === 'member' ? plural(spoken.length, 'passage de vos élus', 'passages de vos élus') : plural(list.length, 'vidéo')} · rangées par{' '}
                 {by === 'day' ? 'jour' : by === 'text' ? 'texte' : 'élu'}
               </span>
             </div>
@@ -718,48 +720,54 @@ export function VideoPane({ refId, start, stopAt, clip }: { refId: string; start
             description: '',
             date: v.date,
             type: v.type,
-            kind: 'autre',
+            kind: kindOf(v.type),
             commission: v.organ,
             thumbnail: v.thumbnail,
-            durationMs: v.durationMs,
+            durationMs: Math.max(0, v.durationMs - v.offsetMs),
             url: v.url
           }
         : null,
     [v]
   )
 
-  // Where the user stopped: kept every 15 seconds of watching, and when the pane closes; a pinned video seen to the end leaves "à voir".
-  const latest = useRef({ shelf, setShelf, key, duration: v?.durationMs ?? 0 })
-  latest.current = { shelf, setShelf, key, duration: v?.durationMs ?? 0 }
-  useEffect(
-    () => () => {
-      const { shelf: s, setShelf: set, key: k } = latest.current
-      if (k && saved.current.at > 0 && saved.current.at !== saved.current.written) set({ progress: { ...s.progress, [k]: saved.current.at } })
-    },
-    []
-  )
-  const onTime = (ms: number) => {
-    const at = ms + offset
-    setTime(at)
-    saved.current.at = Math.round(at)
-    const { shelf: s, setShelf: set, key: k, duration } = latest.current
-    if (!k || Math.abs(at - saved.current.written) < 15_000) return
-    saved.current.written = saved.current.at
-    const seen = duration > 0 && at > duration * 0.95
+  /**
+   * Where the user stopped, in the stream's own time (as the player counts, and the lists' lengths
+   * are): kept every 15 seconds of watching and when the pane closes. A pinned video seen to the
+   * end leaves "à voir".
+   */
+  const length = item?.durationMs ?? 0
+  const latest = useRef({ shelf, setShelf, key, length })
+  latest.current = { shelf, setShelf, key, length }
+  const keep = (final: boolean) => {
+    const { shelf: s, setShelf: set, key: k, length: total } = latest.current
+    const at = saved.current.at
+    if (!k || at <= 0 || at === saved.current.written || (!final && Math.abs(at - saved.current.written) < 15_000)) return
+    saved.current.written = at
+    const seen = total > 0 && at > total * 0.95
     set({
-      progress: { ...s.progress, [k]: saved.current.at },
+      progress: { ...s.progress, [k]: at },
       ...(seen ? { pinned: s.pinned.filter((e) => videoKey(e.chamber, e.video) !== k) } : {})
     })
   }
+  const keepRef = useRef(keep)
+  keepRef.current = keep
+  useEffect(() => () => keepRef.current(true), [])
+  const onTime = (ms: number) => {
+    setTime(ms + offset)
+    saved.current.at = Math.round(ms)
+    keep(false)
+  }
 
+  const resume = shelf.progress[key] ?? 0
+  // A new clip starts where the user is: the passage asked for, or where they stopped; never before the stream.
   useEffect(() => {
-    if (clip === 'new' && v && !editing) setEditing(newClip(v, start ?? 0))
+    if (clip === 'new' && v && !editing) setEditing(newClip(v, Math.max(v.offsetMs, start ?? v.timecode ?? resume + v.offsetMs)))
   }, [clip, v]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (video.error) return <Failure error={video.error} retry={video.reload} />
   if (!v || !item) return <Loading>chargement de la vidéo…</Loading>
-  const resume = shelf.progress[key]
-  const at = start ?? v.timecode ?? (resume && resume < v.durationMs * 0.95 ? resume : undefined)
+  const resumable = resume > 0 && (!length || resume < length * 0.95)
+  const at = start ?? v.timecode ?? (resumable ? resume + offset : undefined)
   const link = (ms: number) => videoPage(v.chamber, v.id, ms)
   const now = () => (player.current?.time() ?? 0) + offset
   const seek = (ms: number) => player.current?.seek(Math.max(0, ms - offset))
@@ -768,7 +776,7 @@ export function VideoPane({ refId, start, stopAt, clip }: { refId: string; start
     <>
       <p className="parlement-row small">
         <ChamberCode chamber={v.chamber} />
-        <span className="dim">{[v.type, v.organ, dateTime(v.date), v.durationMs ? `durée ${clock(v.durationMs)}` : ''].filter(Boolean).join(' · ')}</span>
+        <span className="dim">{[v.type, v.organ, dateTime(v.date), length ? `durée ${clock(length)}` : ''].filter(Boolean).join(' · ')}</span>
         <span className="parlement-grow" />
         <button
           className={`parlement-vbtn${pinned(key) ? ' on' : ''}`}
@@ -803,7 +811,7 @@ export function VideoPane({ refId, start, stopAt, clip }: { refId: string; start
               La vidéo est en cours de traitement par {CHAMBER_NAMES[v.chamber] === 'Sénat' ? 'le Sénat' : 'l’Assemblée'} : elle sera visible un peu plus tard.
             </div>
           )}
-          {resume && start === undefined && v.timecode === undefined && (
+          {resumable && start === undefined && v.timecode === undefined && (
             <span className="small dim">reprise à {clock(resume)}, là où vous vous étiez arrêté</span>
           )}
           <p className="parlement-actions">
@@ -852,6 +860,16 @@ export function VideoPane({ refId, start, stopAt, clip }: { refId: string; start
     </>
   )
 }
+
+/** The filter a video falls under, from its type as the portals write it. */
+const kindOf = (type: string): VideoType =>
+  /questions/i.test(type)
+    ? 'questions'
+    : /s[ée]ance/i.test(type)
+      ? 'seance'
+      : /commission|audition|d[ée]l[ée]gation|mission/i.test(type)
+        ? 'commission'
+        : 'autre'
 
 function newClip(v: VideoOpen, from: number): Clip {
   const chapter = [...v.chapters].reverse().find((c) => c.timecode !== null && c.timecode <= from)

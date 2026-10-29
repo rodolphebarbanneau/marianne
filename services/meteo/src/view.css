@@ -1,15 +1,9 @@
 /* 3615 METEO */
 
-.meteo {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-}
 .meteo-body {
   display: flex;
   flex-direction: column;
   gap: var(--s4);
-  max-width: 980px;
 }
 .meteo-bar {
   display: flex;
@@ -104,7 +98,7 @@
 }
 .meteo-days {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: var(--s2);
 }
 .meteo-day {

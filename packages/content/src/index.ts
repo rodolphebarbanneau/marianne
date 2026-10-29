@@ -584,7 +584,9 @@ function readParliament(file: string, report: Report): { updated: string; groups
     const senate = optionalField(o, 'senate', where, report, () => (chamber === 'an' ? null : 'only a group of the Assemblée (an) has a Sénat counterpart'))
     groups.push({
       chamber,
-      acronym: field(o, 'acronym', where, report, like(ACRONYM, 'an acronym (up to 24 letters, digits, spaces, dots, apostrophes or hyphens)')),
+      acronym: field(o, 'acronym', where, report, (v) =>
+        v !== v.trim() ? `"${v}" has spaces around it` : like(ACRONYM, 'an acronym (up to 24 letters, digits, spaces, dots, apostrophes or hyphens)')(v)
+      ),
       name: field(o, 'name', where, report),
       color: field(o, 'color', where, report, like(COLOR, 'a colour (#rrggbb, lowercase)')),
       ...(senate !== undefined ? { senate } : {})

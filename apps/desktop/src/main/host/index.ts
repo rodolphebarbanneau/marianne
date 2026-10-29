@@ -1,4 +1,6 @@
 import { EventEmitter } from 'node:events'
+import { rmSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   readManifest,
   type DomainId,
@@ -13,6 +15,7 @@ import type { TodayEvent } from '../../shared/public'
 import { accounts } from '../account'
 import { configStore } from '../config'
 import { log } from '../log'
+import { paths } from '../paths'
 import { session } from '../session'
 import type { Tool } from '../tools/tool'
 import { grantedFields, serviceContext, storageKind } from './context'
@@ -37,6 +40,9 @@ interface Loaded {
 }
 
 const SYNC_CHECK_MS = 3600_000
+
+/** Services that changed their code: what the user kept follows them (3615 ASSEMBLEE became 3615 PARLEMENT). */
+const RENAMED: Record<string, string> = { assemblee: 'parlement' }
 
 class ServiceHost extends EventEmitter {
   private loaded: Loaded[] = []
@@ -67,8 +73,30 @@ class ServiceHost extends EventEmitter {
       }
       this.loaded.push(entry)
     }
+    // The public data of a renamed service is downloaded again under its new code.
+    for (const from of Object.keys(RENAMED)) rmSync(join(paths.services, from), { recursive: true, force: true })
+    session.on('unlocked', () => this.followRenamed())
     session.on('unlocked', () => setTimeout(() => void this.syncDue(), 10_000).unref())
     setInterval(() => void this.syncDue(), SYNC_CHECK_MS).unref()
+  }
+
+  /**
+   * The user's data of a renamed service (favorites, clips…) and its star or switch, moved to its new
+   * code, once. What it may read of the profile is asked again: the new service asks for other fields.
+   */
+  private followRenamed(): void {
+    const archive = session.archive
+    for (const [from, to] of Object.entries(RENAMED)) {
+      for (const id of archive.ids(storageKind(from))) {
+        if (archive.get(storageKind(to), id) === null) archive.put(storageKind(to), id, archive.get(storageKind(from), id))
+        archive.remove(storageKind(from), id)
+      }
+      const { starred, disabled, access } = accounts.settings().services
+      if (!starred.includes(from) && !disabled.includes(from) && !(from in access)) continue
+      const rename = (list: string[]) => [...new Set(list.map((x) => (x === from ? to : x)))]
+      const { [from]: _dropped, ...kept } = access
+      accounts.updateSettings({ services: { starred: rename(starred), disabled: rename(disabled), access: kept } })
+    }
   }
 
   private checkTools(entry: Loaded): void {

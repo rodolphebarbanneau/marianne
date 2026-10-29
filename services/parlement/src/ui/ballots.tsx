@@ -5,8 +5,8 @@ import type { BallotKind, BallotLine, Chamber, DayBallots, GroupInfo, MemberCard
 import {
   ChamberCode,
   dayMonth,
-  Failure,
   Face,
+  Failure,
   GroupChip,
   hour,
   LensChip,
@@ -15,6 +15,7 @@ import {
   longDay,
   Mosaic,
   percent,
+  plural,
   POSITION_SHORT,
   Result,
   shortDate,
@@ -114,34 +115,34 @@ function BallotRow({
   const themes = useThemes()(line.title)
   return (
     <button className={`parlement-bt-row${selected ? ' sel' : ''}`} onClick={onSelect} title={line.title}>
-      <span className="parlement-stack">
+      <span className="parlement-stack parlement-bt-time">
         <span className="small">{line.sittingStart ? hour(line.sittingStart) : dayMonth(line.date)}</span>
         <span className="small muted">n° {line.number}</span>
       </span>
-      <span>
+      <span className="parlement-bt-author">
         {line.author ? (
           <GroupChip short={line.author.groupShort} color={line.author.groupColor} name={line.author.name} small />
         ) : (
           <span className="small muted">—</span>
         )}
       </span>
-      <span className="parlement-stack">
+      <span className="parlement-stack parlement-bt-obj">
         <span className="parlement-ell parlement-bt-title">{line.title.replace(/^sur /, '')}</span>
         <span className="small dim parlement-ell">
           {ballotMeta(line)}
           {themes.length > 0 && <span className="parlement-theme"> ◆ {themes.join(', ')}</span>}
         </span>
       </span>
-      <span className="parlement-stack">
+      <span className="parlement-stack parlement-bt-votes">
         <VoteBar line={line} />
         <span className="small muted">
           {line.for} · {line.against} · {line.abstentions}
         </span>
       </span>
-      <span>
+      <span className="parlement-bt-res">
         <Result line={line} />
       </span>
-      <span className="parlement-stack small">
+      <span className="parlement-stack small parlement-bt-mine">
         {mineVote === undefined ? <span className="muted">{line.chamber === 'se' ? 'groupe' : ''}</span> : <Vote vote={mineVote} />}
         {lens.on &&
           (lensPosition ? (
@@ -206,7 +207,7 @@ export function BallotTable({
               <ChamberCode chamber={bill.chamber} />
               <span className="hi parlement-ell parlement-grow">{bill.title}</span>
               <span className="small dim">
-                {bill.ballots.length} scrutins · {bill.ballots.filter((l) => l.adopted).length} adoptés
+                {plural(bill.ballots.length, 'scrutin')} · {plural(bill.ballots.filter((l) => l.adopted).length, 'adopté')}
               </span>
             </div>
             {shown.map((line) => (
@@ -237,6 +238,7 @@ export function BallotCard({ chamber, id, sticky }: { chamber: Chamber; id: stri
   const nav = useNav()
   const lens = useLens()
   const groups = useGroups()
+  const store = useStore()
   const { ids } = useFollowed()
   const detail = useMethod('ballot', [chamber, id, ids])
   const map = useMethod('votes', [chamber, id])
@@ -246,7 +248,9 @@ export function BallotCard({ chamber, id, sticky }: { chamber: Chamber; id: stri
   if (!b) return <Loading />
   const lensGroup = groups.byAcronym(chamber, chamber === 'an' ? lens.an : lens.se)
   const lensPosition = lensGroup ? (b.groups.find((g) => g.groupId === lensGroup.id)?.position ?? null) : null
-  const mine = b.votes.find((v) => v.member.chamber === 'an' && v.member.constituency)
+  // The comparison names the user's deputy only (they have several senators).
+  const own = chamber === 'an' && store.mine?.exact ? store.mine.deputies[0] : undefined
+  const mine = own ? b.votes.find((v) => v.member.id === own.id) : undefined
   const fill = data.data && map.data ? readingFill(data.data, 'vote', { votes: map.data }) : null
   return (
     <div className={`parlement-card parlement-bt-card${sticky ? ' sticky' : ''}`}>
@@ -370,16 +374,16 @@ export function BallotCard({ chamber, id, sticky }: { chamber: Chamber; id: stri
           )
         })}
       </div>
-      {b.dissidents.length > 0 && (
+      {b.dissidentCount > 0 && (
         <span className="small">
-          <span className="accent">{b.dissidents.length} voix dissidentes</span>{' '}
+          <span className="accent">{plural(b.dissidentCount, 'voix dissidente', 'voix dissidentes')}</span>{' '}
           <span className="dim">
             :{' '}
             {b.dissidents
               .slice(0, 3)
               .map((d) => `${d.member.name} (${d.member.groupShort}, ${POSITION_SHORT[d.position]})`)
               .join(', ')}
-            {b.dissidents.length > 3 ? '…' : ''}
+            {b.dissidentCount > 3 ? '…' : ''}
           </span>
         </span>
       )}
@@ -483,11 +487,17 @@ function DayBallotsView({ day }: { day: string }) {
   return (
     <>
       <DayTiles data={data} />
-      <div className="parlement-bt-wrap">
-        <BallotTable day={data} selected={current.id} onSelect={setSelected} />
-        <div className="parlement-bt-detail">
-          <BallotCard key={current.id} chamber={current.chamber} id={current.id} sticky />
-        </div>
+      <div className={`parlement-bt-wrap${nav.wide ? '' : ' alone'}`}>
+        <BallotTable
+          day={data}
+          selected={nav.wide ? current.id : undefined}
+          onSelect={(line) => (nav.wide ? setSelected(line) : nav.open({ kind: 'ballot', chamber: line.chamber, id: line.id }))}
+        />
+        {nav.wide && (
+          <div className="parlement-bt-detail">
+            <BallotCard key={current.id} chamber={current.chamber} id={current.id} sticky />
+          </div>
+        )}
       </div>
       {nav.shows('an') && data.bills.some((b) => b.chamber === 'an') && <PresenceBlock day={day} data={data} />}
     </>
@@ -508,7 +518,10 @@ export function DayTiles({ data, compact }: { data: DayBallots; compact?: boolea
     <div className={`parlement-tiles n${compact ? 4 : 5}`}>
       <div className="parlement-tile">
         <span className="n">{lines.length}</span>
-        <span className="u">scrutins publics{nav.chambers === 'both' ? ` · AN ${an.length} · Sénat ${lines.length - an.length}` : ''}</span>
+        <span className="u">
+          {lines.length > 1 ? 'scrutins publics' : 'scrutin public'}
+          {nav.chambers === 'both' ? ` · AN ${an.length} · Sénat ${lines.length - an.length}` : ''}
+        </span>
       </div>
       <div className="parlement-tile">
         <span className="n">
@@ -568,7 +581,7 @@ function PresenceBlock({ day, data }: { day: string; data: DayBallots }) {
     <div className="news parlement-news">
       <div className="parlement-h">
         <span className="parlement-title">présence du jour</span>
-        <span className="small dim">Assemblée nationale · {lines.length} scrutins publics</span>
+        <span className="small dim">Assemblée nationale · {plural(lines.length, 'scrutin public', 'scrutins publics')}</span>
       </div>
       <div className="parlement-presence">
         <div>
@@ -713,7 +726,7 @@ function AnalysisView() {
     { id: 'COM', shortName: 'Com.', name: 'Commission', color: '#8089c4' }
   ]
   const lensGroup = groups.byAcronym(chamber, chamber === 'an' ? lens.an : lens.se)
-  const own = mine.find((m) => m.chamber === chamber && m.constituency)
+  const own = chamber === 'an' ? mine.find((m) => m.chamber === 'an') : undefined
   const ownAnalysis = analysis.data?.members.find((a) => a.member === own?.id)
   const cell = (t: { for: number; n: number } | undefined, label: string, lensRow?: boolean) => {
     if (!t || t.n < 2)
@@ -1016,19 +1029,27 @@ function SearchView() {
       ) : !ballots.data ? (
         <Loading>recherche des scrutins…</Loading>
       ) : ballots.data.length ? (
-        <div className="parlement-bt-wrap">
+        <div className={`parlement-bt-wrap${nav.wide ? '' : ' alone'}`}>
           <div className="parlement-btable">
             {ballots.data.map((line) => (
-              <BallotRow key={line.id} line={line} selected={line.id === selected?.id} onSelect={() => setSelected(line)} mineVote={line.vote} />
+              <BallotRow
+                key={line.id}
+                line={line}
+                selected={nav.wide && line.id === selected?.id}
+                onSelect={() => (nav.wide ? setSelected(line) : nav.open({ kind: 'ballot', chamber: line.chamber, id: line.id }))}
+                mineVote={line.vote}
+              />
             ))}
           </div>
-          <div className="parlement-bt-detail">
-            {selected ? (
-              <BallotCard key={selected.id} chamber={selected.chamber} id={selected.id} sticky />
-            ) : (
-              <p className="small dim">Choisissez un scrutin pour le détail.</p>
-            )}
-          </div>
+          {nav.wide && (
+            <div className="parlement-bt-detail">
+              {selected ? (
+                <BallotCard key={selected.id} chamber={selected.chamber} id={selected.id} sticky />
+              ) : (
+                <p className="small dim">Choisissez un scrutin pour le détail.</p>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <p className="dim">Aucun scrutin public trouvé.</p>

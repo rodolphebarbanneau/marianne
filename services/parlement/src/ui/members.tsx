@@ -15,6 +15,7 @@ import {
   longDay,
   Mosaic,
   percent,
+  plural,
   shortDay,
   useBallotDay,
   useDebounced,
@@ -620,9 +621,7 @@ function Group({ chamber, id }: { chamber: Chamber; id: string }) {
         <Loading />
       ) : (
         <>
-          <p className="dim">
-            {members.data.length} {chamber === 'an' ? 'députés' : 'sénateurs'}
-          </p>
+          <p className="dim">{plural(members.data.length, chamber === 'an' ? 'député' : 'sénateur')}</p>
           <MemberLines members={members.data} />
         </>
       )}

@@ -14,7 +14,8 @@ import type { Chamber, ParlementMethods } from './types'
 /** The tools engines see as parlement_<name>: members, ballots and the agenda from the index; videos and live streams from the portals. */
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/
-const day = (what: string) => z.string().regex(DAY, 'YYYY-MM-DD').optional().describe(what)
+const realDay = (s: string) => !Number.isNaN(Date.parse(`${s}T12:00:00Z`)) && new Date(`${s}T12:00:00Z`).toISOString().slice(0, 10) === s
+const day = (what: string) => z.string().regex(DAY, 'YYYY-MM-DD').refine(realDay, 'not a day of the calendar').optional().describe(what)
 const chamber = z.enum(['assemblee', 'senat']).optional().describe('assemblee: Assemblée nationale; senat: Sénat; both when absent')
 const toChamber = (c?: 'assemblee' | 'senat'): Chamber | undefined => (c === 'assemblee' ? 'an' : c === 'senat' ? 'se' : undefined)
 

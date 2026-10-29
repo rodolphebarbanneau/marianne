@@ -81,7 +81,7 @@ export const groupInfo = (g: GroupRecord, members = 0): GroupInfo => ({
 
 /** Who tabled a ballot's amendment, with their group's colour; null when the subject doesn't say (or no member matches). */
 export function authorOf(
-  b: Pick<BallotRecord, 'chamber' | 'author' | 'author_group'>,
+  b: Pick<BallotRecord, 'chamber' | 'author' | 'author_group'> & { data?: string },
   members: Map<string, MemberRow>,
   groups: Map<string, GroupRecord>
 ): Author | null {
@@ -92,7 +92,8 @@ export function authorOf(
   const group = groups.get(`${b.chamber}:${b.author_group}`)
   return {
     id: b.author,
-    name: member ? memberName(member.data) : b.author,
+    // A member who left office: their name as the ballot kept it.
+    name: member ? memberName(member.data) : (b.data && (JSON.parse(b.data) as { authorName?: string }).authorName) || b.author,
     groupId: b.author_group,
     groupShort: group?.short_name ?? '',
     groupColor: visibleColor(group?.color ?? '')

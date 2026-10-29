@@ -10,7 +10,8 @@ import { DatabaseSync } from 'node:sqlite'
 
 export const DB_FILE = 'parlement.db'
 
-export const SCHEMA_VERSION = 2
+/** 3: amendments' authors read again (sub-amendments, "de suppression"…), their names kept with the ballots. */
+export const SCHEMA_VERSION = 3
 
 /**
  * The sources of the index, each refilling its own rows:
@@ -120,6 +121,19 @@ export class ParliamentIndex {
   private db: DatabaseSync | null = null
 
   constructor(readonly file: string) {}
+
+  /** There is an index, of an older version: its schema changed with the service. */
+  stale(): boolean {
+    if (!existsSync(this.file)) return false
+    const db = new DatabaseSync(this.file, { readOnly: true })
+    try {
+      return version(db) !== SCHEMA_VERSION
+    } catch {
+      return false
+    } finally {
+      db.close()
+    }
+  }
 
   /** The index, or null before the first sync (or after a schema change, until the next one). */
   open(): DatabaseSync | null {

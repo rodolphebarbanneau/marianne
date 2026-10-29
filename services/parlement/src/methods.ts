@@ -161,6 +161,8 @@ const THEME_COMMITTEES: Record<string, RegExp> = {
 
 /** What the index gives often: members and groups, kept for as long as the index stays open. */
 interface Cache {
+  /** The index's data version it was read at: another connection's commit (the sync job's) changes it. */
+  version: number
   groups: Map<string, GroupRecord>
   members: Map<string, MemberRow>
   byKey: Record<Chamber, Map<number, MemberRow>>
@@ -176,13 +178,14 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
     return opened
   }
   const cache = (opened: DatabaseSync): Cache => {
+    const version = (opened.prepare('pragma data_version').get() as { data_version: number }).data_version
     let c = caches.get(opened)
-    if (!c) {
+    if (!c || c.version !== version) {
       const an = membersByKey(opened, 'an')
       const se = membersByKey(opened, 'se')
       const members = new Map<string, MemberRow>()
       for (const row of [...an.values(), ...se.values()]) members.set(`${row.chamber}:${row.id}`, row)
-      c = { groups: groupRecords(opened), members, byKey: { an, se } }
+      c = { version, groups: groupRecords(opened), members, byKey: { an, se } }
       caches.set(opened, c)
     }
     return c
@@ -212,8 +215,15 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
   /** The group a leaning names in a chamber (its acronym), when it has members. */
   const groupNamed = (opened: DatabaseSync, chamber: Chamber, acronym: string) =>
     listGroups(opened, chamber).find((g) => searchKey(g.shortName) === searchKey(acronym) || g.id === acronym)
+  /** The sync started for an index of an older version (an update of the service), once. */
+  let upgrading = false
   const status = (): DataStatus => {
     const opened = index.open()
+    // An index of an older version reads as none: it is built again now, not at the next daily sync.
+    if (!opened && !upgrading && index.stale()) {
+      upgrading = true
+      void ctx.sync.run().catch((err: unknown) => (failure = (err as Error).message))
+    }
     const sync = ctx.sync.status()
     const error = sync.error || (sync.running ? '' : failure)
     return {
@@ -228,9 +238,11 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
     const opinions = { leaning: leaning ? { an: leaning.assembly, se: leaning.senate } : null, themes: ctx.profile.themes() }
     const home = ctx.home()
     if (!home) return { commune: null, deputies: [], exact: false, senators: [], ...opinions }
-    const opened = db()
+    db()
     // The geo connection names the département; without it, the INSEE code tells it.
     const commune = await ctx.geo.getCommune(home.code).catch(() => null)
+    // The index may have been reopened meanwhile (a sync that ended): taken after the wait.
+    const opened = db()
     const department = commune?.department ?? departmentOf(home.code)
     const circos = constituenciesOf(opened, communeOf(home.code))
     let exact = circos.length === 1
@@ -567,6 +579,7 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
           return { member: memberCard(row), vote, groupPosition: (row.group && positionOf.get(row.group.id)) ?? null }
         }),
         dissidents: dissidents.slice(0, 40),
+        dissidentCount: dissidents.length,
         proxies: votes.filter((v) => v.proxy).length,
         video: null
       }

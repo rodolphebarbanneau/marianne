@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useHost, useStored } from '@marianne/sdk/view'
 import { parseVideoRef, videoKey } from './links'
 import type { Clips, Favorites, ParlementMethods, Shelf, VideoItem } from './types'
@@ -75,10 +75,43 @@ function Screen() {
   const ready = !!status?.ready
   const mine = useMethod('mine', ready ? [] : null)
 
+  // A pane opens at the top of the page; "retour" brings the page back where it was, its tab as it was left.
+  const root = useRef<HTMLDivElement>(null)
+  const scrolls = useRef<number[]>([])
+  const scroller = (): HTMLElement | null => {
+    for (let el = root.current?.parentElement ?? null; el; el = el.parentElement) if (/auto|scroll/.test(getComputedStyle(el).overflowY)) return el
+    return null
+  }
+  const scrollTo = (y: number) => requestAnimationFrame(() => scroller()?.scrollTo(0, y))
+
+  // The screen's own width, whatever takes the rest of the window (the sidebar…).
+  const [width, setWidth] = useState(1200)
+  useEffect(() => {
+    const el = root.current
+    if (!el) return
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+  const wide = width >= 1000
+  const back = () => {
+    setView((v) => ({ ...v, stack: v.stack.slice(0, -1) }))
+    scrollTo(scrolls.current.pop() ?? 0)
+  }
+  const goTab = (id: Tab) => {
+    scrolls.current = []
+    setView({ tab: id, stack: [] })
+    scrollTo(0)
+  }
+
   const nav = useMemo<Nav>(
     () => ({
-      open: (target) => setView((v) => ({ ...v, stack: [...v.stack, target] })),
-      tab: (id) => setView({ tab: id, stack: [] }),
+      open: (target) => {
+        scrolls.current.push(scroller()?.scrollTop ?? 0)
+        setView((v) => ({ ...v, stack: [...v.stack, target] }))
+        scrollTo(0)
+      },
+      tab: goTab,
       searchVideos: (query) => {
         setVideoSearch({
           ...DEFAULT_SEARCH,
@@ -88,12 +121,13 @@ function Screen() {
           ...(query.type ? { type: query.type } : {}),
           ...(query.chamber ? { chamber: query.chamber } : {})
         })
-        setView({ tab: 'videos', stack: [] })
+        goTab('videos')
       },
       chambers,
-      shows: (chamber) => chambers === 'both' || chambers === chamber
+      shows: (chamber) => chambers === 'both' || chambers === chamber,
+      wide
     }),
-    [chambers]
+    [chambers, wide] // eslint-disable-line react-hooks/exhaustive-deps
   )
   const store = useMemo<Store>(
     () => ({
@@ -126,10 +160,10 @@ function Screen() {
   return (
     <NavContext.Provider value={nav}>
       <StoreContext.Provider value={store}>
-        <div className="parlement">
+        <div ref={root} className="parlement">
           <div className="tabs parlement-tabs">
             {TABS.map((t) => (
-              <button key={t.id} className={tab === t.id && !top ? 'on' : ''} onClick={() => setView({ tab: t.id, stack: [] })}>
+              <button key={t.id} className={tab === t.id && !top ? 'on' : ''} onClick={() => goTab(t.id)}>
                 {t.label}
                 {counts[t.id] && <span className="parlement-count">{counts[t.id]}</span>}
               </button>
@@ -162,19 +196,18 @@ function Screen() {
               </span>
             </span>
           </div>
-          {top ? (
+          {top && (
             <div key={JSON.stringify(top)} className="parlement-body">
-              <button className="small dim parlement-back" onClick={() => setView((v) => ({ ...v, stack: v.stack.slice(0, -1) }))}>
+              <button className="small dim parlement-back" onClick={back}>
                 ← retour
               </button>
               <Pane target={top} />
             </div>
-          ) : (
-            // A sync that brings new data shows it: the tab loads again.
-            <div key={status?.sync.syncedAt ?? ''} className="parlement-body">
-              {content(tab, videoSearch, setVideoSearch)}
-            </div>
           )}
+          {/* The tab stays under its panes, as it was left. A sync that brings new data shows it: the tab loads again. */}
+          <div key={`${tab}:${status?.sync.syncedAt ?? ''}`} className="parlement-body" hidden={!!top}>
+            {content(tab, videoSearch, setVideoSearch)}
+          </div>
           <DataLine />
         </div>
       </StoreContext.Provider>

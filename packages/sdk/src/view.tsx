@@ -10,7 +10,7 @@ import type { ServiceManifest, ServiceMethods } from './index'
  */
 
 export * from './index'
-export { Field, Modal, Spinner } from './ui'
+export { Field, floating, Modal, Spinner } from './ui'
 
 /** Something a service hands to Marianne with a question: a page it shows. */
 export interface ShownPage {
@@ -66,7 +66,11 @@ export interface Loaded<T> {
   reload: () => void
 }
 
-/** The result of a method, loaded again when its arguments change (the previous one is dropped meanwhile); null arguments: nothing to load yet. */
+/**
+ * The result of a method, loaded again when its arguments change (the previous one is dropped
+ * meanwhile); null arguments: nothing to load yet. Loaded again with the same arguments (`reload`,
+ * a new host), it keeps showing the previous result until the new one comes.
+ */
 export function useCall<M extends ServiceMethods, K extends keyof M & string>(method: K, args: Parameters<M[K]> | null): Loaded<Awaited<ReturnType<M[K]>>> {
   const host = useHost<M>()
   const [data, setData] = useState<Awaited<ReturnType<M[K]>> | null>(null)
@@ -74,10 +78,12 @@ export function useCall<M extends ServiceMethods, K extends keyof M & string>(me
   const [loading, setLoading] = useState(false)
   const [round, setRound] = useState(0)
   const key = args ? JSON.stringify(args) : null
+  const shown = useRef<string | null>(null)
   useEffect(() => {
     if (key === null) return
     let alive = true
-    setData(null)
+    if (shown.current !== `${method}:${key}`) setData(null)
+    shown.current = `${method}:${key}`
     setLoading(true)
     setError('')
     host
