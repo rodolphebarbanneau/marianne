@@ -63,11 +63,21 @@ export function DomainPage({ id }: { id: DomainId }) {
     <div className="page">
       <div className="page-body domain-page">
         <div className="service-head">
-          <button className="back dim" title="retour aux Démarches (échap)" aria-label="retour aux Démarches" onClick={() => app.goPage('procedures')}>
-            ←
-          </button>
-          <span className="badge">{d.badge}</span>
-          <span className="t">{capitalize(d.label)}</span>
+          {/* The way back is the domain's block, as a service's 3615 is: a click anywhere on it, as échap. */}
+          <span className="t">
+            <button
+              className="inv service-back"
+              title="retour aux Démarches (échap)"
+              aria-label="retour aux Démarches"
+              onClick={() => app.goPage('procedures')}
+            >
+              <span className="arrow" aria-hidden>
+                ←
+              </span>
+              {d.badge}
+            </button>{' '}
+            {capitalize(d.label)}
+          </span>
           <span className="small dim">{d.description}</span>
         </div>
         <div className="box-note domain-ask">
