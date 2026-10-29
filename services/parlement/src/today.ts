@@ -1,15 +1,15 @@
 import type { TodayItem } from '@marianne/sdk'
-import { AGENDA_PAGE } from './links'
+import { AGENDA_PAGE, SENATE_AGENDA_PAGE } from './links'
 import type { LiveStream, Meeting } from './types'
 
-/** The Assemblée's lines of "Aujourd'hui": its sittings and committee meetings of the day. */
+/** The Parliament's lines of "Aujourd'hui": the sittings and committee meetings of the day, in both chambers. */
 
-const SOURCE = 'Assemblée nationale'
+const SOURCES = { an: 'Assemblée nationale', se: 'Sénat' }
 
 const short = (s: string, max = 240) => (s.length > max ? `${s.slice(0, max - 1).replace(/\s+\S*$/, '')}…` : s)
 
 /** A meeting as a line of the day: a sitting by its agenda, a committee by its name. */
-export function meetingLine(m: Meeting, stream?: LiveStream): TodayItem {
+export function meetingLine(m: Meeting, live = false): TodayItem {
   const sitting = m.kind === 'sitting'
   const detail = [m.state === 'tentative' ? 'À confirmer' : '', short(m.items.join(' ; '))].filter(Boolean).join(' · ')
   return {
@@ -19,37 +19,38 @@ export function meetingLine(m: Meeting, stream?: LiveStream): TodayItem {
     start: m.start,
     ...(m.end ? { end: m.end } : {}),
     ...(m.place && !sitting ? { place: m.place } : {}),
-    url: AGENDA_PAGE,
-    ...(stream?.live ? { live: true } : {}),
+    url: m.chamber === 'se' ? SENATE_AGENDA_PAGE : AGENDA_PAGE,
+    ...(live ? { live: true } : {}),
     ...(m.state === 'cancelled' ? { cancelled: true } : {}),
-    source: SOURCE,
+    source: SOURCES[m.chamber],
     params: { meeting: m.id }
   }
 }
 
-/** A broadcast as a line of the day, when the agenda isn't indexed yet. */
+/** A broadcast as a line of the day, when the Assemblée's agenda isn't indexed yet. */
 export function streamLine(s: LiveStream): TodayItem {
   const detail = s.title || s.subject
   return {
-    id: s.meetingId,
+    id: s.id,
     title: s.organ || 'Réunion',
     ...(detail ? { detail: short(detail) } : {}),
     start: s.startAt,
     ...(s.place ? { place: s.place } : {}),
-    url: AGENDA_PAGE,
+    url: s.chamber === 'se' ? SENATE_AGENDA_PAGE : AGENDA_PAGE,
     ...(s.live ? { live: true } : {}),
-    source: SOURCE,
-    params: { meeting: s.meetingId }
+    source: SOURCES[s.chamber],
+    params: s.chamber === 'se' ? { video: `se:${s.id}` } : { meeting: s.id }
   }
 }
 
 /**
- * The lines of a day: its sittings and committee meetings from the agenda, live ones flagged;
- * without an agenda (not synced yet), today's broadcasts, the filmed part of it.
+ * The lines of a day: the sittings and committee meetings of both chambers' agendas, live ones
+ * flagged; without the Assemblée's agenda (not synced yet), its broadcasts of the day, the filmed part of it.
  */
-export function todayItems(day: string, meetings: Meeting[], streams: LiveStream[]): TodayItem[] {
+export function todayItems(day: string, meetings: Array<Meeting & { live?: boolean }>, streams: LiveStream[]): TodayItem[] {
   const agenda = meetings.filter((m) => m.kind !== 'other')
-  const live = new Map(streams.map((s) => [s.meetingId, s]))
-  if (agenda.length) return agenda.map((m) => meetingLine(m, live.get(m.id)))
-  return streams.filter((s) => s.startAt.startsWith(day)).map(streamLine)
+  const live = new Set(streams.filter((s) => s.live).map((s) => s.id))
+  const lines = agenda.map((m) => meetingLine(m, m.live || live.has(m.id)))
+  if (!agenda.some((m) => m.chamber === 'an')) lines.push(...streams.filter((s) => s.chamber === 'an' && s.startAt.startsWith(day)).map(streamLine))
+  return lines.sort((a, b) => a.start.localeCompare(b.start))
 }

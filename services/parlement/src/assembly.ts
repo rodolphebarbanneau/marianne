@@ -1,5 +1,5 @@
 import { foldText } from '@marianne/sdk'
-import type { AssemblyOrgan, Ballot, BallotVote, Deputy, Meeting, MeetingKind, MeetingState, Position } from './types'
+import type { AssemblyOrgan, Attendance, Ballot, BallotVote, Deputy, Meeting, MeetingKind, MeetingState, Position } from './types'
 
 /**
  * Assemblée nationale open data (data.assemblee-nationale.fr, JSON dumps): deputies with their
@@ -75,6 +75,7 @@ export function parseDeputy(doc: Json): Deputy | null {
     civility: str(ident.civ),
     firstName: str(ident.prenom),
     lastName: str(ident.nom),
+    seat: num(mandate.mandature?.placeHemicycle),
     groupId: str(group?.organes?.organeRef),
     department: str(place.departement),
     departmentNumber: str(place.numDepartement),
@@ -162,6 +163,43 @@ const sentence = (s: string) => {
   return t.charAt(0).toUpperCase() + t.slice(1)
 }
 
+/** Attendance as stored in the index (its position in this list). */
+export const ATTENDANCE_CODES: Attendance[] = ['present', 'excused', 'absent']
+const ATTENDANCE: Record<string, Attendance> = { présent: 'present', excusé: 'excused', absent: 'absent' }
+
+/**
+ * Who attended a committee meeting, as its minutes record it; none while they don't: every member
+ * is "absent" until the minutes are filled in, so a list without anyone present says nothing.
+ */
+export function parseAttendance(doc: Json): Array<{ deputy: string; status: Attendance }> {
+  const list = asArray(doc.reunion?.participants?.participantsInternes?.participantInterne)
+    .map((p) => ({ deputy: str(p.acteurRef), status: ATTENDANCE[str(p.presence)] }))
+    .filter((p) => p.deputy && p.status)
+  return list.some((p) => p.status === 'present') ? list : []
+}
+
+/** The rapporteurs a committee named on a legislative file (the general and main ones, not those of an opinion). */
+export function parseBill(doc: Json): { id: string; title: string; rapporteurs: Array<{ deputy: string; type: string; organ: string; date: string }> } | null {
+  const d = doc.dossierParlementaire
+  if (!d?.uid) return null
+  const rapporteurs: Array<{ deputy: string; type: string; organ: string; date: string }> = []
+  const walk = (node: unknown) => {
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (!node || typeof node !== 'object') return
+    const n = node as Json
+    if (n['@xsi:type'] === 'NominRapporteurs_Type' && /COM-FOND-NOMIN$/.test(str(n.codeActe))) {
+      for (const r of asArray(n.rapporteurs?.rapporteur)) {
+        const type = str(r.typeRapporteur)
+        if (r.acteurRef && /^rapporteur( général)?$/i.test(type))
+          rapporteurs.push({ deputy: str(r.acteurRef), type, organ: str(n.organeRef), date: str(n.dateActe).slice(0, 10) })
+      }
+    }
+    for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v)
+  }
+  walk(d.actesLegislatifs)
+  return { id: str(d.uid), title: str(d.titreDossier?.titre), rapporteurs }
+}
+
 /** One meeting of the agenda (Agenda dump, "reunion" documents); null when withdrawn. */
 export function parseMeeting(doc: Json): Meeting | null {
   const r = doc.reunion
@@ -178,6 +216,7 @@ export function parseMeeting(doc: Json): Meeting | null {
   const end = str(r.timeStampFin)
   return {
     id: str(r.uid),
+    chamber: 'an',
     kind,
     state,
     start: str(r.timeStampDebut),

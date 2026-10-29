@@ -1,19 +1,20 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { readManifest, type ServiceImpl, type SyncStatus } from '@marianne/sdk'
+import { readManifest, type Leaning, type ServiceImpl, type SyncStatus } from '@marianne/sdk'
 import { ToolError, type Commune, type HomeCommune, type ServiceContext, type ServiceRuntime } from '@marianne/sdk/main'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import pkg from '../package.json'
-import { indexDumps } from '../src/indexer'
 import { service } from '../src/main'
 import { DB_FILE, openWriter } from '../src/store'
 import { todayItems } from '../src/today'
-import type { ParlementMethods, LiveStream, Meeting } from '../src/types'
-import { dumps, fakeHttp, HEARING, SITTING } from './fixtures'
+import type { Favorites, LiveStream, Meeting, ParlementMethods } from '../src/types'
+import { buildIndex, fakeHttp, HEARING, SITTING } from './fixtures'
 
 const LIVE = 'https://www.assemblee-nationale.fr/dyn/api/live/streams'
-const SEARCH = 'https://videos.assemblee-nationale.fr/php/eventsearch.php'
+const AN_SEARCH = 'https://videos.assemblee-nationale.fr/php/eventsearch.php'
+const SENATE_SEARCH = 'https://videos.senat.fr/senat_function.php'
+const SENATE_AGENDA = 'https://www.senat.fr/api/v1/agenda/events'
 const VIDEO = '19640863_6ae1fd69f11bf'
 
 const stream = (over: Record<string, unknown>) => ({
@@ -28,10 +29,10 @@ const stream = (over: Record<string, unknown>) => ({
   ...over
 })
 
-/** The portal: a live sitting, a later one, the recording of the hearing. */
-const PORTAL = {
+/** The portals and the Sénat's agenda: a live sitting at the Assemblée, a later one, a hearing's recording; the Sénat's sitting of the day. */
+const SITES = {
   [LIVE]: JSON.stringify({ diffusions: [stream({}), stream({ isLive: false, reunionUid: 'RUANR5L17S2027IDS31005', debutDateTime: '2026-10-28 21:30:00' })] }),
-  [SEARCH]: JSON.stringify([
+  [AN_SEARCH]: JSON.stringify([
     {
       mediaId: '1',
       date: '1793195369',
@@ -41,36 +42,41 @@ const PORTAL = {
       video_type: 'C',
       commission: 'PROTECEDUC',
       title: 'Protection des personnels éducatifs',
-      url: `/${VIDEO}`
-    },
-    {
-      mediaId: '2',
-      date: '1793190000',
-      thumbnail: null,
-      published: true,
-      description: '',
-      video_type: 'C',
-      commission: 'MASCO',
-      title: 'Maillage scolaire',
-      url: '/19640983_6ae1fde90bfa0'
+      url: `/${VIDEO}?timecode=803810`
     }
   ]),
-  [`https://videos.assemblee-nationale.fr/Datas/an/${VIDEO}/content/data.nvs`]: `<data mediatitle="Protection des personnels éducatifs"><chapters><chapter id="1" label="Mme Anne Genetet, présidente"><speaker id="9"/></chapter></chapters><metadatas><metadata name="video_type" value="C"/><metadata name="meeting_id" value="${HEARING}"/></metadatas><speakers><speaker id="9"><name>Mme Anne Genetet</name><url>721024</url></speaker></speakers></data>`,
+  [`https://videos.assemblee-nationale.fr/Datas/an/${VIDEO}/content/data.nvs`]: `<data mediatitle="Protection des personnels éducatifs"><chapters><chapter id="1" label="M. Thierry Tesson"><speaker id="9"/></chapter></chapters><metadatas><metadata name="video_type" value="C"/><metadata name="meeting_id" value="${HEARING}"/></metadatas><speakers><speaker id="9"><name>M. Thierry Tesson</name><url>841553</url></speaker></speakers></data>`,
   [`https://videos.assemblee-nationale.fr/Datas/an/${VIDEO}/content/finalplayer.nvs`]: '<player endtime="600000"><synchro id="1" timecode="803810"/></player>',
   [`https://videos.assemblee-nationale.fr/Datas/an/${VIDEO}/meta-files/vodalys.smil`]:
-    '<smil><body><video src="mp4/ida/mp4:domain1/2026/10/debr_1.mp4"/></body></smil>'
+    '<smil><body><video src="mp4/ida/mp4:domain1/2026/10/debr_1.mp4"/></body></smil>',
+  [SENATE_SEARCH]: JSON.stringify([]),
+  [SENATE_AGENDA]: JSON.stringify({
+    '2026-10-28': {
+      events: [
+        {
+          id: 559710,
+          date: '2026-10-28',
+          hour: '14h30',
+          title: 'Suite PJL Protection des enfants',
+          place: 'Hémicycle',
+          instances: ['Séance publique'],
+          public: true
+        }
+      ]
+    }
+  })
 }
 
-const BORDEAUX: Commune = {
-  code: '33063',
-  name: 'Bordeaux',
-  postalCodes: ['33000'],
+const GIRONDE: Commune = {
+  code: '33119',
+  name: 'Cenon',
+  postalCodes: ['33150'],
   department: '33',
   departmentName: 'Gironde',
   region: '75',
-  population: 260_000,
-  longitude: -0.58,
-  latitude: 44.84
+  population: 25_000,
+  longitude: -0.53,
+  latitude: 44.86
 }
 
 let dir: string
@@ -78,24 +84,29 @@ let home: HomeCommune | null
 let status: SyncStatus
 let runs: number
 let runFails: boolean
-let geoFails: boolean
+let granted: { leaning?: Leaning; themes?: string[] }
+let stored: Map<string, unknown>
 
 function context(): ServiceContext {
+  const http = fakeHttp(SITES)
   return {
     manifest: readManifest(pkg),
-    http: { json: async () => ({}) as never, text: fakeHttp(PORTAL).text, page: async () => '' },
+    http: { json: async (url) => JSON.parse(await http.text(url)) as never, text: http.text, page: async () => '' },
     log: { info: () => undefined, warn: () => undefined, error: () => undefined },
-    storage: { get: () => null, set: () => undefined, remove: () => undefined },
-    dataDir: join(dir, 'data'),
-    geo: {
-      findCommunes: async () => [],
-      getCommune: async (code) => {
-        if (geoFails) throw new Error('geo is off')
-        return code === BORDEAUX.code ? BORDEAUX : null
-      }
+    storage: {
+      get: <T>(key: string) => (stored.get(key) as T) ?? null,
+      set: (key, value) => void stored.set(key, value),
+      remove: (key) => void stored.delete(key)
     },
+    dataDir: join(dir, 'data'),
+    geo: { findCommunes: async () => [], getCommune: async (code) => (code === GIRONDE.code ? GIRONDE : null) },
     home: () => home,
-    profile: { granted: () => [], vehicles: () => [] },
+    profile: {
+      granted: () => [...(granted.leaning ? (['opinions.leaning'] as const) : []), ...(granted.themes ? (['opinions.themes'] as const) : [])],
+      vehicles: () => [],
+      leaning: () => granted.leaning ?? null,
+      themes: () => granted.themes ?? []
+    },
     sync: {
       status: () => status,
       run: async () => {
@@ -106,11 +117,11 @@ function context(): ServiceContext {
   }
 }
 
-/** The data folder filled as a sync would. */
+/** The data folder filled as a first sync would. */
 function synced(): void {
   mkdirSync(join(dir, 'data'), { recursive: true })
   const { db } = openWriter(join(dir, 'data', DB_FILE))
-  indexDumps(db, dumps(), { reset: true })
+  buildIndex(db)
   db.close()
 }
 
@@ -121,11 +132,12 @@ const call = (name: string, args: Record<string, unknown> = {}) => tool(name).ru
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'marianne-parlement-service-'))
-  home = { code: BORDEAUX.code, name: 'Bordeaux', postcode: '33000' }
+  home = { code: GIRONDE.code, name: 'Cenon', postcode: '33150' }
   status = {}
   runs = 0
   runFails = false
-  geoFails = false
+  granted = {}
+  stored = new Map()
   vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-28T19:00:00Z') })
   runtime = service.activate(context())
   methods = runtime.methods as ServiceImpl<ParlementMethods>
@@ -138,12 +150,18 @@ afterEach(() => {
 })
 
 describe('the service', () => {
-  it('declares a valid manifest, a daily sync, its tools, guide and instructions', () => {
-    expect(readManifest(pkg)).toMatchObject({ id: 'parlement', name: 'Parlement', category: 'democracy', links: ['https://videos.assemblee-nationale.fr/'] })
+  it('declares a valid manifest, a daily sync, its tools, guide, instructions, and what it asks to read', () => {
+    expect(readManifest(pkg)).toMatchObject({
+      id: 'parlement',
+      name: 'Parlement',
+      category: 'democracy',
+      links: ['https://videos.assemblee-nationale.fr/', 'https://videos.senat.fr/'],
+      permissions: { profile: ['opinions.leaning', 'opinions.themes'] }
+    })
     expect(service.sync).toEqual({ everyHours: 24 })
     expect(runtime.tools!.map((t) => [t.name, t.label])).toEqual([
-      ['deputies', 'députés'],
-      ['deputy', 'député'],
+      ['members', 'élus'],
+      ['member', 'élu'],
       ['ballots', 'scrutins'],
       ['ballot', 'scrutin'],
       ['agenda', 'agenda'],
@@ -153,29 +171,28 @@ describe('the service', () => {
     ])
     expect(runtime.tools!.every((t) => t.readOnly)).toBe(true)
     const guide = runtime.skills![0]
-    expect(guide).toMatch(/^---\nname: national-assembly\n/)
+    expect(guide).toMatch(/^---\nname: parliament\n/)
     const named = guide.match(/`parlement_[a-z]+`/g) ?? []
     expect(named.length).toBeGreaterThan(0)
     for (const name of named) expect(runtime.tools!.map((t) => `\`parlement_${t.name}\``)).toContain(name)
-    expect(guide).not.toMatch(/`(depute|deputes|scrutins?|videos_assemblee|video_assemblee|direct_assemblee)`/)
     expect(runtime.instructions).toContain('?timecode=<milliseconds>')
   })
 })
 
 describe('before the first sync', () => {
   it('tells the model the data is missing and how the user gets it', async () => {
-    for (const name of ['deputies', 'deputy', 'ballots', 'ballot', 'agenda']) {
-      const failure = call(name, { department: '33', deputy: 'David', ballot: 1 })
+    for (const name of ['members', 'member', 'ballots', 'ballot']) {
+      const failure = call(name, { department: '33', member: 'David', ballot: 1 })
       await expect(failure).rejects.toBeInstanceOf(ToolError)
       await expect(failure).rejects.toThrow(/3615 PARLEMENT/)
     }
     status = { running: { phase: 'download', done: 1, total: 2 } }
-    await expect(call('deputies', { department: '33' })).rejects.toThrow(/being downloaded/)
+    await expect(call('members', { department: '33' })).rejects.toThrow(/being downloaded/)
   })
 
   it('shows the view a status to act on, and starts a sync on demand', async () => {
-    expect(await methods.status()).toEqual({ ready: false, deputies: 0, ballots: 0, meetings: 0, sync: {} })
-    expect(() => methods.deputies({ department: '33' })).toThrow(/pas encore téléchargées/)
+    expect(await methods.status()).toEqual({ ready: false, deputies: 0, senators: 0, ballots: 0, meetings: 0, sync: {} })
+    expect(() => methods.members({ department: '33' })).toThrow(/pas encore téléchargées/)
     status = { running: { phase: 'download', done: 0, total: 0 } }
     expect((await methods.sync()).sync.running).toBeDefined()
     expect(runs).toBe(1)
@@ -187,16 +204,16 @@ describe('before the first sync', () => {
     await vi.waitFor(async () => expect((await methods.status()).sync.error).toMatch(/No sync job/))
   })
 
-  it('gives today’s broadcasts as the lines of the day', async () => {
+  it('gives today’s broadcasts and the Sénat’s agenda as the lines of the day', async () => {
     const items = await runtime.today!('2026-10-28')
-    expect(items.map((i) => [i.id, i.title, i.start, i.live, i.params])).toEqual([
-      [SITTING, 'Séance publique', '2026-10-28T14:00:00+01:00', true, { meeting: SITTING }],
-      ['RUANR5L17S2027IDS31005', 'Séance publique', '2026-10-28T21:30:00+01:00', undefined, { meeting: 'RUANR5L17S2027IDS31005' }]
+    expect(items.map((i) => [i.id, i.source, i.start, i.live])).toEqual([
+      [SITTING, 'Assemblée nationale', '2026-10-28T14:00:00+01:00', true],
+      ['SE-559710', 'Sénat', '2026-10-28T14:30:00+01:00', undefined],
+      ['RUANR5L17S2027IDS31005', 'Assemblée nationale', '2026-10-28T21:30:00+01:00', undefined]
     ])
-    expect(items.every((i) => i.source === 'Assemblée nationale')).toBe(true)
     // A meeting known only from its broadcast still opens.
     expect((await methods.meeting(SITTING)).meeting).toMatchObject({ kind: 'sitting', organ: 'Séance publique', items: ['Questions au Gouvernement'] })
-    expect((await methods.agenda('2026-10-28')).indexed).toBe(false)
+    expect((await methods.agenda('2026-10-28', 1)).indexed).toBe(false)
   })
 })
 
@@ -206,157 +223,193 @@ describe('once synced', () => {
     runtime.synced!()
   })
 
-  it('lists deputies for the model, the user’s own from their address', async () => {
-    expect(await call('deputies', { department: '33', limit: 30 })).toBe(
-      '1 sitting deputy:\n\n| deputy | group | département | constituency | id |\n| --- | --- | --- | --- | --- |\n| M. Alain David | SOC | Gironde (33) | 4 | PA1008 |'
-    )
-    expect(await call('deputies', { mine: true, limit: 30 })).toContain("département of the user's address: Gironde (33)")
-    geoFails = true
-    expect(await call('deputies', { mine: true, limit: 30 })).toContain('PA1008')
+  it('finds the user’s deputy from their commune, their senators from their département', async () => {
+    const mine = await methods.mine()
+    expect(mine).toMatchObject({ commune: { name: 'Cenon', code: '33119', department: '33' }, exact: true, leaning: null, themes: [] })
+    expect(mine.deputies.map((d) => d.id)).toEqual(['PA1008'])
+    expect(mine.senators.map((s) => s.id)).toEqual(['21000A'])
+  })
+
+  it('finds the deputy of a split commune from the address’s coordinates, and says when it can’t', async () => {
+    home = { code: '35238', name: 'Rennes', postcode: '35000', latitude: 48.105, longitude: -1.67 }
+    expect((await methods.mine()).deputies.map((d) => d.id)).toEqual(['PA3508'])
+    home = { code: '35238', name: 'Rennes', postcode: '35000' }
+    const unsure = await methods.mine()
+    expect(unsure.exact).toBe(false)
+    expect(unsure.deputies.map((d) => d.id)).toEqual(['PA3501', 'PA3508'])
     home = null
-    await expect(call('deputies', { mine: true, limit: 30 })).rejects.toThrow(/Settings → Identity/)
-    await expect(call('deputies', { limit: 30 })).rejects.toThrow(/Give a name/)
-    await expect(call('deputies', { group: 'personne', limit: 30 })).rejects.toThrow(/No sitting deputy/)
+    expect(await methods.mine()).toMatchObject({ commune: null, deputies: [], senators: [] })
   })
 
-  it('gives a deputy’s profile, and asks which one when several match', async () => {
-    const profile = await call('deputy', { deputy: 'Tesson', votes: 12 })
-    expect(profile).toContain('# M. Thierry Tesson (PA841553)')
-    expect(profile).toContain('Rassemblement National (RN) · Nord (59), constituency 17 · deputy since 2024-07-08')
-    expect(profile).toContain('- Rapporteur · Mission d’information sur la protection des personnels éducatifs')
-    expect(profile).toContain('Took part in 1 of the 2 public ballots')
-    expect(profile).toContain('| 2026-10-22 | no. 9000 |')
-    expect(profile).toContain('| rejeté | against (by proxy) |')
-    await expect(call('deputy', { deputy: 'd', votes: 12 })).rejects.toThrow(
-      /Several sitting deputies match "d": M\. Alain David \(PA1008, Gironde, SOC\); M\. Jean-Paul Dupuis/
-    )
-    await expect(call('deputy', { deputy: 'PA9', votes: 12 })).rejects.toThrow(/No sitting deputy/)
+  it('gives the lens and the themes only when the user let it read them', async () => {
+    granted = { leaning: { assembly: ['SOC'], senate: ['SER'] }, themes: ['health'] }
+    expect(await methods.mine()).toMatchObject({ leaning: { an: ['SOC'], se: ['SER'] }, themes: ['health'] })
   })
 
-  it('searches ballots with a deputy’s votes, and details one', async () => {
-    const found = await call('ballots', { text: 'projet de loi', deputy: 'PA2', final: false, limit: 15 })
-    expect(found).toContain('2 public ballots · with the vote of M. Jean-Paul Dupuis (PA2), newest first:')
-    expect(found).toContain(
-      "| 2026-10-23 | 9097 | l'ensemble du projet de loi de finances pour 2027 (première lecture) | adopté | abstention | https://www.assemblee-nationale.fr/dyn/17/scrutins/9097 |"
-    )
-    expect(found).toContain('| rejeté | did not take part |')
-    await expect(call('ballots', { text: 'introuvable', final: false, limit: 15 })).rejects.toThrow(/No public ballot found for "introuvable"/)
-    const detail = await call('ballot', { ballot: 9000, deputy: 'Tesson' })
-    expect(detail).toContain('# Ballot no. 9000 of 2026-10-22 (VTANR5L17V9000)')
-    expect(detail).toContain('legislative file: Projet de loi de finances pour 2027 (DLR5L17N54629)')
-    expect(detail).toContain('Vote of M. Thierry Tesson (PA841553): **against (by proxy)**')
-    expect(detail).toContain('| SOC | 100 | for | 1 | 0 | 0 | 0 |')
-    await expect(call('ballot', { ballot: '1' })).rejects.toThrow(/No public ballot 1/)
-  })
-
-  it('gives the agenda of a day, live sittings flagged', async () => {
-    const agenda = await call('agenda', { day: '2026-10-28' })
-    expect(agenda).toContain('# Agenda of the Assemblée nationale, 2026-10-28 (Paris time)')
-    expect(agenda).toContain(`- 14:00 · **Public sitting** · LIVE NOW · filmed · id ${SITTING}\n  - Questions au Gouvernement`)
-    expect(agenda).toContain('**Commission de la défense nationale et des forces armées** · CANCELLED')
-    expect(agenda).toContain('· tentative ·')
-    expect(await call('agenda', { day: '2026-10-28', kind: 'committee', text: 'paty' })).toContain(`15:00–17:00 · **Mission d’information`)
-    expect(await call('agenda', { day: '2026-10-30' })).toBe('Nothing on the agenda of the Assemblée nationale on 2026-10-30.')
-  })
-
-  it('gives the videos, a video’s chapters and what is live', async () => {
-    expect(await call('videos', { limit: 15 })).toContain(`https://videos.assemblee-nationale.fr/video.${VIDEO}`)
-    const video = await call('video', { video: `https://videos.assemblee-nationale.fr/video.${VIDEO}?timecode=5` })
-    expect(video).toContain(`- [13:23](https://videos.assemblee-nationale.fr/video.${VIDEO}?timecode=803810) Mme Anne Genetet, présidente (PA721024)`)
-    await expect(call('video', { video: 'nope' })).rejects.toThrow(/not a video/)
-    const live = await call('live')
-    expect(live).toContain(`# Live now\n\n- Séance publique · since 2026-10-28 14:00 · meeting ${SITTING}`)
-    expect(live).toContain('# Later today')
-  })
-
-  it('answers the view', async () => {
-    expect(await methods.status()).toMatchObject({ ready: true, deputies: 3, ballots: 2, meetings: 6 })
-    expect(await methods.myDeputies()).toMatchObject({
-      commune: { name: 'Bordeaux', department: '33', departmentName: 'Gironde' },
-      deputies: [{ id: 'PA1008' }]
+  it('gives a member’s profile: roles, votes of the last 30 days, how they vote', async () => {
+    const p = await methods.member('an', 'PA1008')
+    expect(p).toMatchObject({
+      name: 'M. Alain David',
+      groupShort: 'SOC',
+      constituency: '4',
+      roles: [{ organ: 'Commission de la défense nationale et des forces armées', role: 'Président' }]
     })
-    home = null
-    expect(await methods.myDeputies()).toEqual({ commune: null, deputies: [] })
-    expect((await methods.group('PO845419')).members.map((d) => d.id)).toEqual(['PA1008', 'PA2'])
-    expect((await methods.ballot('9000', ['PA1008'])).votes).toMatchObject([{ deputy: { id: 'PA1008' }, position: 'for' }])
-    expect(() => methods.deputy('PA9')).toThrow(/Aucun député/)
-    const agenda = await methods.agenda('2026-10-28')
-    expect(agenda.meetings.find((m) => m.id === SITTING)?.live).toBe(true)
-    expect(agenda.streams).toHaveLength(2)
-    expect((await methods.agenda('2026-10-29')).streams).toEqual([])
-    const hearing = await methods.meeting(HEARING)
-    expect(hearing.stream).toBeNull()
-    expect(hearing.videos.map((v) => v.id)).toEqual([VIDEO])
-    expect(await methods.video(`https://videos.assemblee-nationale.fr/video.${VIDEO}?timecode=803810`)).toMatchObject({ id: VIDEO, timecode: 803810 })
-  })
-
-  it('gives its lines of the day: sittings and committees, live and cancelled ones flagged', async () => {
-    const items = await runtime.today!('2026-10-28')
-    expect(items.map((i) => [i.title, i.live ?? false, i.cancelled ?? false])).toEqual([
-      ['Commission de la défense nationale et des forces armées', false, true],
-      ['Séance publique', true, false],
-      ['Mission d’information sur la protection des personnels éducatifs', false, false],
-      ['Commission de la défense nationale et des forces armées', false, false]
+    expect(p.recent.map((r) => [r.ballot.number, r.vote.position])).toEqual([
+      [9000, 'against'],
+      [9097, 'abstention']
     ])
-    expect(items[1]).toMatchObject({
-      id: SITTING,
-      detail: 'Questions au Gouvernement ; Suite de la discussion du projet de loi de finances pour 2027',
-      start: '2026-10-28T14:00:00.000+01:00',
-      url: 'https://www2.assemblee-nationale.fr/agendas/les-agendas',
-      source: 'Assemblée nationale',
-      params: { meeting: SITTING }
+    expect(p.analysis).toMatchObject({ voted: 2, ballots: 2, loyal: 2 })
+    const senator = await methods.member('se', '21089R')
+    expect(senator).toMatchObject({
+      chamber: 'se',
+      roles: [{ organ: 'Commission de la culture, de l’éducation, de la communication et du sport', role: 'Membre' }]
     })
-    expect(items[1].place).toBeUndefined()
-    expect(items[2]).toMatchObject({ place: 'salle 4088, 9 rue de Bourgogne', end: '2026-10-28T17:00:00.000+01:00' })
-    expect(items[3].detail).toBe('À confirmer · Examen pour avis')
-    expect((await runtime.today!('2026-10-29')).map((i) => i.live)).toEqual([undefined])
+    await expect(async () => methods.member('an', 'PA404')).rejects.toThrow(/Aucun député/)
+  })
+
+  it('draws each hemicycle: seats, groups from left to right, and how everyone voted in a ballot', async () => {
+    const an = await methods.hemicycle('an')
+    expect(an.groups.map((g) => g.shortName)).toEqual(['SOC', 'RN'])
+    expect(an.seats.find((s) => s.member === 'PA841553')).toEqual({
+      seat: 72,
+      member: 'PA841553',
+      name: 'M. Thierry Tesson',
+      groupId: 'PO845401',
+      place: 'Nord · 17e circ.'
+    })
+    expect(await methods.votes('an', 'VTANR5L17V9000')).toEqual({ PA1008: 'c', PA3501: 'p', PA3508: 'c', PA841553: 'P' })
+    expect(await methods.votes('se', 'SE2026-2')).toEqual({ '21089R': 'c', '20032U': 'p', '21000A': 'a' })
+  })
+
+  it('gives the day: ballots by bill in both chambers, with their authors, and who took part', async () => {
+    const day = await methods.day('2026-10-28')
+    expect(day.bills.map((b) => [b.chamber, b.title, b.ballots.map((l) => l.number)])).toEqual([
+      ['an', 'Projet de loi de finances pour 2027', [9097]],
+      ['se', 'Projet de loi relatif à la protection des enfants', [1, 2]]
+    ])
+    const [amendment] = day.bills[1].ballots
+    expect(amendment).toMatchObject({
+      kind: 'amendment',
+      amendment: '12',
+      author: { id: '21089R', name: 'Mme Colombe Brossel', groupShort: 'SER' },
+      adopted: false,
+      for: 2,
+      against: 1
+    })
+    expect(day.bills[0].ballots[0].sittingStart).toBe('2026-10-28T14:00:00.000+01:00')
+    expect(day.proxies).toBe(1)
+    const presence = await methods.presence('2026-10-28')
+    expect(presence.PA3508).toEqual({ voted: 1, proxy: 1, ballots: 1, committees: [] })
+    expect(presence.PA841553.committees).toEqual([
+      { meeting: HEARING, organ: 'Mission d’information sur la protection des personnels éducatifs', start: '2026-10-28T15:00:00.000+01:00', status: 'present' }
+    ])
+  })
+
+  it('details a ballot: its groups, the votes asked for, those who voted otherwise than their group', async () => {
+    const b = await methods.ballot('an', '9000', ['PA1008', 'PA2'])
+    expect(b.groups.map((g) => [g.shortName, g.position, g.for, g.against])).toEqual([
+      ['SOC', 'against', 1, 2],
+      ['RN', 'for', 1, 0]
+    ])
+    expect(b.votes.map((v) => [v.member.id, v.vote.position, v.groupPosition])).toEqual([
+      ['PA1008', 'against', 'against'],
+      ['PA2', null, 'against']
+    ])
+    expect(b.dissidents.map((d) => [d.member.id, d.position])).toEqual([['PA3501', 'for']])
+    expect(b).toMatchObject({
+      author: { name: 'M. Thierry Tesson', groupShort: 'RN' },
+      proxies: 1,
+      url: 'https://www.assemblee-nationale.fr/dyn/17/scrutins/9000'
+    })
+    expect(await methods.positions('an', ['VTANR5L17V9000', 'VTANR5L17V9097'], ['PA3508'])).toEqual({
+      PA3508: { VTANR5L17V9000: { position: 'against', proxy: false }, VTANR5L17V9097: { position: 'for', proxy: true } }
+    })
+  })
+
+  it('analyses how members vote, by the colour of the amendments, and who votes like a group', async () => {
+    const a = await methods.analysis('an', ['PA1008'], '2026-10-01', '2026-10-28')
+    expect(a.ballots).toBe(2)
+    expect(a.members[0].byAuthor).toEqual({ PO845401: { for: 0, against: 1, abstention: 0, n: 1 } })
+    expect(a.groups.PO845419).toEqual({ PO845401: { for: 0, against: 1, abstention: 0, n: 1 } })
+    // Too few ballots in common to tell: nobody.
+    expect(await methods.agreement('an', { group: 'RN' }, 30)).toEqual({})
+    expect(await methods.agreement('an', { group: 'XYZ' }, 30)).toEqual({})
+  })
+
+  it('suggests members to follow, saying why, never one already followed', async () => {
+    granted = { themes: ['health'] }
+    stored.set('favorites', { members: [], groups: [] } satisfies Favorites)
+    const found = await methods.suggestions()
+    // The bill voted on this week: its rapporteur.
+    expect(found.map((s) => [s.member.id, s.kind])).toEqual([['PA841553', 'rapporteur']])
+    expect(found[0].why).toBe('rapporteur général du texte de la semaine (Projet de loi de finances pour 2027)')
+    stored.set('favorites', { members: ['PA841553'], groups: [] } satisfies Favorites)
+    expect(await methods.suggestions()).toEqual([])
+  })
+
+  it('answers the model: members, a profile, ballots with a member’s votes, a ballot, the agenda', async () => {
+    expect(await call('members', { department: '33', limit: 30 })).toContain('| M. Alain David | Assemblée | SOC | Gironde (33) | 4 | PA1008 |')
+    expect(await call('members', { mine: true, limit: 30 })).toContain('Hervé Gillé')
+    expect(await call('member', { member: 'Tesson' })).toContain('# M. Thierry Tesson (PA841553)')
+    await expect(call('member', { member: 'zzz' })).rejects.toThrow(/No member/)
+    const ballots = await call('ballots', { text: 'protection des enfants', member: 'Brossel' })
+    expect(ballots).toContain('Mme Colombe Brossel (21089R)')
+    expect(ballots).toContain('| Sénat | 2026-10-28 | 1 |')
+    expect(await call('ballot', { ballot: 'SE2026-1' })).toContain('tabled by: Mme Colombe Brossel (SER)')
+    await expect(call('ballot', { ballot: 404 })).rejects.toThrow(/No public ballot 404/)
+    const agenda = await call('agenda', { day: '2026-10-28', chamber: 'senat' })
+    expect(agenda).toContain('Sénat · public sitting')
+    expect(agenda).not.toContain('Assemblée')
+  })
+
+  it('gives its lines of the day: both chambers’ sittings and committees, live and cancelled ones flagged', async () => {
+    const items = await runtime.today!('2026-10-28')
+    expect(items.map((i) => [i.title, i.source, i.live ?? false, i.cancelled ?? false])).toEqual([
+      ['Commission de la défense nationale et des forces armées', 'Assemblée nationale', false, true],
+      ['Séance publique', 'Assemblée nationale', true, false],
+      ['Séance publique', 'Sénat', false, false],
+      ['Mission d’information sur la protection des personnels éducatifs', 'Assemblée nationale', false, false],
+      ['Commission de la défense nationale et des forces armées', 'Assemblée nationale', false, false]
+    ])
   })
 })
 
 describe('today’s lines', () => {
+  const meeting = (over: Partial<Meeting>): Meeting => ({
+    id: 'M1',
+    chamber: 'an',
+    kind: 'committee',
+    state: 'confirmed',
+    start: '2026-10-28T10:00:00+01:00',
+    organId: 'PO1',
+    organ: 'Commission des finances',
+    place: 'salle 6350',
+    items: ['Audition du gouverneur de la Banque de France'],
+    video: true,
+    ...over
+  })
   const live: LiveStream = {
-    meetingId: 'RUX',
-    organ: 'Commission des affaires sociales',
-    start: 'mercredi 28 octobre 2026 à 09h30',
-    startAt: '2026-10-28T09:30:00+01:00',
+    id: 'S1',
+    chamber: 'an',
+    organ: 'Séance publique',
+    start: 'mercredi 28 octobre 2026 à 15h00',
+    startAt: '2026-10-28T15:00:00+01:00',
     title: '',
-    subject: 'Audition',
-    place: 'Salle 6351',
+    subject: 'Questions au Gouvernement',
+    place: '',
     live: true,
-    hls: 'https://videos.assemblee-nationale.fr/live/live1/playlist1.m3u8',
-    poster: ''
+    hls: 'https://x/live.m3u8',
+    poster: '',
+    url: ''
   }
 
-  it('fall back on the day’s broadcasts without an agenda', () => {
-    expect(todayItems('2026-10-28', [], [live, { ...live, meetingId: 'RUY', startAt: '2026-10-29T09:30:00+01:00' }])).toEqual([
-      {
-        id: 'RUX',
-        title: 'Commission des affaires sociales',
-        detail: 'Audition',
-        start: '2026-10-28T09:30:00+01:00',
-        place: 'Salle 6351',
-        url: 'https://www2.assemblee-nationale.fr/agendas/les-agendas',
-        live: true,
-        source: 'Assemblée nationale',
-        params: { meeting: 'RUX' }
-      }
-    ])
+  it('fall back on the Assemblée’s broadcasts without its agenda', () => {
+    expect(todayItems('2026-10-28', [], [live]).map((i) => [i.id, i.title, i.live, i.params])).toEqual([['S1', 'Séance publique', true, { meeting: 'S1' }]])
+    expect(todayItems('2026-10-28', [meeting({})], [live]).map((i) => i.id)).toEqual(['M1'])
   })
 
   it('cut a long agenda', () => {
-    const m: Meeting = {
-      id: 'RUZ',
-      kind: 'committee',
-      state: 'confirmed',
-      start: '2026-10-28T09:30:00+01:00',
-      organId: '',
-      place: '',
-      items: ['mot '.repeat(100)],
-      video: false
-    }
-    const [item] = todayItems('2026-10-28', [m], [])
-    expect(item.title).toBe('Réunion de commission')
-    expect(item.detail!.length).toBeLessThanOrEqual(240)
-    expect(item.detail!.endsWith('…')).toBe(true)
+    const long = todayItems('2026-10-28', [meeting({ items: ['x '.repeat(400)] })], [])
+    expect(long[0].detail!.length).toBeLessThanOrEqual(240)
   })
 })

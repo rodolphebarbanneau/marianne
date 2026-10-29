@@ -1,35 +1,39 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useHost, useStored } from '@marianne/sdk/view'
-import { parseVideoRef } from './links'
-import type { ParlementMethods, Clips, DeputyCard, Favorites } from './types'
+import { parseVideoRef, videoKey } from './links'
+import type { Clips, Favorites, ParlementMethods, Shelf, VideoItem } from './types'
+import { AgendaTab, MeetingPane } from './ui/agenda'
 import { BallotPane, BallotsTab } from './ui/ballots'
-import { ClipsTab } from './ui/clips'
-import { NavContext, StoreContext, useMethod, type Nav, type Store, type Tab, type Target } from './ui/common'
-import { DataLine, DataProvider, NeedsData, useData } from './ui/data'
-import { DeputyPane, FavoritesTab, GroupPane, MineTab } from './ui/deputies'
-import { MeetingPane, TodayTab } from './ui/today'
+import { LensIcon, NavContext, StoreContext, useMethod, type Chambers, type Nav, type Prefs, type Store, type Tab, type Target } from './ui/common'
+import { DataLine, DataProvider, useData } from './ui/data'
+import { HemicycleTab } from './ui/hemicycle'
+import { HomeTab } from './ui/home'
+import { GroupPane, MemberPane, MembersTab } from './ui/members'
 import { DEFAULT_SEARCH, LivePane, VideoPane, VideosTab, type VideoSearch } from './ui/videos'
 import './view.css'
 
 /**
- * 3615 PARLEMENT's screen: the agenda and what is live, the user's deputies and favorites, the
- * public ballots, the videos and the passages the user kept. A deputy, a ballot, a meeting or a
- * video opens over the tabs, with a way back.
+ * 3615 PARLEMENT's screen: the user's members and the day at the Parlement, the hemicycles, the
+ * public ballots, the members, the videos and the agenda of both chambers. A member, a ballot, a
+ * meeting or a video opens over the tabs, with a way back. "◐ mes idées" compares with the leaning
+ * the user declared (only when they did, and let the service read it).
  */
 
-const NO_FAVORITES: Favorites = { deputies: [], groups: [] }
+const NO_FAVORITES: Favorites = { members: [], groups: [] }
 const NO_CLIPS: Clips = { items: [] }
+const NO_SHELF: Shelf = { pinned: [], starred: [], progress: {} }
+const NO_VIDEOS: { items: Record<string, VideoItem> } = { items: {} }
+const DEFAULT_PREFS: Prefs = { lens: true, style: 'dots' }
 
 /** What the screen opens on: a portal link (a video cited in an answer), a video at a passage, a meeting of "Aujourd'hui". */
 function opening(params: Record<string, string | number>): { tab: Tab; stack: Target[] } {
-  const ref = typeof params.url === 'string' ? parseVideoRef(params.url) : null
-  if (ref) return { tab: 'videos', stack: [{ kind: 'video', id: ref.id, ...(ref.timecode ? { start: ref.timecode } : {}) }] }
+  if (typeof params.url === 'string' && parseVideoRef(params.url)) return { tab: 'videos', stack: [{ kind: 'video', ref: params.url }] }
   if (params.video) {
     const start = Number(params.start)
-    return { tab: 'videos', stack: [{ kind: 'video', id: String(params.video), ...(start > 0 ? { start } : {}) }] }
+    return { tab: 'videos', stack: [{ kind: 'video', ref: String(params.video), ...(start > 0 ? { start } : {}) }] }
   }
-  if (params.meeting) return { tab: 'today', stack: [{ kind: 'meeting', id: String(params.meeting) }] }
-  return { tab: 'today', stack: [] }
+  if (params.meeting) return { tab: 'agenda', stack: [{ kind: 'meeting', id: String(params.meeting) }] }
+  return { tab: 'home', stack: [] }
 }
 
 export function View() {
@@ -42,60 +46,121 @@ export function View() {
   )
 }
 
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: 'home', label: 'accueil' },
+  { id: 'hemicycle', label: 'hémicycle' },
+  { id: 'ballots', label: 'scrutins' },
+  { id: 'members', label: 'élus' },
+  { id: 'videos', label: 'vidéos' },
+  { id: 'agenda', label: 'agenda' }
+]
+
 function Screen() {
   const host = useHost<ParlementMethods>()
   const { status } = useData()
   const [{ tab, stack }, setView] = useState(() => opening(host.params))
+  const [chambers, setChambers] = useState<Chambers>('both')
   const [videoSearch, setVideoSearch] = useState<VideoSearch>(DEFAULT_SEARCH)
-  const [favorites, setFavorites] = useStored<Favorites>('favorites', NO_FAVORITES)
+  const [favorites, setFavorites] = useStored<Favorites & { deputies?: string[] }>('favorites', NO_FAVORITES)
   const [clips, setClips] = useStored<Clips>('clips', NO_CLIPS)
+  const [shelf, setShelf] = useStored<Shelf>('shelf', NO_SHELF)
+  const [kept, setKept] = useStored('shelf-videos', NO_VIDEOS)
+  const [prefs, setPrefs] = useStored<Prefs>('prefs', DEFAULT_PREFS)
+
+  // Favorites of 3615 ASSEMBLEE: deputies only.
+  useEffect(() => {
+    if (favorites.deputies?.length) setFavorites({ members: [...new Set([...favorites.members, ...favorites.deputies])], deputies: undefined })
+  }, [favorites, setFavorites])
 
   const ready = !!status?.ready
-  const mine = useMethod('myDeputies', ready && host.home ? [] : null)
-  const starred = useMethod('deputies', ready && favorites.deputies.length ? [{ ids: favorites.deputies }] : null)
-  const followed = useMemo(() => {
-    const all = [...(host.home ? (mine.data?.deputies ?? []) : []), ...(starred.data ?? []).filter((d) => favorites.deputies.includes(d.id))]
-    return [...new Map(all.map((d): [string, DeputyCard] => [d.id, d])).values()]
-  }, [host.home, mine.data, starred.data, favorites.deputies])
+  const mine = useMethod('mine', ready ? [] : null)
 
   const nav = useMemo<Nav>(
     () => ({
       open: (target) => setView((v) => ({ ...v, stack: [...v.stack, target] })),
+      tab: (id) => setView({ tab: id, stack: [] }),
       searchVideos: (query) => {
-        setVideoSearch({ ...DEFAULT_SEARCH, days: 30, ...query, text: query.text ?? '', speaker: query.speaker ?? '' })
+        setVideoSearch({
+          ...DEFAULT_SEARCH,
+          days: 30,
+          text: query.speaker ?? query.text ?? '',
+          speaker: !!query.speaker,
+          ...(query.type ? { type: query.type } : {}),
+          ...(query.chamber ? { chamber: query.chamber } : {})
+        })
         setView({ tab: 'videos', stack: [] })
-      }
+      },
+      chambers,
+      shows: (chamber) => chambers === 'both' || chambers === chamber
     }),
-    []
+    [chambers]
   )
   const store = useMemo<Store>(
-    () => ({ favorites, setFavorites, clips: clips.items, setClips: (items) => setClips({ items }), followed }),
-    [favorites, setFavorites, clips, setClips, followed]
+    () => ({
+      favorites: { members: favorites.members, groups: favorites.groups },
+      setFavorites,
+      clips: clips.items,
+      setClips: (items) => setClips({ items }),
+      shelf,
+      setShelf,
+      videos: kept.items,
+      keepVideo: (v) => {
+        const key = videoKey(v.chamber, v.id)
+        if (!kept.items[key]) setKept({ items: { ...kept.items, [key]: { ...v, timecode: undefined, live: undefined } } })
+      },
+      prefs,
+      setPrefs,
+      mine: mine.data
+    }),
+    [favorites, setFavorites, clips, setClips, shelf, setShelf, kept, setKept, prefs, setPrefs, mine.data]
   )
 
-  const tabs: Array<{ id: Tab; label: string }> = [
-    { id: 'today', label: 'aujourd’hui' },
-    { id: 'mine', label: 'mes députés' },
-    {
-      id: 'favorites',
-      label: `favoris${favorites.deputies.length + favorites.groups.length ? ` (${favorites.deputies.length + favorites.groups.length})` : ''}`
-    },
-    { id: 'ballots', label: 'scrutins' },
-    { id: 'videos', label: 'vidéos' },
-    { id: 'clips', label: `mes extraits${clips.items.length ? ` (${clips.items.length})` : ''}` }
-  ]
+  const declared = !!(mine.data?.leaning && (mine.data.leaning.an.length || mine.data.leaning.se.length))
+  const lensName = declared ? [mine.data!.leaning!.an[0], mine.data!.leaning!.se[0]].filter(Boolean).join(' · ') : ''
+  const counts: Partial<Record<Tab, string>> = {
+    members: favorites.members.length ? String(favorites.members.length) : '',
+    videos: shelf.pinned.length ? `${shelf.pinned.length} à voir` : ''
+  }
   const top = stack.at(-1)
 
   return (
     <NavContext.Provider value={nav}>
       <StoreContext.Provider value={store}>
         <div className="parlement">
-          <div className="tabs">
-            {tabs.map((t) => (
-              <button key={t.id} className={tab === t.id ? 'on' : ''} onClick={() => setView({ tab: t.id, stack: [] })}>
+          <div className="tabs parlement-tabs">
+            {TABS.map((t) => (
+              <button key={t.id} className={tab === t.id && !top ? 'on' : ''} onClick={() => setView({ tab: t.id, stack: [] })}>
                 {t.label}
+                {counts[t.id] && <span className="parlement-count">{counts[t.id]}</span>}
               </button>
             ))}
+            <span className="parlement-chamber">
+              {declared && (
+                <span className="parlement-seg">
+                  <button
+                    className={prefs.lens ? 'on' : ''}
+                    onClick={() => setPrefs({ lens: !prefs.lens })}
+                    title={`comparer avec la sensibilité indiquée dans Réglages › Identité (${lensName})`}
+                  >
+                    <LensIcon /> mes idées
+                  </button>
+                </span>
+              )}
+              <span className="small dim">chambre</span>
+              <span className="parlement-seg">
+                {(
+                  [
+                    ['both', 'les deux'],
+                    ['an', 'Assemblée'],
+                    ['se', 'Sénat']
+                  ] as Array<[Chambers, string]>
+                ).map(([id, label]) => (
+                  <button key={id} className={chambers === id ? 'on' : ''} onClick={() => setChambers(id)}>
+                    {label}
+                  </button>
+                ))}
+              </span>
+            </span>
           </div>
           {top ? (
             <div key={JSON.stringify(top)} className="parlement-body">
@@ -119,46 +184,34 @@ function Screen() {
 
 function content(tab: Tab, search: VideoSearch, setSearch: (s: VideoSearch) => void): ReactNode {
   switch (tab) {
-    case 'today':
-      return <TodayTab />
-    case 'mine':
-      return <MineTab />
-    case 'favorites':
-      return <FavoritesTab />
+    case 'home':
+      return <HomeTab />
+    case 'hemicycle':
+      return <HemicycleTab />
     case 'ballots':
       return <BallotsTab />
+    case 'members':
+      return <MembersTab />
     case 'videos':
       return <VideosTab search={search} setSearch={setSearch} />
-    case 'clips':
-      return <ClipsTab />
+    case 'agenda':
+      return <AgendaTab />
   }
 }
 
 function Pane({ target }: { target: Target }) {
   switch (target.kind) {
-    case 'deputy':
-      return (
-        <NeedsData>
-          <DeputyPane id={target.id} />
-        </NeedsData>
-      )
+    case 'member':
+      return <MemberPane chamber={target.chamber} id={target.id} />
     case 'group':
-      return (
-        <NeedsData>
-          <GroupPane id={target.id} />
-        </NeedsData>
-      )
+      return <GroupPane chamber={target.chamber} id={target.id} />
     case 'ballot':
-      return (
-        <NeedsData>
-          <BallotPane id={target.id} />
-        </NeedsData>
-      )
+      return <BallotPane chamber={target.chamber} id={target.id} />
     case 'meeting':
       return <MeetingPane id={target.id} />
     case 'live':
-      return <LivePane meetingId={target.meetingId} />
+      return <LivePane chamber={target.chamber} id={target.id} />
     case 'video':
-      return <VideoPane id={target.id} start={target.start} stopAt={target.stopAt} clip={target.clip} />
+      return <VideoPane refId={target.ref} start={target.start} stopAt={target.stopAt} clip={target.clip} />
   }
 }
