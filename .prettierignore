@@ -4,3 +4,5 @@ node_modules/
 package-lock.json
 tmp/
 .astro/
+# Generated: services/parlement/scripts/hemicycle.mjs
+services/parlement/src/hemicycle.json

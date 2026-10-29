@@ -1,5 +1,5 @@
 import { readManifest, serviceCode } from './index'
-import type { Commune, ProfileField, ServiceContext, Vehicle } from './main'
+import type { Commune, Leaning, ProfileField, ServiceContext, Vehicle } from './main'
 
 /**
  * @marianne/sdk/testing: Marianne's part in a service's tests. `fakeContext` builds the context
@@ -13,8 +13,8 @@ export interface FakeContextOptions {
   answer?: (url: URL) => unknown
   /** The communes Marianne's geo connection knows. */
   communes?: Commune[]
-  /** The profile fields the user granted, and their vehicles. */
-  profile?: { granted?: ProfileField[]; vehicles?: Vehicle[] }
+  /** The profile fields the user granted, their vehicles, leaning and themes (given only when granted, as Marianne does). */
+  profile?: { granted?: ProfileField[]; vehicles?: Vehicle[]; leaning?: Leaning; themes?: string[] }
 }
 
 export interface FakeContext {
@@ -60,7 +60,12 @@ export function fakeContext(pkg: unknown, options: FakeContextOptions = {}): Fak
       getCommune: async (code) => communes.find((c) => c.code === code) ?? null
     },
     home: () => null,
-    profile: { granted: () => profile.granted ?? [], vehicles: () => profile.vehicles ?? [] },
+    profile: {
+      granted: () => profile.granted ?? [],
+      vehicles: () => profile.vehicles ?? [],
+      leaning: () => ((profile.granted ?? []).includes('opinions.leaning') ? (profile.leaning ?? null) : null),
+      themes: () => ((profile.granted ?? []).includes('opinions.themes') ? (profile.themes ?? []) : [])
+    },
     sync: { status: () => ({}), run: async () => {} }
   }
   return { ctx, urls, stored }

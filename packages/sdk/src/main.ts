@@ -1,5 +1,16 @@
 import type * as z from 'zod'
-import type { DomainId, ProfileField, ServiceDeadline, ServiceImpl, ServiceManifest, ServiceMethods, ServiceSummary, SyncStatus, TodayItem } from './index'
+import type {
+  DomainId,
+  Leaning,
+  ProfileField,
+  ServiceDeadline,
+  ServiceImpl,
+  ServiceManifest,
+  ServiceMethods,
+  ServiceSummary,
+  SyncStatus,
+  TodayItem
+} from './index'
 
 /**
  * @marianne/sdk/main: a service's main-process side. The service exports `service`, made with
@@ -90,6 +101,10 @@ export interface ServiceProfile {
   granted(): ProfileField[]
   /** Their vehicles, granted fields only; [] while locked or without a vehicles field granted. */
   vehicles(): Vehicle[]
+  /** The groups they said they feel close to; null while locked, without opinions.leaning granted, or when they said nothing. */
+  leaning(): Leaning | null
+  /** The themes that matter to them (THEMES ids); [] while locked or without opinions.themes granted. */
+  themes(): string[]
 }
 
 export interface ServiceContext {

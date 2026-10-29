@@ -1,31 +1,19 @@
-/* 3615 PARLEMENT: its own blocks, on top of Marianne's classes (.tabs, .card, .btn, .rows, .chip…). */
+/* 3615 PARLEMENT: its own blocks, on top of Marianne's classes (.tabs, .news, .btn, .chip, .rows, .box-note…). */
 
 .parlement {
   display: flex;
   flex-direction: column;
   gap: var(--s3);
-  max-width: 960px;
-}
-.parlement .tabs {
-  margin-bottom: 0;
+  max-width: 1280px;
 }
 .parlement-body {
   display: flex;
   flex-direction: column;
-  gap: var(--s3);
+  gap: var(--s4);
   min-width: 0;
 }
 .parlement .label {
   display: block;
-  margin-top: var(--s2);
-}
-.parlement-grow {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  white-space: normal;
 }
 .parlement-back {
   align-self: flex-start;
@@ -33,49 +21,207 @@
 .parlement-back:hover {
   color: var(--hi);
 }
-.parlement-title {
-  font-size: 1.15em;
+.parlement-foot {
   margin: 0;
+}
+
+/* ---------- layout helpers ---------- */
+
+.parlement-grow {
+  flex: 1;
+  min-width: 0;
+}
+.parlement-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.parlement-row.nowrap {
+  flex-wrap: nowrap;
+}
+.parlement-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.parlement-ell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.parlement-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.parlement-left {
+  text-align: left;
+  white-space: normal;
+}
+.parlement-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.parlement-block {
+  display: block;
+}
+.parlement-narrow {
+  max-width: 780px;
+  margin: 0;
+}
+.parlement-push {
+  margin-top: auto;
+}
+.parlement-two {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
 }
 .parlement-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin: 0;
 }
-.parlement-foot {
-  margin-top: var(--s2);
-}
-.parlement-live {
-  color: var(--rouge);
-  letter-spacing: 0.06em;
-}
-
-/* filters */
-
-.parlement-filters {
+.parlement-acts {
   display: flex;
-  flex-direction: column;
-  gap: var(--s2);
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
 }
-.parlement-choices {
+
+/* ---------- the tab bar: tabs, then "◐ mes idées" and the chamber ---------- */
+
+.parlement .parlement-tabs {
+  margin-bottom: 0;
+  align-items: flex-end;
+}
+.parlement-count {
+  color: var(--muted);
+  margin-left: 5px;
+}
+.parlement-chamber {
+  margin-left: auto;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.parlement-seg {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--rule);
+  flex: none;
+}
+.parlement-seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 9px;
+  color: var(--dim);
+  border-right: 1px solid var(--rule);
+}
+.parlement-seg button:last-child {
+  border-right: 0;
+}
+.parlement-seg button:hover {
+  color: var(--hi);
+}
+.parlement-seg button.on {
+  background: var(--fg);
+  color: var(--noir);
+}
+/* In the tab bar, Marianne's tabs style its buttons: the segments keep theirs. */
+.parlement-tabs .parlement-seg button {
+  margin: 0;
+  padding: 1px 9px;
+  border: 0;
+  border-right: 1px solid var(--rule);
+}
+.parlement-tabs .parlement-seg button:last-child {
+  border-right: 0;
+}
+.parlement-tabs .parlement-seg button.on {
+  background: var(--fg);
+  color: var(--noir);
+}
+
+/* ---------- headings, toolbars ---------- */
+
+.parlement-h {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-bottom: 6px;
+}
+.parlement-h .label {
+  display: inline;
+}
+.parlement-h .parlement-ch {
+  align-self: center;
+}
+.parlement-h2 {
+  margin-top: 12px;
+}
+.parlement-more {
+  margin-left: auto;
+  font-size: 0.86em;
+}
+.parlement-title {
+  margin: 0;
+  font-family: var(--retro);
+  font-size: var(--pixel-size);
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--hi);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.parlement-title.big {
+  font-size: calc(var(--pixel-size) * 1.25);
+}
+.parlement-name {
+  font-size: calc(var(--pixel-size) * 1.35);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.parlement-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 8px 16px;
 }
-.parlement-choices .chip.on {
+.parlement-toolbar .chips {
+  width: auto;
+  justify-content: flex-start;
+}
+.parlement .chip {
+  cursor: pointer;
+}
+.parlement .chip.on {
   color: var(--noir);
   background: var(--fg);
   border-color: var(--fg);
   border-style: solid;
 }
+.parlement .chip.on .parlement-grp {
+  color: var(--noir);
+}
+.parlement .parlement-search {
+  width: 320px;
+  border-color: var(--rule);
+}
+.parlement .parlement-search:focus-within {
+  border-color: var(--accent);
+}
 .parlement-fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--s3);
-}
-.parlement-fields > input {
-  grid-column: 1 / -1;
 }
 .parlement-inline {
   display: flex;
@@ -85,57 +231,1108 @@
 .parlement-inline input {
   width: 9ch;
 }
-
-/* the sync of the open data */
-
-.parlement-sync {
+.parlement-dayline {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.parlement-dash {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 26px;
+}
+.parlement-dash > div {
   display: flex;
   flex-direction: column;
-  gap: var(--s2);
+  gap: var(--s4);
+  min-width: 0;
 }
-.parlement-progress {
+
+/* ---------- small marks: chambers, groups, the lens, live ---------- */
+
+/* A chamber, as a Videotex code: AN cyan, SÉNAT magenta. */
+.parlement-ch {
+  font-family: var(--retro);
+  font-size: 15px;
+  line-height: 1.15;
+  padding: 0 4px;
+  letter-spacing: 0.08em;
+  color: var(--noir);
+  flex: none;
+  white-space: nowrap;
+  justify-self: start;
+  align-self: center;
+}
+.parlement-ch.an {
+  background: var(--cyan);
+}
+.parlement-ch.se {
+  background: var(--magenta);
+}
+/* A group: its colour as a mosaic block, its acronym in text ink. */
+.parlement-grp {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  color: var(--fg);
+  vertical-align: baseline;
+}
+.parlement-grp i {
+  width: 0.72em;
+  height: 0.72em;
+  background: var(--muted);
+  flex: none;
+}
+.parlement-grp.small {
+  font-size: 0.86em;
+}
+/* "Vos idées": a half-filled disc, drawn like the app's status dots. */
+.parlement-idee {
+  display: inline-block;
+  flex: none;
+  width: 0.72em;
+  height: 0.72em;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+  vertical-align: -0.06em;
+}
+.parlement-lens {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px dashed var(--accent);
+  color: var(--accent);
+  padding: 0 6px;
+  font-size: 0.86em;
+  white-space: nowrap;
+  justify-self: start;
+}
+.parlement-live {
+  color: var(--rouge);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.parlement-theme {
+  color: var(--accent);
+}
+.parlement-why {
+  justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8em;
+  color: var(--dim);
+  border: 1px dashed var(--rule);
+  padding: 0 5px;
+  white-space: nowrap;
+}
+.parlement-why.counter {
+  border-color: var(--accent);
+}
+.parlement-mine {
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.8em;
+  padding: 0 4px;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+.parlement-mine.followed {
+  border-style: dashed;
+  border-color: var(--fg);
+  color: var(--fg);
+}
+.parlement-follow {
+  border: 1px solid var(--rule);
+  padding: 0 7px;
+  font-size: 0.86em;
+  color: var(--dim);
+  white-space: nowrap;
+  align-self: center;
+}
+.parlement-follow:hover {
+  border-color: var(--bleu);
+  color: var(--hi);
+}
+.parlement-follow.on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- votes: a bar (pour · contre · abst., 2px apart), a mosaic (a block per ballot), a position ---------- */
+
+.parlement-vbar {
+  display: inline-flex;
+  gap: 2px;
+  height: 8px;
+  background: var(--bg-sunken);
+  flex: none;
+  vertical-align: middle;
+}
+.parlement-vbar i {
+  display: block;
+  height: 100%;
+}
+.parlement-vbar .f {
+  background: var(--vert);
+}
+.parlement-vbar .a {
+  background: var(--rouge);
+}
+.parlement-vbar .s {
+  background: var(--jaune);
+}
+.parlement-mos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  vertical-align: middle;
+}
+.parlement-mos i {
+  --c: var(--muted);
+  width: 9px;
+  height: 9px;
+  background: var(--c);
+  flex: none;
+}
+.parlement-mos.big i {
+  width: 11px;
+  height: 11px;
+}
+.parlement-mos i.for {
+  --c: var(--vert);
+}
+.parlement-mos i.against {
+  --c: var(--rouge);
+}
+.parlement-mos i.abstention {
+  --c: var(--jaune);
+}
+.parlement-mos i.none {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+/* By proxy: half the block, cut on the diagonal. */
+.parlement-mos i.px {
+  background: linear-gradient(135deg, var(--c) 0 50%, transparent 50%);
+  box-shadow: inset 0 0 0 1px var(--c);
+}
+.parlement-pos {
+  white-space: nowrap;
+}
+.parlement-pos.for {
+  color: var(--vert);
+}
+.parlement-pos.against {
+  color: var(--rouge);
+}
+.parlement-pos.abstention {
+  color: var(--jaune);
+}
+.parlement-pos.nonVoting,
+.parlement-pos.none {
+  color: var(--muted);
+}
+.parlement-res {
+  white-space: nowrap;
+}
+.parlement-res.ok::before {
+  content: '✓\00a0';
+}
+.parlement-res.bad::before {
+  content: '✕\00a0';
+}
+.parlement-keyrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.86em;
+  color: var(--dim);
+  align-items: center;
+}
+.parlement-keyrow i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  vertical-align: -1px;
+}
+.parlement-keyrow i.hollow {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+.parlement-keyrow i.half {
+  background: linear-gradient(135deg, var(--vert) 0 50%, transparent 50%);
+  box-shadow: inset 0 0 0 1px var(--vert);
+}
+.parlement-keyrow i.ring {
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+}
+.parlement-keyrow i.dring {
+  border: 1.5px dashed var(--fg);
+  border-radius: 50%;
+}
+.parlement-ramp {
+  display: inline-flex;
+  height: 9px;
+  width: 140px;
+  background: linear-gradient(90deg, var(--bg-raised), var(--accent));
+  vertical-align: middle;
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.parlement-ramp.green {
+  background: linear-gradient(90deg, var(--bg-raised), var(--vert));
+}
+
+/* ---------- figures ---------- */
+
+.parlement-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.parlement-tiles.n5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.parlement-tile {
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  padding: 7px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.parlement-tile.mine {
+  border-color: var(--accent);
+}
+.parlement-tile.lens {
+  border-style: dashed;
+  border-color: var(--accent);
+}
+.parlement-tile .n {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1.75);
+  line-height: 1;
+  color: var(--hi);
+}
+.parlement-tile .n small {
+  font-size: 0.55em;
+  color: var(--dim);
+}
+.parlement-tile .u {
+  font-size: 0.82em;
+  color: var(--dim);
+}
+
+/* ---------- people ---------- */
+
+/* The chamber's photo; without one, a block of the group's colour, in Videotex pixels. */
+.parlement-face {
+  display: block;
+  flex: none;
+  object-fit: cover;
+  background: var(--bg-sunken);
+  image-rendering: auto;
+}
+.parlement-face.none {
+  background-image: radial-gradient(circle at 1.5px 1.5px, rgba(0, 0, 0, 0.35) 0.6px, transparent 0.9px);
+  background-size: 4px 4px;
+}
+.parlement-person {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  padding: 8px 10px;
+  text-align: left;
+  white-space: normal;
+  min-width: 0;
+}
+button.parlement-person:hover {
+  border-color: var(--bleu);
+}
+.parlement-person.me {
+  border: 1.5px solid var(--accent);
+}
+.parlement-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+.parlement-cards .parlement-person {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+.parlement-senators {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.parlement-senators .parlement-person {
+  padding: 5px 8px;
+  gap: 8px;
+}
+.parlement-me {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 6px 14px;
+  border: 1.5px solid var(--accent);
+  background: var(--bg-raised);
+  padding: 10px 12px;
+}
+.parlement-me-name {
+  font-size: 1.12em;
+  text-align: left;
+}
+.parlement-me-acts {
+  align-items: flex-end;
+  gap: 6px;
+}
+.parlement-me-today {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+  border-top: 1px dashed var(--rule);
+  padding-top: 8px;
+  font-size: 0.92em;
+}
+.parlement-me-today > .label {
+  align-self: start;
+  padding-top: 3px;
+}
+.parlement-profile {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+}
+.parlement-profile .parlement-stack {
+  gap: 4px;
+}
+.parlement-facts {
+  margin: 0;
+  max-width: 900px;
+}
+.parlement-roles {
+  margin: 0;
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* ---------- lines: lists in rows on a dashed rule ---------- */
+
+.parlement-lines {
+  border-top: 1px solid var(--rule);
+}
+.parlement-line {
+  display: grid;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 6px 2px;
+  border-bottom: 1px dashed var(--rule);
+  text-align: left;
+  white-space: normal;
+}
+.parlement-line > * {
+  min-width: 0;
+}
+button.parlement-line:hover,
+.parlement-line[role='button']:hover {
+  background: var(--hover);
+  cursor: pointer;
+}
+.parlement-followed {
+  grid-template-columns: 24px minmax(0, 1fr) 58px 152px 124px;
+}
+.parlement-followed.lens {
+  grid-template-columns: 24px minmax(0, 1fr) 58px 152px 124px 60px;
+}
+.parlement-sugg {
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+}
+.parlement-sugg.wide {
+  grid-template-columns: 24px minmax(0, 1fr) minmax(0, 330px) auto;
+}
+.parlement-mline {
+  grid-template-columns: 24px minmax(0, 1fr) 76px 54px auto;
+}
+.parlement-gline {
+  grid-template-columns: 76px minmax(0, 1fr) 36px auto;
+  padding: 4px 2px;
+}
+.parlement-passage {
+  grid-template-columns: 24px 190px minmax(0, 1fr) 80px auto;
+}
+.parlement-highlight {
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: start;
+}
+.parlement-presence-row {
+  grid-template-columns: 20px minmax(0, 1fr) 132px 64px minmax(0, 1.2fr);
+  align-items: start;
+}
+.parlement-presence-row.head {
+  padding-top: 0;
+  border-bottom-style: solid;
+}
+.parlement-more-line {
+  display: block;
+  padding: 5px 8px;
+}
+
+/* ---------- le jour au Parlement, in the Minitel double frame of Actualités ---------- */
+
+.parlement .parlement-news {
+  max-width: none;
+  margin-bottom: 0;
+}
+.parlement-presence {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.3fr);
+  gap: 22px;
+}
+.parlement-presence .parlement-hemi {
+  max-width: 440px;
+}
+
+/* ---------- the day's ballots: two-line rows, the chosen one beside them, kept in view ---------- */
+
+.parlement-bt-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 22px;
+  align-items: start;
+}
+.parlement-btable {
+  min-width: 0;
+}
+.parlement-bt-row {
+  display: grid;
+  grid-template-columns: 62px 64px minmax(0, 1fr) 108px 84px 70px;
+  gap: 0 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 5px 8px;
+  border-bottom: 1px dashed var(--rule);
+  text-align: left;
+  white-space: nowrap;
+}
+.parlement-bt-row > * {
+  min-width: 0;
+}
+button.parlement-bt-row:hover {
+  background: var(--hover);
+}
+.parlement-bt-row.sel {
+  background: var(--sel);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.parlement-bt-row .parlement-stack {
+  gap: 1px;
+}
+.parlement-bt-title {
+  color: var(--fg);
+}
+.parlement-bt-row.sel .parlement-bt-title,
+.parlement-bt-row:hover .parlement-bt-title {
+  color: var(--hi);
+}
+.parlement-bt-head {
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.74em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.parlement-bt-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 8px 6px;
+  border-bottom: 1px solid var(--rule);
+}
+.parlement-bt-detail {
+  position: sticky;
+  top: 10px;
+  min-width: 0;
+  max-height: calc(100vh - 190px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.parlement-card {
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.parlement-bt-card {
+  padding: 12px 14px;
+  gap: 6px;
+}
+.parlement-bt-heading {
+  font-size: 1.02em;
+}
+.parlement-bt-hemi {
+  width: 100%;
+  max-width: 340px;
+  margin: 2px auto 0;
+}
+.parlement-sec {
+  display: flex;
+  align-items: baseline;
+  margin-top: 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--rule);
+}
+.parlement-bt-elu {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) 56px 82px;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 0;
+  border-bottom: 1px dashed var(--rule);
+  font-size: 0.92em;
+}
+.parlement-bt-elu > * {
+  min-width: 0;
+}
+.parlement-bt-elu button {
+  text-align: left;
+}
+
+/* Group breakdown of a ballot: a stacked bar per group, on its seats. */
+.parlement-gb {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 92px;
+  gap: 8px;
+  align-items: center;
+  padding: 1px 0;
+  font-size: 0.86em;
+}
+.parlement-gb.lens {
+  box-shadow: inset 2px 0 0 var(--accent);
+  padding-left: 6px;
+}
+.parlement-gb .parlement-track {
+  display: flex;
+  gap: 2px;
+  height: 7px;
+  background: var(--bg-sunken);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.parlement-gb .parlement-track i {
+  display: block;
+  height: 100%;
+}
+
+/* ---------- the colour of the amendments: who votes what, by author's group ---------- */
+
+.parlement-matrix-wrap {
+  overflow-x: auto;
+}
+.parlement-matrix {
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-size: 0.9em;
+}
+.parlement-matrix th {
+  font-weight: 400;
+  color: var(--dim);
+  text-align: center;
+  padding: 0 2px 4px;
+  vertical-align: bottom;
+}
+.parlement-colh {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+.parlement-colh i {
+  width: 100%;
+  min-width: 30px;
+  height: 4px;
+}
+.parlement-matrix th.rowh {
+  text-align: left;
+  padding-right: 10px;
+  white-space: nowrap;
+  color: var(--fg);
+}
+.parlement-matrix td {
+  width: 52px;
+  height: 34px;
+  text-align: center;
+  color: var(--hi);
+  background: color-mix(in srgb, var(--vert) var(--p), var(--bg-raised));
+  font-variant-numeric: tabular-nums;
+}
+.parlement-matrix td.ink {
+  color: var(--noir);
+}
+.parlement-matrix td.na {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  color: var(--muted);
+}
+.parlement-matrix .lensrow th,
+.parlement-matrix .lensrow td {
+  border-top: 1px dashed var(--accent);
+}
+.parlement-prox .parlement-pr {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr) 44px;
+  gap: 8px;
+  align-items: center;
+  padding: 2px 0;
+  font-size: 0.88em;
+}
+.parlement-pr > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.parlement-pr .parlement-track {
+  height: 7px;
+  background: var(--bg-sunken);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.parlement-pr .parlement-track i {
+  display: block;
+  height: 100%;
+  background: var(--fg);
+}
+.parlement-pr .parlement-track.green i {
+  background: var(--vert);
+}
+
+/* ---------- the hemicycle: a seat per member, at their place ---------- */
+
+.parlement-hemis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5, 24px);
+}
+.parlement-hemi-side {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 22px;
+  align-items: start;
+}
+.parlement-hemi {
+  position: relative;
+}
+.parlement-hemi svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.parlement-hemi svg circle:not(.parlement-ring),
+.parlement-hemi svg rect {
+  cursor: pointer;
+}
+.parlement-hemi svg circle:not(.parlement-ring):hover,
+.parlement-hemi svg rect:hover {
+  stroke: var(--hi);
+  stroke-width: 0.6;
+}
+.parlement-ring {
+  fill: none;
+  stroke: var(--fg);
+  stroke-dasharray: 1.2 1;
+  pointer-events: none;
+}
+.parlement-ring.mine {
+  stroke: var(--accent);
+  stroke-dasharray: none;
+}
+.parlement-center {
+  font-family: var(--retro);
+  fill: var(--hi);
+  text-anchor: middle;
+}
+.parlement-center-sub {
+  font-family: var(--sharp);
+  fill: var(--dim);
+  text-anchor: middle;
+}
+.parlement-callout {
+  font-family: var(--retro);
+  fill: var(--accent);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  pointer-events: none;
+}
+.parlement-tip {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  background: var(--bg-raised);
+  border: 1px solid var(--fg);
+  padding: 5px 8px;
+  font-size: 12px;
+  max-width: 280px;
+}
+.parlement-legend {
+  display: flex;
+  flex-direction: column;
+}
+.parlement-lg {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 36px;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 0;
+  border-bottom: 1px dashed var(--rule);
+  font-size: 0.9em;
+  text-align: left;
+}
+.parlement-lg:hover {
+  background: var(--hover);
+}
+.parlement-lgbar {
+  display: block;
+  height: 6px;
+  min-width: 2px;
+}
+
+/* ---------- videos ---------- */
+
+.parlement-thumb {
+  --c: var(--fg);
+  position: relative;
+  width: 128px;
+  height: 72px;
+  flex: none;
+  background-color: var(--bg-sunken);
+  background-image: radial-gradient(circle at 1.5px 1.5px, var(--dot) 0.5px, transparent 0.8px);
+  background-size: 4px 4px;
+  border: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.parlement-thumb.an {
+  --c: var(--cyan);
+}
+.parlement-thumb.se {
+  --c: var(--magenta);
+}
+.parlement-thumb.lg {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+.parlement-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.parlement-thumb .glyph {
+  font-family: var(--retro);
+  font-size: 26px;
+  color: var(--c);
+  letter-spacing: 0.1em;
+  opacity: 0.85;
+}
+.parlement-thumb .glyph b {
+  font-weight: 400;
+  color: var(--hi);
+}
+.parlement-thumb .dur {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  background: var(--fg);
+  color: var(--noir);
+  font-size: 10px;
+  padding: 0 3px;
+}
+.parlement-thumb .lv {
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  background: var(--rouge);
+  color: var(--noir);
+  font-family: var(--retro);
+  font-size: 15px;
+  line-height: 1.15;
+  padding: 0 4px;
+  letter-spacing: 0.06em;
+}
+.parlement-thumb .prog {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--bg-sunken);
+}
+.parlement-thumb .prog i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.parlement-vacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-end;
+}
+.parlement-vbtn {
+  width: 26px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  flex: none;
+}
+.parlement-vbtn:hover {
+  border-color: var(--bleu);
+  color: var(--hi);
+}
+.parlement-vbtn.on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+/* The pin of the folders: "to watch soon". */
+.parlement-pin {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid currentColor;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  flex: none;
+}
+.parlement-vbtn.on .parlement-pin {
+  background: var(--accent);
+}
+.parlement-vrow {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 2px;
+  border-bottom: 1px dashed var(--rule);
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+.parlement-vrow:hover {
+  background: var(--hover);
+}
+.parlement-vrow.small-thumb {
+  grid-template-columns: 96px minmax(0, 1fr);
+}
+.parlement-vrow.small-thumb .parlement-thumb {
+  width: 96px;
+  height: 54px;
+}
+.parlement-vrow.small-thumb .glyph {
+  font-size: 20px;
+}
+.parlement-vmeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 0.84em;
+  color: var(--dim);
+}
+.parlement-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.84em;
+  border: 1px solid var(--rule);
+  padding: 0 5px 0 2px;
+  color: var(--fg);
+}
+.parlement-who.me {
+  border-color: var(--accent);
+}
+.parlement-shelf {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
+  gap: 10px;
+}
+.parlement-vcard {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-width: 420px;
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  padding: 8px;
+  min-width: 0;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
 }
-.parlement-progress .gauge > i,
-.parlement-gauge > i {
-  transition: width 0.3s;
+.parlement-vcard:hover {
+  border-color: var(--bleu);
 }
-.parlement-gauge {
-  max-width: 420px;
+.parlement-vcard.onair {
+  border-color: var(--rouge);
 }
-
-/* the agenda */
-
-.parlement-day {
+.parlement-vcard.wide {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 12px;
+  cursor: default;
+}
+.parlement-vcard.wide > .parlement-stack {
+  gap: 4px;
+}
+.parlement-vcard.empty {
+  border-style: dashed;
+  background: transparent;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  text-align: center;
+  cursor: default;
+}
+.parlement-day-h {
   display: flex;
   align-items: center;
-  gap: var(--s3);
-  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
 }
-.parlement-agenda {
+.parlement-tc {
+  color: var(--accent);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+.parlement-watch {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 18px;
+  align-items: start;
+}
+.parlement-watch > .parlement-stack {
+  gap: 10px;
+}
+.parlement-player video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+.parlement-chapters {
+  display: flex;
+  flex-direction: column;
+  max-height: 520px;
+  overflow: auto;
   border-top: 1px solid var(--rule);
 }
-.parlement-meeting {
-  display: flex;
-  gap: var(--s3);
-  width: 100%;
-  padding: 8px 2px;
-  border-bottom: 1px dashed var(--rule);
+.parlement-chapters .label {
+  padding: 4px 8px;
 }
-.parlement-meeting:hover {
+.parlement-chapters button {
+  display: flex;
+  gap: 10px;
+  padding: 4px 8px;
+  text-align: left;
+  white-space: normal;
+}
+.parlement-chapters button:hover:not(:disabled) {
   background: var(--hover);
 }
-.parlement-meeting.off .hi {
-  text-decoration: line-through;
-  color: var(--dim);
+.parlement-chapters button.on {
+  background: var(--sel);
 }
-.parlement-hour {
+.parlement-chapters .parlement-tc {
   flex: none;
-  width: 9ch;
-  color: var(--accent);
+  width: 7ch;
+}
+.parlement-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+/* ---------- agenda ---------- */
+
+.parlement-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+.parlement-wd {
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  padding: 5px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+.parlement-wd:hover {
+  border-color: var(--bleu);
+}
+.parlement-wd.on {
+  border-color: var(--accent);
+}
+.parlement-wd.off {
+  background: transparent;
+  border-style: dashed;
+  color: var(--muted);
+}
+.parlement-ev {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--rule);
+  font-size: 0.92em;
+  text-align: left;
+  white-space: normal;
+}
+.parlement-ev.agenda {
+  grid-template-columns: 62px minmax(0, 1fr);
+}
+button.parlement-ev:hover {
+  color: var(--hi);
+}
+.parlement-ev.cancelled > span:last-child {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.parlement-ev .parlement-stack .small {
+  color: var(--dim);
 }
 .parlement-states {
   display: flex;
@@ -150,238 +1347,45 @@
   gap: 3px;
 }
 
-/* live streams */
+/* ---------- the open data's sync ---------- */
 
-.parlement-streams .card {
-  min-height: 0;
-}
-.parlement-streams img {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  background: var(--bg-sunken);
-  margin-bottom: 4px;
-}
-
-/* deputies and groups */
-
-.parlement-deputies {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 8px;
-}
-.parlement-open {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.parlement-deputy {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid var(--rule);
-  background: var(--bg-raised);
-  padding: 6px 8px;
-}
-.parlement-deputy:hover {
-  border-color: var(--bleu);
-}
-.parlement-deputy img {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  object-fit: cover;
-  background: var(--bg-sunken);
-}
-.parlement-mark {
-  display: inline-block;
-  width: 0.7em;
-  height: 0.7em;
-  background: var(--muted);
-  vertical-align: baseline;
-}
-.parlement-groups {
+.parlement-sync {
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--rule);
+  gap: var(--s2);
 }
-.parlement-group {
+.parlement-progress {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 2px;
-  border-bottom: 1px dashed var(--rule);
-}
-.parlement-group:hover {
-  background: var(--hover);
-}
-.parlement-profile {
-  display: flex;
-  gap: var(--s4);
-  align-items: flex-start;
-}
-.parlement-profile img {
-  flex: none;
-  width: 96px;
-  height: 96px;
-  object-fit: cover;
-  background: var(--bg-sunken);
-}
-.parlement-profile .parlement-grow {
+  flex-direction: column;
   gap: 4px;
-}
-.parlement-facts {
-  margin-bottom: 0;
-}
-.parlement-roles {
-  margin: 0;
-  padding-left: 1.2em;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-/* ballots */
-
-.parlement-ballots {
-  border-top: 1px solid var(--rule);
-}
-.parlement-ballot {
-  display: grid;
-  grid-template-columns: 16ch minmax(0, 1fr) 9ch auto;
-  gap: var(--s3);
-  align-items: baseline;
-  width: 100%;
-  padding: 7px 2px;
-  border-bottom: 1px dashed var(--rule);
-  white-space: normal;
-}
-.parlement-ballot:hover {
-  background: var(--hover);
-}
-.parlement-count {
-  display: flex;
-  height: 8px;
   max-width: 420px;
-  border: 1px solid var(--rule);
-  background: var(--bg-sunken);
 }
-.parlement-count .for {
-  background: var(--vert);
-}
-.parlement-count .against {
-  background: var(--rouge);
-}
-.parlement-count .abstention {
-  background: var(--jaune);
-}
-.parlement-table {
-  border-collapse: collapse;
-  max-width: 800px;
-}
-.parlement-table th,
-.parlement-table td {
-  padding: 4px 10px 4px 2px;
-  text-align: left;
-  border-bottom: 1px dashed var(--rule);
-}
-.parlement-table th {
-  color: var(--dim);
-  font-weight: 400;
-  font-size: 0.86em;
+.parlement-progress .gauge > i {
+  transition: width 0.3s;
 }
 
-/* videos */
+/* ---------- narrower windows ---------- */
 
-.parlement-videos {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.parlement-video {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  border: 1px solid var(--rule);
-  background: var(--bg-raised);
-  padding: 6px;
-}
-.parlement-video:hover {
-  border-color: var(--bleu);
-}
-.parlement-video img,
-.parlement-noimg {
-  flex: none;
-  width: 128px;
-  height: 72px;
-  object-fit: cover;
-  background: var(--bg-sunken);
-}
-.parlement-player video {
-  display: block;
-  width: 100%;
-  max-width: 900px;
-  aspect-ratio: 16 / 9;
-  background: #000;
-}
-.parlement-chapters {
-  display: flex;
-  flex-direction: column;
-  max-height: 420px;
-  overflow: auto;
-  border-top: 1px solid var(--rule);
-}
-.parlement-chapters button {
-  display: flex;
-  gap: 10px;
-  padding: 4px 8px;
-  white-space: normal;
-}
-.parlement-chapters button:hover:not(:disabled) {
-  background: var(--hover);
-}
-.parlement-chapters button.on {
-  background: var(--sel);
-}
-.parlement-tc {
-  flex: none;
-  width: 8ch;
-  color: var(--accent);
-}
-.parlement-editor {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s3);
-}
-
-/* clips */
-
-.parlement-clips {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.parlement-clip {
-  display: grid;
-  grid-template-columns: 160px minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  border: 1px solid var(--rule);
-  background: var(--bg-raised);
-  padding: 8px;
-}
-.parlement-thumb img,
-.parlement-thumb .parlement-noimg {
-  display: block;
-  width: 160px;
-  height: 90px;
-  object-fit: cover;
-  background: var(--bg-sunken);
-}
-.parlement-acts {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+@media (max-width: 1100px) {
+  .parlement-dash,
+  .parlement-two,
+  .parlement-presence,
+  .parlement-bt-wrap,
+  .parlement-hemi-side,
+  .parlement-watch {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .parlement-bt-detail {
+    position: static;
+  }
+  .parlement-tiles,
+  .parlement-tiles.n5 {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  .parlement-sugg.wide {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+  }
+  .parlement-sugg.wide .parlement-why {
+    grid-column: 2;
+  }
 }

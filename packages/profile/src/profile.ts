@@ -1,5 +1,5 @@
 import type { Site } from '@marianne/content'
-import type { DomainId } from '@marianne/sdk'
+import type { DomainId, Leaning } from '@marianne/sdk'
 import { domainInfo } from './domains'
 
 /**
@@ -191,6 +191,18 @@ export interface Profile {
   procedures: Record<string, number[]>
   /** Free notes for the assistant ("je suis malvoyant", "je travaille de nuit"…), sent as context. */
   notes: string
+  /**
+   * What the user chose to say of their political leaning and of the themes that matter to them:
+   * optional, never inferred, never sent to the engines; a service reads it only when the user
+   * lets it (opinions.leaning, opinions.themes).
+   */
+  opinions: Opinions
+}
+
+export interface Opinions {
+  leaning: Leaning
+  /** THEMES ids (@marianne/sdk). */
+  themes: string[]
 }
 
 export const EMPTY_PROFILE: Profile = {
@@ -224,7 +236,8 @@ export const EMPTY_PROFILE: Profile = {
   deadlineStatus: {},
   journal: [],
   procedures: {},
-  notes: ''
+  notes: '',
+  opinions: { leaning: { assembly: [], senate: [] }, themes: [] }
 }
 
 /** A deadline as shown: computed or manual, with its status. */
@@ -269,6 +282,7 @@ export type ProfileOp =
   | { type: 'deadlineStatus'; key: string; status: DeadlineStatus }
   | { type: 'procedureStep'; id: string; step: number; done: boolean }
   | { type: 'notes'; notes: string }
+  | { type: 'opinions'; opinions: Opinions }
   | { type: 'onboarded'; value: boolean }
 
 // ---------------------------------------------------------------- labels

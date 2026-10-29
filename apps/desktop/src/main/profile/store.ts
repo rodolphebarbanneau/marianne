@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events'
+import { THEMES } from '@marianne/sdk'
 import { computeDeadlines, EMPTY_PROFILE, newKey, today, tokensOf, type Deadline, type Profile, type ProfileOp, type TokenDef } from '@marianne/profile'
 import type { DomainId } from '../../shared/types'
 import { content } from '../content'
@@ -23,7 +24,11 @@ export function normalize(raw: Partial<Profile>): Profile {
     person: { ...e.person, ...raw.person },
     address: { ...e.address, ...raw.address },
     deadlineStatus: raw.deadlineStatus ?? {},
-    procedures: raw.procedures ?? {}
+    procedures: raw.procedures ?? {},
+    opinions: {
+      leaning: { ...e.opinions.leaning, ...raw.opinions?.leaning },
+      themes: raw.opinions?.themes ?? []
+    }
   } as Profile
 }
 
@@ -144,6 +149,23 @@ class ProfileStore extends EventEmitter {
       case 'notes':
         p.notes = op.notes
         break
+      case 'opinions': {
+        // Acronyms as the chambers write them, a few at most; themes among the known ones.
+        const acronyms = (list: unknown) =>
+          [
+            ...new Set(
+              (Array.isArray(list) ? list : [])
+                .filter((x): x is string => typeof x === 'string' && /^[\p{L}\d .'-]{1,24}$/u.test(x.trim()))
+                .map((x) => x.trim())
+            )
+          ].slice(0, 6)
+        const themes = new Set<string>(THEMES.map((t) => t.id))
+        p.opinions = {
+          leaning: { assembly: acronyms(op.opinions.leaning?.assembly), senate: acronyms(op.opinions.leaning?.senate) },
+          themes: [...new Set((op.opinions.themes ?? []).filter((t) => themes.has(t)))]
+        }
+        break
+      }
       case 'onboarded':
         p.onboarded = op.value
         break

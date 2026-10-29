@@ -64,8 +64,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 function progressText(status: DataStatus): string {
   const p = status.sync.running
   if (!p) return ''
-  if (p.phase === 'download') return `téléchargement… ${megabytes(p.done)}${p.total ? ` sur ${megabytes(p.total)}` : ''}`
-  return `indexation… ${p.total ? Math.floor((p.done / p.total) * 100) : 0} %`
+  const what = p.label ? ` ${p.label}` : ''
+  if (p.phase === 'download') return `téléchargement${what}… ${megabytes(p.done)}${p.total ? ` sur ${megabytes(p.total)}` : ''}`
+  return `indexation${what}… ${p.total ? Math.floor((p.done / p.total) * 100) : 0} %`
 }
 
 function Progress({ status }: { status: DataStatus }) {
@@ -89,8 +90,8 @@ export function NeedsData({ children }: { children: ReactNode }) {
   return (
     <div className="box-note parlement-sync">
       <p>
-        Les députés, les scrutins et l’agenda viennent des données ouvertes de l’Assemblée nationale, gardées sur cet ordinateur et mises à jour chaque jour.
-        Elles ne sont pas encore téléchargées (une quarantaine de Mo).
+        Les députés, les sénateurs, leurs scrutins et l’agenda viennent des données ouvertes de l’Assemblée nationale et du Sénat, gardées sur cet ordinateur et
+        mises à jour chaque jour. Elles ne sont pas encore téléchargées (une centaine de Mo la première fois).
       </p>
       {status.sync.running ? (
         <Progress status={status} />
@@ -115,8 +116,9 @@ export function DataLine() {
   const s = status.sync
   return (
     <p className="small dim parlement-foot">
-      données ouvertes de l’Assemblée nationale{s.syncedAt ? ` du ${shortDate(s.syncedAt)}` : ''} · {formatNumber(status.deputies)} députés,{' '}
-      {formatNumber(status.ballots)} scrutins, {formatNumber(status.meetings)} réunions ·{' '}
+      données ouvertes de l’Assemblée nationale et du Sénat{s.syncedAt ? ` du ${shortDate(s.syncedAt)}` : ''} · {formatNumber(status.deputies)} députés,{' '}
+      {formatNumber(status.senators)} sénateurs, {formatNumber(status.ballots)} scrutins, {formatNumber(status.meetings)} réunions · vidéos des portails des
+      deux chambres ·{' '}
       {s.running ? (
         progressText(status)
       ) : (

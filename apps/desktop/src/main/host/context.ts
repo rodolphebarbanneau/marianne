@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { allowedUrl, type ServiceManifest } from '@marianne/sdk'
 import type { ProfileField } from '@marianne/sdk'
-import type { ServiceContext, ServiceHttp, Vehicle } from '@marianne/sdk/main'
+import type { Leaning, ServiceContext, ServiceHttp, Vehicle } from '@marianne/sdk/main'
 import { accounts } from '../account'
 import { fetchAsBrowser, fetchJson, fetchText } from '../http'
 import { log } from '../log'
@@ -47,6 +47,15 @@ function vehicles(m: ServiceManifest): Vehicle[] {
   return profile.get().vehicles.map((v) => ({ id: v.id, ...Object.fromEntries(fields.map((f) => [f, v[f]])) }))
 }
 
+/** The groups the user leans to, when they granted it and said something. */
+function leaning(m: ServiceManifest): Leaning | null {
+  if (!grantedFields(m).includes('opinions.leaning')) return null
+  const l = profile.get().opinions.leaning
+  return l.assembly.length || l.senate.length ? { assembly: [...l.assembly], senate: [...l.senate] } : null
+}
+
+const themes = (m: ServiceManifest): string[] => (grantedFields(m).includes('opinions.themes') ? [...profile.get().opinions.themes] : [])
+
 export function serviceContext(m: ServiceManifest, sync: ServiceSync): ServiceContext {
   const dataDir = join(paths.services, m.id)
   mkdirSync(dataDir, { recursive: true })
@@ -72,7 +81,7 @@ export function serviceContext(m: ServiceManifest, sync: ServiceSync): ServiceCo
       const a = profile.get().address
       return a.inseeCode ? { code: a.inseeCode, name: a.city, postcode: a.postcode, latitude: a.lat, longitude: a.lon } : null
     },
-    profile: { granted: () => grantedFields(m), vehicles: () => vehicles(m) },
+    profile: { granted: () => grantedFields(m), vehicles: () => vehicles(m), leaning: () => leaning(m), themes: () => themes(m) },
     sync: { status: () => sync.status(), run: () => sync.run() }
   }
 }

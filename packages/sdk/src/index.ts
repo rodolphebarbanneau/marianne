@@ -44,9 +44,55 @@ export const PROFILE_FIELDS = {
   'vehicles.model': 'le modèle de vos véhicules',
   'vehicles.firstRegistration': 'la date de première immatriculation de vos véhicules',
   'vehicles.lastInspection': 'la date du dernier contrôle technique de vos véhicules',
-  'vehicles.critair': 'la vignette Crit’Air de vos véhicules'
+  'vehicles.critair': 'la vignette Crit’Air de vos véhicules',
+  'opinions.leaning': 'votre sensibilité politique (les groupes dont vous vous sentez proche)',
+  'opinions.themes': 'les thèmes qui comptent pour vous'
 } as const
 export type ProfileField = keyof typeof PROFILE_FIELDS
+
+/**
+ * The political groups the user said they feel close to, by the acronym each chamber gives them
+ * ("EcoS" at the Assemblée, "GEST" at the Sénat): optional, never inferred, a sensitive datum
+ * (GDPR, article 9) a service reads only when the user lets it.
+ */
+export interface Leaning {
+  assembly: string[]
+  senate: string[]
+}
+
+/**
+ * The themes the user may say matter to them: they bring forward what is about them (ballots,
+ * videos, headlines), without saying anything of an opinion. `words`: what a title about it holds
+ * (lowercase, accents aside; a word's start).
+ */
+export const THEMES = [
+  {
+    id: 'ecology',
+    label: 'écologie',
+    words: ['ecolog', 'climat', 'environnement', 'biodiversite', 'pollution', 'carbone', 'energie', 'renouvelable', 'nucleaire']
+  },
+  {
+    id: 'purchasing-power',
+    label: 'pouvoir d’achat',
+    words: ['pouvoir d', 'salaire', 'smic', 'prix', 'inflation', 'tva', 'carburant', 'consommat', 'remuneration']
+  },
+  { id: 'health', label: 'santé', words: ['sante', 'hopita', 'medic', 'soins', 'urgences', 'securite sociale', 'assurance maladie', 'pharmac', 'plfss'] },
+  { id: 'housing', label: 'logement', words: ['logement', 'loyer', 'locati', 'immobilier', 'hlm', 'habitat', 'propriet'] },
+  { id: 'pensions', label: 'retraites', words: ['retraite', 'pension', 'vieillesse', 'age de depart'] },
+  { id: 'security', label: 'sécurité', words: ['securite interieure', 'police', 'gendarmerie', 'delinquan', 'terroris', 'violence', 'penal', 'prison'] },
+  { id: 'school', label: 'école', words: ['ecole', 'education', 'enseignant', 'eleve', 'scolaire', 'lycee', 'college', 'universit', 'etudiant'] },
+  { id: 'agriculture', label: 'agriculture', words: ['agricol', 'agricult', 'paysan', 'eleveur', 'elevage', 'alimentation', 'peche', 'foret'] },
+  { id: 'europe', label: 'Europe', words: ['europe', 'union europeenne', 'bruxelles', 'commission europeenne'] },
+  { id: 'digital', label: 'numérique', words: ['numerique', 'internet', 'reseaux sociaux', 'donnees', 'intelligence artificielle', 'cyber', 'plateforme'] }
+] as const
+
+export type ThemeId = (typeof THEMES)[number]['id']
+
+/** The themes a text is about (its title…), among those given. */
+export function themesOf(text: string, themes: readonly string[] = THEMES.map((t) => t.id)): ThemeId[] {
+  const folded = ` ${foldText(text).replace(/[’']/g, "'")}`
+  return THEMES.filter((t) => themes.includes(t.id) && t.words.some((w) => folded.includes(` ${w}`) || folded.includes(`'${w}`))).map((t) => t.id)
+}
 
 /** A service's code: lowercase letters and digits, no accents ("meteo" is 3615 METEO). */
 export const SERVICE_CODE = /^[a-z0-9]+$/

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { actorNumber, asArray, parseBallot, parseDeputy, parseMeeting, parseOrgan, searchKey } from '../src/assembly'
-import { ballotPage, deputyPage, deputyPhoto, ordinal, parseVideoRef, videoPage } from '../src/links'
+import { actorNumber, asArray, parseAttendance, parseBallot, parseBill, parseDeputy, parseMeeting, parseOrgan, searchKey } from '../src/assembly'
+import { ballotPage, deputyPage, deputyPhoto, ordinal, parseVideoRef, videoKey, videoPage } from '../src/links'
 
 const actor = (mandates: unknown) => ({
   acteur: {
@@ -23,7 +23,7 @@ const assembly = {
   dateFin: null,
   organes: { organeRef: 'PO838901' },
   election: { lieu: { departement: 'Gironde', numDepartement: '33', numCirco: '4' } },
-  mandature: { datePriseFonction: '2024-07-08' }
+  mandature: { datePriseFonction: '2024-07-08', placeHemicycle: '410' }
 }
 
 describe('parseDeputy', () => {
@@ -47,6 +47,7 @@ describe('parseDeputy', () => {
       department: 'Gironde',
       departmentNumber: '33',
       constituency: '4',
+      seat: 410,
       mandateStart: '2024-07-08'
     })
     expect(d.emails).toEqual(['Alain.David@assemblee-nationale.fr'])
@@ -150,6 +151,7 @@ describe('parseMeeting', () => {
     })
     expect(m).toEqual({
       id: 'RUANR5L17S2027IDS30966',
+      chamber: 'an',
       kind: 'sitting',
       state: 'confirmed',
       start: '2026-10-28T14:00:00.000+01:00',
@@ -191,6 +193,65 @@ describe('parseMeeting', () => {
   })
 })
 
+describe('parseAttendance', () => {
+  const minutes = (presences: string[]) => ({
+    reunion: {
+      participants: {
+        participantsInternes: { participantInterne: presences.map((presence, i) => ({ acteurRef: `PA${i + 1}`, presence })) },
+        personnesAuditionnees: null
+      }
+    }
+  })
+
+  it('reads who attended a committee meeting', () => {
+    expect(parseAttendance(minutes(['présent', 'excusé', 'absent']))).toEqual([
+      { deputy: 'PA1', status: 'present' },
+      { deputy: 'PA2', status: 'excused' },
+      { deputy: 'PA3', status: 'absent' }
+    ])
+  })
+
+  it('says nothing while the minutes are not filled in: everyone absent, or no list', () => {
+    expect(parseAttendance(minutes(['absent', 'absent']))).toEqual([])
+    expect(parseAttendance({ reunion: { participants: null } })).toEqual([])
+  })
+})
+
+describe('parseBill', () => {
+  it('reads a legislative file’s title and the rapporteurs named by its committee, not those of an opinion', () => {
+    const acte = (codeActe: string, rapporteur: unknown) => ({
+      '@xsi:type': 'NominRapporteurs_Type',
+      codeActe,
+      organeRef: 'PO59048',
+      dateActe: '2026-07-08T00:00:00.000+02:00',
+      rapporteurs: { rapporteur }
+    })
+    const bill = parseBill({
+      dossierParlementaire: {
+        uid: 'DLR5L17N54629',
+        titreDossier: { titre: 'Projet de loi de finances pour 2027' },
+        actesLegislatifs: {
+          acteLegislatif: {
+            actesLegislatifs: {
+              acteLegislatif: [
+                acte('AN1-COM-FOND-NOMIN', { acteurRef: 'PA346782', typeRapporteur: 'rapporteur général' }),
+                acte('AN1-COM-FOND-NOMIN', [{ acteurRef: 'PA841531', typeRapporteur: 'rapporteur spécial' }]),
+                acte('AN1-COM-AVIS-NOMIN', { acteurRef: 'PA722374', typeRapporteur: 'rapporteur pour avis' })
+              ]
+            }
+          }
+        }
+      }
+    })
+    expect(bill).toEqual({
+      id: 'DLR5L17N54629',
+      title: 'Projet de loi de finances pour 2027',
+      rapporteurs: [{ deputy: 'PA346782', type: 'rapporteur général', organ: 'PO59048', date: '2026-07-08' }]
+    })
+    expect(parseBill({ dossierParlementaire: null })).toBeNull()
+  })
+})
+
 describe('helpers', () => {
   it('normalizes lists and text', () => {
     expect(asArray(null)).toEqual([])
@@ -226,22 +287,33 @@ describe('links', () => {
   it('points at the Assemblée’s pages', () => {
     expect(deputyPage('PA1008')).toBe('https://www.assemblee-nationale.fr/dyn/deputes/PA1008')
     expect(deputyPhoto('PA1008')).toBe('https://www.assemblee-nationale.fr/dyn/static/tribun/17/photos/carre/1008.jpg')
-    expect(ballotPage({ id: 'VTANR5L16V12', number: 12 })).toBe('https://www.assemblee-nationale.fr/dyn/16/scrutins/12')
+    expect(ballotPage({ chamber: 'an', id: 'VTANR5L16V12', number: 12 })).toBe('https://www.assemblee-nationale.fr/dyn/16/scrutins/12')
+    expect(ballotPage({ chamber: 'se', id: 'SE2026-44', number: 44 })).toBe('https://www.senat.fr/scrutin-public/2026/scr2026-44.html')
     expect(ordinal('1')).toBe('1re')
     expect(ordinal('4')).toBe('4e')
   })
 })
 
 describe('videos', () => {
-  it('reads video references from search hits, ids and page links', () => {
-    expect(parseVideoRef('/19635048_6ae106e3a1fa9')).toEqual({ id: '19635048_6ae106e3a1fa9' })
+  it('reads video references of both portals from search hits, ids and page links', () => {
+    expect(parseVideoRef('/19635048_6ae106e3a1fa9')).toEqual({ chamber: 'an', id: '19635048_6ae106e3a1fa9' })
     // Speaker hits carry the passage.
-    expect(parseVideoRef('/19634676_6ae0f545798fb?timecode=1069980')).toEqual({ id: '19634676_6ae0f545798fb', timecode: 1069980 })
+    expect(parseVideoRef('/19634676_6ae0f545798fb?timecode=1069980')).toEqual({ chamber: 'an', id: '19634676_6ae0f545798fb', timecode: 1069980 })
     expect(parseVideoRef('https://videos.assemblee-nationale.fr/video.19632460_6ae0ce76adf9c.commission?timecode=848880')).toEqual({
+      chamber: 'an',
       id: '19632460_6ae0ce76adf9c',
       timecode: 848880
     })
+    // The Sénat's: its portal's links, and the "se:" keys the service gives its videos.
+    expect(parseVideoRef('https://videos.senat.fr/video.5979506_6ae25732cc856?timecode=60000')).toEqual({
+      chamber: 'se',
+      id: '5979506_6ae25732cc856',
+      timecode: 60000
+    })
+    expect(parseVideoRef(videoKey('se', '5979506_6ae25732cc856'))).toEqual({ chamber: 'se', id: '5979506_6ae25732cc856' })
+    expect(videoKey('an', '19634676_6ae0f545798fb')).toBe('19634676_6ae0f545798fb')
     expect(parseVideoRef('pas une vidéo')).toBeNull()
-    expect(videoPage('19634676_6ae0f545798fb', 1069980)).toBe('https://videos.assemblee-nationale.fr/video.19634676_6ae0f545798fb?timecode=1069980')
+    expect(videoPage('an', '19634676_6ae0f545798fb', 1069980)).toBe('https://videos.assemblee-nationale.fr/video.19634676_6ae0f545798fb?timecode=1069980')
+    expect(videoPage('se', '5979506_6ae25732cc856')).toBe('https://videos.senat.fr/video.5979506_6ae25732cc856')
   })
 })

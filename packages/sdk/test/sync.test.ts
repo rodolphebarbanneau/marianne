@@ -49,6 +49,22 @@ describe('execute', () => {
     expect(messages.at(-1)).toMatchObject({ type: 'done', summary: null })
   })
 
+  it('gives null for a missing optional file, and fails on a missing required one', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('Not found', { status: 404 }))
+    )
+    const probed = await run(async (ctx) =>
+      (await ctx.download('https://data.example.fr/ballot-45.json', { optional: true })) === null ? null : { summary: 'found' }
+    )
+    expect(probed.at(-1)).toMatchObject({ type: 'done', summary: null })
+    const required = await run(async (ctx) => {
+      await ctx.download('https://data.example.fr/ballot-45.json')
+      return { summary: '' }
+    })
+    expect(required.at(-1)).toMatchObject({ type: 'error', message: expect.stringMatching(/404/) })
+  })
+
   it('refuses hosts the service has not declared, and plain http', async () => {
     vi.stubGlobal('fetch', vi.fn())
     const messages = await run(async (ctx) => {

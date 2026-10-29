@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { clock, parisIso, parseClock } from '../src/time'
-import { htmlLines, liveStreams, portalImage, searchVideos, videoDetail, type RawItem } from '../src/videos'
+import {
+  htmlLines,
+  liveStreams,
+  portalImage,
+  searchBoth,
+  searchSenateVideos,
+  searchVideos,
+  senateLive,
+  senateVideoDetail,
+  videoDetail,
+  type RawItem,
+  type RawSenateItem
+} from '../src/videos'
 import { decodeEntities, parseXml, textOf } from '../src/xml'
 import { fakeHttp } from './fixtures'
 
@@ -83,9 +95,11 @@ describe('videos', () => {
       [`${ROOT}/content/finalplayer.nvs`]: PLAYER_NVS,
       [`${ROOT}/meta-files/vodalys.smil`]: SMIL
     })
-    const v = await videoDetail(http, `https://videos.assemblee-nationale.fr/video.${ID}?timecode=958000`)
+    const v = await videoDetail(http, ID)
     expect(v).toMatchObject({
       id: ID,
+      chamber: 'an',
+      offsetMs: 0,
       title: 'Renforcer la protection des personnels éducatifs : Mme Mickaëlle Paty',
       date: new Date(1793195369 * 1000).toISOString(),
       type: 'commission',
@@ -98,11 +112,11 @@ describe('videos', () => {
     })
     expect(v.chapters).toEqual([
       { id: '19640896', title: 'Audition de Mme Mickaëlle Paty', depth: 0, timecode: 794540 },
-      { id: '19640898', title: 'Mme Anne Genetet, présidente', depth: 1, timecode: 803810, speaker: 'Mme Anne Genetet', deputy: 'PA721024' },
+      { id: '19640898', title: 'Mme Anne Genetet, présidente', depth: 1, timecode: 803810, speaker: 'Mme Anne Genetet', member: 'PA721024' },
       { id: '19640900', title: 'Mme Mickaëlle Paty', depth: 1, timecode: 1011950, speaker: 'Mme Mickaëlle Paty' },
       { id: '19649999', title: 'Non horodaté', depth: 0, timecode: null }
     ])
-    expect(v.speakers).toEqual([{ name: 'Mme Mickaëlle Paty' }, { name: 'Mme Anne Genetet', deputy: 'PA721024' }])
+    expect(v.speakers).toEqual([{ name: 'Mme Mickaëlle Paty' }, { name: 'Mme Anne Genetet', member: 'PA721024' }])
   })
 
   it('has no stream while the portal is still processing the recording', async () => {
@@ -111,7 +125,6 @@ describe('videos', () => {
     expect(v.hls).toBe('')
     expect(v.durationMs).toBe(0)
     expect(v.chapters.every((c) => c.timecode === null)).toBe(true)
-    await expect(videoDetail(http, 'pas une vidéo')).rejects.toThrow(/vidéo/)
   })
 
   it('searches a period: one entry per video, the passage of a speaker hit, words of the title', async () => {
@@ -132,7 +145,9 @@ describe('videos', () => {
       ['19640983_6ae1fde90bfa0', undefined, 'https://videos.assemblee-nationale.fr/video.19640983_6ae1fde90bfa0']
     ])
     expect(found[0]).toMatchObject({
+      chamber: 'an',
       type: 'commission',
+      kind: 'commission',
       commission: 'PROTECEDUC',
       description: '15h00 :\nAudition, ouverte à la presse, de Mme Mickaëlle Paty',
       thumbnail: `${ROOT}/files/Vignette%20MI.jpg`
@@ -173,7 +188,8 @@ describe('videos', () => {
     const now = await liveStreams(http)
     expect(now).toEqual([
       {
-        meetingId: 'RUANR5L17S2027IDS30966',
+        id: 'RUANR5L17S2027IDS30966',
+        chamber: 'an',
         organ: 'Séance publique',
         start: 'mercredi 28 octobre 2026 à 14h00',
         startAt: '2026-10-28T14:00:00+01:00',
@@ -182,10 +198,11 @@ describe('videos', () => {
         place: 'Assemblée nationale',
         live: true,
         hls: 'https://videos.assemblee-nationale.fr/live/live36/playlist36.m3u8',
-        poster: 'https://videos.assemblee-nationale.fr/live/images/14000000.jpg'
+        poster: 'https://videos.assemblee-nationale.fr/live/images/14000000.jpg',
+        url: 'https://www.assemblee-nationale.fr/dyn/direct-video'
       }
     ])
-    expect((await liveStreams(http, true)).map((s) => [s.meetingId, s.live])).toEqual([
+    expect((await liveStreams(http, true)).map((s) => [s.id, s.live])).toEqual([
       ['RUANR5L17S2027IDS30966', true],
       ['RUANR5L17S2027IDS31005', false]
     ])
@@ -198,6 +215,103 @@ describe('videos', () => {
     )
     expect(portalImage('http://videos.assemblee-nationale.fr/live/images/1.jpg')).toBe('https://videos.assemblee-nationale.fr/live/images/1.jpg')
     expect(portalImage(null)).toBe('')
+  })
+})
+
+const SENATE_ID = '5979506_6ae25732cc856'
+const SENATE_ROOT = `https://videos.senat.fr/Datas/senat/${SENATE_ID}`
+const SENATE_SEARCH = 'https://videos.senat.fr/senat_function.php'
+
+const senateItem = (over: Partial<RawSenateItem>): RawSenateItem => ({
+  nid: '5979506',
+  date: '1793219400',
+  live: false,
+  thumbnail: `https://videos.senat.fr/Datas/senat/${SENATE_ID}/files/11011.jpg`,
+  published: true,
+  videotype: 'DG',
+  description: ['Projet de loi', 'Protection des enfants', '(Discussion des articles - suite)'],
+  commission: null,
+  title: 'Séance publique du 28 octobre 2026 (soir)',
+  url: `/${SENATE_ID}`,
+  duration: 10063,
+  ...over
+})
+
+describe('the Sénat’s videos', () => {
+  it('reads a video: chapters, speakers with their matricule, the stream of its player, and where it starts', async () => {
+    const http = fakeHttp({
+      [`${SENATE_ROOT}/content/data.nvs`]: `<data id="5979506" mediatitle="S&#xE9;ance publique du 28 octobre 2026 (soir)"><chapters><chapter id="1" label="Projet de loi&#10;Protection des enfants"><chapter id="2" label="Mme Marie-Claude Varaillas"><speaker id="9"/></chapter></chapter></chapters><speakers><speaker id="9"><name>VARAILLAS Marie-Claude</name><role>Sénateur</role><url>20046A</url></speaker></speakers></data>`,
+      [`${SENATE_ROOT}/content/finalplayer.nvs`]:
+        '<player sessionstart="1793218519" endtime="11011000" starttime="948000"><synchro id="1" timecode="948000"/><synchro id="2" timecode="1041000"/></player>',
+      [`https://videos.senat.fr/iframe.${SENATE_ID}`]:
+        '<video><source src="https://vodsenat.akamaized.net/senat/2026/10/encoder1_20261028211515_1.mp4/master.m3u8?embed=true&amp;wowzaplaystart=948000" type="application/x-mpegURL"></video>'
+    })
+    const v = await senateVideoDetail(http, SENATE_ID)
+    expect(v).toMatchObject({
+      id: SENATE_ID,
+      chamber: 'se',
+      title: 'Séance publique du 28 octobre 2026 (soir)',
+      date: new Date(1793218519 * 1000).toISOString(),
+      durationMs: 11011000,
+      offsetMs: 948000,
+      hls: 'https://vodsenat.akamaized.net/senat/2026/10/encoder1_20261028211515_1.mp4/master.m3u8?embed=true&wowzaplaystart=948000',
+      url: `https://videos.senat.fr/video.${SENATE_ID}`
+    })
+    expect(v.chapters).toEqual([
+      { id: '1', title: 'Projet de loi · Protection des enfants', depth: 0, timecode: 948000 },
+      { id: '2', title: 'Mme Marie-Claude Varaillas', depth: 1, timecode: 1041000, speaker: 'VARAILLAS Marie-Claude', member: '20046A' }
+    ])
+  })
+
+  it('searches a period of its portal: sittings, committees, questions to the Government told by their title', async () => {
+    const http = fakeHttp({
+      [SENATE_SEARCH]: JSON.stringify([
+        senateItem({}),
+        senateItem({ nid: '1', url: '/5979001_6ae2000000001', videotype: 'AC', title: 'Masculinismes : audition de Léa Clermont-Dion', description: null }),
+        senateItem({ nid: '2', url: '/5979002_6ae2000000002', title: 'Questions d’actualité au Gouvernement du 28 octobre 2026' }),
+        senateItem({ nid: '3', url: '/5979003_6ae2000000003', published: false })
+      ])
+    })
+    const found = await searchSenateVideos(http, { from: '2026-10-28', to: '2026-10-28' })
+    expect(http.asked[0]).toContain('period=custom')
+    expect(http.asked[0]).toContain('begin=28%2F10%2F2026')
+    expect(found.map((v) => [v.id, v.kind, v.type])).toEqual([
+      [SENATE_ID, 'seance', 'séance publique'],
+      ['5979001_6ae2000000001', 'commission', 'commission'],
+      ['5979002_6ae2000000002', 'questions', 'questions d’actualité au gouvernement']
+    ])
+    expect(found[0]).toMatchObject({
+      chamber: 'se',
+      durationMs: 10063000,
+      description: 'Projet de loi · Protection des enfants · (Discussion des articles - suite)'
+    })
+    expect((await searchSenateVideos(http, { from: '2026-10-28', to: '2026-10-28', type: 'questions' })).map((v) => v.id)).toEqual(['5979002_6ae2000000002'])
+  })
+
+  it('finds what is live, with its stream', async () => {
+    const http = fakeHttp({
+      [SENATE_SEARCH]: JSON.stringify([
+        senateItem({ live: true, title: 'Séance publique du 29 octobre 2026 (après-midi)' }),
+        senateItem({ nid: '1', url: '/5979001_6ae2000000001' })
+      ]),
+      [`https://videos.senat.fr/iframe.${SENATE_ID}`]:
+        '<source src="https://livesenat.akamaized.net/hls/live/2036979/senat1/playlist-archive.m3u8?startTime=1793279709" type="application/x-mpegURL">'
+    })
+    expect(await senateLive(http)).toEqual([
+      expect.objectContaining({
+        id: SENATE_ID,
+        chamber: 'se',
+        organ: 'Séance publique',
+        live: true,
+        hls: 'https://livesenat.akamaized.net/hls/live/2036979/senat1/playlist-archive.m3u8?startTime=1793279709'
+      })
+    ])
+  })
+
+  it('searches both portals, newest first, and goes on when one of them fails', async () => {
+    const http = fakeHttp({ [SENATE_SEARCH]: JSON.stringify([senateItem({})]) })
+    expect((await searchBoth(http, { from: '2026-10-28', to: '2026-10-28' })).map((v) => v.chamber)).toEqual(['se'])
+    await expect(searchBoth(fakeHttp({}), { from: '2026-10-28', to: '2026-10-28' })).rejects.toThrow(/404/)
   })
 })
 

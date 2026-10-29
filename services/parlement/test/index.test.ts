@@ -3,11 +3,28 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { indexDumps } from '../src/indexer'
-import { ballotDetail, deputyCard, deputyProfile } from '../src/present'
-import { counts, findDeputies, findGroups, getBallot, getMeeting, listGroups, meetingsOn, searchBallots } from '../src/queries'
-import { AssemblyIndex, DB_FILE, openWriter } from '../src/store'
-import { ACTORS, BALLOTS, dumps, HEARING, MEETINGS, SITTING } from './fixtures'
+import { counts, filled, indexDeputies, indexMeetings, senateBallotNumbers } from '../src/indexer'
+import { memberCard } from '../src/present'
+import {
+  attendanceOn,
+  ballotsBetween,
+  billTitles,
+  constituenciesOf,
+  constituencyAt,
+  findGroups,
+  findMembers,
+  getBallot,
+  getMeeting,
+  listGroups,
+  meetingsOn,
+  memberVotes,
+  rapporteursOf,
+  searchBallots,
+  sittingStarts,
+  votesIn
+} from '../src/queries'
+import { ParliamentIndex, DB_FILE, openWriter } from '../src/store'
+import { buildIndex, dumps, HEARING, MEETINGS, SITTING } from './fixtures'
 
 let dir: string
 let file: string
@@ -19,7 +36,7 @@ beforeEach(() => {
   const opened = openWriter(file)
   expect(opened.current).toBe(false)
   writer = opened.db
-  indexDumps(writer, dumps(), { reset: true })
+  buildIndex(writer)
 })
 
 afterEach(() => {
@@ -27,173 +44,168 @@ afterEach(() => {
   rmSync(dir, { recursive: true, force: true })
 })
 
-const ids = (rows: Array<{ deputy: { id: string } }>) => rows.map((r) => r.deputy.id)
+const ids = (rows: Array<{ id: string }>) => rows.map((r) => r.id)
 
 describe('indexing', () => {
-  it('keeps sitting deputies, every ballot and the agenda, and reports its progress', () => {
-    expect(counts(writer)).toEqual({ deputies: 3, ballots: 2, meetings: 6 })
-    const steps: Array<[number, number]> = []
-    indexDumps(writer, dumps(), { reset: false, progress: (done, total) => steps.push([done, total]) })
-    // 5 organs, 4 actors (the déport is skipped), 2 ballots, 7 meetings (one withdrawn).
-    expect(steps.at(-1)).toEqual([18, 18])
+  it('fills every source: both chambers’ members and ballots, the agenda, bills and constituencies', () => {
+    expect(counts(writer)).toEqual({ deputies: 5, senators: 3, ballots: 4, meetings: 6 })
+    for (const source of ['deputies', 'senators', 'ballots', 'meetings', 'bills', 'constituencies'] as const) expect(filled(writer, source)).toBe(true)
+    expect(senateBallotNumbers(writer, 2026)).toEqual(new Set([1, 2]))
     const again = openWriter(file)
     expect(again.current).toBe(true)
     again.db.close()
   })
 
-  it('rebuilds only the dumps given, and a new index needs them all', () => {
-    indexDumps(writer, { meetings: dumps(BALLOTS, MEETINGS.slice(0, 2)).meetings }, { reset: false })
-    expect(counts(writer)).toEqual({ deputies: 3, ballots: 2, meetings: 2 })
-    expect(() => indexDumps(writer, { meetings: dumps().meetings }, { reset: true })).toThrow(/every dump/)
+  it('refills a source’s own rows, and leaves the others', () => {
+    indexMeetings(writer, dumps(undefined, MEETINGS.slice(0, 2)).meetings)
+    expect(counts(writer)).toEqual({ deputies: 5, senators: 3, ballots: 4, meetings: 2 })
+    // The deputies again: the senators stay.
+    const steps: number[] = []
+    indexDeputies(writer, dumps().deputies, (done) => steps.push(done))
+    expect(counts(writer)).toMatchObject({ deputies: 5, senators: 3 })
+    // 5 organs, 6 actors (the déport is skipped).
+    expect(steps.at(-1)).toBe(11)
   })
 
-  it('leaves the index as it was when a dump is unusable', () => {
-    const noDeputies = { ...dumps(), deputies: dumps().ballots }
-    expect(() => indexDumps(writer, noDeputies, { reset: false })).toThrow(/no sitting deputy/)
-    expect(counts(writer)).toEqual({ deputies: 3, ballots: 2, meetings: 6 })
+  it('leaves the index as it was when a source is unusable', () => {
+    expect(() => indexDeputies(writer, dumps().ballots)).toThrow(/no sitting deputy/)
+    expect(counts(writer)).toEqual({ deputies: 5, senators: 3, ballots: 4, meetings: 6 })
   })
 })
 
 describe('the main side’s index', () => {
   it('is there once a sync filled it, read-only, and sees a rebuild once it is committed', () => {
-    const empty = new AssemblyIndex(join(dir, 'none.db'))
-    expect(empty.open()).toBeNull()
-    const index = new AssemblyIndex(file)
+    expect(new ParliamentIndex(join(dir, 'none.db')).open()).toBeNull()
+    const index = new ParliamentIndex(file)
     const reader = index.open()!
-    expect(counts(reader).deputies).toBe(3)
-    expect(() => reader.exec('delete from deputies')).toThrow(/readonly/)
+    expect(counts(reader).deputies).toBe(5)
+    expect(() => reader.exec('delete from members')).toThrow(/readonly/)
     // While the sync job rebuilds, the main side still reads the previous index.
     writer.exec('begin')
-    writer.exec('delete from deputies')
-    expect(counts(reader).deputies).toBe(3)
+    writer.exec('delete from members')
+    expect(counts(reader).deputies).toBe(5)
     writer.exec('rollback')
-    indexDumps(writer, { deputies: dumps().deputies }, { reset: false })
     index.close()
-    expect(counts(index.open()!).deputies).toBe(3)
+    expect(counts(index.open()!).deputies).toBe(5)
     index.close()
   })
 
   it('ignores an index of another schema version', () => {
     writer.exec('pragma user_version = 99')
-    expect(new AssemblyIndex(file).open()).toBeNull()
+    expect(new ParliamentIndex(file).open()).toBeNull()
   })
 })
 
-describe('deputies', () => {
-  it('finds them by département (name or number), constituency, words of the name, group or id', () => {
-    expect(ids(findDeputies(writer, { department: '33' }))).toEqual(['PA1008'])
-    expect(ids(findDeputies(writer, { department: 'gironde' }))).toEqual(['PA1008'])
-    expect(ids(findDeputies(writer, { department: '2a' }))).toEqual(['PA2'])
-    expect(ids(findDeputies(writer, { department: 'Corse du Sud' }))).toEqual(['PA2'])
-    expect(ids(findDeputies(writer, { department: '59', constituency: '017' }))).toEqual(['PA841553'])
-    expect(ids(findDeputies(writer, { department: '59', constituency: '1' }))).toEqual([])
-    // Words match the start of a name's words.
-    expect(ids(findDeputies(writer, { text: 'paul' }))).toEqual(['PA2'])
-    expect(ids(findDeputies(writer, { text: 'avid' }))).toEqual([])
-    expect(ids(findDeputies(writer, { group: 'soc' }))).toEqual(['PA1008', 'PA2'])
-    expect(ids(findDeputies(writer, { group: 'socialistes' }))).toEqual(['PA1008', 'PA2'])
-    expect(ids(findDeputies(writer, { group: 'personne' }))).toEqual([])
-    expect(ids(findDeputies(writer, { ids: ['pa841553', 'PA9'] }))).toEqual(['PA841553'])
-    expect(ids(findDeputies(writer, { ids: [] }))).toEqual([])
+describe('members', () => {
+  it('finds them in either chamber by département (name or number), constituency, words of the name, group or id', () => {
+    expect(ids(findMembers(writer, { chamber: 'an', department: '33' }))).toEqual(['PA1008'])
+    expect(ids(findMembers(writer, { department: 'gironde' }))).toEqual(['PA1008', '21000A'])
+    expect(ids(findMembers(writer, { chamber: 'an', department: '2a' }))).toEqual(['PA2'])
+    expect(ids(findMembers(writer, { chamber: 'an', department: '35', constituency: '08' }))).toEqual(['PA3508'])
+    expect(ids(findMembers(writer, { text: 'dup' }))).toEqual(['PA2'])
+    expect(ids(findMembers(writer, { chamber: 'se', group: 'LR' }))).toEqual(['20032U'])
+    expect(ids(findMembers(writer, { ids: ['pa1008', '21089r'] })).sort()).toEqual(['21089R', 'PA1008'])
+    // Former deputies are not in the index.
+    expect(findMembers(writer, { text: 'ancienne' })).toEqual([])
   })
 
-  it('lists the groups with their members', () => {
-    expect(listGroups(writer)).toEqual([
-      { id: 'PO845419', name: 'Socialistes et apparentés', shortName: 'SOC', color: '#F5B4CE', members: 2 },
-      { id: 'PO845401', name: 'Rassemblement National', shortName: 'RN', color: '#313567', members: 1 }
+  it('gives cards: the Assemblée’s photo, the Sénat’s page, the groups’ colours readable on the dark screen', () => {
+    const [deputy] = findMembers(writer, { ids: ['PA841553'] }).map(memberCard)
+    expect(deputy).toMatchObject({ chamber: 'an', name: 'M. Thierry Tesson', groupShort: 'RN', seat: 72, constituency: '17' })
+    // The RN's navy, lifted.
+    expect(deputy.groupColor).not.toBe('#313567')
+    const [senator] = findMembers(writer, { ids: ['21089R'] }).map(memberCard)
+    expect(senator).toMatchObject({ chamber: 'se', name: 'Mme Colombe Brossel', female: true, groupShort: 'SER', constituency: '', seat: 72 })
+    expect(senator.url).toBe('https://www.senat.fr/senateur/brossel_colombe21089r.html')
+  })
+
+  it('lists each chamber’s groups from left to right in its hemicycle, with their members', () => {
+    expect(listGroups(writer, 'an').map((g) => [g.shortName, g.members])).toEqual([
+      ['SOC', 4],
+      ['RN', 1]
     ])
-    expect(findGroups(writer, 'rassemblement').map((g) => g.id)).toEqual(['PO845401'])
-    expect(findGroups(writer, 'PO845419').map((g) => g.shortName)).toEqual(['SOC'])
-  })
-
-  it('makes a profile: roles, participation, latest votes', () => {
-    const p = deputyProfile(writer, findDeputies(writer, { ids: ['PA841553'] })[0])
-    expect(p).toMatchObject({
-      id: 'PA841553',
-      name: 'M. Thierry Tesson',
-      group: 'Rassemblement National',
-      groupShort: 'RN',
-      groupColor: '#313567',
-      department: 'Nord',
-      constituency: '17',
-      photo: 'https://www.assemblee-nationale.fr/dyn/static/tribun/17/photos/carre/841553.jpg',
-      url: 'https://www.assemblee-nationale.fr/dyn/deputes/PA841553',
-      office: '7 Avenue Roger Schwob 33150 Cenon',
-      emails: ['Thierry.Tesson@assemblee-nationale.fr'],
-      roles: [{ organId: 'PO884520', organ: 'Mission d’information sur la protection des personnels éducatifs', role: 'Rapporteur' }],
-      participation: { voted: 1, total: 2 }
-    })
-    expect(p.votes).toEqual([
-      {
-        id: 'VTANR5L17V9000',
-        number: 9000,
-        date: '2026-10-22',
-        title: BALLOTS[0].scrutin.titre,
-        result: 'rejeté',
-        position: 'against',
-        proxy: true,
-        url: 'https://www.assemblee-nationale.fr/dyn/17/scrutins/9000'
-      }
+    expect(listGroups(writer, 'se').map((g) => [g.shortName, g.members, g.color])).toEqual([
+      ['SER', 2, '#fb6f99'],
+      ['LR', 1, '#2e70d1']
     ])
-    expect(deputyCard(findDeputies(writer, { ids: ['PA2'] })[0]).name).toBe('M. Jean-Paul Dupuis')
-  })
-
-  it('skips former deputies', () => {
-    expect(ACTORS.map((a) => a.acteur.uid['#text'])).toContain('PA9')
-    expect(findDeputies(writer, { ids: ['PA9'] })).toEqual([])
+    expect(findGroups(writer, 'an', 'socialistes').map((g) => g.id)).toEqual(['PO845419'])
   })
 })
 
 describe('ballots', () => {
-  it('searches the titles, accents and case aside, newest first, with a deputy’s position', () => {
-    expect(searchBallots(writer, { text: 'PROJET de loi' }).map((b) => b.number)).toEqual([9097, 9000])
-    expect(searchBallots(writer, { text: 'finances' }).map((b) => b.number)).toEqual([9097])
-    expect(searchBallots(writer, { text: 'sécurité sociale' }).map((b) => b.number)).toEqual([9000])
-    expect(searchBallots(writer, { finalOnly: true }).map((b) => b.number)).toEqual([9097])
-    expect(searchBallots(writer, { from: '2026-10-23' }).map((b) => b.number)).toEqual([9097])
-    expect(searchBallots(writer, { to: '2026-10-22' }).map((b) => b.number)).toEqual([9000])
-    expect(searchBallots(writer, { deputy: 'PA841553' }).map((b) => [b.number, b.position, b.proxy])).toEqual([
-      [9097, null, false],
-      [9000, 'against', true]
-    ])
-    expect(searchBallots(writer, { text: 'introuvable' })).toEqual([])
+  it('knows who tabled each amendment, and the kind of each ballot', () => {
+    expect(getBallot(writer, 'an', 9000)).toMatchObject({ kind: 'amendment', author: 'PA841553', author_group: 'PO845401', bill: 'DLR5L17N54629' })
+    expect(getBallot(writer, 'an', 'VTANR5L17V9097')).toMatchObject({ kind: 'text', author: '', sitting: SITTING })
+    expect(getBallot(writer, 'se', 'SE2026-1')).toMatchObject({ kind: 'amendment', author: '21089R', author_group: 'SOC', number: 1 })
+    expect(getBallot(writer, 'se', 'SE2026-2')?.kind).toBe('text')
   })
 
-  it('gives a ballot by number or id, with the groups and the positions asked for', () => {
-    expect(getBallot(writer, 'VTANR5L17V9000')?.number).toBe(9000)
-    expect(getBallot(writer, 'n° 9097')?.number).toBe(9097)
-    expect(getBallot(writer, 'abc')).toBeNull()
-    const detail = ballotDetail(writer, getBallot(writer, 9000)!, ['PA1008', 'PA841553', 'PA2'])
-    expect(detail.url).toBe('https://www.assemblee-nationale.fr/dyn/17/scrutins/9000')
-    expect(detail.groups.map((g) => [g.shortName, g.position, g.for, g.against])).toEqual([
-      ['SOC', 'for', 1, 0],
-      ['RN', 'against', 0, 1]
+  it('searches the subjects of both chambers, accents and case aside, newest first, by kind and author’s group', () => {
+    expect(ids(searchBallots(writer, { text: 'SÉCURITÉ sociale' }))).toEqual(['VTANR5L17V9000'])
+    expect(ids(searchBallots(writer, { text: 'protection des enfants' }))).toEqual(['SE2026-2', 'SE2026-1'])
+    expect(ids(searchBallots(writer, { chamber: 'an', kind: 'text' }))).toEqual(['VTANR5L17V9097'])
+    expect(ids(searchBallots(writer, { authorGroup: 'SOC' }))).toEqual(['SE2026-1'])
+    // The same day: the Assemblée first.
+    expect(ids(searchBallots(writer, { result: 'adopted' }))).toEqual(['VTANR5L17V9097', 'SE2026-2'])
+  })
+
+  it('gives each member’s vote, with proxies at the Assemblée', () => {
+    const an = votesIn(writer, 'an', [9000])
+    expect(an.map((v) => [v.member, v.position, v.proxy]).sort()).toEqual([
+      [1008, 'against', false],
+      [3501, 'for', false],
+      [3508, 'against', false],
+      [841553, 'for', true]
     ])
-    expect(detail.votes.map((v) => [v.deputy.id, v.position, v.proxy])).toEqual([
-      ['PA1008', 'for', false],
-      ['PA2', null, false],
-      ['PA841553', 'against', true]
+    expect(memberVotes(writer, 'se', 0).length).toBe(0)
+    expect(ballotsBetween(writer, 'se', '2026-10-28', '2026-10-28').map((b) => b.id)).toEqual(['SE2026-1', 'SE2026-2'])
+  })
+})
+
+describe('agenda and attendance', () => {
+  it('gives a day by start time, with the organs’ names, and a meeting by id', () => {
+    expect(meetingsOn(writer, '2026-10-28').map((m) => m.id)).toEqual([
+      'RUANR5L17S2027IDC461468',
+      'RUANR5L17S2027IDFL461503',
+      SITTING,
+      HEARING,
+      'RUANR5L17S2027IDC461999'
+    ])
+    expect(getMeeting(writer, HEARING.toLowerCase())).toMatchObject({
+      chamber: 'an',
+      organ: 'Mission d’information sur la protection des personnels éducatifs'
+    })
+    expect(sittingStarts(writer, [SITTING, ''])).toEqual(new Map([[SITTING, '2026-10-28T14:00:00.000+01:00']]))
+  })
+
+  it('says who attended a committee meeting', () => {
+    expect(attendanceOn(writer, '2026-10-28').map((a) => [a.member, a.status, a.organ])).toEqual([
+      [1008, 'excused', 'Mission d’information sur la protection des personnels éducatifs'],
+      [841553, 'present', 'Mission d’information sur la protection des personnels éducatifs']
     ])
   })
 })
 
-describe('agenda', () => {
-  it('gives a day by start time, with the organs’ names, and a meeting by id', () => {
-    const day = meetingsOn(writer, '2026-10-28')
-    expect(day.map((m) => [m.start.slice(11, 16), m.kind, m.state, m.organ])).toEqual([
-      ['11:00', 'committee', 'cancelled', 'Commission de la défense nationale et des forces armées'],
-      ['11:00', 'other', 'confirmed', ''],
-      ['14:00', 'sitting', 'confirmed', 'Assemblée nationale de la 17ème législature'],
-      ['15:00', 'committee', 'confirmed', 'Mission d’information sur la protection des personnels éducatifs'],
-      ['16:00', 'committee', 'tentative', 'Commission de la défense nationale et des forces armées']
+describe('bills and constituencies', () => {
+  it('gives a bill’s title and rapporteurs', () => {
+    expect(billTitles(writer, ['DLR5L17N54629', 'pjl25-911'])).toEqual(
+      new Map([
+        ['DLR5L17N54629', 'Projet de loi de finances pour 2027'],
+        ['pjl25-911', 'Projet de loi relatif à la protection des enfants']
+      ])
+    )
+    expect(rapporteursOf(writer, ['DLR5L17N54629'])).toEqual([{ bill: 'DLR5L17N54629', member: 'PA841553', type: 'rapporteur général', date: '2026-07-08' }])
+  })
+
+  it('tells a commune’s constituencies, and where a point of a split commune falls', () => {
+    expect(constituenciesOf(writer, '33119')).toEqual([{ department: '33', constituency: '4' }])
+    const rennes = constituenciesOf(writer, '35238')
+    expect(rennes).toEqual([
+      { department: '35', constituency: '1' },
+      { department: '35', constituency: '8' }
     ])
-    expect(day.find((m) => m.id === SITTING)?.items).toEqual(['Questions au Gouvernement', 'Suite de la discussion du projet de loi de finances pour 2027'])
-    expect(getMeeting(writer, HEARING.toLowerCase())).toMatchObject({
-      id: HEARING,
-      end: '2026-10-28T17:00:00.000+01:00',
-      items: ['Audition, ouverte à la presse, de Mme Mickaëlle Paty']
-    })
-    expect(getMeeting(writer, 'RUANR5L17S2027IDC400000')).toBeNull()
-    expect(meetingsOn(writer, '2026-10-30')).toEqual([])
+    expect(constituencyAt(writer, rennes, -1.67, 48.105)).toEqual({ department: '35', constituency: '8' })
+    expect(constituencyAt(writer, rennes, -1.69, 48.105)).toEqual({ department: '35', constituency: '1' })
+    expect(constituencyAt(writer, rennes, 2.35, 48.85)).toBeNull()
   })
 })
