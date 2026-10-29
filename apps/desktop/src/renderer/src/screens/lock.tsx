@@ -245,7 +245,7 @@ interface Opening {
 }
 
 /** After this long on a step, the user may go in without waiting for the last assistants. */
-const SKIP_AFTER_MS = 5_000
+const SKIP_AFTER_MS = 10_000
 
 function Unlock({ account, pinAvailable, engines, onOther }: { account: AccountInfo; pinAvailable: boolean; engines: EngineId[]; onOther: () => void }) {
   const [mode, setMode] = useState<'pin' | 'password' | 'recovery'>(account.hasPin ? 'pin' : 'password')
