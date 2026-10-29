@@ -1518,8 +1518,9 @@ button.ev:hover {
 .service-head .service-tools:not(:empty) + .star {
   margin-left: 0;
 }
+/* The content a step further from the tabs than the tabs from the header: apart from what leads to it. */
 .service-tabs + .service-body {
-  padding-top: var(--s3);
+  padding-top: var(--s5);
 }
 .service-body {
   flex: 1;
