@@ -70,7 +70,10 @@ export async function execute(input: SyncJob, job: (ctx: SyncContext) => Promise
       const headers: Record<string, string> = { 'User-Agent': input.userAgent }
       if (etags[url] && !options.force) headers['If-None-Match'] = etags[url]
       const res = await fetch(url, { headers, redirect: 'follow', signal: AbortSignal.timeout(15 * 60_000) })
-      if (res.status === 304 || (res.status === 404 && options.optional)) return null
+      if (res.status === 304 || (res.status === 404 && options.optional)) {
+        await res.body?.cancel()
+        return null
+      }
       if (!res.ok || !res.body) throw new Error(`Téléchargement impossible (HTTP ${res.status}) : ${url}`)
       await mkdir(input.tmpDir, { recursive: true })
       const dest = join(input.tmpDir, `${files.length}-${u.pathname.split('/').pop() || 'download'}`)

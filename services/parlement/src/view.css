@@ -1,16 +1,20 @@
-/* 3615 PARLEMENT: its own blocks, on top of Marianne's classes (.tabs, .news, .btn, .chip, .rows, .box-note…). */
+/* 3615 PARLEMENT: its own blocks, on top of Marianne's classes (.tabs, .news, .btn, .chip, .rows, .box-note…).
+   The screen takes the width Marianne gives it (centred, at most --content-width) and lays out by it:
+   @container service, at 1000px (one column), 760px and 560px (small screens). */
 
 .parlement {
   display: flex;
   flex-direction: column;
   gap: var(--s3);
-  max-width: 1280px;
 }
 .parlement-body {
   display: flex;
   flex-direction: column;
   gap: var(--s4);
   min-width: 0;
+}
+.parlement-body[hidden] {
+  display: none;
 }
 .parlement .label {
   display: block;
@@ -212,7 +216,7 @@
   color: var(--noir);
 }
 .parlement .parlement-search {
-  width: 320px;
+  width: min(320px, 100%);
   border-color: var(--rule);
 }
 .parlement .parlement-search:focus-within {
@@ -716,6 +720,10 @@ button.parlement-line:hover,
   gap: 22px;
   align-items: start;
 }
+/* Narrower, the table alone: a ballot opens as a pane. */
+.parlement-bt-wrap.alone {
+  grid-template-columns: minmax(0, 1fr);
+}
 .parlement-btable {
   min-width: 0;
 }
@@ -972,9 +980,9 @@ button.parlement-bt-row:hover {
   text-anchor: middle;
 }
 .parlement-center-sub {
-  font-family: var(--sharp);
-  fill: var(--dim);
-  text-anchor: middle;
+  color: var(--dim);
+  text-align: center;
+  margin-top: 2px;
 }
 .parlement-callout {
   font-family: var(--retro);
@@ -985,8 +993,9 @@ button.parlement-bt-row:hover {
   pointer-events: none;
 }
 .parlement-tip {
-  position: fixed;
+  position: absolute;
   z-index: 50;
+  width: max-content;
   pointer-events: none;
   background: var(--bg-raised);
   border: 1px solid var(--fg);
@@ -1224,8 +1233,9 @@ button.parlement-bt-row:hover {
 }
 .parlement-day-h {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 2px 10px;
   margin: 14px 0 0;
   padding-bottom: 4px;
   border-bottom: 1px solid var(--rule);
@@ -1366,26 +1376,209 @@ button.parlement-ev:hover {
 
 /* ---------- narrower windows ---------- */
 
-@media (max-width: 1100px) {
+/* ---------- narrower screens: a laptop beside the sidebar, a tablet ---------- */
+
+@container service (max-width: 1000px) {
   .parlement-dash,
   .parlement-two,
   .parlement-presence,
-  .parlement-bt-wrap,
   .parlement-hemi-side,
   .parlement-watch {
     grid-template-columns: minmax(0, 1fr);
   }
-  .parlement-bt-detail {
-    position: static;
-  }
   .parlement-tiles,
   .parlement-tiles.n5 {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   }
   .parlement-sugg.wide {
     grid-template-columns: 24px minmax(0, 1fr) auto;
   }
   .parlement-sugg.wide .parlement-why {
     grid-column: 2;
+    grid-row: 2;
+  }
+  .parlement-chapters {
+    max-height: 360px;
+  }
+  .parlement-presence .parlement-hemi {
+    margin: 0 auto;
+  }
+}
+
+@container service (max-width: 760px) {
+  .parlement-shelf {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .parlement-vcard.wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .parlement-week {
+    grid-template-columns: repeat(7, minmax(84px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .parlement-senators {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Two lines per ballot: what it is about and its result, then its votes. */
+  .parlement-bt-head {
+    display: none;
+  }
+  .parlement-bt-row {
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    gap: 2px 10px;
+  }
+  .parlement-bt-time {
+    grid-row: 1 / 3;
+    align-self: start;
+  }
+  .parlement-bt-author {
+    display: none;
+  }
+  .parlement-bt-obj {
+    grid-column: 2 / 4;
+  }
+  .parlement-bt-row .parlement-bt-votes {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  .parlement-bt-res {
+    grid-column: 3;
+    grid-row: 2;
+  }
+  .parlement-bt-row .parlement-bt-mine {
+    grid-column: 2 / 4;
+    flex-direction: row;
+    gap: 12px;
+  }
+  .parlement-bt-mine:empty {
+    display: none;
+  }
+  /* A followed member, a member's day, a passage: their name first, the rest under it. */
+  .parlement-followed,
+  .parlement-followed.lens,
+  .parlement-presence-row,
+  .parlement-passage {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    row-gap: 4px;
+  }
+  .parlement-followed > :nth-child(1),
+  .parlement-presence-row > :nth-child(1),
+  .parlement-passage > :nth-child(1) {
+    grid-row: 1 / 4;
+    align-self: start;
+  }
+  .parlement-followed > :nth-child(4) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .parlement-followed > :nth-child(5) {
+    grid-column: 3;
+    grid-row: 2;
+  }
+  .parlement-followed > :nth-child(6) {
+    grid-column: 2 / 4;
+    grid-row: 3;
+  }
+  .parlement-presence-row.head {
+    display: none;
+  }
+  .parlement-presence-row > :nth-child(3) {
+    grid-column: 2 / 4;
+    grid-row: 2;
+  }
+  .parlement-presence-row > :nth-child(4) {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .parlement-presence-row > :nth-child(5) {
+    grid-column: 2 / 4;
+    grid-row: 3;
+  }
+  .parlement-passage > :nth-child(3) {
+    grid-column: 2 / 4;
+    grid-row: 2;
+  }
+  .parlement-passage > :nth-child(4) {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .parlement-passage > :nth-child(5) {
+    grid-column: 2 / 4;
+    grid-row: 3;
+    justify-content: flex-start;
+  }
+  .parlement-profile {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+  }
+  .parlement-profile > :nth-child(3) {
+    grid-column: 2;
+  }
+  .parlement-profile .parlement-face {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* ---------- small screens: a phone, a narrow window ---------- */
+
+@container service (max-width: 560px) {
+  /* The counts are in the bar's hover text. */
+  .parlement-bt-row .parlement-bt-votes > .small {
+    display: none;
+  }
+  .parlement-week {
+    grid-template-columns: repeat(7, minmax(104px, 1fr));
+  }
+  .parlement-wd .small {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 6px;
+  }
+  .parlement-shelf {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .parlement-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .parlement-vrow {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+  .parlement-vrow .parlement-thumb {
+    width: 96px;
+    height: 54px;
+  }
+  .parlement-vrow .parlement-thumb .glyph {
+    font-size: 20px;
+  }
+  .parlement-vrow > .parlement-vacts {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+  .parlement-me {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .parlement-me-acts {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+  }
+  .parlement-me-today {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .parlement-mline {
+    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+  }
+  .parlement-mline > :nth-child(4) {
+    display: none;
+  }
+  .parlement-chamber {
+    flex-wrap: wrap;
+  }
+  .parlement-tile .n {
+    font-size: calc(var(--pixel-size) * 1.4);
   }
 }

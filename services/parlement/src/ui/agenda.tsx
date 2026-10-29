@@ -197,7 +197,9 @@ function Column({ chamber, meetings, indexed }: { chamber: Chamber; meetings: Ag
                     {item}
                   </span>
                 ))}
-                {m.items.length > 2 && <span className="small dim">… et {m.items.length - 2} autres points</span>}
+                {m.items.length > 2 && (
+                  <span className="small dim">… et {m.items.length === 3 ? 'un autre point' : `${m.items.length - 2} autres points`}</span>
+                )}
                 <States m={m} />
               </span>
             </button>

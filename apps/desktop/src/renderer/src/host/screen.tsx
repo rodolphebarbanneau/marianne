@@ -14,10 +14,16 @@ import { SERVICE_VIEWS } from './registry'
 export function ServiceScreen({ id, params }: { id: string; params: Record<string, string | number> }) {
   const app = useApp()
   const state = useServices().find((s) => s.manifest.id === id)
-  const address = useProfile()?.address
+  const profile = useProfile()
+  const address = profile?.address
   const View = SERVICE_VIEWS[id]
   const { setSeed, goPage, openRoute, toast } = app
   const paramsKey = JSON.stringify(params)
+  // The list of the services comes again whenever a setting changes or a sync reports progress, each
+  // time with new objects: the host follows what the manifest says, not the object that carries it.
+  const manifestKey = state ? JSON.stringify(state.manifest) : ''
+  // What the service may read changed (an access given or taken back in Réglages, the opinions said): its screen reads again.
+  const readsKey = JSON.stringify([state?.access.granted ?? null, profile?.opinions ?? null])
 
   const host = useMemo<ServiceHost | null>(() => {
     if (!state) return null
@@ -42,7 +48,21 @@ export function ServiceScreen({ id, params }: { id: string; params: Record<strin
       save: (key: string, value: unknown) => api.setServiceData(id, key, value)
     }
     // A new host only when what it carries changes: views reload their data with it.
-  }, [id, state?.manifest, paramsKey, address?.inseeCode, address?.city, address?.postcode, address?.lat, address?.lon, setSeed, goPage, openRoute, toast]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    id,
+    manifestKey,
+    readsKey,
+    paramsKey,
+    address?.inseeCode,
+    address?.city,
+    address?.postcode,
+    address?.lat,
+    address?.lon,
+    setSeed,
+    goPage,
+    openRoute,
+    toast
+  ]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!state) return <div className="page service-page" />
   const m = state.manifest
@@ -65,33 +85,35 @@ export function ServiceScreen({ id, params }: { id: string; params: Record<strin
         </button>
       </div>
       <div className="service-body">
-        {state.error ? (
-          <div className="box-note">Ce service n’a pas pu démarrer : {state.error}</div>
-        ) : !state.available ? (
-          <div className="box-note">
-            Ce service s’appuie sur {m.connections.map((c) => publicSource(c as PublicSourceId)?.label ?? c).join(', ')}, désactivé dans les connexions.{' '}
-            <button className="link" onClick={() => app.openSettings('data')}>
-              l’activer
-            </button>
-          </div>
-        ) : !state.on ? (
-          <div className="box-note">
-            Vous avez désactivé ce service.{' '}
-            <button className="link" onClick={() => void app.setSettings({ services: { disabled: (settings?.disabled ?? []).filter((x) => x !== id) } })}>
-              le réactiver
-            </button>
-          </div>
-        ) : state.access.asked.length > 0 && state.access.granted === null ? (
-          <Consent state={state} />
-        ) : View && host ? (
-          <ServiceHostProvider host={host}>
-            <Boundary label={m.name}>
-              <View />
-            </Boundary>
-          </ServiceHostProvider>
-        ) : (
-          <div className="box-note">Ce service n’a pas d’écran.</div>
-        )}
+        <div className="service-content">
+          {state.error ? (
+            <div className="box-note">Ce service n’a pas pu démarrer : {state.error}</div>
+          ) : !state.available ? (
+            <div className="box-note">
+              Ce service s’appuie sur {m.connections.map((c) => publicSource(c as PublicSourceId)?.label ?? c).join(', ')}, désactivé dans les connexions.{' '}
+              <button className="link" onClick={() => app.openSettings('data')}>
+                l’activer
+              </button>
+            </div>
+          ) : !state.on ? (
+            <div className="box-note">
+              Vous avez désactivé ce service.{' '}
+              <button className="link" onClick={() => void app.setSettings({ services: { disabled: (settings?.disabled ?? []).filter((x) => x !== id) } })}>
+                le réactiver
+              </button>
+            </div>
+          ) : state.access.asked.length > 0 && state.access.granted === null ? (
+            <Consent state={state} />
+          ) : View && host ? (
+            <ServiceHostProvider host={host}>
+              <Boundary label={m.name}>
+                <View />
+              </Boundary>
+            </ServiceHostProvider>
+          ) : (
+            <div className="box-note">Ce service n’a pas d’écran.</div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -100,7 +122,8 @@ export function ServiceScreen({ id, params }: { id: string; params: Record<strin
 /** What a service asks to read of the profile, the first time it opens: field by field, the user decides. */
 function Consent({ state }: { state: ServiceState }) {
   const m = state.manifest
-  const [chosen, setChosen] = useState<ProfileField[]>(m.permissions.profile)
+  // Opinions are sensitive (RGPD, article 9): never ticked in advance; the rest is.
+  const [chosen, setChosen] = useState<ProfileField[]>(m.permissions.profile.filter((f) => !f.startsWith('opinions.')))
   const answer = (granted: ProfileField[]) => void api.setServiceAccess(m.id, granted)
   return (
     <div className="consent">

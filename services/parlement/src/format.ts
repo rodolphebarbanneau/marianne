@@ -1,7 +1,7 @@
 import { formatNumber } from '@marianne/sdk'
 import { clip, plural, table } from '@marianne/sdk/main'
 import { videoPage } from './links'
-import { clock, parisTime } from './time'
+import { clock, parisDay, parisTime } from './time'
 import type { AgendaMeeting, BallotDetail, BallotLine, MemberCard, MemberProfile, MemberVote, LiveStream, Position, VideoDetail, VideoItem } from './types'
 
 /** The tools' results: compact Markdown in English, for the model, with the links and ids it needs to cite. */
@@ -16,7 +16,7 @@ const vote = (v: MemberVote | undefined) => (v?.position ? `${POSITIONS[v.positi
 const department = (d: Pick<MemberCard, 'department' | 'departmentNumber'>) => `${d.department} (${d.departmentNumber})`
 
 /** "2026-10-28 14:00", Paris time. */
-const when = (iso: string) => (iso ? `${iso.slice(0, 10)} ${parisTime(iso)}` : '')
+const when = (iso: string) => (iso ? `${parisDay(new Date(iso))} ${parisTime(iso)}` : '')
 
 export function formatMembers(cards: MemberCard[], limit: number, scope = ''): string {
   const shown = cards.slice(0, limit)

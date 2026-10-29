@@ -348,10 +348,9 @@ export async function searchSenateVideos(http: Http, q: VideoQuery): Promise<Vid
 /** What the Sénat broadcasts now (its portal flags it live among its latest videos). */
 export async function senateLive(http: Http): Promise<LiveStream[]> {
   const raw = await json<RawSenateItem[]>(http, `${SENATE_SEARCH}${query({ method: 'senat_main.search', limit: 12, live: 'true' })}`, 60_000)
-  const live = (Array.isArray(raw) ? raw : []).filter((v) => v.live)
+  const live = (Array.isArray(raw) ? raw : []).filter((v) => v.live).flatMap((v) => senateItem(v) ?? [])
   return Promise.all(
-    live.map(async (v): Promise<LiveStream> => {
-      const item = senateItem(v)!
+    live.map(async (item): Promise<LiveStream> => {
       return {
         id: item.id,
         chamber: 'se',

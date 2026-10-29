@@ -48,13 +48,27 @@ export function Player({ src, poster, start, stopAt, autoPlay, onTime, ref }: Pl
     const play = () => autoPlay && void v.play().catch(() => undefined)
     if (Hls.isSupported()) {
       const hls = new Hls({ startPosition: start ? start / 1000 : -1 })
-      let recovered = false
+      let mediaRetries = 0
+      let networkRetries = 0
+      let retry: ReturnType<typeof setTimeout> | undefined
       hls.on(Hls.Events.MANIFEST_PARSED, play)
+      // Playing again: the counts start over, so that a long sitting survives several hiccups.
+      hls.on(Hls.Events.FRAG_BUFFERED, () => {
+        networkRetries = 0
+        setError('')
+      })
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (!data.fatal) return
-        // A decoding hiccup is worth one more try; anything else ends the playback.
-        if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recovered) {
-          recovered = true
+        // A network hiccup (a live playlist that doesn't answer, a fragment that times out) is
+        // retried a few times, a little later each time; a decoding one is recovered twice.
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR && networkRetries < 5) {
+          networkRetries++
+          retry = setTimeout(() => hls.startLoad(), 1000 * networkRetries)
+          return
+        }
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRetries < 2) {
+          mediaRetries++
+          if (mediaRetries === 2) hls.swapAudioCodec()
           hls.recoverMediaError()
           return
         }
@@ -62,7 +76,10 @@ export function Player({ src, poster, start, stopAt, autoPlay, onTime, ref }: Pl
       })
       hls.loadSource(src)
       hls.attachMedia(v)
-      return () => hls.destroy()
+      return () => {
+        clearTimeout(retry)
+        hls.destroy()
+      }
     }
     if (v.canPlayType('application/vnd.apple.mpegurl')) {
       const begin = () => {
@@ -83,7 +100,7 @@ export function Player({ src, poster, start, stopAt, autoPlay, onTime, ref }: Pl
 
   const time = (ms: number) => {
     onTime?.(ms)
-    if (stopAt && !stopped.current && ms >= stopAt) {
+    if (stopAt !== undefined && stopAt > 0 && !stopped.current && ms >= stopAt) {
       stopped.current = true
       video.current?.pause()
     }

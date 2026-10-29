@@ -150,7 +150,7 @@ class ProfileStore extends EventEmitter {
         p.notes = op.notes
         break
       case 'opinions': {
-        // Acronyms as the chambers write them, a few at most; themes among the known ones.
+        // Acronyms as the chambers write them, at most as many as a chamber has groups; themes among the known ones.
         const acronyms = (list: unknown) =>
           [
             ...new Set(
@@ -158,7 +158,7 @@ class ProfileStore extends EventEmitter {
                 .filter((x): x is string => typeof x === 'string' && /^[\p{L}\d .'-]{1,24}$/u.test(x.trim()))
                 .map((x) => x.trim())
             )
-          ].slice(0, 6)
+          ].slice(0, 16)
         const themes = new Set<string>(THEMES.map((t) => t.id))
         p.opinions = {
           leaning: { assembly: acronyms(op.opinions.leaning?.assembly), senate: acronyms(op.opinions.leaning?.senate) },

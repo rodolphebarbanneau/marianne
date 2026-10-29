@@ -47,22 +47,38 @@ export function ballotKind(title: string): BallotKind {
   return 'other'
 }
 
-// Where the Assemblée's author's name ends: what follows it in the subject.
-const AN_STOP = /\s(?:apres|avant|a l'|a la|au|aux|sur|et plusieurs|et les|et l'|tendant|portant|visant|\()|,|$/
+// Where the Assemblée's author's name ends: what follows it in the subject (whole words: "M. Aurélien Taché", "Mme Autain").
+const AN_STOP = /\s(?:a l'|et l')|\s(?:apres|avant|a la|au|aux|sur|et plusieurs|et les|tendant|portant|visant)(?=\s|$)|\s\(|,|$/
+
+// An amendment as the Assemblée names it: "amendement n° 12", "amendements identiques n° 12",
+// "amendement de suppression n° 444", "amendement de rédaction globale n° 9".
+const AMENDMENT = /amendements?(?: de (?:suppression|retablissement|redaction globale))? (?:identiques )?n° ?/
+const NUMBERED = new RegExp(`${AMENDMENT.source}(\\d+(?: \\([^)]*\\)| (?:rectifie|rect\\.)(?: [a-z]+)?)?)`)
+// Its number, and what may follow it before its author: "rectifié", "rect. bis".
+const NUMBER = /^amendement n° ?\d+(?: rect(?:ifie|\.)(?: [a-z]+)?)?/
 
 /** The kind, the amendment's number and its author, as the subject says them. */
 export function parseMention(chamber: Chamber, title: string): Mention {
   const kind = ballotKind(title)
   const t = fold(title)
-  const amendment = t.match(/amendements? (?:identiques )?n° ?(\d+(?: \([^)]*\)| (?:rectifie|rect\.)(?: [a-z]+)?)?)/)?.[1]?.replace(/[()]/g, '') ?? ''
+  const amendment = t.match(NUMBERED)?.[1]?.replace(/[()]/g, '') ?? ''
   if (kind !== 'amendment') return { kind, amendment: '', author: null }
   if (chamber === 'an') {
-    // The first amendment named is the one voted on (a sub-amendment comes first).
-    const after = t.slice(t.search(/amendement n° ?\d+/)).replace(/^(amendement n° ?\d+) \([^)]*\)/, '$1')
-    if (/^amendement n° ?\d+[^,]*? du gouvernement/.test(after)) return { kind, amendment, author: { type: 'government' } }
-    const committee = after.match(/^amendement n° ?\d+[^,]*? de la (commission [^,(]+?)(?:\s(?:apres|avant|a l'|au|aux|sur)\b|,|\(|$)/)
+    // The first amendment named is the one voted on (a sub-amendment comes first); what follows its
+    // number says who tabled it, and nothing further on ("… à l'amendement n° 39 du Gouvernement").
+    const at = t.search(AMENDMENT)
+    if (at < 0) return { kind, amendment, author: null }
+    const after = t
+      .slice(at)
+      .replace(new RegExp(`^${AMENDMENT.source}`), 'amendement n° ')
+      .replace(/^(amendement n° ?\d+) \([^)]*\)/, '$1')
+    const head = after.match(NUMBER)?.[0]
+    if (!head) return { kind, amendment, author: null }
+    const rest = after.slice(head.length)
+    if (/^ du gouvernement\b/.test(rest)) return { kind, amendment, author: { type: 'government' } }
+    const committee = rest.match(/^ de la (commission [^,(]+?)(?:\s(?:apres|avant|a l'|au|aux|sur)\b|,|\(|$)/)
     if (committee) return { kind, amendment, author: { type: 'committee', name: committee[1].trim() } }
-    const member = after.match(/^amendement n° ?\d+(?: rect(?:ifie|\.)(?: [a-z]+)?)? de ((?:m\.|mme) .+)$/)
+    const member = rest.match(/^ de ((?:m\.|mme) .+)$/)
     if (!member) return { kind, amendment, author: null }
     const name = member[1].split(AN_STOP)[0].trim()
     return { kind, amendment, author: { type: 'member', name } }
@@ -112,12 +128,15 @@ export class MemberNames {
   }
 }
 
-/** The author's group of a ballot (the colour of its amendment), and the member when one tabled it. */
-export function ballotAuthor(mention: Mention, names: MemberNames): { author: string; group: string } {
+/**
+ * The author's group of a ballot (the colour of its amendment), and the member when one tabled it,
+ * with their name as it was then (kept with the ballot: they may leave office).
+ */
+export function ballotAuthor(mention: Mention, names: MemberNames): { author: string; group: string; name?: string } {
   const a = mention.author
   if (!a) return { author: '', group: '' }
   if (a.type === 'government') return { author: GOVERNMENT, group: GOVERNMENT }
   if (a.type === 'committee') return { author: COMMITTEE, group: COMMITTEE }
   const member = names.find(a.name)
-  return member ? { author: member.id, group: member.groupId } : { author: '', group: '' }
+  return member ? { author: member.id, group: member.groupId, name: `${member.civility} ${member.firstName} ${member.lastName}` } : { author: '', group: '' }
 }

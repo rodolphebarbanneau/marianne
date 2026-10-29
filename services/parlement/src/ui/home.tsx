@@ -19,6 +19,7 @@ import {
   longDay,
   Mosaic,
   percent,
+  plural,
   useBallotDay,
   useFollowed,
   useLens,
@@ -75,7 +76,7 @@ function Home() {
         {big && (
           <span className="small dim">
             prochain grand rendez-vous :{' '}
-            <button className="link hi" onClick={() => nav.open({ kind: 'meeting', id: big.id })}>
+            <button className="link hi parlement-left" onClick={() => nav.open({ kind: 'meeting', id: big.id })}>
               {bigText(big)}, {dateTime(big.start)}
             </button>
           </span>
@@ -592,7 +593,7 @@ function Bulletin({ day }: { day: DayBallots }) {
       <div className="parlement-h">
         <span className="parlement-title">le jour au parlement</span>
         <span className="small dim">
-          {today ? longDay(day.day) : `dernier jour de scrutins : ${longDay(day.day)}`} · {lines.length} scrutins publics
+          {today ? longDay(day.day) : `dernier jour de scrutins : ${longDay(day.day)}`} · {plural(lines.length, 'scrutin public', 'scrutins publics')}
         </span>
         <button className="parlement-more link" onClick={() => nav.tab('ballots')}>
           récap complet et présence ›

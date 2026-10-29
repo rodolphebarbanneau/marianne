@@ -10,10 +10,17 @@ const NAMES = new MemberNames([
   { id: 'PA4', groupId: 'EPR', civility: 'M.', firstName: 'Paul', lastName: 'Martin' },
   { id: 'PA5', groupId: 'DR', civility: 'M.', firstName: 'Jean', lastName: 'Martin' },
   { id: '21089R', groupId: 'SOC', civility: 'Mme', firstName: 'Colombe', lastName: 'Brossel' },
-  { id: '19595P', groupId: 'GEST', civility: 'M.', firstName: 'Bernard', lastName: 'Jomier' }
+  { id: '19595P', groupId: 'GEST', civility: 'M.', firstName: 'Bernard', lastName: 'Jomier' },
+  { id: 'PA6', groupId: 'LFI-NFP', civility: 'M.', firstName: 'Hadrien', lastName: 'Coulomme' },
+  { id: 'PA7', groupId: 'EcoS', civility: 'M.', firstName: 'Aurélien', lastName: 'Taché' },
+  { id: 'PA8', groupId: 'DR', civility: 'M.', firstName: 'Marc', lastName: 'Le Fur' },
+  { id: 'PA9', groupId: 'RN', civility: 'M.', firstName: 'Julien', lastName: 'Chenu' }
 ])
 
-const author = (chamber: 'an' | 'se', title: string) => ballotAuthor(parseMention(chamber, title), NAMES)
+const author = (chamber: 'an' | 'se', title: string) => {
+  const { author, group } = ballotAuthor(parseMention(chamber, title), NAMES)
+  return { author, group }
+}
 
 describe('what a ballot is about', () => {
   it('tells amendments, articles, whole texts and motions apart, as both chambers word them', () => {
@@ -79,5 +86,38 @@ describe('who tabled an amendment', () => {
   it('says nothing of an article or a whole text', () => {
     expect(parseMention('an', "l'article 4 du projet de loi")).toEqual({ kind: 'article', amendment: '', author: null })
     expect(author('an', "l'ensemble du projet de loi")).toEqual({ author: '', group: '' })
+  })
+})
+
+describe('the author, and only the one of the amendment voted on', () => {
+  it('reads a deputy’s sub-amendment to an amendment of the Government as the deputy’s', () => {
+    expect(author('an', 'le sous-amendement n° 45 de M. Coulomme à l’amendement n° 39 du Gouvernement après l’article 5')).toEqual({
+      author: 'PA6',
+      group: 'LFI-NFP'
+    })
+  })
+
+  it('doesn’t take "du gouvernement" further in the subject for the author', () => {
+    expect(author('an', 'l’amendement n° 12 de M. Chenu à l’article 2 du projet de loi relatif à l’accord avec le gouvernement géorgien')).toEqual({
+      author: 'PA9',
+      group: 'RN'
+    })
+    expect(author('an', 'l’amendement n° 851 du Gouvernement après l’article 3')).toEqual({ author: 'GOUV', group: 'GOUV' })
+  })
+
+  it('reads amendments of deletion, of restoration, of overall rewording', () => {
+    expect(parseMention('an', 'l’amendement de suppression n° 444 de M. Le Fur à l’article 7').amendment).toBe('444')
+    expect(author('an', 'l’amendement de suppression n° 444 de M. Le Fur à l’article 7')).toEqual({ author: 'PA8', group: 'DR' })
+    expect(author('an', 'l’amendement de rédaction globale n° 9 de la commission des finances à l’article 1er')).toEqual({ author: 'COM', group: 'COM' })
+  })
+
+  it('ends a name only on whole words', () => {
+    expect(author('an', 'l’amendement n° 77 de M. Aurélien Taché après l’article 4')).toEqual({ author: 'PA7', group: 'EcoS' })
+  })
+})
+
+describe('a member who left office', () => {
+  it('is named as the ballot was indexed', () => {
+    expect(ballotAuthor(parseMention('an', 'l’amendement n° 77 de M. Aurélien Taché après l’article 4'), NAMES).name).toBe('M. Aurélien Taché')
   })
 })

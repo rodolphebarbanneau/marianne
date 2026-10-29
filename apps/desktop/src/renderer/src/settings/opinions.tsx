@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { THEMES, type ProfileField, type ServiceState } from '@marianne/sdk'
 import type { Opinions } from '@marianne/profile'
 import type { ParliamentGroup } from '@shared/api'
+import { useApp } from '../app/context'
 import { GearIcon, SearchIcon } from '../components/icons'
 import { useServices } from '../host'
 import { api, errorText } from '../lib/api'
@@ -146,10 +147,13 @@ export function OpinionsSection() {
   )
 }
 
+/** Today in Paris (YYYY-MM-DD), as the reads are kept. */
+const parisDay = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+
 /** "lu aujourd'hui", "lu hier", "lu il y a 3 jours", "lu le 2 oct.", "jamais lu". */
 function readText(day: string | undefined): string {
   if (!day) return 'jamais lu'
-  const days = Math.round((Date.parse(new Date().toISOString().slice(0, 10)) - Date.parse(day)) / 86_400_000)
+  const days = Math.round((Date.parse(parisDay()) - Date.parse(day)) / 86_400_000)
   if (days <= 0) return 'lu aujourd’hui'
   if (days === 1) return 'lu hier'
   if (days < 7) return `lu il y a ${days} jours`
@@ -169,6 +173,7 @@ function summary(asked: ProfileField[], granted: ProfileField[] | null): { text:
 /** "qui peut les lire": the services that ask for the opinions, accepted or refused, one by one. */
 function Readers({ declared }: { declared: boolean }) {
   const services = useServices()
+  const { openRoute } = useApp()
   const [open, setOpen] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const asking = services.filter((s) => s.access.asked.some((f) => OPINION_FIELDS.includes(f)))
@@ -209,6 +214,8 @@ function Readers({ declared }: { declared: boolean }) {
           const granted = s.access.granted
           const sum = summary(asked, granted)
           const tunable = asked.length > 1
+          // Never opened, and asking for other fields too: those are its own consent's, at its first opening.
+          const pending = granted === null && s.access.asked.some((f) => !OPINION_FIELDS.includes(f))
           const code = s.manifest.id.toUpperCase()
           const purpose = s.manifest.permissions.purpose
           return (
@@ -233,24 +240,33 @@ function Readers({ declared }: { declared: boolean }) {
                   <span className={sum.on ? '' : 'muted'}>{sum.text}</span>
                   <span className="muted">{sum.on ? readText(s.access.readAt) : ''}</span>
                 </span>
-                <span className="perm-acts">
-                  <span className="perm-seg">
-                    <button className={sum.on ? 'on' : ''} onClick={() => grant(s, asked)}>
-                      accepter
-                    </button>
-                    <button className={granted !== null && !sum.on ? 'on' : ''} onClick={() => grant(s, [])}>
-                      refuser
+                {pending ? (
+                  <span className="perm-acts small dim">
+                    à sa première ouverture ·{' '}
+                    <button className="link" onClick={() => openRoute(`service:${s.manifest.id}`)}>
+                      l’ouvrir
                     </button>
                   </span>
-                  <button
-                    className={`icon-btn${open === s.manifest.id ? ' accent' : ''}`}
-                    disabled={!tunable}
-                    onClick={() => setOpen(open === s.manifest.id ? null : s.manifest.id)}
-                    title={tunable ? 'choisir ce qu’il peut lire' : `il ne demande que ${ASK_LABELS[asked[0]] ?? asked[0]}`}
-                  >
-                    <GearIcon />
-                  </button>
-                </span>
+                ) : (
+                  <span className="perm-acts">
+                    <span className="perm-seg">
+                      <button className={sum.on ? 'on' : ''} onClick={() => grant(s, asked)}>
+                        accepter
+                      </button>
+                      <button className={granted !== null && !sum.on ? 'on' : ''} onClick={() => grant(s, [])}>
+                        refuser
+                      </button>
+                    </span>
+                    <button
+                      className={`icon-btn${open === s.manifest.id ? ' accent' : ''}`}
+                      disabled={!tunable}
+                      onClick={() => setOpen(open === s.manifest.id ? null : s.manifest.id)}
+                      title={tunable ? 'choisir ce qu’il peut lire' : `il ne demande que ${ASK_LABELS[asked[0]] ?? asked[0]}`}
+                    >
+                      <GearIcon />
+                    </button>
+                  </span>
+                )}
               </div>
               {open === s.manifest.id && (
                 <div className="perm-cfg">

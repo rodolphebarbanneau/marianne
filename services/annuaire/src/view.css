@@ -1,15 +1,9 @@
 /* 3615 ANNUAIRE */
 
-.annuaire {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-}
 .annuaire-body {
   display: flex;
   flex-direction: column;
   gap: var(--s4);
-  max-width: 1100px;
 }
 .annuaire-search {
   display: flex;

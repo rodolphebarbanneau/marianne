@@ -325,8 +325,9 @@ export interface BallotDetail extends BallotLine {
   groups: GroupCount[]
   /** The votes of the members asked for (the user's own, those they follow). */
   votes: Array<{ member: MemberCard; vote: MemberVote; groupPosition: Position | null }>
-  /** Members who voted otherwise than most of their group. */
+  /** Members who voted otherwise than most of their group (the first 40), and how many they are. */
   dissidents: Array<{ member: MemberCard; position: Position }>
+  dissidentCount: number
   proxies: number
   /** The recording of its sitting, when the portal has it. */
   video: { id: string; url: string } | null

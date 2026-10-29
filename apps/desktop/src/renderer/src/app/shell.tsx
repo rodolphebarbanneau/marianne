@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useActions, useShortcuts } from './commands'
 import { useApp } from './context'
 import { BottomBar } from './bottombar'
@@ -24,6 +25,11 @@ export function Shell() {
   useShortcuts(actions, false)
   const { view } = app
   const folded = !app.config.ui.sidebarOpen
+  // A narrow window: the sidebar, over the screen (styles.css), goes away once a screen is chosen.
+  const viewKey = JSON.stringify(view)
+  useEffect(() => {
+    if (!folded && window.matchMedia('(max-width: 900px)').matches) void app.setConfig({ ui: { sidebarOpen: false } })
+  }, [viewKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className={`app${folded ? ' folded' : ''}`}>

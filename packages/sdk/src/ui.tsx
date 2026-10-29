@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 /**
  * The building blocks Marianne's window and services' views share. They take Marianne's look
@@ -27,6 +28,9 @@ export function Field({ label, hint, error, wide, children }: { label: string; h
   )
 }
 
+/** Where what floats over the window goes: the window's root, out of a screen's own layout (a service's centred column…). */
+export const floating = () => document.getElementById('root') ?? document.body
+
 /**
  * A dialog over the window. Its buttons close it, and échap like its cancel button; a click beside
  * it doesn't, so a stray click loses nothing typed in it.
@@ -38,9 +42,10 @@ export function Modal({ children, onClose }: { children: ReactNode; onClose?: ()
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
   }, [onClose])
-  return (
+  return createPortal(
     <div className="overlay">
       <div className="modal">{children}</div>
-    </div>
+    </div>,
+    floating()
   )
 }

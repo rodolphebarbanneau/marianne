@@ -168,7 +168,7 @@ export function indexBallots(db: DatabaseSync, zip: Uint8Array, step?: Step): nu
       if (parsed) {
         const b = parsed.ballot
         const mention = parseMention('an', b.title)
-        const { author, group } = ballotAuthor(mention, names)
+        const { author, group, name: authorName } = ballotAuthor(mention, names)
         ballot.run(
           'an',
           b.id,
@@ -182,7 +182,7 @@ export function indexBallots(db: DatabaseSync, zip: Uint8Array, step?: Step): nu
           group,
           b.bill,
           b.sitting,
-          JSON.stringify({ ...b, amendment: mention.amendment })
+          JSON.stringify({ ...b, amendment: mention.amendment, ...(authorName ? { authorName } : {}) })
         )
         for (const v of parsed.votes) votes.add(b.number, actorNumber(v.deputy), POSITION_CODES.indexOf(v.position), v.proxy ? 1 : 0)
         count++
@@ -316,7 +316,7 @@ export function addSenateBallots(
     for (const { session, head, votes: list } of ballots) {
       const key = senateBallotKey(session, head.number)
       const mention = parseMention('se', head.title)
-      const { author, group } = ballotAuthor(mention, names)
+      const { author, group, name: authorName } = ballotAuthor(mention, names)
       const count = (p: Position) => list.filter((v) => v.position === p).length
       const billTitle = senateBillTitle(head.title)
       const data = {
@@ -332,7 +332,8 @@ export function addSenateBallots(
         bill: head.bill,
         billTitle,
         amendment: mention.amendment,
-        amendmentUrl: head.amendmentUrl
+        amendmentUrl: head.amendmentUrl,
+        ...(authorName ? { authorName } : {})
       }
       ballot.run(
         'se',

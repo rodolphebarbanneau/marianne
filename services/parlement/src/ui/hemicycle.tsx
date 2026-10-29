@@ -1,4 +1,4 @@
-import { useMemo, useState, type MouseEvent } from 'react'
+import { useMemo, useRef, useState, type MouseEvent } from 'react'
 import plans from '../hemicycle.json'
 import { parisDay } from '../time'
 import type { BallotLine, Chamber, DayPresence, GroupInfo, Hemicycle as HemicycleData, VoteMap } from '../types'
@@ -60,7 +60,8 @@ export function HemicycleDrawing({ data, fill, detail, callout, center, compact 
   const nav = useNav()
   const { prefs } = useStore()
   const { mine, ids } = useFollowed()
-  const [tip, setTip] = useState<{ x: number; y: number; seat: HemicycleData['seats'][number] } | null>(null)
+  const [tip, setTip] = useState<{ x: number; y: number; left: boolean; seat: HemicycleData['seats'][number] } | null>(null)
+  const box = useRef<HTMLDivElement>(null)
   const plan = plans[data.chamber] as unknown as Plan
   const own = new Set(mine.map((m) => m.id))
   const followed = new Set(ids)
@@ -74,11 +75,15 @@ export function HemicycleDrawing({ data, fill, detail, callout, center, compact 
   })
   // The figure sits in the bay, on the last row; its caption under it.
   const base = seats.length ? Math.max(...seats.map((s) => s.y)) : plan.height
-  const below = center ? r * (compact ? 7.5 : 5.5) : 0
+  const below = center?.big ? r * 2 : 0
   const calloutSeat = callout ? seats.find((s) => own.has(s.member) && data.chamber === 'an') : undefined
-  const hover = (s: (typeof seats)[number]) => (e: MouseEvent) => setTip({ x: e.clientX, y: e.clientY, seat: s })
+  // The hover card, in the drawing's own coordinates; on its left side near the right edge.
+  const hover = (s: (typeof seats)[number]) => (e: MouseEvent) => {
+    const r = box.current?.getBoundingClientRect()
+    if (r) setTip({ x: e.clientX - r.left, y: e.clientY - r.top, left: e.clientX - r.left > r.width - 260, seat: s })
+  }
   return (
-    <div className={`parlement-hemi${compact ? ' compact' : ''}`} onMouseLeave={() => setTip(null)}>
+    <div ref={box} className={`parlement-hemi${compact ? ' compact' : ''}`} onMouseLeave={() => setTip(null)}>
       <svg
         viewBox={`${-pad} ${-pad} ${plan.width + pad * 2} ${base + pad * 2 + below}`}
         role="img"
@@ -117,19 +122,16 @@ export function HemicycleDrawing({ data, fill, detail, callout, center, compact 
             {callout}
           </text>
         )}
-        {center && (
-          <>
-            <text className="parlement-center" x={plan.width / 2} y={base + r * 0.5} style={{ fontSize: r * (compact ? 11 : 8), fill: center.color }}>
-              {center.big}
-            </text>
-            <text className="parlement-center-sub" x={plan.width / 2} y={base + r * (compact ? 6.5 : 4.8)} style={{ fontSize: r * (compact ? 4.4 : 2.6) }}>
-              {center.small}
-            </text>
-          </>
+        {center?.big && (
+          <text className="parlement-center" x={plan.width / 2} y={base + r * 0.5} style={{ fontSize: r * (compact ? 11 : 8), fill: center.color }}>
+            {center.big}
+          </text>
         )}
       </svg>
+      {/* The caption in the page's text, readable whatever the drawing's size. */}
+      {center?.small && <div className="parlement-center-sub small">{center.small}</div>}
       {tip && (
-        <div className="parlement-tip" style={{ left: tip.x + 14, top: tip.y + 14 }}>
+        <div className="parlement-tip" style={tip.left ? { right: `calc(100% - ${tip.x - 14}px)`, top: tip.y + 14 } : { left: tip.x + 14, top: tip.y + 14 }}>
           <div className="hi">{tip.seat.name}</div>
           <div className="small">
             <GroupChip short={groups.get(tip.seat.groupId)?.shortName ?? ''} color={groups.get(tip.seat.groupId)?.color ?? ''} small />{' '}
@@ -220,8 +222,8 @@ function Hemicycles() {
   const deputy = mine?.exact ? mine.deputies[0] : undefined
   const readings = READINGS.filter((r) => (r.id !== 'lens' || lens.on) && (r.id !== 'deputy' || deputy))
   const current = readings.some((r) => r.id === reading) ? reading : 'groups'
-  const recent = useMethod('ballots', current === 'vote' ? [{ limit: 40 }] : null)
-  const choice = ballot ?? (recent.data?.[0] ? { chamber: recent.data[0].chamber, id: recent.data[0].id } : null)
+  const recent = useMethod('ballots', current === 'vote' ? [{ limit: 40, ...(nav.chambers === 'both' ? {} : { chamber: nav.chambers }) }] : null)
+  const choice = (ballot && nav.shows(ballot.chamber) ? ballot : null) ?? (recent.data?.[0] ? { chamber: recent.data[0].chamber, id: recent.data[0].id } : null)
   return (
     <>
       <div className="parlement-toolbar">
@@ -234,14 +236,16 @@ function Hemicycles() {
           ))}
         </span>
         <span className="parlement-grow" />
-        <span className="small dim">style</span>
-        <span className="parlement-seg">
-          <button className={prefs.style === 'dots' ? 'on' : ''} onClick={() => setPrefs({ style: 'dots' })}>
-            ● points
-          </button>
-          <button className={prefs.style === 'mosaic' ? 'on' : ''} onClick={() => setPrefs({ style: 'mosaic' })}>
-            ▪ mosaïque
-          </button>
+        <span className="parlement-row nowrap">
+          <span className="small dim">style</span>
+          <span className="parlement-seg">
+            <button className={prefs.style === 'dots' ? 'on' : ''} onClick={() => setPrefs({ style: 'dots' })}>
+              ● points
+            </button>
+            <button className={prefs.style === 'mosaic' ? 'on' : ''} onClick={() => setPrefs({ style: 'mosaic' })}>
+              ▪ mosaïque
+            </button>
+          </span>
         </span>
       </div>
       {current === 'vote' && (

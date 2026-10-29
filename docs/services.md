@@ -129,7 +129,7 @@ Marianne builds it as its own entry (`out/main/sync-<code>.js`) and runs it in a
 
 ## View
 
-`src/view.tsx` exports `View`, a React component. Marianne shows it under the service's 3615 header, with a way back to the Services page.
+`src/view.tsx` exports `View`, a React component. Marianne shows it under the service's 3615 header, with a way back to the Services page: the header runs the window's width, the screen sits in a centred column (at most `--content-width`, 1280px) whose scroll bar is the window's edge. Fill the column rather than giving the screen a width of its own, and lay it out by the column's width, not the window's: it is a container named `service` (`@container service (max-width: 760px) { … }`), so a layout answers to the room the sidebar leaves it, on a wide screen as on a tablet.
 
 ```tsx
 import { Spinner, useCall, useHost, useStored } from '@marianne/sdk/view'
@@ -144,9 +144,9 @@ export function View() {
 ```
 
 - `useHost()`: the manifest, `call(method, …args)`, `params` (what it was opened with), `home`, `ask(text, page?)` (hand a question to Marianne: a new folder, the question in the composer), `openRoute(route)` (another screen: `settings/identity`, `service/carte`), `openUrl`, `copy`, `toast`, `load(key)`/`save(key, value)` (the same storage as `ctx.storage`).
-- `useCall(method, args)`: a method's result, loaded again when the arguments change; `null` arguments wait.
+- `useCall(method, args)`: a method's result, loaded again when the arguments change (the previous result is dropped meanwhile); `null` arguments wait. Loaded again with the same arguments (`reload()`, or Marianne giving the screen a new host when what it may read changes), it keeps the previous result until the new one comes: a player or a list stays on screen.
 - `useStored(key, defaults)`: stored data with defaults, and a function that merges, shows and stores.
-- `Spinner`, `Field`, `Modal`: the window's blocks. Marianne's stylesheet styles them and the usual classes (`.card`, `.grid`, `.tabs`, `.btn`, `.rows`, `.dim`…); a service's own styles go in a CSS file its view imports, with class names prefixed by its code (`.meteo-days`).
+- `Spinner`, `Field`, `Modal`: the window's blocks (a `Modal` opens over the whole window, out of the screen's layout). Marianne's stylesheet styles them and the usual classes (`.card`, `.grid`, `.tabs`, `.btn`, `.rows`, `.dim`…); a service's own styles go in a CSS file its view imports, with class names prefixed by its code (`.meteo-days`).
 
 ## Registration
 
