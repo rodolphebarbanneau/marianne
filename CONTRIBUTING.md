@@ -21,10 +21,10 @@ Node 24 and npm. From the repository's root:
 ```sh
 npm install     # installs and links the workspace packages
 npm run dev     # the app; the window reloads live, the main process restarts on change
-npm run check   # Prettier, type checks and tests: what CI runs first
+npm run check   # Prettier, package boundaries, type checks and tests: what CI runs first
 ```
 
-The repository is an npm workspace: the app in `apps/desktop`, the SDK in `packages/sdk`, the services in `services/` and the content in `content/`. See the [README](README.md) and [docs/design.md](docs/design.md) for how it fits together.
+The repository is an npm workspace: the app in `apps/desktop`, its packages in `packages/` (the SDK, the archive, the profile, the content) and the services in `services/`. See the [README](README.md) and [docs/design.md](docs/design.md) for how it fits together.
 
 ## The rules of the code
 

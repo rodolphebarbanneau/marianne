@@ -12,12 +12,12 @@ services/<code>/       @marianne/service-<code>: one built-in service
   src/sync.ts          its background sync, if any     (@marianne/sdk/sync)
   src/view.tsx         its screen                      (@marianne/sdk/view)
   src/…                its own modules (types, data, parsers, styles)
-  test/                its tests (vitest)
+  test/                its tests (vitest, with @marianne/sdk/testing)
 apps/desktop/src/main/host/          the host, main-process side
 apps/desktop/src/renderer/src/host/  the host, window side
 ```
 
-The repository is an npm workspace: `apps/*`, `content`, `packages/*` and `services/*`. A service imports Marianne by name (`@marianne/sdk`, `@marianne/sdk/main`…) and its own files by relative path, as any package does.
+The repository is an npm workspace: `apps/*`, `packages/*` and `services/*`. A service imports Marianne by name (`@marianne/sdk`, `@marianne/sdk/main`…) and its own files by relative path, as any package does; `npm run check` fails on a service that imports anything else of Marianne (`scripts/check-boundaries.mjs`).
 
 ## Naming
 
@@ -155,7 +155,7 @@ A built-in service is a dependency of the app (`"@marianne/service-<code>": "*"`
 
 ## Tests
 
-Each package has its own `test/` and `vitest.config.ts`; `npm test` at the root runs the app's tests and every package's (vitest projects). Test the pure parts (parsers, queries, formatting) without the network; a sync job's logic through `execute` from `@marianne/sdk/sync`, with a fake `download`. `npm run typecheck` checks the app and each package (`tsc -p services/<code>`).
+Each package has its own `test/` and `vitest.config.ts`; `npm test` at the root runs the app's tests and every package's (vitest projects). Test the pure parts (parsers, queries, formatting) without the network; the main side through `fakeContext` from `@marianne/sdk/testing`, built from the service's package.json (`fakeContext(pkg, { answer, communes, profile })`: the network's answers, which it records, a storage in memory, the communes and the profile fields given); a sync job's logic through `execute` from `@marianne/sdk/sync`, with a fake `download`. `npm run typecheck` checks the app and each package (`tsc -p services/<code>`).
 
 ## Later: community services
 

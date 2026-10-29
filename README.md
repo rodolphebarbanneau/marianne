@@ -11,15 +11,15 @@ A desktop citizen assistant for people living in France: rights, formalities, pa
 
 ## Development
 
-Node 24 and npm. The repository is an npm workspace: the app in `apps/desktop`, `packages/sdk`, the services in `services/` and the content in `content/`. The root holds only the workspace and its tools; its scripts run the app's.
+Node 24 and npm. The repository is an npm workspace: the app in `apps/desktop`, its packages in `packages/` (the SDK, the archive, the profile, the content) and the services in `services/`. The root holds only the workspace and its tools; its scripts run the app's.
 
 ```sh
 npm install             # installs and links the workspace packages
 npm run dev             # the app; the window reloads live, the main process restarts on change
-npm run check           # Prettier, no stray .gitkeep, type checks and tests (app and packages)
+npm run check           # Prettier, no stray .gitkeep, package boundaries, type checks and tests (app and packages)
 npm run build           # apps/desktop/out/
 npm run dist            # installers, in apps/desktop/dist/
-npm run content:bundle  # the content bundle, in content/dist/ (signed: docs/content.md)
+npm run content:bundle  # the content bundle, in packages/content/dist/ (signed: docs/content.md)
 ```
 
 Marianne keeps this computer's data in `~/.marianne` (`MARIANNE_HOME` moves it); accounts are `.marianne` archives in the folder you choose.

@@ -81,10 +81,9 @@ The built-in browser is a folder's: shown in the right column or kept out of sig
 
 ```
 apps/desktop/             the app (Electron): its package, build and packaging
-  src/main/               the main process
-    archive/              the encrypted archive, sessions, PIN, accounts
+  src/main/               the main process: what runs on Electron, and the wiring
     engines/              Claude Code, Codex, Vibe: runs, prompt, skills, transcripts
-    profile/              profile, tokens, documents, deadlines
+    profile/              the profile's store and documents, in the archive
     content/              the content in use: built in, or a newer signed bundle
     tools/                the MCP tools
     public/               the connections and Actualités
@@ -92,16 +91,31 @@ apps/desktop/             the app (Electron): its package, build and packaging
     host/                 the services' host
   src/preload/            window.marianne, from the channel lists
   src/renderer/src/       the window (React)
-  src/shared/             types and data both sides read
+  src/shared/             what the main process and the window share: channels, settings, types
   resources/              icons the app reads at run time
   build/                  the installers' icons and entitlements
   test/                   the app's tests (test/renderer: the window's)
-content/                  @marianne/content: skills, démarches, calendar, sites, news sources
-packages/sdk/             @marianne/sdk
-services/<code>/          the built-in services
+packages/
+  sdk/                    @marianne/sdk: the contract with the services, and their tests' context
+  archive/                @marianne/archive: the encrypted archive, PIN, accounts, session
+  profile/                @marianne/profile: the profile's model, domains, tokens, deadlines, context view
+  content/                @marianne/content: skills, démarches, calendar, sites, news sources
+services/<code>/          @marianne/service-<code>: the built-in services
 scripts/                  the repository's checks
 ```
 
-A folder is a package when something other than the app needs it: the SDK (the services), the content (the review and the bundles), each service. The app's own modules stay in the app.
+Three kinds of packages: `apps/` is what ships, `packages/` the libraries the app and the services import, `services/` the add-ons built on the SDK, each with its manifest. A folder is a package when something other than the app needs it (the SDK: the services; the content: the review and the bundles; each service), or when it is a boundary worth holding on its own: the archive (the user's data at rest) and the profile (where identifiers become tokens) are small, free of Electron, and can be read and tested without the app around them. The app's other modules stay in the app; the engines and the tools would become packages once something else needs them.
 
-`npm run check` runs Prettier, a check that no `.gitkeep` is left beside other files, the type checks (the app, then every package) and the tests (the app's and every package's).
+What may import what:
+
+```
+apps/desktop      any package, any service
+services/<code>   @marianne/sdk only
+content           @marianne/sdk
+profile           @marianne/sdk, @marianne/content
+archive, sdk      nothing of Marianne
+```
+
+A package imports another by its name, never by a path; only the apps run on Electron; in `packages/`, React is for the SDK's views only. `scripts/check-boundaries.mjs` holds these rules, in `npm run check` and in CI: a new package gets its line there.
+
+`npm run check` runs Prettier, a check that no `.gitkeep` is left beside other files, the package boundaries, the type checks (the app, then every package) and the tests (the app's and every package's).
