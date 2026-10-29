@@ -8,7 +8,7 @@ Please read the [code of conduct](CODE_OF_CONDUCT.md) first. To report a securit
 
 - **Report a bug, suggest an idea, share feedback**: [open an issue](https://github.com/rodolphebarbanneau/marianne/issues/new/choose) on one of its forms.
 - **Correct the content**: a guided démarche, a skill, a calendar date, a public site or a news source that is wrong or outdated. Use the "Content correction" form, or send a pull request (see [docs/content.md](docs/content.md)).
-- **Write a service**: the 3615 add-ons are packages built on `@marianne/sdk` (see [docs/services.md](docs/services.md)).
+- **Write a service**: the 3615 add-ons are packages built on `@marianne/sdk`: the contract in [docs/services.md](docs/services.md), how to build one well in [services/AGENTS.md](services/AGENTS.md).
 - **Improve or translate the user guide**: it lives in `docs/guide/<language>/`, every language with the same English file names (see [docs/guide](docs/guide/README.md)). A change to one page goes to every language in the same pull request.
 - **Improve the code**: start with an issue, ideally one labeled `good first issue` or `help wanted`, and say you're on it.
 

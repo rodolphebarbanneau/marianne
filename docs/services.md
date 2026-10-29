@@ -1,6 +1,6 @@
 # Services
 
-Services are the apps of the Services page, the 3615 codes: 3615 METEO, 3615 PARLEMENT… Each one is an add-on: a package of its own that depends on `@marianne/sdk` and on nothing of the app. Marianne hosts them; they never reach into it.
+Services are the apps of the Services page, the 3615 codes: 3615 METEO, 3615 PARLEMENT… Each one is an add-on: a package of its own that depends on `@marianne/sdk` and on nothing of the app. Marianne hosts them; they never reach into it. How to build one well (the frame Marianne draws, the blocks to compose a screen from, the states and the design): [services/AGENTS.md](../services/AGENTS.md).
 
 ## The repository
 
@@ -11,6 +11,7 @@ services/<code>/       @marianne/service-<code>: one built-in service
   src/main.ts          its main-process side          (@marianne/sdk/main)
   src/sync.ts          its background sync, if any     (@marianne/sdk/sync)
   src/view.tsx         its screen                      (@marianne/sdk/view)
+  src/help.md          its help, in Marianne's guide (F1 on its screen)
   src/…                its own modules (types, data, parsers, styles)
   test/                its tests (vitest, with @marianne/sdk/testing)
 apps/desktop/src/main/host/          the host, main-process side
@@ -29,12 +30,13 @@ A service's code is lowercase letters and digits, without accents: `meteo`, `par
 {
   "name": "@marianne/service-meteo",
   "version": "1.0.0",
-  "exports": { "./package.json": "./package.json", "./main": "./src/main.ts", "./view": "./src/view.tsx" },
+  "exports": { "./package.json": "./package.json", "./main": "./src/main.ts", "./view": "./src/view.tsx", "./help": "./src/help.md" },
   "marianne": {
     "code": "meteo",
     "name": "Météo",
     "description": "le temps de votre commune, maintenant et sur 7 jours",
     "category": "daily",
+    "tabs": [],
     "keywords": ["temps", "pluie"],
     "connections": ["geo"],
     "hosts": ["api.open-meteo.com"],
@@ -45,6 +47,7 @@ A service's code is lowercase letters and digits, without accents: `meteo`, `par
 ```
 
 - `category`: one of `SERVICE_CATEGORIES` (the Services page groups by them).
+- `tabs`: the tabs of its screen, in their order, at most `MAX_TABS` (8): `[{ "id": "ballots", "label": "scrutins" }]`, ids lowercase letters, digits and hyphens, labels French and lowercase. Marianne draws the bar under the 3615 header, fixed while the content scrolls, and gives each tab its function key: F2 for the first, then F3… (`tabKey(i)`; F1 is GUIDE). None, or one, and the screen has no bar.
 - `connections`: Marianne's connections the service relies on (`geo` for the communes); it is unavailable while one is off.
 - `hosts`: every host the service reaches, from any side. The main side's network, the sync job's downloads and the window's content policy only allow these.
 - `links`: URL prefixes the service opens itself; a link in an answer that starts with one opens the service with `params.url`.
@@ -63,6 +66,7 @@ The user may say, in Réglages › Identité, which political groups they feel c
 The domains are Marianne's: the fixed themes of the user's file (identity, health, taxes… mobility), each with its dashboard. A service says which domains it helps with; Marianne never lists services. A guided démarche can send the user to a service in one of its steps (`> service: peage | Ouvrir 3615 PEAGE`); when that service is off, the step says so. A domain's dashboard suggests its services, and never turns one on by itself.
 
 - A package with a sync job exports `"./sync"` too.
+- `"./help"`: a few lines of Markdown (French, under 900 characters, no heading) that Marianne's guide shows on the service's screen, between its header and its keys.
 
 `readManifest(pkg)` validates it; the host leaves out a service whose manifest is wrong, and says why in the log.
 
@@ -129,7 +133,7 @@ Marianne builds it as its own entry (`out/main/sync-<code>.js`) and runs it in a
 
 ## View
 
-`src/view.tsx` exports `View`, a React component. Marianne shows it under the service's 3615 header, with a way back to the Services page: the header runs the window's width, the screen sits in a centred column (at most `--content-width`, 1280px) whose scroll bar is the window's edge. A screen with tabs of its own lets them run the width too, as the header does: its root takes the class `service-wide`, and it centres what the tabs show itself (`max-width: var(--content-width); margin-inline: auto`), as 3615 PARLEMENT does. Fill the column rather than giving the screen a width of its own, and lay it out by the column's width, not the window's: it is a container named `service` (`@container service (max-width: 760px) { … }`), so a layout answers to the room the sidebar leaves it, on a wide screen as on a tablet.
+`src/view.tsx` exports `View`, a React component. Marianne shows it in the service's frame: the 3615 header (the way back to the Services page, its name, its star) and the tabs its manifest declares, both running the window's width and staying where they are; under them, the screen scrolls in a centred column (at most `--content-width`, 1280px) whose scroll bar is the window's edge. The view shows what the tab holds (`useTab`), and draws neither a header nor a bar. Fill the column rather than giving the screen a width of its own, and lay it out by the column's width, not the window's: it is a container named `service` (`@container service (max-width: 760px) { … }`), so a layout answers to the room the sidebar leaves it, on a wide screen as on a tablet.
 
 ```tsx
 import { Spinner, useCall, useHost, useStored } from '@marianne/sdk/view'
@@ -146,11 +150,14 @@ export function View() {
 - `useHost()`: the manifest, `call(method, …args)`, `params` (what it was opened with), `home`, `ask(text, page?)` (hand a question to Marianne: a new folder, the question in the composer), `openRoute(route)` (another screen: `settings/identity`, `service/carte`), `openUrl`, `copy`, `toast`, `load(key)`/`save(key, value)` (the same storage as `ctx.storage`).
 - `useCall(method, args)`: a method's result, loaded again when the arguments change (the previous result is dropped meanwhile); `null` arguments wait. Loaded again with the same arguments (`reload()`, or Marianne giving the screen a new host when what it may read changes), it keeps the previous result until the new one comes: a player or a list stays on screen.
 - `useStored(key, defaults)`: stored data with defaults, and a function that merges, shows and stores.
-- `Spinner`, `Field`, `Modal`: the window's blocks (a `Modal` opens over the whole window, out of the screen's layout). Marianne's stylesheet styles them and the usual classes (`.card`, `.grid`, `.tabs`, `.btn`, `.rows`, `.dim`…); a service's own styles go in a CSS file its view imports, with class names prefixed by its code (`.meteo-days`).
+- `useTab(onPick?)`: `{ tab, tabs, open(id) }`, the tab shown (`''` without tabs) and a way to show another; `onPick` runs whenever the user picks a tab, the one shown included (a screen with panes over its tabs closes them). Marianne scrolls back to the top on a new tab. The screen opens on the tab its `params.tab` names, else the first.
+- `useTabBadges({ members: '3' })`: a short count beside tabs. `<ServiceTools>`: a few controls of the whole screen at the end of the tab bar (of the header, without tabs).
+- `Loading` (`label`, `progress` from 0 to 1, `detail`; `inline` for a part of a page), `Failure` (`title`, `error`, `retry`; `inline`), `Notice` (a note with its `action`): the states of a page, the same in every service (see [services/AGENTS.md](../services/AGENTS.md)). `useDebounced(value, ms)`, `useNow(everyMs)`.
+- `Spinner`, `Field`, `Modal`: the window's blocks (a `Modal` opens over the whole window, out of the screen's layout). Marianne's stylesheet styles them and the usual classes (`.card`, `.grid`, `.btn`, `.rows`, `.dim`…); a service's own styles go in a CSS file its view imports, with class names prefixed by its code (`.meteo-days`).
 
 ## Registration
 
-A built-in service is a dependency of the app (`"@marianne/service-<code>": "*"` in the `devDependencies` of `apps/desktop/package.json`), listed in its two registries: `apps/desktop/src/main/host/registry.ts` (package.json and main) and `apps/desktop/src/renderer/src/host/registry.ts` (view). The build bundles it, and takes from it its sync job and the hosts the window may reach: nothing of it is loaded from disk at run time. The app's tests check that the dependencies and both registries agree.
+A built-in service is a dependency of the app (`"@marianne/service-<code>": "*"` in the `devDependencies` of `apps/desktop/package.json`), listed in its two registries: `apps/desktop/src/main/host/registry.ts` (package.json and main) and `apps/desktop/src/renderer/src/host/registry.ts` (view and help). The build bundles it, and takes from it its sync job and the hosts the window may reach: nothing of it is loaded from disk at run time. The app's tests check that the dependencies and both registries agree.
 
 ## What a service may not do
 

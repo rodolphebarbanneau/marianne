@@ -74,7 +74,7 @@ The built-in browser is a folder's: shown in the right column or kept out of sig
 
 - **Connexions**: the public sources Marianne uses (Service-Public, indexed offline; Légifrance with the user's API key; data.gouv.fr; the companies directory; communes and addresses; the official calendar; OpenFisca). Each can be turned off or pointed elsewhere.
 - **Actualités**: headlines of the sources the user picks (title, time, link; never the article), "Aujourd'hui" (holidays, school holidays, clock changes, changes in force today, and what services add, such as the Assemblée's sittings) and "En France" (what changes, public services' news). Copy a link, or ask Marianne.
-- **Services**: apps with a code, starred ones first, grouped by category; not tied to folders. Each is an add-on package (see [services.md](services.md)).
+- **Services**: apps with a code, starred ones first, grouped by category; not tied to folders. Each is an add-on package (see [services.md](services.md)) in the same frame: the 3615 header and the tabs its manifest declares (F2, F3…), fixed above its screen, and its guide on F1; what a page waits for, a box in its middle.
 - **Content**: the public sites, the news sources and the yearly dates of the official calendar come from the content ([content.md](content.md)), built in and replaced by a newer bundle when the project publishes one it signed.
 
 ## The code
