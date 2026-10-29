@@ -1,0 +1,42 @@
+name: Content correction
+description: Wrong, missing or outdated information in a démarche, a skill, the calendar, a site or a news source.
+labels: [content]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Marianne's content is legal and practical guidance people act on: thanks for helping keep it right. Don't write **any personal data** here: this message is public.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is it
+      options: [A guided démarche, A skill, A calendar date, A public site, A news source, Something else]
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: Its title in the app, or its file in `content/`.
+      placeholder: content/procedures/taxes/declare-income.md
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What's wrong
+      description: What it says, and what it should say instead.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Official source
+      description: A link to the text or page that says so (Légifrance, service-public.fr, the administration concerned…).
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: 0.1.0-alpha.1

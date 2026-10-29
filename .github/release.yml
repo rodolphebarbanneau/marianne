@@ -1,0 +1,17 @@
+# The release notes GitHub generates: the pull requests since the last release, by label.
+changelog:
+  exclude:
+    labels: [duplicate, invalid, wontfix]
+  categories:
+    - title: Features
+      labels: [enhancement]
+    - title: Fixes
+      labels: [bug]
+    - title: Content
+      labels: [content]
+    - title: Accessibility
+      labels: [accessibility]
+    - title: Documentation
+      labels: [documentation]
+    - title: Other changes
+      labels: ['*']

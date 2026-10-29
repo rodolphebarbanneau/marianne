@@ -1,15 +1,15 @@
-name: Un avis
-description: Ce qui vous a plu, gêné ou surpris.
-labels: [avis]
+name: Feedback
+description: What you liked, what got in your way, what surprised you.
+labels: [feedback]
 body:
   - type: markdown
     attributes:
       value: |
-        N’écrivez ici **aucune donnée personnelle** : ce message est public.
+        Don't write **any personal data** here: this message is public.
   - type: textarea
     id: feedback
     attributes:
-      label: Votre avis
+      label: Your feedback
     validations:
       required: true
   - type: input

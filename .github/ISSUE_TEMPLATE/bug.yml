@@ -1,0 +1,47 @@
+name: Bug report
+description: Something doesn't work, or not as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing Marianne. Don't write **any personal data** here (social security number, address, tax number…): this report is public.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what Marianne did instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open…
+        2. Click on…
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: In the app, Réglages › À propos et mises à jour, or the guide (F1).
+      placeholder: 0.1.0-alpha.1
+    validations:
+      required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: Operating system
+      options: [Windows, macOS (Apple silicon), macOS (Intel), Linux]
+    validations:
+      required: true
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Engine
+      options: [Claude Code, Codex, Mistral Vibe, none]
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If you can, with anything personal hidden.

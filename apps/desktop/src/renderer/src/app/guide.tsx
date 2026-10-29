@@ -14,7 +14,7 @@ const LINK_ICONS: Record<ProjectLinkId, typeof CodeIcon> = {
   problem: BugIcon,
   idea: SparkIcon,
   releases: TagIcon,
-  testers: BookIcon
+  guide: BookIcon
 }
 
 const engines = Object.values(ENGINE_LABELS)
