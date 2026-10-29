@@ -1,11 +1,18 @@
 /* 3615 PARLEMENT: its own blocks, on top of Marianne's classes (.tabs, .news, .btn, .chip, .rows, .box-note…).
-   The screen takes the width Marianne gives it (centred, at most --content-width) and lays out by it:
-   @container service, at 1000px (one column), 760px and 560px (small screens). */
+   Its tabs run the window's width (service-wide), what they show sits in Marianne's centred column
+   (at most --content-width), laid out by its width: @container service, at 1000px (one column), 760px
+   and 560px (small screens). */
 
 .parlement {
   display: flex;
   flex-direction: column;
   gap: var(--s3);
+}
+/* Its tabs run the window's width, as the 3615 header does; what they show sits in Marianne's centred column. */
+.parlement > :not(.parlement-tabs) {
+  width: 100%;
+  max-width: var(--content-width);
+  margin-inline: auto;
 }
 .parlement-body {
   display: flex;

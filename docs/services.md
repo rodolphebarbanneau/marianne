@@ -129,7 +129,7 @@ Marianne builds it as its own entry (`out/main/sync-<code>.js`) and runs it in a
 
 ## View
 
-`src/view.tsx` exports `View`, a React component. Marianne shows it under the service's 3615 header, with a way back to the Services page: the header runs the window's width, the screen sits in a centred column (at most `--content-width`, 1280px) whose scroll bar is the window's edge. Fill the column rather than giving the screen a width of its own, and lay it out by the column's width, not the window's: it is a container named `service` (`@container service (max-width: 760px) { … }`), so a layout answers to the room the sidebar leaves it, on a wide screen as on a tablet.
+`src/view.tsx` exports `View`, a React component. Marianne shows it under the service's 3615 header, with a way back to the Services page: the header runs the window's width, the screen sits in a centred column (at most `--content-width`, 1280px) whose scroll bar is the window's edge. A screen with tabs of its own lets them run the width too, as the header does: its root takes the class `service-wide`, and it centres what the tabs show itself (`max-width: var(--content-width); margin-inline: auto`), as 3615 PARLEMENT does. Fill the column rather than giving the screen a width of its own, and lay it out by the column's width, not the window's: it is a container named `service` (`@container service (max-width: 760px) { … }`), so a layout answers to the room the sidebar leaves it, on a wide screen as on a tablet.
 
 ```tsx
 import { Spinner, useCall, useHost, useStored } from '@marianne/sdk/view'

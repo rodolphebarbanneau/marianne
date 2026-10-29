@@ -161,7 +161,7 @@ function Screen() {
   return (
     <NavContext.Provider value={nav}>
       <StoreContext.Provider value={store}>
-        <div ref={root} className="parlement">
+        <div ref={root} className="parlement service-wide">
           <div className="tabs parlement-tabs">
             {TABS.map((t) => (
               <button key={t.id} className={tab === t.id && !top ? 'on' : ''} onClick={() => goTab(t.id)}>

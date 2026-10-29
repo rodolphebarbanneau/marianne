@@ -1335,10 +1335,17 @@ button.ev:hover {
   scrollbar-gutter: stable both-edges;
 }
 .service-content {
-  max-width: var(--content-width);
-  margin: 0 auto;
   /* Services lay out by their own width (@container service), whatever the sidebar leaves them. */
   container: service / inline-size;
+}
+/* A service's screen, centred, as wide as reads well; one with tabs of its own (service-wide) lets
+   them run the window's width, as the 3615 header does, and centres what they show itself. */
+.service-content > * {
+  max-width: var(--content-width);
+  margin-inline: auto;
+}
+.service-content > .service-wide {
+  max-width: none;
 }
 .service-head {
   display: flex;
