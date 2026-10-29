@@ -1,0 +1,100 @@
+---
+import '../styles/global.css'
+import { getImage } from 'astro:assets'
+import Header from '../components/Header.astro'
+import Footer from '../components/Footer.astro'
+import KeysBar from '../components/KeysBar.astro'
+import social from '../assets/screens/dossier.webp'
+import { localized, url, words, type Lang } from '../i18n'
+
+interface Props {
+  lang: Lang
+  /** The page's path without its language (guide/install/), for the other language's link. */
+  path?: string
+  title?: string
+  description?: string
+  /** On a guide page, the keys go to the pages before and after it; on the home page, to its sections. */
+  prev?: { href: string; label: string }
+  next?: { href: string; label: string }
+}
+const { lang, path = '', title, description, prev, next } = Astro.props
+const t = words(lang)
+const other: Lang = lang === 'fr' ? 'en' : 'fr'
+const pageTitle = title ? `${title} · Marianne` : t.meta.title
+const pageDescription = description ?? t.meta.description
+const canonical = new URL(localized(lang, path), Astro.site)
+const image = await getImage({ src: social, width: 1200, height: 750, format: 'jpeg', quality: 85 })
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <meta name="theme-color" content="#05071a" />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang={lang} href={canonical} />
+    <link rel="alternate" hreflang={other} href={new URL(localized(other, path), Astro.site)} />
+    <link rel="icon" href={url('favicon.svg')} type="image/svg+xml" />
+    <link rel="icon" href={url('favicon.png')} type="image/png" />
+    <link rel="apple-touch-icon" href={url('apple-touch-icon.png')} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Marianne" />
+    <meta property="og:locale" content={lang === 'fr' ? 'fr_FR' : 'en_GB'} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(image.src, Astro.site)} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="750" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Minitel 1, if the visitor chose it, before the first paint. -->
+    <script is:inline>
+      try {
+        const o = JSON.parse(localStorage.getItem('marianne-screen') || '{}')
+        if (o.mono) document.documentElement.dataset.theme = 'monochrome'
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#contenu">
+      {t.ui.skip}
+    </a>
+    <Header lang={lang} path={path} />
+    <main id="contenu">
+      <slot />
+    </main>
+    <Footer lang={lang} />
+    <KeysBar lang={lang} prev={prev} next={next} />
+    <script>
+      // Blocks come in as they reach the screen, once.
+      const seen = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) if (e.isIntersecting) (e.target.classList.add('seen'), seen.unobserve(e.target))
+        },
+        { rootMargin: '0px 0px -8% 0px' }
+      )
+      document.querySelectorAll('.reveal').forEach((el) => seen.observe(el))
+    </script>
+  </body>
+</html>
+
+<style>
+  .skip {
+    position: absolute;
+    left: -9999px;
+    top: 8px;
+    z-index: 100;
+    background: var(--accent);
+    color: var(--noir);
+    padding: 6px 12px;
+  }
+  .skip:focus {
+    left: 8px;
+  }
+  main {
+    display: block;
+  }
+</style>

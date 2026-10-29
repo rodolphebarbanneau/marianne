@@ -1,0 +1,81 @@
+---
+import type { GuidePage } from '../lib/guide'
+
+/**
+ * The guide's pages as a Minitel menu: a number in inverse video, the title, what it covers. On the
+ * home page, and at the top of the guide's first page.
+ */
+interface Props {
+  pages: GuidePage[]
+  current?: string
+}
+const { pages, current } = Astro.props
+---
+
+<ol class="contents">
+  {pages
+    .filter((p) => p.slug)
+    .map((p, i) => (
+      <li class:list={{ on: p.slug === current }}>
+        <a href={p.href}>
+          <span class="n inv">{i + 1}</span>
+          <span class="t">{p.title}</span>
+          {p.summary && <span class="s">{p.summary}</span>}
+          <span class="go" aria-hidden="true">
+            ›
+          </span>
+        </a>
+      </li>
+    ))}
+</ol>
+
+<style>
+  .contents {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--rule);
+  }
+  li {
+    border-bottom: 1px solid var(--rule);
+  }
+  a {
+    display: grid;
+    grid-template-columns: 2.4em 1fr auto;
+    align-items: baseline;
+    gap: 2px 18px;
+    padding: 16px 6px;
+    color: var(--fg);
+  }
+  a:hover {
+    background: var(--hover);
+    color: var(--hi);
+  }
+  .n {
+    justify-self: start;
+    font-size: 1.5rem;
+    min-width: 1.5em;
+    text-align: center;
+  }
+  a:hover .n {
+    background: var(--accent);
+  }
+  .t {
+    color: var(--hi);
+    font-size: 1.08rem;
+  }
+  .s {
+    grid-column: 2;
+    color: var(--dim);
+    font-size: 0.9rem;
+  }
+  .go {
+    grid-row: 1 / span 2;
+    grid-column: 3;
+    align-self: center;
+    color: var(--dim);
+  }
+  a:hover .go {
+    color: var(--accent);
+  }
+</style>

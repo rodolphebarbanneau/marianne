@@ -1,0 +1,76 @@
+---
+/**
+ * Marianne's mark, as the app draws it (apps/desktop/src/renderer/src/components/logo.tsx): a mosaic
+ * "M" in the French colours, blue left stem, white V, red right stem, on a navy tile with a faint dot
+ * matrix. Small tiles get the app's narrower "M", whose blocks stay whole pixels. With `draw`, the
+ * blocks come in one after the other, the way a Minitel drew its mosaics. With `glass`, the tile is a
+ * darker, see-through pane without its dots, for a mark over a picture.
+ */
+interface Props {
+  size: number
+  draw?: boolean
+  glass?: boolean
+  class?: string
+}
+const { size, draw = false, glass = false, class: className } = Astro.props
+
+const small = size < 56
+const GLYPH = small ? ['W...W', 'WW.WW', 'W.W.W', 'W...W', 'W...W'] : ['W.....W', 'WW...WW', 'W.W.W.W', 'W..W..W', 'W.....W', 'W.....W']
+// The small one on a 16-unit tile (2-unit blocks, no gap: at 32px, 4 whole pixels each), the big one on 64.
+const N = small ? 16 : 64
+const BLOCK = small ? 2 : 6
+const GAP = small ? 0 : 1
+const cols = GLYPH[0].length
+const rows = GLYPH.length
+const ox = (N - (BLOCK * cols - GAP)) / 2
+const oy = (N - (BLOCK * rows - GAP)) / 2
+const last = cols - 1
+// Drawn as a hand writes an M: down the left stem, along the V, down the right stem.
+const order = (x: number, y: number) => (x === 0 ? y : x === last ? 2 * rows + y : rows + Math.min(x, last - x) + (x > last / 2 ? rows / 2 : 0))
+const blocks = GLYPH.flatMap((row, y) =>
+  [...row].flatMap((c, x) =>
+    c === 'W' ? [{ x: ox + x * BLOCK, y: oy + y * BLOCK, fill: x === 0 ? '#5b78ff' : x === last ? '#ff4757' : '#f2f4ff', i: order(x, y) }] : []
+  )
+)
+const m = small ? 0 : 2
+---
+
+<svg class:list={['logo', className, { draw }]} width={size} height={size} viewBox={`0 0 ${N} ${N}`} aria-hidden="true">
+  <rect x={m} y={m} width={N - 2 * m} height={N - 2 * m} fill={glass ? 'rgba(3, 5, 20, 0.72)' : '#0a0f2e'}></rect>
+  {!small && !glass && (
+    <>
+      <defs>
+        <pattern id="logo-dots" width="4" height="4" patternUnits="userSpaceOnUse">
+          <rect x="2" y="2" width="0.6" height="0.6" fill="#1b2560" />
+        </pattern>
+      </defs>
+      <rect x={m} y={m} width={N - 2 * m} height={N - 2 * m} fill="url(#logo-dots)" />
+    </>
+  )}
+  <g shape-rendering="crispEdges">
+    {blocks.map((b) => (
+      <rect x={b.x} y={b.y} width={BLOCK - GAP} height={BLOCK - GAP} fill={b.fill} style={`--i: ${b.i}`} />
+    ))}
+  </g>
+</svg>
+
+<style>
+  .logo {
+    display: block;
+    flex: none;
+  }
+  .draw rect[style] {
+    animation: block 0.01s steps(1) both;
+    animation-delay: calc(250ms + var(--i) * 55ms);
+  }
+  @keyframes block {
+    from {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .draw rect[style] {
+      animation: none;
+    }
+  }
+</style>

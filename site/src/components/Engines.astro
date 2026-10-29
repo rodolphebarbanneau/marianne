@@ -1,0 +1,95 @@
+---
+import { localized, words, type Lang } from '../i18n'
+
+interface Props {
+  lang: Lang
+}
+const { lang } = Astro.props
+const t = words(lang)
+---
+
+<section id="moteurs" class="block" data-section>
+  <div class="wrap split">
+    <div class="section-head reveal">
+      <p class="label">04 · {lang === 'fr' ? 'Moteurs' : 'Engines'}</p>
+      <h2>{t.engines.title}</h2>
+      <p>{t.engines.lead}</p>
+      <p>
+        <a href={localized(lang, 'guide/install/')}>{t.engines.install} ›</a>
+      </p>
+    </div>
+    <ul class="engines">
+      {t.engines.items.map((e, i) => (
+        <li class:list={['reveal', e.state]} style={`--d: ${i}`}>
+          <span class="light">{e.code}</span>
+          <span class="name">{e.name}</span>
+          <span class="maker dim">{e.maker}</span>
+          {e.note && <span class="note muted">{e.note}</span>}
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: clamp(32px, 6vw, 72px);
+    align-items: center;
+  }
+  .split .section-head {
+    margin-bottom: 0;
+  }
+  .engines {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .engines li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 4px 16px;
+    padding: 18px 20px;
+    background: var(--bg-raised);
+    border: 1px solid var(--rule);
+  }
+  /* The engines' lights of the app's bottom bar: ● ready, ◐ not yet tried for real. */
+  .light {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 7px;
+    border: 1px solid var(--muted);
+    font-size: 0.85rem;
+    color: var(--hi);
+  }
+  .light::before {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--vert);
+    box-shadow: 0 0 8px var(--vert);
+  }
+  .soon .light::before {
+    background: linear-gradient(90deg, var(--vert) 50%, transparent 50%);
+    box-shadow: inset 0 0 0 1px var(--vert);
+  }
+  .name {
+    color: var(--hi);
+    font-size: 1.1rem;
+  }
+  .note {
+    grid-column: 2 / -1;
+    font-size: 0.82rem;
+  }
+  @media (max-width: 900px) {
+    .split {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

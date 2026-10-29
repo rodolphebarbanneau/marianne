@@ -1,0 +1,315 @@
+/* The app's Minitel look (apps/desktop/src/renderer/src/styles.css), at the size of a web page: the
+   same eight colours and roles, the same two fonts (VT323 for titles, codes and keys, JetBrains Mono
+   for the rest), the dot matrix, inverse blocks and function keys. The palette is copied, not
+   imported: the site builds on its own. Keep the two in step. */
+
+@import '@fontsource/vt323/latin.css';
+@import '@fontsource/vt323/latin-ext.css';
+@import '@fontsource-variable/jetbrains-mono';
+
+:root {
+  --noir: #05071a;
+  --bleu: #3d5afe;
+  --rouge: #ff4757;
+  --magenta: #ff5ad9;
+  --vert: #45f08a;
+  --cyan: #45e3ff;
+  --jaune: #ffd23f;
+  --blanc: #eef1ff;
+
+  --bg: var(--noir);
+  --bg-raised: #0b1030;
+  --bg-sunken: #03040f;
+  --sel: #16215c;
+  --hover: rgba(61, 90, 254, 0.16);
+  --rule: #1d2763;
+  --muted: #3f4985;
+  --dim: #8089c4;
+  --fg: #d5dbff;
+  --hi: var(--blanc);
+  --accent: var(--jaune);
+  --link: var(--cyan);
+  --dot: rgba(130, 150, 255, 0.26);
+
+  --retro: 'VT323', 'JetBrains Mono Variable', ui-monospace, monospace;
+  --sharp: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+
+  --page: 1200px;
+  --gutter: clamp(18px, 4vw, 40px);
+  --header-h: 60px;
+  --bar-h: 34px;
+
+  color-scheme: dark;
+  font-family: var(--sharp);
+  font-variant-ligatures: none;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--fg);
+  background: var(--bg);
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-h) + 12px);
+}
+
+/* Minitel 1: the eight colours as eight levels of grey, on a faintly green phosphor. */
+html[data-theme='monochrome'] {
+  --noir: #070908;
+  --bleu: #6b706d;
+  --rouge: #858a87;
+  --magenta: #9da29f;
+  --vert: #b4b9b6;
+  --cyan: #cacfcc;
+  --jaune: #e3e8e5;
+  --blanc: #f5faf7;
+  --bg-raised: #101311;
+  --bg-sunken: #030403;
+  --sel: #232825;
+  --hover: rgba(200, 215, 205, 0.08);
+  --rule: #262b28;
+  --muted: #4c524e;
+  --dim: #8a908c;
+  --fg: #cfd5d1;
+  --dot: rgba(210, 235, 220, 0.17);
+}
+html[data-theme='monochrome'] img.screen {
+  filter: grayscale(1) sepia(0.12) hue-rotate(70deg) saturate(0.6);
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+}
+body {
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--bg);
+  background-image: radial-gradient(circle at 1.5px 1.5px, var(--dot) 0.3px, transparent 0.55px);
+  background-size: 4px 4px;
+}
+/* The old screen, the site's own look (an option in the app): its lines, its vignette, a glow on the
+   letters, all lighter than the app's, for a page read at length. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 64%, rgba(0, 0, 0, 0.32) 100%);
+}
+body {
+  text-shadow: 0 0 4px color-mix(in srgb, currentColor 22%, transparent);
+}
+::selection {
+  background: var(--accent);
+  color: var(--noir);
+}
+
+/* ---------- text ---------- */
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+  font-weight: 400;
+}
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--accent);
+}
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+.px,
+.code,
+.key,
+.inv,
+.wordmark {
+  font-family: var(--retro);
+  line-height: 1.1;
+}
+.hi {
+  color: var(--hi);
+}
+.dim {
+  color: var(--dim);
+}
+.muted {
+  color: var(--muted);
+}
+.accent {
+  color: var(--accent);
+}
+.ok {
+  color: var(--vert);
+}
+.label {
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.wordmark {
+  letter-spacing: 0.25em;
+  color: var(--hi);
+}
+/* Inverse video: codes, keys, the current tab. */
+.inv {
+  background: var(--fg);
+  color: var(--noir);
+  padding: 0 0.35em;
+}
+.code {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--noir);
+  padding: 0.05em 0.4em;
+  letter-spacing: 0.1em;
+}
+.key {
+  display: inline-block;
+  background: var(--blanc);
+  color: var(--noir);
+  padding: 0 5px;
+  letter-spacing: 0.04em;
+}
+.sc {
+  color: var(--muted);
+  font-size: 0.86em;
+}
+.cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--accent);
+  animation: blink 1.1s steps(1) infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ---------- controls ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.12s,
+    color 0.12s,
+    background 0.12s;
+}
+.btn:hover {
+  border-color: var(--bleu);
+  color: var(--hi);
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--noir);
+}
+.btn.primary:hover {
+  background: var(--blanc);
+  border-color: var(--blanc);
+  color: var(--noir);
+}
+.btn.big {
+  padding: 14px 22px;
+  font-size: 1.05rem;
+}
+.btn .meta {
+  font-size: 0.78em;
+  opacity: 0.7;
+}
+.btn svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+/* ---------- layout ---------- */
+
+.wrap {
+  width: 100%;
+  max-width: calc(var(--page) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+section.block {
+  padding: clamp(72px, 11vw, 132px) 0 0;
+}
+.section-head {
+  display: grid;
+  gap: 14px;
+  max-width: 760px;
+  margin-bottom: clamp(32px, 5vw, 52px);
+}
+.section-head h2 {
+  font-family: var(--retro);
+  font-size: clamp(2.4rem, 5.4vw, 3.9rem);
+  line-height: 1;
+  color: var(--hi);
+  letter-spacing: 0.01em;
+}
+.section-head p {
+  color: var(--dim);
+  font-size: 1.02rem;
+  max-width: 64ch;
+}
+/* The app's panels: a raised block, a rule round it, a small uppercase heading. */
+.panel {
+  background: var(--bg-raised);
+  border: 1px solid var(--rule);
+}
+.panel-head {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* ---------- appearance on scroll ---------- */
+
+/* A Minitel drew its screens line by line: blocks come in from the top, once, quickly. */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+  transition-delay: calc(var(--d, 0) * 70ms);
+}
+.reveal.seen {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .cursor {
+    animation: none;
+  }
+}

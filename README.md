@@ -8,6 +8,7 @@ A desktop citizen assistant for people living in France: rights, formalities, pa
 - [Design](docs/design.md): the window, folders, the archive and its security, engines, tools.
 - [Services](docs/services.md): the 3615 add-ons and their SDK.
 - [Content](docs/content.md): skills, guided démarches, the calendar, sites and news sources; how to contribute, and how signed updates reach the app.
+- [Site](site/README.md): the website, to download the app and read the user guide.
 
 ## Development
 
@@ -21,6 +22,8 @@ npm run build           # apps/desktop/out/
 npm run dist            # installers, in apps/desktop/dist/
 npm run content:bundle  # the content bundle, in packages/content/dist/ (signed: docs/content.md)
 ```
+
+The website is in `site/`, an Astro project of its own, outside the workspace: `cd site && npm install && npm run dev` (see [site/README.md](site/README.md)).
 
 Marianne keeps this computer's data in `~/.marianne` (`MARIANNE_HOME` moves it); accounts are `.marianne` archives in the folder you choose.
 

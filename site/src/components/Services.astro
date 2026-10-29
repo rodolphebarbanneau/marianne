@@ -1,0 +1,91 @@
+---
+import { words, type Lang } from '../i18n'
+
+interface Props {
+  lang: Lang
+}
+const { lang } = Astro.props
+const t = words(lang)
+---
+
+<section id="services" class="block" data-section>
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="label">05 · {t.nav.services}</p>
+      <h2>{t.services.title}</h2>
+      <p>{t.services.lead}</p>
+    </div>
+    <div class="grid">
+      {t.services.items.map((s, i) => (
+        <article class="card reveal" style={`--d: ${i % 3}`}>
+          <p class="code-line">
+            <span class="inv">3615</span> <span class="code">{s.code}</span>
+          </p>
+          <h3>{s.name}</h3>
+          <p class="text">{s.text}</p>
+        </article>
+      ))}
+      <a class="card yours reveal" style="--d: 2" href="https://github.com/rodolphebarbanneau/marianne/blob/main/docs/services.md">
+        <p class="code-line">
+          <span class="inv">3615</span> <span class="code">{t.services.yours.code}</span>
+        </p>
+        <h3>{t.services.yours.name}</h3>
+        <p class="text">{t.services.yours.text}</p>
+        <p class="more">{t.services.yours.link} ›</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 14px;
+  }
+  .card {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    padding: 20px 22px 22px;
+    background: var(--bg-raised);
+    border: 1px solid var(--rule);
+    color: inherit;
+  }
+  .code-line {
+    font-size: 1.45rem;
+    display: flex;
+    gap: 8px;
+  }
+  .code-line .inv {
+    letter-spacing: 0.08em;
+  }
+  h3 {
+    color: var(--hi);
+    font-size: 1.08rem;
+    font-weight: 500;
+  }
+  .text {
+    color: var(--dim);
+    font-size: 0.95rem;
+  }
+  .yours {
+    border-style: dashed;
+    background: transparent;
+  }
+  .yours .code {
+    background: transparent;
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  .yours:hover {
+    border-color: var(--accent);
+  }
+  .more {
+    color: var(--link);
+    font-size: 0.9rem;
+  }
+  .yours:hover .more {
+    color: var(--accent);
+  }
+</style>

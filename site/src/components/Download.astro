@@ -1,0 +1,230 @@
+---
+import { localized, words, type Lang } from '../i18n'
+import { megabytes, RELEASES_PAGE, type Installer, type Release } from '../lib/release'
+
+interface Props {
+  lang: Lang
+  release: Release | null
+}
+const { lang, release } = Astro.props
+const t = words(lang)
+const d = t.download
+
+const date = release?.date
+  ? new Date(release.date + 'T12:00:00Z').toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  : ''
+// Each button links the installer when the build knows it, the releases page otherwise.
+const href = (i: Installer) => release?.assets[i]?.url ?? release?.url ?? RELEASES_PAGE
+const size = (i: Installer) => (release?.assets[i] ? megabytes(release.assets[i].size, lang) : '')
+
+const systems = [
+  { os: 'windows', ...d.windows, buttons: [{ installer: 'windows', label: '.exe' }] },
+  {
+    os: 'mac',
+    ...d.mac,
+    buttons: [
+      { installer: 'mac-arm64', label: d.mac.arm },
+      { installer: 'mac-x64', label: d.mac.intel }
+    ]
+  },
+  {
+    os: 'linux',
+    ...d.linux,
+    buttons: [
+      { installer: 'deb', label: '.deb' },
+      { installer: 'appimage', label: 'AppImage' }
+    ]
+  }
+] as const
+---
+
+<section id="telecharger" class="block" data-section>
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="label">06 · {t.nav.download}</p>
+      <h2>{d.title}</h2>
+      <p>{d.lead}</p>
+    </div>
+
+    <div class="release reveal">
+      <span class="inv" data-version data-prefix={d.version}>
+        {release ? `${d.version} ${release.version}` : d.unknown}
+      </span>
+      <span class="dim" data-date data-prefix={d.published}>
+        {date ? `${d.published} ${date}` : ''}
+      </span>
+      <a href={release?.url ?? RELEASES_PAGE} data-release-link>
+        {d.all} ›
+      </a>
+    </div>
+
+    <div class="systems">
+      {systems.map((s, i) => (
+        <article class="system reveal" style={`--d: ${i}`} data-os={s.os}>
+          <header>
+            <h3>{s.name}</h3>
+            <span class="arch dim">{s.arch}</span>
+            <span class="detected">{d.detected}</span>
+          </header>
+          <div class="buttons">
+            {s.buttons.map((b, n) => (
+              <a class:list={['btn', { primary: n === 0 }]} href={href(b.installer)} data-installer={b.installer}>
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="M8 2v8m-3.5-3.5L8 10l3.5-3.5M3 13.5h10" fill="none" stroke="currentColor" stroke-width="1.6" />
+                </svg>
+                {b.label}
+                <span class="meta" data-size={b.installer}>
+                  {size(b.installer)}
+                </span>
+              </a>
+            ))}
+          </div>
+          <p class="note">{s.note}</p>
+        </article>
+      ))}
+    </div>
+
+    <aside class="engine reveal">
+      <span class="code">!</span>
+      <div>
+        <h3>{d.engine.title}</h3>
+        <p>
+          {d.engine.text} <a href={localized(lang, 'guide/install/')}>{d.engine.link} ›</a>
+        </p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<script>
+  import { detect, ready } from '../lib/download-client'
+  import { megabytes } from '../lib/release'
+
+  // A release published since the build: its version, date and installers.
+  ready((release, lang) => {
+    const os = detect()
+    document.querySelectorAll('[data-os]').forEach((el) => el.classList.toggle('is-detected', (el as HTMLElement).dataset.os === os.kind))
+    // On an Intel Mac (which only Chromium tells), the Intel build comes first.
+    if (os.installer === 'mac-x64') {
+      const mac = document.querySelector('[data-os="mac"] .buttons')!
+      const intel = mac.querySelector('[data-installer="mac-x64"]')!
+      mac.prepend(intel)
+      mac.querySelectorAll('.btn').forEach((b, n) => b.classList.toggle('primary', n === 0))
+    }
+    if (!release) return
+    const version = document.querySelector<HTMLElement>('[data-version]')!
+    const when = document.querySelector<HTMLElement>('[data-date]')!
+    version.textContent = `${version.dataset.prefix} ${release.version}`
+    if (release.date) {
+      const date = new Date(release.date + 'T12:00:00Z').toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      })
+      when.textContent = `${when.dataset.prefix} ${date}`
+    }
+    document.querySelector<HTMLAnchorElement>('[data-release-link]')!.href = release.url
+    document.querySelectorAll<HTMLAnchorElement>('[data-installer]').forEach((a) => {
+      const asset = release.assets[a.dataset.installer as keyof typeof release.assets]
+      if (!asset) return
+      a.href = asset.url
+      const size = a.querySelector('[data-size]')
+      if (size) size.textContent = megabytes(asset.size, lang)
+    })
+  })
+</script>
+
+<style>
+  .release {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 16px;
+    margin-bottom: 18px;
+  }
+  .release .inv {
+    font-size: 1.35rem;
+    letter-spacing: 0.04em;
+  }
+  .systems {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .system {
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    gap: 18px;
+    padding: 22px;
+    background: var(--bg-raised);
+    border: 1px solid var(--rule);
+  }
+  /* The visitor's system, framed in yellow like a focused field in the app. */
+  .system.is-detected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  header {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+  h3 {
+    font-family: var(--retro);
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--hi);
+  }
+  .arch {
+    font-size: 0.85rem;
+  }
+  .detected {
+    display: none;
+    margin-left: auto;
+    font-size: 0.75rem;
+    padding: 0 6px;
+    background: var(--accent);
+    color: var(--noir);
+  }
+  .is-detected .detected {
+    display: inline-block;
+  }
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .note {
+    font-size: 0.85rem;
+    color: var(--dim);
+    align-self: end;
+  }
+  .engine {
+    margin-top: 14px;
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+    padding: 20px 22px;
+    border: 1px dashed var(--rule);
+  }
+  .engine .code {
+    font-size: 1.6rem;
+    padding: 0 0.5em;
+  }
+  .engine h3 {
+    font-family: var(--sharp);
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .engine p {
+    color: var(--dim);
+    font-size: 0.92rem;
+  }
+  @media (max-width: 960px) {
+    .systems {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,0 +1,69 @@
+---
+import Base from '../layouts/Base.astro'
+import { localized, words } from '../i18n'
+
+// A Minitel's error page: the service doesn't answer. In French, then in English.
+const t = words('fr')
+const en = words('en')
+---
+
+<Base lang="fr" title={t.notFound.title}>
+  <section class="wrap lost">
+    <p class="code-line">
+      <span class="inv">3615</span> <span class="code">???</span>
+    </p>
+    <h1>{t.notFound.title}</h1>
+    <p>{t.notFound.text}</p>
+    <p class="dim" lang="en">
+      {en.notFound.text}
+    </p>
+    <p class="keys">
+      <a href={localized('fr')}>
+        <span class="key">SOMMAIRE</span> {t.notFound.home}
+      </a>
+      <a href={localized('en')} lang="en">
+        <span class="key">SOMMAIRE</span> {en.notFound.home}
+      </a>
+    </p>
+  </section>
+</Base>
+
+<style>
+  .lost {
+    min-height: 62vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+    padding-top: 60px;
+  }
+  .code-line {
+    font-size: 2rem;
+    display: flex;
+    gap: 10px;
+  }
+  h1 {
+    font-family: var(--retro);
+    font-size: clamp(3rem, 9vw, 6rem);
+    line-height: 1;
+    color: var(--hi);
+  }
+  .keys {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px 28px;
+  }
+  .keys a {
+    color: var(--fg);
+  }
+  .keys a:hover .key {
+    background: var(--accent);
+  }
+  .keys .key {
+    font-size: 1.2rem;
+  }
+</style>
