@@ -30,6 +30,8 @@ const TOOL_LABELS: Record<string, string> = {
   sign_in: 'connexion',
   hand_over: 'à vous la main',
   task_progress: 'avancement',
+  task_propose: 'tâche planifiée',
+  task_report: 'fin de la vérification',
   read_form: 'lecture du formulaire',
   fill_form: 'remplissage du formulaire',
   search_service_public: 'service public · recherche',
