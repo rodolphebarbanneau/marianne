@@ -60,7 +60,7 @@ export function Shell() {
             ) : view.kind === 'domain' ? (
               <DomainPage id={view.id} tab={view.tab} />
             ) : view.kind === 'service' ? (
-              <ServiceScreen id={view.id} params={view.params ?? {}} />
+              <ServiceScreen id={view.id} params={view.params ?? {}} opened={view.opened ?? 0} />
             ) : view.page === 'procedures' ? (
               <ProceduresPage />
             ) : view.page === 'services' ? (

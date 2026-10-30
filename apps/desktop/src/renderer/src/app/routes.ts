@@ -11,7 +11,11 @@ export type View =
   | { kind: 'page'; page: PageId }
   | { kind: 'domain'; id: DomainId; tab?: DomainTab }
   | { kind: 'folder'; id: string }
-  | { kind: 'service'; id: string; params?: Record<string, string | number> }
+  /**
+   * A service's screen. `opened` counts the openings (app/context.tsx): the same service opened again,
+   * from its row, its tile, the palette or a link, starts afresh on its first tab, as F2 shows it.
+   */
+  | { kind: 'service'; id: string; params?: Record<string, string | number>; opened?: number }
 
 /** A domain's tabs. */
 export type DomainTab = 'apercu' | 'taches' | 'dossiers' | 'ressources'

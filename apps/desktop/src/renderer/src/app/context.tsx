@@ -121,10 +121,12 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
     await api.setAccountSettings(patch)
   }, [])
 
+  const openings = useRef(0)
   const go = useCallback((next: View) => {
     setPalette(null)
     setSettingsPage(null)
-    setView(next)
+    // Each opening of a service is a fresh screen, even of the one on screen: it starts on its first tab.
+    setView(next.kind === 'service' ? { ...next, opened: ++openings.current } : next)
     if (next.kind === 'folder') api.seeFolder(next.id)
   }, [])
   const goPage = useCallback((page: PageId) => go({ kind: 'page', page }), [go])
