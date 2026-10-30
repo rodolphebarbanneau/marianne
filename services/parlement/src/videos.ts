@@ -395,6 +395,9 @@ export async function portalLives(http: Http, now = Date.now()): Promise<PortalL
   const items = await searchVideos(http, { from: early ? addDays(today, -1) : today, to: today }, LIVE_CACHE_MS)
   // Not those announced for much later (the portal lists a video a little before its live starts).
   const started = items.filter((v) => !v.date || Date.parse(v.date) <= now + 30 * 60_000)
+  // The search lists a live only some time after it starts; the portal's live page leads to the main one at once.
+  const main = await mainLive(http)
+  if (main && !started.some((v) => v.id === main)) started.push(liveItem(main))
   const found = await Promise.all(
     started.map(async (item): Promise<PortalLive[]> => {
       const root = `${PORTAL}/Datas/an/${item.id}`
@@ -410,6 +413,28 @@ export async function portalLives(http: Http, now = Date.now()): Promise<PortalL
   )
   return found.flat()
 }
+
+/** The video of the portal's live page (direct.php, which leads to "direct.<id>"): the hémicycle's live; null when none. */
+export async function mainLive(http: Http): Promise<string | null> {
+  const page = await http.text(LIVE_PAGE, { cacheMs: LIVE_CACHE_MS }).catch(() => '')
+  return page.match(/\b(\d{6,}_[0-9a-f]{13})\b/)?.[1] ?? null
+}
+
+/** A live known by its id alone: what the search would say of it, its data.nvs telling the rest. */
+const liveItem = (id: string): VideoItem => ({
+  id,
+  chamber: 'an',
+  title: '',
+  description: '',
+  date: '',
+  type: VIDEO_TYPES.S,
+  kind: 'seance',
+  commission: '',
+  thumbnail: '',
+  durationMs: 0,
+  live: true,
+  url: videoPage('an', id)
+})
 
 /** The channel of a broadcast of the Assemblée's API: its "flux", or its playlist's ".../live36/playlist36.m3u8". */
 const channelOf = (d: RawStream) => (d.flux ?? '').trim() || (d.liveUrl ?? '').match(/\/live(\d+)\//)?.[1] || ''
@@ -485,7 +510,7 @@ function portalStream(l: PortalLive): LiveStream {
     organ: sitting ? 'Séance publique' : meta.find((m) => m.name === 'commission')?.label || item.commission || item.type,
     start: item.date ? parisDateTime(item.date) : '',
     startAt: item.date ? toParis(new Date(item.date)) : '',
-    title: item.title,
+    title: item.title || decodeHtml(l.data.attrs.mediatitle ?? '').trim(),
     subject: item.description.split('\n').join(' ; '),
     place: decodeHtml(meta.find((m) => m.name === 'place')?.value ?? ''),
     live: true,
