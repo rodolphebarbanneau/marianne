@@ -18,7 +18,7 @@ Marianne opens the sites it needs in the folder's browser, on the right (the « 
 
 - **Actualités** (news): the news from several newspapers, the day's events, a few figures about France.
 - **Démarches** (formalities): the areas of your administrative life (taxes, health, housing, family…), each with its dashboard and its guided formalities, step by step.
-- **Services**: the 3615 codes, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. The star makes a service a favorite. A service that needs part of your profile, like your license plate for the tolls, asks you first.
+- **Services**: the 3615 codes, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. Type a code or words in the 3615 bar to find one. The star pins a service as a tile, at the top of « mes services » (my services), with what's new for you: today's weather, a toll to pay. « + découvrir » (discover) offers the official services you haven't added yet, then the community's. Before you add a service, Marianne shows you what it will be able to do. A service that needs part of your profile, like your license plate for the tolls, asks you first.
 
 ## Your profile
 
