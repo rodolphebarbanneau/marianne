@@ -56,6 +56,7 @@ class Browser extends EventEmitter {
   private controller: BrowserState['controller'] = 'agent'
   private folderId = ''
   private waiting = ''
+  private usedAt = 0
 
   /** The window the panel lives in. */
   attach(win: BrowserWindow): void {
@@ -117,6 +118,7 @@ class Browser extends EventEmitter {
   open(url: string, folderId = this.folderId): void {
     if (!/^https?:\/\//i.test(url)) throw new Error(`Adresse non prise en charge : ${url}`)
     this.folderId = folderId
+    this.usedAt = Date.now()
     void this.ensure().webContents.loadURL(url)
     this.changed()
   }
@@ -183,7 +185,13 @@ class Browser extends EventEmitter {
 
   // ---------- what Marianne does (refused while the user has control) ----------
 
+  /** How long since the page was last used, by anyone. */
+  quietMs(): number {
+    return Date.now() - this.usedAt
+  }
+
   private agentPage(): Electron.WebContents {
+    this.usedAt = Date.now()
     if (this.controller === 'human') throw new HumanControlError()
     const wc = this.view?.webContents
     if (!wc || !wc.getURL()) throw new Error('Aucune page ouverte dans le navigateur de Marianne.')

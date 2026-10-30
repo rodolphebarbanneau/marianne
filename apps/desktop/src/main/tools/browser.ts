@@ -12,7 +12,7 @@ import { profile } from '../profile/store'
 import { session } from '../session'
 import { tasks } from '../tasks'
 import { callingFolder } from './folder'
-import { consequential, Consents } from './online'
+import { consequential, Consents, reading } from './online'
 import { clip, DOMAIN_IDS, fold, plural, tool, TOKEN, ToolError, type ToolContext } from './tool'
 
 /**
@@ -50,16 +50,23 @@ async function act<T>(run: () => T | Promise<T>): Promise<T> {
   }
 }
 
+/** Nobody watches a run, so nothing waits on a card: what is beyond it stops it, and the user is told. */
+const beyondRun = (what: string) =>
+  new ToolError(`A planned task's run cannot ${what}: nobody is watching. Stop here and report "waiting" with task_report, saying what the user should do.`)
+
 const refusal = (decision: Decision, nothing: string) =>
   new ToolError(`${decision === 'refused' ? 'The user refused' : 'No answer from the user'}: ${nothing}. Do not retry; ask them what they want to do.`)
 
 /** Consent to go to the site of `url` from this folder: once per folder, or once per site, as the user chose. */
 async function online(folderId: string, url: string, reason: string): Promise<void> {
   const site = siteOf(url)
-  // A planned task's run has the sites the user gave it, and for anything else asks site by site:
-  // « any site of this folder » was said of a conversation, not of a run nobody watches.
-  if (tasks.allows(folderId, site)) return
-  const ask = tasks.runningIn(folderId) ? 'site' : accounts.settings().browser.askOnline
+  // A run has the sites the user gave it. It neither reads nor adds to the folder's consents: those
+  // were given to a conversation, and what a run opens mustn't widen what a conversation may.
+  if (tasks.runningIn(folderId)) {
+    if (tasks.allows(folderId, url)) return
+    throw beyondRun(`reach ${site}`)
+  }
+  const ask = accounts.settings().browser.askOnline
   if (consents.has(folderId, site, ask)) return
   const decision = await approvals.request(folderId, {
     kind: 'online',
@@ -178,8 +185,9 @@ export const browserTools = [
       if (visible) browser.reveal()
       await browser.settled()
       const { url: landed, title } = browser.state()
-      // Where the address led: its redirects are part of opening it.
-      if (landed) consents.add(folderId, siteOf(landed))
+      // Where the address led: its redirects are part of opening it, for a conversation. A run stops there.
+      if (landed && tasks.runningIn(folderId)) await online(folderId, landed, reason)
+      else if (landed) consents.add(folderId, siteOf(landed))
       pages.delete(folderId)
       forms.delete(folderId)
       const login = keychain.hasLogin(landed || url)
@@ -216,7 +224,9 @@ export const browserTools = [
       const { folderId, url, title } = await current(ctx)
       const read = element(folderId, url, id)
       const label = (await act(() => browser.elementLabel(id))) || read.label
-      if (flagged || consequential({ ...read, label }, purpose)) {
+      if (tasks.runningIn(folderId)) {
+        if (flagged || !reading({ ...read, label }, purpose)) throw beyondRun(`click « ${label || id} »`)
+      } else if (flagged || consequential({ ...read, label }, purpose)) {
         const shown = label || 'cet élément'
         browser.setWaiting(`cliquer sur « ${shown} »`)
         const decision = await approvals.request(folderId, {
@@ -260,6 +270,9 @@ export const browserTools = [
       if (read.secret) throw new ToolError('Never type a password: sign_in fills the login from the keychain, or hand_over lets the user type it.')
       if (read.role === 'link' || read.role === 'button') throw new ToolError(`${id} is a ${read.role}, not a field: use click.`)
       if (TOKEN.test(value)) throw new ToolError('Tokens with no value in the profile: use request_setup so the user fills them in.')
+      // In a run, the one identifier the user agreed to on the sheet: its entity's, and no other.
+      const run = tasks.runningIn(folderId)
+      if (run && ctx.resolved && value !== run.entity?.label) throw beyondRun('type this identifier')
       await act(() => browser.type(id, value))
       return `Typed into « ${read.label || id} ». Nothing is sent until the form is submitted.`
     }

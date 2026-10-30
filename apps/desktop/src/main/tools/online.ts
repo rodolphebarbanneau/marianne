@@ -45,10 +45,25 @@ const commits = (text: string) => COMMITS.some((re) => re.test(plain(text)))
 const MOVES =
   /\b(recherch|cherch|search|filtr|filter|trier|sort|afficher|voir|show|masquer|hide|ouvrir|open|fermer|close|menu|suivant|next|precedent|previous|retour|back|continuer|continue|accueil|home|connexion|connecter|identifier|sign ?in|log ?in|login|aide|help|langue|language|imprimer|print|telecharger|download)/
 
+/**
+ * What a run may click with nobody watching: searching and moving through a page. Narrower than
+ * MOVES: no signing in, no « continuer », no download.
+ */
+const READS =
+  /\b(recherch|cherch|search|filtr|filter|trier|sort|afficher|voir|show|masquer|hide|fermer|close|menu|suivant|next|precedent|previous|retour|back|accueil|home|langue|language)/
+/** Saying no to a cookie banner, which stands in front of most pages; « sans accepter » isn't accepting. */
+const DECLINES = /\b(tout refuser|continuer sans accepter)/
+
 export interface Clickable {
   role: string
   type: string
   label: string
+}
+
+/** Whether a planned task's run may click an element: only what plainly reads, whatever the engine says it is for. */
+export function reading(element: Clickable, purpose = ''): boolean {
+  const label = plain(element.label)
+  return !commits(purpose) && (DECLINES.test(label) || (!commits(label) && READS.test(label)))
 }
 
 /**

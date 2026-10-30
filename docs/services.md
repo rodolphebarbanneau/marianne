@@ -197,7 +197,7 @@ A `ServiceTaskTemplate` says:
 - `entity`: what it is about, its `id` and the `label` the user knows it by (a plate).
 - `rhythms`: what the user chooses from (`every`, a French `label`, a `note` on what this rhythm means here, `warn` when it is too spaced for what the task is for), the usual one at `rhythm`.
 - `allows`, `never`: French, what Marianne may do at each run, and what she will never do.
-- `instruction`: English, what Marianne is asked at each run. A run looks and reports: ask it to look, and leave paying, signing and sending to the user.
+- `instruction`: English, what Marianne is asked at each run. A run looks and reports, and the tools hold it to that: it shows no card, opens only `sites`, clicks only what searches or moves through a page, types only the entity's identifier, and has only your service's tools besides the app's reading ones. Anything else is refused and it reports "waiting". Ask it to look, and leave paying, signing and sending to the user.
 - `sites`: the hosts she may open at each run without asking again, for this task only.
 
 **Built-in services only for now.** A task's instruction feeds the engine and its sites are reached without asking, so it is content that can inject: the host doesn't read a community service's `tasks()`.

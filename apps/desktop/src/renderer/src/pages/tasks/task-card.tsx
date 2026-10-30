@@ -106,7 +106,7 @@ export function TaskCard({ task }: { task: PlannedTask }) {
           prochaine
           <b>{task.on ? nextShort(task.next) : 'en pause'}</b>
         </span>
-        {task.runner === 'marianne' && (
+        {task.runner === 'marianne' && task.on && (
           <button className="btn small" disabled={running} aria-busy={running} onClick={run}>
             {running && <Spinner />}
             lancer maintenant

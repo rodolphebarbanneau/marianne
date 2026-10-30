@@ -7,7 +7,6 @@ import { configStore } from './config'
 import { folders } from './folders'
 import { log } from './log'
 import { session } from './session'
-import { siteOf } from './keychain'
 
 /**
  * Planned tasks: a folder that comes back. Between two runs its folder sleeps in « en veille »; on
@@ -16,7 +15,12 @@ import { siteOf } from './keychain'
  * the archive open, so it runs at the first opening of its day (shared/tasks.ts).
  *
  * One at a time, and never during a turn of the user's: there is one browser, and a run must not
- * take it from them. Locked meanwhile, a run is forgotten and comes back at the next opening.
+ * take it from them; their turn interrupts it. Locked or interrupted, a run is forgotten and comes
+ * back at the next opening.
+ *
+ * Nobody watches a run, so it can't escalate: no card, no hand-over, its own sites and no other, and
+ * of the app's tools only those that read or move through a page. Whatever is beyond that is refused
+ * and the run reports « waiting ». What a page says can't get more than that out of it.
  */
 
 const KIND = 'task'
@@ -29,6 +33,15 @@ const AFTER_UNLOCK_MS = 15_000
 const MAX_RUNS_A_DAY = 12
 /** An awake task folder the user has read goes back to sleep after this long. */
 const BACK_TO_SLEEP_MS = 86_400_000
+/** What a run may do beyond reading: move through a page and say how it went. */
+const RUN_TOOLS = new Set(['open_site', 'click', 'type_text', 'task_progress', 'task_report'])
+/** Reading tools a run has no need of: the user's documents have no business near a page nobody watches. */
+const NOT_IN_A_RUN = new Set(['documents', 'read_document'])
+
+/** The user's turn took over: the run leaves no trace, and stays due. */
+export class RunInterrupted extends Error {
+  override name = 'RunInterrupted'
+}
 
 /** How a run ended, as its engine turn tells it. */
 export interface TaskTurnEnd {
@@ -66,6 +79,8 @@ class Tasks extends EventEmitter {
   isBusy: () => boolean = () => false
   /** Adds the reminder's line to the folder. Set by the chat runner. */
   addLine: (folderId: string, text: string, outcome: TaskOutcome) => void = () => {}
+  /** Whether what a task relies on is still there: a service switched off, a plate taken back. Set by the chat runner. */
+  isOffered: (task: PlannedTask) => boolean = () => true
 
   /** The folder of the run under way, and its task. */
   private current: PlannedTask | null = null
@@ -73,6 +88,8 @@ class Tasks extends EventEmitter {
   private report: TaskTurnEnd | null = null
   private ticking = false
   private started = false
+  /** Runs started today by this account, recorded or not: a run the lock cut short still spent the engine. */
+  private tries: { archive: unknown; day: string; count: number } = { archive: null, day: '', count: 0 }
 
   get(id: string): PlannedTask | null {
     return session.unlocked ? session.archive.get<PlannedTask>(KIND, id) : null
@@ -95,10 +112,12 @@ class Tasks extends EventEmitter {
   create(input: NewTask): PlannedTask {
     const today = dayOf()
     const engine = input.engine ?? configStore.get().engines.default
-    const folder = input.folderId ? folders.get(input.folderId) : folders.create({ title: input.title, engine, domain: input.domain || undefined })
+    const title = input.entity ? `${input.title} · ${input.entity.label}` : input.title
+    const folder = input.folderId ? folders.get(input.folderId) : folders.create({ title, engine, domain: input.domain || undefined })
     if (!folder) throw new Error('Dossier introuvable.')
     if (folder.task) throw new Error('Ce dossier a déjà sa tâche planifiée.')
     const id = randomUUID()
+    const next = input.first ?? (input.runner === 'remind' ? nextDay({ next: today, every: input.every }, today) : today)
     const task: PlannedTask = {
       id,
       folderId: folder.id,
@@ -115,7 +134,8 @@ class Tasks extends EventEmitter {
       never: input.never,
       why: input.why,
       notify: input.notify ?? 'found',
-      next: input.first ?? (input.runner === 'remind' ? nextDay({ next: today, every: input.every }, today) : today),
+      next,
+      anchor: next,
       on: true,
       runs: []
     }
@@ -133,8 +153,10 @@ class Tasks extends EventEmitter {
     // The reason given was for the old rhythm, and the next day counts from the last run in the new one.
     const last = task.runs[task.runs.length - 1]
     const today = dayOf()
-    const next = last ? addEvery(dayOf(new Date(last.at)), rhythm) : task.next
-    const changed = this.put({ ...task, ...patch, why: undefined, next: next < today ? today : next })
+    // A check not yet run still checks at once; a reminder counts from today.
+    const counted = last || task.runner === 'remind' ? addEvery(last ? dayOf(new Date(last.at)) : today, rhythm) : task.next
+    const next = counted < today ? today : counted
+    const changed = this.put({ ...task, ...patch, why: undefined, next, anchor: next })
     if (folders.get(task.folderId)?.snoozedUntil) this.sleep(changed)
     return changed
   }
@@ -182,10 +204,31 @@ class Tasks extends EventEmitter {
     return folderId && this.current?.folderId === folderId ? this.current : null
   }
 
-  /** Whether the run under way in a folder may reach a site without asking: its own sites, for that run only. */
-  allows(folderId: string, site: string): boolean {
+  /**
+   * Whether the run under way in a folder may reach an address: a listed host and what is under it.
+   * Not by registrable domain: the sheet says mairie.github.io, not all of github.io.
+   */
+  allows(folderId: string, url: string): boolean {
     const task = this.runningIn(folderId)
-    return !!task && !!site && task.sites.some((s) => siteOf(s) === site)
+    if (!task) return false
+    let host: string
+    try {
+      host = new URL(/^[a-z]+:\/\//i.test(url) ? url : `https://${url}`).hostname.toLowerCase()
+    } catch {
+      return false
+    }
+    return task.sites.some((site) => {
+      const listed = site.toLowerCase().replace(/^www\./, '')
+      return host === listed || host.endsWith(`.${listed}`)
+    })
+  }
+
+  /** Whether a tool may be called in a folder: anything outside a run; in one, what reads or moves through a page, and its own service's tools. */
+  mayUse(folderId: string | undefined, tool: { name: string; readOnly?: boolean }, own: boolean): boolean {
+    const task = this.runningIn(folderId)
+    if (!task) return true
+    if (own) return RUN_TOOLS.has(tool.name) || (!!tool.readOnly && !NOT_IN_A_RUN.has(tool.name))
+    return task.origin.kind === 'service' && tool.name.startsWith(`${task.origin.service}_`)
   }
 
   /** The engine's own account of the run: `task_report`. */
@@ -204,7 +247,9 @@ class Tasks extends EventEmitter {
   async runNow(id: string): Promise<void> {
     const task = this.get(id)
     if (!task) throw new Error('Tâche introuvable.')
+    if (!task.on) throw new Error('Cette tâche est en pause.')
     if (this.current || this.isBusy()) throw new Error('Marianne est déjà au travail : réessayez dans un instant.')
+    if (!this.isOffered(task)) throw new Error('Ce que cette tâche utilise n’est plus disponible.')
     await this.run(task)
   }
 
@@ -214,6 +259,7 @@ class Tasks extends EventEmitter {
     const line = `${started.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} · tâche planifiée`
     this.current = task
     this.report = null
+    if (task.runner === 'marianne') this.tries = { archive: session.maybe, day: today, count: this.triesToday(today) + 1 }
     this.emit('change')
     let end: TaskTurnEnd
     try {
@@ -222,6 +268,10 @@ class Tasks extends EventEmitter {
         this.addLine(task.folderId, `${line} · rappel : ${task.title}`, 'done')
       } else end = await this.runTurn(task, line)
     } catch (err) {
+      if (err instanceof RunInterrupted) {
+        this.emit('change')
+        return
+      }
       end = { outcome: 'failed', text: (err as Error).message }
     } finally {
       this.current = null
@@ -233,12 +283,13 @@ class Tasks extends EventEmitter {
     const run: TaskRun = { at: started.toISOString(), outcome: end.outcome, text: end.text, ...(latest.next < today ? { due: latest.next } : {}) }
     // Run before its day, with « lancer maintenant », it keeps that day: its next occurrence isn't spent.
     const next = this.put({ ...latest, next: latest.next > today ? latest.next : nextDay(latest, today), runs: [...latest.runs, run].slice(-RUNS_KEPT) })
+    // Paused while it ran: its folder stays where the user filed it, and nobody is told.
+    if (!next.on) return
     const folder = folders.get(task.folderId)
     if (folder) {
-      if (end.outcome === 'nothing') {
-        folders.update(task.folderId, { seen: true, woke: false })
-        this.sleep(next)
-      } else folders.update(task.folderId, { woke: true, seen: false, snoozedUntil: '', settledAt: '' })
+      if (end.outcome !== 'nothing') folders.update(task.folderId, { woke: true, seen: false, snoozedUntil: '', settledAt: '' })
+      // Nothing to tell: what the user hadn't read yet stays awake.
+      else if (folder.seen && !folder.woke) this.sleep(next)
     }
     if (end.outcome !== 'nothing' || next.notify === 'always') this.emit('run', next, run)
   }
@@ -247,7 +298,12 @@ class Tasks extends EventEmitter {
 
   /** Runs today, Marianne's: reminders cost nothing. */
   private spentToday(today: string): number {
-    return this.list().reduce((n, t) => n + (t.runner === 'marianne' ? t.runs.filter((r) => dayOf(new Date(r.at)) === today).length : 0), 0)
+    const recorded = this.list().reduce((n, t) => n + (t.runner === 'marianne' ? t.runs.filter((r) => dayOf(new Date(r.at)) === today).length : 0), 0)
+    return Math.max(recorded, this.triesToday(today))
+  }
+
+  private triesToday(today: string): number {
+    return this.tries.day === today && this.tries.archive === session.maybe ? this.tries.count : 0
   }
 
   /** Task folders the user has read go back to sleep rather than stay in the way until the next run. */
@@ -267,8 +323,11 @@ class Tasks extends EventEmitter {
     try {
       this.settleBack(now.getTime())
       const today = dayOf(now)
-      for (const task of this.list().filter((t) => t.on && t.next <= today)) {
+      for (const { id } of this.list().filter((t) => t.on && t.next <= today)) {
         if (!session.unlocked || this.current || this.isBusy()) break
+        // Read again: a run takes time, and the user may have paused or removed this one meanwhile.
+        const task = this.get(id)
+        if (!task?.on || task.next > today || !this.isOffered(task)) continue
         if (task.runner === 'marianne' && this.spentToday(today) >= MAX_RUNS_A_DAY) continue
         await this.run(task)
       }

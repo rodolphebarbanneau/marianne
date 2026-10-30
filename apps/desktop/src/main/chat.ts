@@ -23,7 +23,8 @@ import { folders, redoFrom, titleFrom } from './folders'
 import { log } from './log'
 import { profile } from './profile/store'
 import { services } from './host'
-import { tasks, type TaskTurnEnd } from './tasks'
+import { session } from './session'
+import { RunInterrupted, tasks, type TaskTurnEnd } from './tasks'
 import { legifranceReady } from './tools'
 
 /**
@@ -34,8 +35,10 @@ import { legifranceReady } from './tools'
 
 const UPDATE_EVERY_MS = 60
 const TURN_MINUTES = 30
-/** A run looks and reports: if it takes longer, something is wrong (time waiting for the user doesn't count). */
+/** A run looks and reports: if it takes longer, something is wrong. */
 const TASK_MINUTES = 10
+/** A page a conversation left in the browser may be there for the user to check: a run leaves it alone this long. */
+const BROWSER_QUIET_MS = 30 * 60_000
 
 /** Applies engine events to the assistant message being written. */
 class AnswerBuilder {
@@ -95,14 +98,22 @@ class Chat extends EventEmitter {
   private active = new Map<string, AbortController>()
   /** The answer being written, per folder: cards from tool calls go there. */
   private writing = new Map<string, Writing>()
+  /** The planned task's run under way: the user's turn comes first. */
+  private run: { folderId: string; done: Promise<unknown>; interrupted: boolean } | null = null
 
   constructor() {
     super()
     folders.isRunning = (id) => this.active.has(id)
-    // Not during a turn, and not while the user has the browser in front of them: a run would take it from under them.
+    // Not during a turn, and not while the browser is the user's: in front of them, in their hands, or
+    // holding a page a conversation just left, a filled form waiting to be checked.
     tasks.isBusy = () => {
       const page = browser.state()
-      return this.active.size > 0 || page.visible || page.controller === 'human'
+      const left = !!page.url && !tasks.byFolder(page.folderId) && browser.quietMs() < BROWSER_QUIET_MS
+      return this.active.size > 0 || page.visible || page.controller === 'human' || left
+    }
+    tasks.isOffered = (task) => {
+      const { origin } = task
+      return origin.kind !== 'service' || services.taskTemplates().some((t) => t.service === origin.service && t.id === origin.template)
     }
     tasks.runTurn = (task, line) => this.runTask(task, line)
     tasks.addLine = (folderId, text, outcome) => void this.addTaskLine(folderId, text, outcome)
@@ -151,6 +162,7 @@ class Chat extends EventEmitter {
   async send(req: SendRequest): Promise<string> {
     const text = req.text.trim()
     if (!text && !req.attachments.length) throw new Error('Message vide')
+    await this.interruptRun()
     let folder = req.folderId ? folders.get(req.folderId) : null
     if (req.folderId && !folder) throw new Error('Dossier introuvable.')
     if (folder && this.active.has(folder.id)) throw new Error('Marianne répond déjà dans ce dossier.')
@@ -179,6 +191,7 @@ class Chat extends EventEmitter {
 
   /** Answer the last user message again, dropping the answer that followed it. */
   async regenerate(id: string): Promise<void> {
+    await this.interruptRun()
     const folder = folders.get(id)
     if (!folder || this.active.has(id)) return
     const messages = folders.messages(id)
@@ -195,12 +208,23 @@ class Chat extends EventEmitter {
     this.active.get(id)?.abort()
   }
 
+  /** The user comes first: a run under way gives way to their turn, leaves no trace, and stays due. */
+  private async interruptRun(): Promise<void> {
+    const run = this.run
+    if (!run) return
+    run.interrupted = true
+    this.active.get(run.folderId)?.abort()
+    await run.done
+  }
+
   /** The line that opens a run in its folder's conversation. */
-  private addTaskLine(folderId: string, text: string, outcome?: TaskOutcome): ChatMessage[] {
-    const messages = folders.messages(folderId)
-    messages.push({ id: randomUUID(), role: 'system', at: new Date().toISOString(), parts: [{ type: 'text', text }], note: 'task', outcome })
-    folders.saveMessages(folderId, messages)
-    return messages
+  private taskLine(text: string, outcome?: TaskOutcome): ChatMessage {
+    return { id: randomUUID(), role: 'system', at: new Date().toISOString(), parts: [{ type: 'text', text }], note: 'task', outcome }
+  }
+
+  /** A reminder's run: its line alone. */
+  private addTaskLine(folderId: string, text: string, outcome: TaskOutcome): void {
+    folders.saveMessages(folderId, [...folders.messages(folderId), this.taskLine(text, outcome)])
   }
 
   /** A planned task's turn: no user message, the task's instruction instead; resolves when it is over. */
@@ -208,27 +232,39 @@ class Chat extends EventEmitter {
     const folder = folders.get(task.folderId)
     if (!folder) throw new Error('Dossier introuvable.')
     if (this.active.has(folder.id)) throw new Error('Marianne répond déjà dans ce dossier.')
-    const messages = this.addTaskLine(folder.id, line)
-    const opening = messages[messages.length - 1]
-    const answer = await this.turn(folder, messages, opening, { text: taskMessage(task), timeoutMs: TASK_MINUTES * 60_000 })
+    // Nothing is written before it ends: a lock leaves no trace of it, and it comes back whole.
+    const messages = folders.messages(folder.id)
+    const opening = this.taskLine(line)
+    messages.push(opening)
+    const running = this.turn(folder, messages, opening, { text: taskMessage(task), timeoutMs: TASK_MINUTES * 60_000 })
+    const run = { folderId: folder.id, done: running.catch(() => undefined), interrupted: false }
+    this.run = run
+    const answer = await running
+    this.run = null
     const reported = tasks.takeReport()
-    // A card left unanswered: she needed the user, whatever else she wrote.
-    const unanswered = answer.parts.some((p) => p.type === 'approval' && p.status === 'expired')
+    if (run.interrupted) {
+      messages.splice(messages.indexOf(opening))
+      this.save(folder.id, messages)
+      throw new RunInterrupted()
+    }
     const end: TaskTurnEnd =
       answer.status === 'error'
         ? { outcome: 'failed', text: answer.error }
         : answer.status === 'cancelled'
           ? { outcome: 'failed', text: 'vérification interrompue' }
-          : unanswered
-            ? { outcome: 'waiting', text: reported?.text ?? 'une question attend votre réponse' }
-            : (reported ?? { outcome: 'found', text: 'la vérification n’a pas conclu : à relire' })
+          : (reported ?? { outcome: 'found', text: 'la vérification n’a pas conclu : à relire' })
     opening.outcome = end.outcome
-    try {
-      folders.saveMessages(folder.id, messages)
-    } catch (err) {
-      log.warn('Could not save the run of', folder.id, (err as Error).message)
-    }
+    this.save(folder.id, messages)
     return end
+  }
+
+  /** Locked meanwhile, the run is lost with the session: never written in clear. */
+  private save(folderId: string, messages: ChatMessage[]): void {
+    try {
+      folders.saveMessages(folderId, messages)
+    } catch (err) {
+      log.warn('Could not save the run of', folderId, (err as Error).message)
+    }
   }
 
   /** Stop every turn: the session is locking. */
@@ -239,6 +275,8 @@ class Chat extends EventEmitter {
   private async turn(folder: Folder, messages: ChatMessage[], user: ChatMessage, run?: { text: string; timeoutMs: number }): Promise<ChatMessage> {
     const engine = folder.engine
     const cfg = configStore.get()
+    // A run's only way out is the browser and the sites it was given: not the engine's own web tools.
+    const web = run ? 'off' : cfg.web
     const answer: ChatMessage = {
       id: randomUUID(),
       role: 'assistant',
@@ -281,12 +319,12 @@ class Chat extends EventEmitter {
           skills: listSkills(),
           services: services.instructions(),
           notes: redact(profile.get().notes, tokens),
-          web: cfg.web,
+          web,
           legifrance: legifranceReady()
         }),
         sessionId,
         resume,
-        web: cfg.web,
+        web,
         signal: controller.signal,
         timeoutMs: run?.timeoutMs ?? TURN_MINUTES * 60_000,
         waitedMs: () => approvals.waitedMs(folder.id),
@@ -329,7 +367,8 @@ class Chat extends EventEmitter {
         // Locked meanwhile: the answer is lost with the session, never written in clear.
         log.warn('Could not save the answer of', folder.id, (err as Error).message)
       }
-      this.emit('folder', { folder: w.folder, messages, running: false })
+      // Read again: what the turn did to its folder (a task planned) is the window's to show.
+      this.emit('folder', { folder: (session.unlocked && folders.get(folder.id)) || w.folder, messages, running: false })
       log.info(`Turn ${folder.id} ${answer.status} in ${answer.ms}ms (${engine}/${answer.model})`)
     }
     return answer

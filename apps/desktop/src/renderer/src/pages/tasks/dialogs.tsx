@@ -318,7 +318,7 @@ export function TaskSheet({ template, onClose }: { template: TaskTemplate; onClo
         <Line name="ce qu’il faut">
           <span className="small dim">
             Marianne ne vérifie que déverrouillée : elle le fait à votre première ouverture du jour prévu. Chaque vérification utilise votre moteur une à deux
-            minutes. Si un site demande un code, Marianne vous passe la main.
+            minutes. Si un site demande un code, elle s’arrête et vous prévient.
           </span>
         </Line>
         {error && <p className="small bad">{error}</p>}

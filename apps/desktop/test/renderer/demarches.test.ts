@@ -121,6 +121,19 @@ describe('à faire', () => {
     expect(items.filter(presses).map((x) => x.title)).toEqual(['retard', 'APL', 'dimanche'])
   })
 
+  it('keeps what the rules dated today because it is late at the top', () => {
+    const items = todoItems(
+      {
+        ...none,
+        folders: [folder({ status: 'approval' })],
+        deadlines: [deadline({ date: '2026-10-30', note: 'en retard : l’échéance était le 01/10/2026', title: 'retard' })]
+      },
+      undefined,
+      NOW
+    )
+    expect(items[0]).toMatchObject({ title: 'retard', rank: 0, when: { text: 'en retard', tone: 'late' } })
+  })
+
   it('leaves out what is beyond 45 days, done, or a settled folder', () => {
     const items = todoItems(
       {
@@ -157,6 +170,12 @@ describe('à faire', () => {
     expect(items[0].detail).toBe('le site demande un code')
   })
 
+  it('lets go of a task that waited once the user has opened its folder', () => {
+    const waiting = task({ runs: [{ at: '2026-10-30T07:00:00Z', outcome: 'waiting' }] })
+    expect(todoItems({ ...none, tasks: [waiting], folders: [folder({ id: 'tf', unread: true })] }, undefined, NOW)).toHaveLength(1)
+    expect(todoItems({ ...none, tasks: [waiting], folders: [folder({ id: 'tf', unread: false })] }, undefined, NOW)).toEqual([])
+  })
+
   it('lists a letter no folder holds', () => {
     const items = todoItems(
       { ...none, documents: [document({}), document({ id: 'e', folderId: 'f' }), document({ id: 'g', type: 'other' as DocumentMeta['type'] })] },
@@ -191,6 +210,10 @@ describe('the weeks', () => {
     expect(marks[0]).toEqual([{ key: 'a', title: 'Passage · 1er nov.', pressing: true }])
     expect(marks[2].map((m) => m.pressing)).toEqual([false])
     expect(marks.flat()).toHaveLength(2)
+  })
+
+  it('survive a date nobody can read', () => {
+    expect(weekMarks([deadline({ date: '2026-13-45' })], NOW).flat()).toEqual([])
   })
 
   it('put what is late in the current week', () => {

@@ -7,7 +7,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { app } from 'electron'
 import { log } from './log'
 import { profile } from './profile/store'
-import { activeTools } from './tools'
+import { ALL_TOOLS, activeTools } from './tools'
+import { tasks } from './tasks'
 import { ToolError, type Tool, type ToolContext } from './tools/tool'
 
 /**
@@ -73,6 +74,9 @@ function register(server: McpServer, t: Tool, ctx: ToolContext): void {
       const started = Date.now()
       const tokens = profile.tokens()
       try {
+        // Nobody watches a run: this is what holds it to reading and reporting, whatever a page told the engine.
+        if (!tasks.mayUse(ctx.folderId, t, ALL_TOOLS.includes(t)))
+          throw new ToolError(`A planned task's run cannot use ${t.name}. Stop here and report "waiting" with task_report, saying what the user should do.`)
         const raw = JSON.stringify(args ?? {})
         if (t.tokens === false && /\[\[[a-z0-9_.]+\]\]/i.test(raw))
           throw new ToolError('Tokens [[…]] are not accepted here: the user’s identifiers never leave the app through an address.')

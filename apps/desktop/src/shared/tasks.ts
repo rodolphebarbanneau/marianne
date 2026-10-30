@@ -27,11 +27,13 @@ export function addEvery(day: string, every: TaskEvery): string {
  * The day after a run on `today`. Days and weeks count from the run: late, the rhythm moves with
  * it. Months and years keep their day (a quarter's first, a yearly date), whatever the delay.
  */
-export function nextDay(task: { next: string; every: TaskEvery }, today: string): string {
+export function nextDay(task: { next: string; anchor?: string; every: TaskEvery }, today: string): string {
   if (task.every.unit === 'day' || task.every.unit === 'week') return addEvery(today, task.every)
+  // From the day it started, not the last one: the 31st comes back after a short month.
+  const from = task.anchor ?? task.next
   let k = 1
-  let next = addEvery(task.next, task.every)
-  while (next <= today) next = addEvery(task.next, { ...task.every, n: task.every.n * ++k })
+  let next = addEvery(from, task.every)
+  while (next <= today) next = addEvery(from, { ...task.every, n: task.every.n * ++k })
   return next
 }
 

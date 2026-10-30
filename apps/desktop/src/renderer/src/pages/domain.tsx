@@ -79,7 +79,7 @@ export function DomainPage({ id, tab = 'apercu' }: { id: DomainId; tab?: DomainT
     .filter((s) => s.on)
     .map((s) => s.manifest.id)
     .join()
-  const tasksKey = allTasks.map((t) => `${t.id}:${t.runs.length}`).join()
+  const tasksKey = allTasks.map((t) => `${t.id}:${t.runs.at(-1)?.at ?? ''}`).join()
   const templates = useTaskTemplates([onServices, tasksKey, JSON.stringify(profile?.vehicles ?? [])].join('|'))
 
   // Échéances move with the profile, and with what a task has just found.
@@ -401,7 +401,7 @@ function Weeks({ entities, data }: { entities: DomainEntity[]; data: Domain }) {
           <tr>
             <th />
             {weekLabels().map((label, i) => (
-              <th key={label} className={i === 0 ? 'now' : undefined}>
+              <th key={i} className={i === 0 ? 'now' : undefined}>
                 {label}
               </th>
             ))}

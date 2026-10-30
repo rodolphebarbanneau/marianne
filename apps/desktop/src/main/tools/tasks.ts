@@ -13,6 +13,7 @@ import { tool, ToolError } from './tool'
  */
 
 const HOST = /^(?:[a-z0-9-]+\.)+[a-z]{2,}$/
+const NEVER = 'payer, signer ou envoyer : une tâche regarde et vous le dit'
 
 const EVERY = z.object({ unit: z.enum(['day', 'week', 'month', 'year']), n: z.number().int().min(1).max(366) })
 
@@ -28,7 +29,12 @@ export const taskTools = [
       title: z.string().trim().min(3).max(80).describe('In French, short'),
       runner: z.enum(['marianne', 'remind']),
       every: EVERY,
-      instruction: z.string().trim().max(2000).optional().describe('runner marianne: what to do at each run, in English, addressed to yourself'),
+      instruction: z
+        .string()
+        .trim()
+        .max(500)
+        .optional()
+        .describe('runner marianne: what to do at each run, in French: the user reads it word for word on the card, and on the task afterwards'),
       sites: z
         .array(z.string().regex(HOST, 'a host name: www.example.fr'))
         .max(5)
@@ -53,8 +59,9 @@ export const taskTools = [
           ...(folder.domain ? [{ label: 'domaine', value: domainInfo(folder.domain).short }] : []),
           ...(runner === 'marianne'
             ? [
+                { label: 'à chaque fois', value: instruction ?? '' },
                 { label: 'sites sans redemander', value: sites.join(', ') || 'aucun' },
-                { label: 'jamais', value: 'payer, signer ou envoyer sans votre accord' }
+                { label: 'jamais', value: NEVER }
               ]
             : [])
         ]
@@ -70,6 +77,9 @@ export const taskTools = [
         everyLabel: label,
         instruction,
         sites,
+        // On the task as on the card: what it does stays where the user can read it.
+        allows: instruction ? [instruction, ...(sites.length ? [`aller sur ${sites.join(' et ')} sans redemander, pour cette tâche`] : [])] : undefined,
+        never: runner === 'marianne' ? NEVER : undefined,
         why,
         folderId: folder.id
       })
