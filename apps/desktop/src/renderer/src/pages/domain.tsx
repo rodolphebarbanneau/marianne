@@ -20,6 +20,7 @@ import { api } from '../lib/api'
 import { when } from '../lib/format'
 import { useDocuments, useProfile } from '../lib/profile'
 import { useServices } from '../host'
+import { ReviewDialog } from './services/dialogs'
 
 /**
  * A domain's dashboard: what the user has in it (deadlines, entities, folders), then what helps
@@ -278,10 +279,35 @@ function entities(profile: Profile, kind: EntityKind): ReactNode {
   }
 }
 
-/** A service useful for the domain: its summary when it is on, a suggestion when it is off. */
+/** A service useful for the domain: its summary when it is on, a suggestion when it is off or not among the user's. */
 function ServiceLine({ state, summary }: { state: ServiceState; summary?: ServiceSummary }) {
   const app = useApp()
+  const [reviewing, setReviewing] = useState(false)
   const m = state.manifest
+  if (!state.added)
+    return (
+      <div className="svc off">
+        <span className="top">
+          <span>
+            3615 {serviceCode(m)} · {m.name}
+          </span>
+          <button className="btn small" onClick={() => setReviewing(true)}>
+            + ajouter
+          </button>
+        </span>
+        <span className="sum">pas parmi vos services : peut vous aider dans ce domaine</span>
+        {reviewing && (
+          <ReviewDialog
+            subject={{ kind: 'official', state }}
+            onAdded={() => {
+              setReviewing(false)
+              app.toast(`3615 ${serviceCode(m)} ajouté à mes services`)
+            }}
+            onClose={() => setReviewing(false)}
+          />
+        )}
+      </div>
+    )
   if (!state.on) {
     const disabled = app.settings?.services.disabled ?? []
     return (

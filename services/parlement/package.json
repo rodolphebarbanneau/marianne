@@ -18,6 +18,26 @@
     "name": "Parlement",
     "description": "Assemblée nationale et Sénat : vos élus, les scrutins, l’agenda, les séances en vidéo et en direct",
     "category": "democracy",
+    "icon": {
+      "palette": {
+        "r": "rouge",
+        "m": "magenta",
+        "j": "jaune",
+        "c": "cyan",
+        "b": "bleu",
+        "w": "blanc"
+      },
+      "pixels": [
+        "........",
+        "..rmjc..",
+        ".rm..cb.",
+        "rr....bb",
+        "r......b",
+        "........",
+        "..wwww..",
+        "........"
+      ]
+    },
     "tabs": [
       {
         "id": "home",
@@ -42,6 +62,40 @@
       {
         "id": "agenda",
         "label": "agenda"
+      }
+    ],
+    "tools": [
+      {
+        "name": "members",
+        "label": "élus"
+      },
+      {
+        "name": "member",
+        "label": "élu"
+      },
+      {
+        "name": "ballots",
+        "label": "scrutins"
+      },
+      {
+        "name": "ballot",
+        "label": "scrutin"
+      },
+      {
+        "name": "agenda",
+        "label": "agenda"
+      },
+      {
+        "name": "videos",
+        "label": "vidéos"
+      },
+      {
+        "name": "video",
+        "label": "vidéo"
+      },
+      {
+        "name": "live",
+        "label": "en direct"
       }
     ],
     "keywords": [

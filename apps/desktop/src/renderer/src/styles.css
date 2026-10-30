@@ -79,6 +79,40 @@
   --gutter-end: 15px;
 }
 
+/* The Marianne palette (packages/sdk/src/palette.ts): the 29 colours services' icons and tile pictures are drawn
+   with, by name. Six hues at four levels, from the tokens, so they follow the theme; four greys and black. */
+:root {
+  --palette-bleu-sombre: color-mix(in srgb, var(--bleu) 55%, var(--noir));
+  --palette-bleu: var(--bleu);
+  --palette-bleu-clair: color-mix(in srgb, var(--bleu) 62%, var(--blanc));
+  --palette-bleu-pale: color-mix(in srgb, var(--bleu) 30%, var(--blanc));
+  --palette-rouge-sombre: color-mix(in srgb, var(--rouge) 55%, var(--noir));
+  --palette-rouge: var(--rouge);
+  --palette-rouge-clair: color-mix(in srgb, var(--rouge) 62%, var(--blanc));
+  --palette-rouge-pale: color-mix(in srgb, var(--rouge) 30%, var(--blanc));
+  --palette-magenta-sombre: color-mix(in srgb, var(--magenta) 55%, var(--noir));
+  --palette-magenta: var(--magenta);
+  --palette-magenta-clair: color-mix(in srgb, var(--magenta) 62%, var(--blanc));
+  --palette-magenta-pale: color-mix(in srgb, var(--magenta) 30%, var(--blanc));
+  --palette-vert-sombre: color-mix(in srgb, var(--vert) 55%, var(--noir));
+  --palette-vert: var(--vert);
+  --palette-vert-clair: color-mix(in srgb, var(--vert) 62%, var(--blanc));
+  --palette-vert-pale: color-mix(in srgb, var(--vert) 30%, var(--blanc));
+  --palette-cyan-sombre: color-mix(in srgb, var(--cyan) 55%, var(--noir));
+  --palette-cyan: var(--cyan);
+  --palette-cyan-clair: color-mix(in srgb, var(--cyan) 62%, var(--blanc));
+  --palette-cyan-pale: color-mix(in srgb, var(--cyan) 30%, var(--blanc));
+  --palette-jaune-sombre: color-mix(in srgb, var(--jaune) 55%, var(--noir));
+  --palette-jaune: var(--jaune);
+  --palette-jaune-clair: color-mix(in srgb, var(--jaune) 62%, var(--blanc));
+  --palette-jaune-pale: color-mix(in srgb, var(--jaune) 30%, var(--blanc));
+  --palette-gris-sombre: var(--rule);
+  --palette-gris: var(--muted);
+  --palette-gris-clair: var(--dim);
+  --palette-blanc: var(--blanc);
+  --palette-noir: var(--noir);
+}
+
 /* Minitel 1: the eight colours as eight levels of grey, on a faintly green phosphor. */
 html[data-theme='monochrome'] {
   --noir: #070908;
@@ -329,18 +363,20 @@ textarea {
 }
 /* A search box, ghost like the icon buttons beside it (and as tall): the magnifier and the words only, a frame under the
    pointer, lit while typing. */
+/* A search field is always framed, at rest too: one sees where to type. Blue on hover, yellow while typing. */
 .search-field {
   display: flex;
   align-items: center;
   gap: 7px;
   height: 28px;
   padding: 0 8px;
-  border: 1px solid transparent;
+  border: 1px solid var(--rule);
+  background: var(--bg-sunken);
   color: var(--dim);
   cursor: text;
 }
 .search-field:hover {
-  border-color: var(--rule);
+  border-color: var(--bleu);
 }
 .search-field:focus-within {
   border-color: var(--accent);
@@ -1395,26 +1431,6 @@ button.ev:hover {
   gap: 8px;
 }
 
-/* The Services page: favorites first, then by category. */
-.service-card {
-  position: relative;
-  padding: 0;
-}
-.service-card .open {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 9px 30px 9px 11px;
-  text-align: left;
-  white-space: normal;
-  height: 100%;
-}
-.service-card:hover {
-  border-color: var(--bleu);
-}
-.service-card.starred {
-  border-color: var(--accent);
-}
 .star {
   color: var(--muted);
   font-size: 1.1em;
@@ -1424,10 +1440,961 @@ button.ev:hover {
 .star.on {
   color: var(--accent);
 }
-.service-card .star {
+
+/* A segmented choice (tous · officiels · communauté): one button lit, in inverse video. */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+  flex: none;
+}
+.seg button {
+  padding: 1px 9px;
+  color: var(--dim);
+  border-right: 1px solid var(--rule);
+}
+.seg button:last-child {
+  border-right: 0;
+}
+.seg button:hover {
+  color: var(--hi);
+}
+.seg button.on,
+.seg button[aria-pressed='true'] {
+  background: var(--fg);
+  color: var(--noir);
+}
+
+/* A service's icon (ServiceIcon, drawn in whole screen pixels): its frame and its sunken ground. */
+.service-icon {
+  display: block;
+  flex: none;
+}
+.service-icon .frame {
+  fill: var(--rule);
+}
+.service-icon .ground {
+  fill: var(--bg-sunken);
+}
+.mosaic {
+  display: block;
+  flex: none;
+}
+
+/* Where a service comes from, always shown: « officiel » with the tricolour, « communauté » dashed yellow. */
+.origin.official {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.tricolor {
+  display: inline-flex;
+  height: 7px;
+}
+.tricolor i {
+  width: 4px;
+  height: 7px;
+}
+.trust-ok {
+  color: var(--vert);
+  white-space: nowrap;
+}
+.trust-warn {
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* Read by screen readers only: a column's name the table doesn't show. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- the Services page: the 3615 kiosk, my services, « découvrir » ---------- */
+
+/* The page lays out by the room the sidebar leaves it: a container, as a service's screen is. */
+.services-page .kiosk {
+  container: kiosk / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  max-width: var(--content-width);
+  padding-bottom: var(--s6);
+}
+.services-page .page-head {
+  margin-bottom: 0;
+}
+/* Layout helpers of the Services page and its dialogs (which float over the window, out of the page). */
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+.row-flex {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.clamp2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  white-space: normal;
+}
+/* A section's head: its name and count, its tools on the right. */
+.sec-h {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.sec-h .label {
+  display: inline;
+}
+.sec-h .tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sec-h + .sec-h,
+* + .sec-h {
+  margin-top: 22px;
+}
+/* The framed + at the end of the page's head: adding a service (« découvrir »). */
+.plus-btn {
+  width: 30px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  color: var(--fg);
+}
+.plus-btn:hover {
+  border-color: var(--bleu);
+  color: var(--hi);
+}
+.plus-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+
+/* The kiosk's head: QUEL SERVICE ?, the 3615 bar, ENVOI, and a Minitel waiting. */
+.kiosk-head {
+  border: 3px double var(--rule);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  padding: 12px 22px 12px 20px;
+  background-image: radial-gradient(circle at 1.5px 1.5px, color-mix(in srgb, var(--dot) 46%, transparent) 0.6px, transparent 0.9px);
+  background-size: 4px 4px;
+}
+.kiosk-head .ask {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1.45);
+  line-height: 1;
+  color: var(--hi);
+  letter-spacing: 0.08em;
+}
+.codebar {
+  display: flex;
+  align-items: stretch;
+  margin-top: 10px;
+  max-width: 600px;
+}
+.codebar .pre {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1.35);
+  line-height: 1;
+  background: var(--fg);
+  color: var(--noir);
+  padding: 5px 10px 3px;
+  letter-spacing: 0.08em;
+}
+.codebar .cfield {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--fg);
+  border-left: 0;
+  background: var(--bg-sunken);
+  padding: 0 10px;
+  cursor: text;
+  overflow: hidden;
+}
+.codebar input {
+  flex: none;
+  field-sizing: content;
+  min-width: 1ch;
+  max-width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1.35);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  caret-color: transparent;
+}
+.codebar input::placeholder {
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+.codebar .cfield:has(input:placeholder-shown) .cursor {
+  order: -1;
+  margin-right: 8px;
+}
+.codebar .cursor {
+  flex: none;
+  margin-left: 2px;
+  width: 0.5em;
+  height: 1.05em;
+  background: var(--accent);
+  animation: blink 1s steps(1) infinite;
+  font-size: calc(var(--pixel-size) * 1.05);
+}
+/* Typing: the whole bar lights up, 3615 and its frame in yellow; the field itself draws no outline. */
+.codebar input:focus,
+.codebar input:focus-visible {
+  outline: none;
+}
+.codebar:focus-within .pre {
+  background: var(--accent);
+}
+.codebar:focus-within .cfield {
+  border-color: var(--accent);
+}
+.codebar .envoi {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1.05);
+  background: var(--blanc);
+  color: var(--noir);
+  padding: 0 12px;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  letter-spacing: 0.06em;
+}
+.codebar .envoi:hover {
+  background: var(--accent);
+}
+.minitel-art .blinkcell {
+  animation: blink 1s steps(1) infinite;
+}
+/* Narrow: the Minitel gives way to the bar. */
+@container kiosk (max-width: 620px) {
+  .kiosk-head {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px 14px;
+  }
+  .kiosk-head .minitel-art {
+    display: none;
+  }
+}
+
+/* The two tabs under the kiosk: what one uses, and discovering others. */
+.ktabs {
+  display: flex;
+  align-items: flex-end;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 14px;
+}
+.ktabs button {
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  margin-bottom: -1px;
+  color: var(--dim);
+}
+.ktabs button:hover {
+  color: var(--hi);
+}
+.ktabs button.on {
+  border-color: var(--rule);
+  background: var(--bg);
+  color: var(--hi);
+}
+.ktabs .n {
+  color: var(--muted);
+  margin-left: 5px;
+}
+.ktabs .disc.on {
+  color: var(--accent);
+}
+
+/* A pinned service's tile: Marianne's head (icon, code, name, the grip), the service's body, Marianne's foot. One size. */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+@container kiosk (max-width: 980px) {
+  .tiles,
+  .kgrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container kiosk (max-width: 720px) {
+  .tiles,
+  .kgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container kiosk (max-width: 460px) {
+  .tiles,
+  .kgrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.tile {
+  position: relative;
+  height: 220px;
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  padding: 10px 12px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+.tile:hover {
+  border-color: var(--bleu);
+}
+.tile:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+.tile.urgent {
+  border: 1.5px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-raised));
+}
+.tile.off {
+  background: transparent;
+}
+.tile.off > :not(.grip) {
+  opacity: 0.55;
+}
+/* Ghost: over the grip (CSS alone) and while it is dragged. Only the border's style and colour change, never its
+   width: the grip stays exactly under the pointer. */
+.tile:has(.grip:hover),
+.tile.dragging {
+  border-style: dashed;
+  border-color: var(--accent);
+  background: transparent;
+}
+.tile:has(.grip:hover) > :not(.grip) {
+  opacity: 0.55;
+}
+.tile.dragging > * {
+  opacity: 0.2;
+}
+.tile .th {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-right: 26px;
+}
+.tile .th .code {
+  font-size: calc(var(--pixel-size) * 0.9);
+  align-self: flex-start;
+}
+.tile .th .stack {
+  flex: 1;
+}
+.tile .name {
+  font-size: 0.8em;
+  color: var(--dim);
+}
+/* The grip: six dots, top right, on hover; a tile moves by it only. */
+.tile .grip {
   position: absolute;
   top: 7px;
-  right: 8px;
+  right: 7px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--rule);
+  background: var(--bg-sunken);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.tile .grip i {
+  display: grid;
+  grid-template-columns: repeat(2, 3px);
+  grid-auto-rows: 3px;
+  gap: 3px;
+}
+.tile .grip b {
+  display: block;
+  background: var(--dim);
+}
+.tile:hover .grip,
+.tile:focus-within .grip,
+.tile.dragging .grip {
+  opacity: 1;
+}
+.tile .grip:hover,
+.tile .grip:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+.tile .grip:hover b,
+.tile .grip:focus-visible b {
+  background: var(--accent);
+}
+.tile .tb {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  flex: 1;
+  border-top: 1px dashed var(--rule);
+  padding-top: 7px;
+}
+.tile .value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.tile .value b {
+  font-family: var(--retro);
+  font-weight: 400;
+  font-size: calc(var(--pixel-size) * 1.9);
+  line-height: 0.85;
+  color: var(--hi);
+  flex: none;
+}
+.tile .value span {
+  font-size: 0.86em;
+  color: var(--dim);
+}
+.tile .title {
+  color: var(--hi);
+}
+.tile .ln {
+  font-size: 0.86em;
+}
+.tile .tf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78em;
+  color: var(--muted);
+  min-height: 22px;
+}
+.tile .tf .btn {
+  margin-left: auto;
+}
+.tile .tf .fresh.failed {
+  color: var(--accent);
+}
+.tone-dim {
+  color: var(--dim);
+}
+.tone-accent {
+  color: var(--accent);
+}
+.tone-ok {
+  color: var(--vert);
+}
+.tone-bad,
+.tone-live {
+  color: var(--rouge);
+}
+.dotlive {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rouge);
+  animation: blink 1.4s steps(1) infinite;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+/* A tile's picture: bars, blocks, a gauge, pixels. */
+.v-bars {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  align-items: end;
+  height: 44px;
+  font-size: 0.72em;
+  color: var(--dim);
+  text-align: center;
+  line-height: 1.25;
+}
+.v-bars i {
+  display: block;
+  width: 9px;
+  margin: 0 auto 2px;
+}
+.v-blocks {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+}
+.v-blocks span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.7em;
+  color: var(--muted);
+}
+.v-blocks i {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.v-blocks i.none {
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.v-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.8em;
+  color: var(--dim);
+}
+.v-gauge .track {
+  height: 9px;
+  background: var(--bg-sunken);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.v-gauge .track i {
+  display: block;
+  height: 100%;
+}
+
+/* « découvrir »: what Marianne recommends, as cards. */
+.kgrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.kcard {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px;
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  padding: 11px 12px 9px;
+  text-align: left;
+  white-space: normal;
+  min-height: 104px;
+  cursor: pointer;
+}
+.kcard:hover {
+  border-color: var(--bleu);
+}
+.kcard .t {
+  color: var(--hi);
+}
+.kcard .d {
+  font-size: 0.86em;
+  color: var(--dim);
+}
+.kcard .meta {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 6px;
+  border-top: 1px dashed var(--rule);
+  font-size: 0.8em;
+  color: var(--muted);
+  min-width: 0;
+}
+.kcard .meta .right {
+  margin-left: auto;
+  flex: none;
+}
+.kcard .meta .btn {
+  margin-left: auto;
+  flex: none;
+}
+.kcard.soon {
+  background: transparent;
+  border-style: dashed;
+  cursor: default;
+}
+.kcard.soon .t,
+.kcard.soon .d {
+  color: var(--muted);
+}
+.kcard.soon .code {
+  background: var(--muted);
+}
+.kcard.community {
+  border-style: dashed;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 3%, var(--bg-raised));
+}
+
+/* My services and the catalogue, as tables. */
+.stable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.stable th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 0.74em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding: 5px 10px 5px 4px;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+.stable th button {
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+.stable th button:hover,
+.stable th.sorted {
+  color: var(--hi);
+}
+.stable td {
+  padding: 6px 14px 6px 4px;
+  border-bottom: 1px dashed var(--rule);
+  vertical-align: middle;
+  white-space: nowrap;
+  font-size: 0.92em;
+}
+.stable tbody tr {
+  cursor: pointer;
+}
+.stable tbody tr:hover td {
+  background: var(--hover);
+}
+.stable tr.off td {
+  color: var(--muted);
+}
+.stable tr.off .code {
+  background: var(--muted);
+}
+.stable .tsvc {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.stable .icon-btn {
+  width: 26px;
+  height: 22px;
+}
+.stable td.act {
+  text-align: right;
+  padding-right: 4px;
+}
+.stable .svcname {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.stable .desc {
+  max-width: 330px;
+}
+.stable .short {
+  max-width: 220px;
+}
+.stable tr.more td {
+  text-align: center;
+  color: var(--muted);
+  padding: 14px 4px;
+  border-bottom: 0;
+  cursor: default;
+}
+.stable tbody tr.more:hover td {
+  background: transparent;
+}
+/* Narrow: the table scrolls sideways rather than squeezing its columns. */
+.table-wrap {
+  overflow-x: auto;
+}
+.switch {
+  display: inline-flex;
+}
+.switch i {
+  width: 28px;
+  height: 14px;
+  border: 1px solid var(--rule);
+  background: var(--bg-sunken);
+  position: relative;
+  display: block;
+}
+.switch i::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 8px;
+  height: 8px;
+  background: var(--muted);
+}
+.switch.on i::after {
+  left: 16px;
+  background: var(--vert);
+}
+.switch:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.loading-cells {
+  display: inline-flex;
+  gap: 3px;
+  margin-right: 10px;
+  vertical-align: -1px;
+}
+.loading-cells i {
+  width: 8px;
+  height: 10px;
+  background: var(--accent);
+  animation: load-cell 0.9s steps(1) infinite;
+}
+.loading-cells i:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.loading-cells i:nth-child(3) {
+  animation-delay: 0.6s;
+}
+@keyframes load-cell {
+  0% {
+    opacity: 1;
+  }
+  33% {
+    opacity: 0.15;
+  }
+}
+
+/* The search view: one list for my services and the catalogue, ranked by trust, then by relevance. */
+.results-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+.results-bar .hi {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1.05);
+  letter-spacing: 0.06em;
+}
+.results-bar .link {
+  margin-left: auto;
+}
+.sgroup {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 16px 0 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+}
+.sgroup .label {
+  display: inline;
+}
+.srow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 190px 110px;
+  gap: 14px;
+  align-items: center;
+  padding: 7px 8px;
+  border-bottom: 1px dashed var(--rule);
+  cursor: pointer;
+}
+.srow:hover {
+  background: var(--hover);
+}
+.srow.sel {
+  background: var(--sel);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.srow .act {
+  justify-self: end;
+}
+.srow .why {
+  color: var(--accent);
+}
+@container kiosk (max-width: 720px) {
+  .srow {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .srow > :nth-child(3) {
+    display: none;
+  }
+}
+.services-page mark {
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  color: var(--hi);
+}
+.services-page .code mark {
+  background: var(--noir);
+  color: var(--accent);
+}
+
+/* The Services page's dialogs: pinning, a .3615 file, before adding. */
+.modal.wide {
+  width: min(760px, 100%);
+}
+.modal .mh {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.modal .mh .t {
+  font-family: var(--retro);
+  font-size: var(--pixel-size);
+  letter-spacing: 0.12em;
+  color: var(--hi);
+}
+.modal .mh .btn {
+  margin-left: auto;
+}
+.pinlist {
+  max-height: 440px;
+  overflow: auto;
+  border-top: 1px solid var(--rule);
+}
+.pinrow {
+  display: grid;
+  grid-template-columns: 18px auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px;
+  border-bottom: 1px dashed var(--rule);
+  cursor: pointer;
+}
+.pinrow:hover {
+  background: var(--hover);
+}
+.pinrow.on {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.pinrow input {
+  pointer-events: none;
+  margin: 0;
+}
+.drop {
+  border: 2px dashed var(--rule);
+  background: var(--bg-raised);
+  padding: 24px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  cursor: pointer;
+}
+.drop:hover,
+.drop.over {
+  border-color: var(--accent);
+}
+.drop .big {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1.3);
+  color: var(--hi);
+  letter-spacing: 0.06em;
+}
+.review-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+.verdict-box {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 9px 12px;
+  border: 1px solid var(--vert);
+  background: color-mix(in srgb, var(--vert) 6%, transparent);
+  font-size: 0.92em;
+}
+.verdict-box.warn {
+  border: 1px dashed var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.verdict-box.warn.strong {
+  border: 1.5px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.verdict-box.refused {
+  border: 1.5px solid var(--rouge);
+  background: color-mix(in srgb, var(--rouge) 8%, transparent);
+}
+.can {
+  border-top: 1px solid var(--rule);
+}
+.can .r {
+  display: grid;
+  grid-template-columns: 22px 190px minmax(0, 1fr);
+  gap: 10px;
+  padding: 6px 2px;
+  border-bottom: 1px dashed var(--rule);
+  align-items: center;
+}
+.can .r .g {
+  display: flex;
+  justify-content: center;
+}
+.can .r .k {
+  color: var(--dim);
+  font-size: 0.9em;
+}
+.host-chip {
+  display: inline-block;
+  border: 1px solid var(--rule);
+  padding: 0 6px;
+  margin: 0 4px 2px 0;
+  font-size: 0.88em;
+  color: var(--fg);
+}
+.never {
+  font-size: 0.9em;
+  color: var(--dim);
+  border-left: 2px solid var(--vert);
+  padding: 2px 0 2px 12px;
 }
 .box-note {
   border: 1px dashed var(--rule);

@@ -15,12 +15,21 @@ npmRebuild: false
 # Marianne (src/main/opened-archives.ts). The Windows installer registers them for the user, the macOS
 # app declares them (and exports their type, below, for Finder), the .deb installs their type and icons.
 # `name` is the Windows ProgID; `description`, the name people see.
+# .3615 files, a service each (a zip, src/main/community/package.ts), the same way with their own icon (a
+# floppy); a double click shows what Marianne found in one before adding it (src/main/opened-service-files.ts).
+# '3615' is quoted: unquoted, YAML reads the number 3615, and electron-builder wants the extension's name.
 fileAssociations:
   - ext: marianne
     name: Marianne.Archive
     description: Archive Marianne
     icon: archive
     role: Editor
+    rank: Owner
+  - ext: '3615'
+    name: Marianne.Service
+    description: Service Marianne
+    icon: service
+    role: Viewer
     rank: Owner
 
 win:
@@ -49,6 +58,8 @@ mac:
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   # The archive's type, owned by Marianne: Finder shows its name and icon, and opens it with the app.
+  # A service file is a zip, yet its type conforms to public.data only: as a public.zip-archive, Finder
+  # would offer to unzip it on a double click instead of opening it in Marianne.
   extendInfo:
     UTExportedTypeDeclarations:
       - UTTypeIdentifier: io.github.rodolphebarbanneau.marianne.archive
@@ -58,6 +69,13 @@ mac:
         UTTypeTagSpecification:
           public.filename-extension: [marianne]
           public.mime-type: application/x-marianne
+      - UTTypeIdentifier: io.github.rodolphebarbanneau.marianne.service
+        UTTypeDescription: Service Marianne
+        UTTypeConformsTo: [public.data]
+        UTTypeIconFile: service.icns
+        UTTypeTagSpecification:
+          public.filename-extension: ['3615']
+          public.mime-type: application/x-marianne-service
 # Name both installers by chip (the default leaves x64 unnamed).
 dmg:
   artifactName: ${productName}-${version}-${arch}.${ext}
@@ -73,9 +91,9 @@ linux:
   desktop:
     entry:
       StartupWMClass: Marianne
-  mimeTypes: [application/x-marianne]
-# The .marianne type and its icon, from build/mime: electron-builder's own declaration would give these
-# files the generic document icon. Paths from apps/desktop, where electron-builder runs.
+  mimeTypes: [application/x-marianne, application/x-marianne-service]
+# The .marianne and .3615 types and their icons, from build/mime: electron-builder's own declaration would
+# give these files the generic document icon. Paths from apps/desktop, where electron-builder runs.
 deb:
   fpm:
     - build/mime/marianne.xml=/usr/share/mime/packages/marianne.xml
@@ -87,6 +105,14 @@ deb:
     - build/mime/128.png=/usr/share/icons/hicolor/128x128/mimetypes/application-x-marianne.png
     - build/mime/256.png=/usr/share/icons/hicolor/256x256/mimetypes/application-x-marianne.png
     - build/mime/512.png=/usr/share/icons/hicolor/512x512/mimetypes/application-x-marianne.png
+    - build/mime/service-16.png=/usr/share/icons/hicolor/16x16/mimetypes/application-x-marianne-service.png
+    - build/mime/service-24.png=/usr/share/icons/hicolor/24x24/mimetypes/application-x-marianne-service.png
+    - build/mime/service-32.png=/usr/share/icons/hicolor/32x32/mimetypes/application-x-marianne-service.png
+    - build/mime/service-48.png=/usr/share/icons/hicolor/48x48/mimetypes/application-x-marianne-service.png
+    - build/mime/service-64.png=/usr/share/icons/hicolor/64x64/mimetypes/application-x-marianne-service.png
+    - build/mime/service-128.png=/usr/share/icons/hicolor/128x128/mimetypes/application-x-marianne-service.png
+    - build/mime/service-256.png=/usr/share/icons/hicolor/256x256/mimetypes/application-x-marianne-service.png
+    - build/mime/service-512.png=/usr/share/icons/hicolor/512x512/mimetypes/application-x-marianne-service.png
 
 # Releases on GitHub double as the update feed: installers + latest*.yml manifests read by
 # electron-updater. CI creates a draft; publishing it rolls the update out to every install.

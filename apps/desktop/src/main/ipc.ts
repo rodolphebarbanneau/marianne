@@ -22,6 +22,7 @@ import { accounts } from './account'
 import { approvals } from './approvals'
 import { browser } from './browser'
 import { chat } from './chat'
+import { catalogue, communityPackages, SERVICE_FILE_EXT } from './community'
 import { configStore } from './config'
 import { deadlines } from './deadlines'
 import { content } from './content'
@@ -31,6 +32,7 @@ import { folders } from './folders'
 import { keychain } from './keychain'
 import { searchAddress, searchCommunes, lookupSiren } from './lookup'
 import { openedArchives } from './opened-archives'
+import { openedServiceFiles } from './opened-service-files'
 import { paths } from './paths'
 import { documents, type DocumentPatch } from './profile/documents'
 import { profile } from './profile/store'
@@ -295,6 +297,41 @@ export function registerIpc(): void {
   handle('syncService', (id: string) => services.sync(id))
   handle('serviceSummaries', (domain: DomainId) => services.summaries(domain))
   handle('setServiceAccess', (id: string, granted: ProfileField[]) => services.setAccess(id, Array.isArray(granted) ? granted : []))
+  handle('addService', (id: string) => services.add(id))
+  handle('removeService', (id: string) => services.remove(id))
+  handle('serviceOpened', (id: string) => services.opened(id))
+  handle('serviceTiles', () => services.tiles())
+
+  // ---------- community services: the catalogue, .3615 files ----------
+  // Reviews and installs need an open account; a file reviewed waits for the user's agreement until the lock.
+  const withAccount = () => {
+    if (!session.unlocked) throw new Error('Ouvrez votre compte pour ajouter un service.')
+  }
+  handle('catalogue', () => catalogue.state(true))
+  handle('chooseServiceFile', async () => {
+    withAccount()
+    const r = await openDialog({
+      title: 'Ajouter un service',
+      properties: ['openFile'],
+      filters: [{ name: 'Service Marianne', extensions: [SERVICE_FILE_EXT.slice(1)] }]
+    })
+    return r.canceled || !r.filePaths[0] ? null : communityPackages.review(r.filePaths[0])
+  })
+  handle('readServiceFile', (path: string) => {
+    withAccount()
+    return communityPackages.review(path)
+  })
+  handle('installServiceFile', async (ticket: string) => {
+    withAccount()
+    await communityPackages.install(ticket)
+  })
+  handle('takeServiceFiles', () => openedServiceFiles.take())
+  handle('addCatalogueService', async (code: string) => {
+    withAccount()
+    await communityPackages.addFromCatalogue(code)
+  })
+  catalogue.on('change', (state) => broadcast('catalogue', state))
+  session.on('locked', () => communityPackages.forget())
 
   // ---------- pushed to the window ----------
   accounts.on('state', () => broadcast('session', accounts.state()))
@@ -331,5 +368,7 @@ export function registerIpc(): void {
   updater.on('change', (s) => broadcast('update', s))
   sync.on('change', (list) => broadcast('publicSources', list))
   services.on('change', () => broadcast('services', services.states()))
+  // What the tiles hold now, without asking any again: only the page, as it shows, does.
+  services.on('tiles', () => broadcast('serviceTiles', services.tiles(false)))
   content.on('change', () => broadcast('content'))
 }

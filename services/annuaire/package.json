@@ -45,6 +45,29 @@
       "mobility",
       "justice",
       "business"
+    ],
+    "icon": {
+      "palette": {
+        "b": "bleu",
+        "w": "blanc",
+        "r": "rouge"
+      },
+      "pixels": [
+        "....bwr.",
+        "....w...",
+        "..wwwww.",
+        ".wwwwwww",
+        ".w.w.w.w",
+        ".w.w.w.w",
+        "wwwwwwww",
+        "........"
+      ]
+    },
+    "tools": [
+      {
+        "name": "find_office",
+        "label": "services publics"
+      }
     ]
   },
   "scripts": {

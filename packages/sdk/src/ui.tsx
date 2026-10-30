@@ -139,9 +139,10 @@ export const floating = () => document.getElementById('root') ?? document.body
 
 /**
  * A dialog over the window. Its buttons close it, and échap like its cancel button; a click beside
- * it doesn't, so a stray click loses nothing typed in it.
+ * it doesn't, so a stray click loses nothing typed in it. `wide`: for a list or a review that needs
+ * the room (760 pixels rather than 580).
  */
-export function Modal({ children, onClose }: { children: ReactNode; onClose?: () => void }) {
+export function Modal({ children, onClose, wide, label }: { children: ReactNode; onClose?: () => void; wide?: boolean; label?: string }) {
   useEffect(() => {
     if (!onClose) return
     const key = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -150,7 +151,9 @@ export function Modal({ children, onClose }: { children: ReactNode; onClose?: ()
   }, [onClose])
   return createPortal(
     <div className="overlay">
-      <div className="modal">{children}</div>
+      <div className={`modal${wide ? ' wide' : ''}`} role="dialog" aria-modal="true" aria-label={label}>
+        {children}
+      </div>
     </div>,
     floating()
   )

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Commune } from '../src/main'
-import { fakeContext } from '../src/testing'
+import { checkTile, fakeContext } from '../src/testing'
 
 const pkg = {
   name: '@marianne/service-meteo',
@@ -53,5 +53,29 @@ describe('fakeContext', () => {
     expect(await ctx.geo.getCommune('75056')).toBeNull()
     expect(ctx.profile.granted()).toEqual(['vehicles.plate'])
     expect(ctx.profile.vehicles()).toHaveLength(1)
+  })
+})
+
+describe('checkTile', () => {
+  it('gives back a tile within its limits, and lists what Marianne would change otherwise', () => {
+    expect(checkTile({ title: 'bac jaune demain', lines: [{ text: 'à sortir ce soir', tone: 'accent' }] })).toEqual({
+      title: 'bac jaune demain',
+      lines: [{ text: 'à sortir ce soir', tone: 'accent' }]
+    })
+    expect(checkTile(null)).toBeNull()
+    expect(() => checkTile({ value: { text: '1 000 000' }, lines: [{ text: 'a' }, { text: 'b' }, { text: 'c' }] })).toThrow(
+      /Marianne would change this tile:\n- value.text is cut to 6 characters: "1 000…"\n- lines: 3 given, 2 at most/
+    )
+  })
+})
+
+describe('fakeContext, for a service that reads pages or keeps data', () => {
+  it('answers text and pages, gives the data folder and the sync status', async () => {
+    const { ctx, urls } = fakeContext(pkg, { answerText: (url) => `<p>${url.pathname}</p>`, dataDir: '/tmp/meteo', sync: { syncedAt: '2026-10-30T06:00:00Z' } })
+    expect(await ctx.http.text('https://api.open-meteo.com/feed')).toBe('<p>/feed</p>')
+    expect(await ctx.http.page('https://api.open-meteo.com/page')).toBe('<p>/page</p>')
+    expect(urls.map((u) => u.pathname)).toEqual(['/feed', '/page'])
+    expect(ctx.dataDir).toBe('/tmp/meteo')
+    expect(ctx.sync.status()).toEqual({ syncedAt: '2026-10-30T06:00:00Z' })
   })
 })

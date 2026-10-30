@@ -1,6 +1,6 @@
 import type { Commune } from '@marianne/sdk/main'
 
-/** An Open-Meteo answer for Bordeaux with two models (meteofrance_seamless, ecmwf_ifs025), shortened to three days. */
+/** An Open-Meteo answer for Bordeaux with two models (meteofrance_seamless, ecmwf_ifs025), shortened to three days and five hours. */
 export const FIXTURE = {
   latitude: 44.84,
   longitude: -0.5799999,
@@ -41,6 +41,11 @@ export const FIXTURE = {
     wind_direction_10m_dominant_ecmwf_ifs025: [20, 240, 315, null],
     sunrise_ecmwf_ifs025: ['2026-10-28T07:34', '2026-10-29T07:35', '2026-10-30T07:37', null],
     sunset_ecmwf_ifs025: ['2026-10-28T17:56', '2026-10-29T17:55', '2026-10-30T17:53', null]
+  },
+  hourly: {
+    time: ['2026-10-28T17:00', '2026-10-28T18:00', '2026-10-28T19:00', '2026-10-28T20:00', '2026-10-28T21:00'],
+    weather_code_meteofrance_seamless: [0, 0, 3, 80, null],
+    weather_code_ecmwf_ifs025: [1, 1, 3, 80, 61]
   }
 }
 

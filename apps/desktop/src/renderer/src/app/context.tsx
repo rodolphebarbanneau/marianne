@@ -17,6 +17,18 @@ export type View =
 
 export type PaletteMode = 'commands' | 'menu' | 'search'
 
+/**
+ * A Minitel key a screen shows in the bottom bar while it has keys of its own (a search, a
+ * dialog): its name, its shortcut (a command's id, or keys: "Enter", "ArrowDown"), what it does,
+ * and what a click on it does.
+ */
+export interface ScreenKey {
+  key: string
+  shortcut: string
+  what: string
+  run?: () => void
+}
+
 /** What the composer starts with ("demander à Marianne" about an article…). */
 export interface ComposerSeed {
   text: string
@@ -55,6 +67,9 @@ interface AppValue {
   setSeed: (seed: ComposerSeed | null) => void
   toast: (text: string) => void
   toastText: string
+  /** The keys a screen shows in the bottom bar instead of its page's (null: the page's). */
+  screenKeys: ScreenKey[] | null
+  setScreenKeys: (keys: ScreenKey[] | null) => void
 }
 
 const AppContext = createContext<AppValue | null>(null)
@@ -97,6 +112,7 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
   useEffect(() => void (kept = null), [])
   const [seed, setSeed] = useState<ComposerSeed | null>(null)
   const [toastText, setToastText] = useState('')
+  const [screenKeys, setScreenKeys] = useState<ScreenKey[] | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const setConfig = useCallback(async (patch: DeepPartial<DeviceConfig>) => {
@@ -189,7 +205,9 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
       seed,
       setSeed,
       toast,
-      toastText
+      toastText,
+      screenKeys,
+      setScreenKeys
     }),
     [
       config,
@@ -212,7 +230,8 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
       reload,
       seed,
       toast,
-      toastText
+      toastText,
+      screenKeys
     ]
   )
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

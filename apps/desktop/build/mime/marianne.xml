@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The .marianne type on Linux, installed by the .deb (electron-builder.yml): its name, its files, its icon
-     (application-x-marianne, in the hicolor theme). An archive is an SQLite file: as a subclass, the name wins. -->
+<!-- Marianne's types on Linux, installed by the .deb (electron-builder.yml): their names, their files, their
+     icons (application-x-marianne and application-x-marianne-service, in the hicolor theme). An archive is an
+     SQLite file, a service file a zip: as subclasses, the names win, and archive tools stay a second choice. -->
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
   <mime-type type="application/x-marianne">
     <comment>Archive Marianne</comment>
     <sub-class-of type="application/vnd.sqlite3"/>
     <glob pattern="*.marianne"/>
     <icon name="application-x-marianne"/>
+  </mime-type>
+  <mime-type type="application/x-marianne-service">
+    <comment>Service Marianne</comment>
+    <sub-class-of type="application/zip"/>
+    <glob pattern="*.3615"/>
+    <icon name="application-x-marianne-service"/>
   </mime-type>
 </mime-info>

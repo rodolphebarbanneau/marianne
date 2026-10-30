@@ -33,6 +33,34 @@ export function clock(iso: string): string {
 /** 24/10/2026 */
 export const shortDate = (iso: string) => (iso ? new Date(iso).toLocaleDateString('fr-FR') : '')
 
+/** How fresh something is (a tile): "à l’instant", "il y a 12 min", "il y a 3 h", "hier", "le 24/10". */
+export function freshness(iso: string, now = new Date()): string {
+  const date = new Date(iso)
+  const minutes = Math.floor((now.getTime() - date.getTime()) / 60_000)
+  const days = Math.floor((startOfDay(now) - startOfDay(date)) / DAY)
+  if (minutes < 1) return 'à l’instant'
+  if (minutes < 60) return `il y a ${minutes} min`
+  if (days <= 0) return `il y a ${Math.floor(minutes / 60)} h`
+  if (days === 1) return 'hier'
+  return `le ${date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}`
+}
+
+/** When something was last done, by the day: "aujourd’hui", "hier", "lundi", "il y a 2 semaines"; absent: "jamais". */
+export function lastDay(iso: string | undefined, now = new Date()): string {
+  if (!iso) return 'jamais'
+  const date = new Date(iso)
+  const days = Math.floor((startOfDay(now) - startOfDay(date)) / DAY)
+  if (days <= 0) return 'aujourd’hui'
+  if (days === 1) return 'hier'
+  if (days < 7) return date.toLocaleDateString('fr-FR', { weekday: 'long' })
+  if (days < 30) return `il y a ${Math.floor(days / 7)} semaine${days >= 14 ? 's' : ''}`
+  if (days < 365) return `il y a ${Math.floor(days / 30)} mois`
+  return 'il y a plus d’un an'
+}
+
+/** A day of the year, short: "12 oct.". */
+export const dayMonth = (ymd: string) => (ymd ? new Date(`${ymd.slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '')
+
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
 
 /** 412 Mo, 1 Go */

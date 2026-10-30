@@ -3,6 +3,7 @@ import { defineService } from '@marianne/sdk/main'
 import { agendaOf, createMethods, senateMeetings, todayStreams } from './methods'
 import guide from './skills/parliament.md?raw'
 import { DB_FILE, ParliamentIndex } from './store'
+import { parlementTile } from './tile'
 import { parisDay } from './time'
 import { todayItems } from './today'
 import { createTools } from './tools'
@@ -21,6 +22,9 @@ export const INSTRUCTIONS = `- Deputies (Assemblée nationale) and senators (Sé
 
 export const service = defineService<ParlementMethods>({
   sync: { everyHours: 24 },
+  // Broadcasts start and end through the day, and the tile says what is live: asked again as often as
+  // Marianne allows. The portals' answers are kept a minute; the rest is read from the index.
+  tile: { everyMinutes: 5 },
 
   activate(ctx) {
     const index = new ParliamentIndex(join(ctx.dataDir, DB_FILE))
@@ -34,6 +38,7 @@ export const service = defineService<ParlementMethods>({
         const [senate, streams] = await Promise.all([senateMeetings(ctx, day, day), day === parisDay() ? todayStreams(ctx) : Promise.resolve([])])
         return todayItems(day, agendaOf(index.open(), day, day, senate, streams).meetings, streams)
       },
+      tile: () => parlementTile(ctx, index, methods),
       synced: () => index.close()
     }
   }

@@ -8,17 +8,23 @@ import { useNewsSources } from '../lib/content'
 import { when } from '../lib/format'
 import { useServices } from '../host'
 
-/** The services: on or off, starred, what they reach, their offline data. */
+/** My services: on or off, pinned, what they reach and read, their offline data; a way to remove them. */
 export function ServicesPane() {
-  const { settings, setSettings } = useApp()
-  const services = sortServices(useServices())
+  const { settings, setSettings, goPage } = useApp()
+  const all = useServices()
+  const services = sortServices(all.filter((s) => s.added))
+  const others = all.length - services.length
   const [error, setError] = useState('')
   if (!settings) return null
-  const { starred, disabled } = settings.services
+  const { pinned, disabled } = settings.services
   const toggle = (list: string[], id: string, on: boolean) => (on ? [...new Set([...list, id])] : list.filter((x) => x !== id))
   const sync = (s: ServiceState) => {
     setError('')
     void api.syncService(s.manifest.id).catch((err) => setError(errorText(err)))
+  }
+  const remove = (s: ServiceState) => {
+    setError('')
+    void api.removeService(s.manifest.id).catch((err) => setError(errorText(err)))
   }
 
   return (
@@ -65,23 +71,35 @@ export function ServicesPane() {
               </span>
               <span>
                 <button
-                  className={`star${s.starred ? ' on' : ''}`}
-                  onClick={() => void setSettings({ services: { starred: toggle(starred, m.id, !s.starred) } })}
-                  title={s.starred ? 'retirer des favoris' : 'mettre en favori'}
+                  className={`star${s.pinned ? ' on' : ''}`}
+                  onClick={() => void setSettings({ services: { pinned: toggle(pinned, m.id, !s.pinned) } })}
+                  title={s.pinned ? 'désépingler' : 'épingler en tuile'}
+                  aria-pressed={s.pinned}
                 >
-                  {s.starred ? '★' : '☆'}
+                  {s.pinned ? '★' : '☆'}
                 </button>{' '}
                 {s.sync && s.on && (
                   <button className="btn small" disabled={!!running} aria-busy={!!running} onClick={() => sync(s)}>
                     {running && <Spinner />}
                     mettre à jour
                   </button>
-                )}
+                )}{' '}
+                <button className="link small" onClick={() => remove(s)} title="il revient dans « découvrir », sur la page Services">
+                  retirer
+                </button>
               </span>
             </div>
           )
         })}
       </div>
+      {!services.length && <p className="small dim">Aucun service parmi les vôtres.</p>}
+      {others > 0 && (
+        <p className="small">
+          <button className="link" onClick={() => goPage('services')}>
+            {others} autre{others > 1 ? 's' : ''} service{others > 1 ? 's' : ''} à découvrir ›
+          </button>
+        </p>
+      )}
       {error && <p className="small bad">{error}</p>}
     </>
   )

@@ -30,6 +30,30 @@
     ],
     "hosts": [
       "api.open-meteo.com"
+    ],
+    "icon": {
+      "palette": {
+        "j": "jaune",
+        "J": "jaune-sombre",
+        "w": "blanc",
+        "C": "cyan-clair"
+      },
+      "pixels": [
+        "j.j.....",
+        ".jjj....",
+        "jjjJjww.",
+        ".jJwwwww",
+        "..wwwwww",
+        "...wwww.",
+        "..C.C.C.",
+        ".C.C.C.."
+      ]
+    },
+    "tools": [
+      {
+        "name": "forecast",
+        "label": "prévisions"
+      }
     ]
   },
   "scripts": {

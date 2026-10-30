@@ -6,13 +6,15 @@ import type { ServiceManifest, ServiceMethods } from './index'
  * Marianne shows in its frame: the 3615 header, and the tabs its manifest declares (`useTab` says
  * which one is shown). Everything it needs of the app comes through its host (`useHost`): calls to
  * its main side, its stored data, handing a question to Marianne, opening a link. The window's look
- * comes with the shared blocks (Loading, Failure, Notice, Spinner, Field, Modal) and Marianne's
- * stylesheet; a service adds its own styles in a CSS file its view imports.
+ * comes with the shared blocks (Loading, Failure, Notice, Spinner, Field, Modal), the pictures of
+ * the palette (Pixels, ServiceIcon) and Marianne's stylesheet; a service adds its own styles in a
+ * CSS file its view imports.
  */
 
 export * from './index'
 export { ServiceFrameProvider, ServiceTools, useTab, useTabBadges, type ServiceFrame } from './frame'
 export { Failure, Field, floating, Loading, Modal, Notice, Spinner } from './ui'
+export { ICON_CELLS, Pixels, ServiceIcon, usePixelRatio } from './pixels'
 
 /** Something a service hands to Marianne with a question: a page it shows. */
 export interface ShownPage {

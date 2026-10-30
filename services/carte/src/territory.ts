@@ -146,6 +146,12 @@ export class Territory {
     return sumDepartments(communes, departments)
   }
 
+  /** A commune by INSEE code, with its département and region; null when there is none. */
+  async commune(code: string): Promise<CommuneProfile | null> {
+    const found = await this.http.json<RawCommune[]>(`${GEO_API}/communes${query({ code, fields: PROFILE_FIELDS })}`, { cacheMs: DAY })
+    return found[0] ? toCommuneProfile(found[0]) : null
+  }
+
   /**
    * Communes by name (best match first), postal code or INSEE code (most populated first),
    * within a département when one is given.

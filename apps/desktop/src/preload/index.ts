@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron'
 import type { MarianneApi } from '../shared/api'
 
 /**
@@ -104,6 +104,16 @@ const INVOKE = [
   'syncService',
   'serviceSummaries',
   'setServiceAccess',
+  'addService',
+  'removeService',
+  'serviceOpened',
+  'serviceTiles',
+  'catalogue',
+  'chooseServiceFile',
+  'readServiceFile',
+  'installServiceFile',
+  'addCatalogueService',
+  'takeServiceFiles',
   'listSkills',
   'listSites',
   'newsSources',
@@ -129,10 +139,14 @@ const LISTEN = [
   'onBrowserReveal',
   'onPublicSources',
   'onServices',
+  'onServiceTiles',
+  'onCatalogue',
+  'onServiceFile',
   'onContent'
 ] as const
 
-const api: Record<string, unknown> = { platform: process.platform }
+// Where a dropped file is: the window can't know it (File.path is gone), the preload can.
+const api: Record<string, unknown> = { platform: process.platform, pathOfFile: (file: File) => webUtils.getPathForFile(file) }
 for (const name of SEND) api[name] = (...args: unknown[]) => ipcRenderer.send(`marianne:${name}`, ...args)
 for (const name of INVOKE) api[name] = (...args: unknown[]) => ipcRenderer.invoke(`marianne:${name}`, ...args)
 for (const name of LISTEN) {
@@ -145,7 +159,7 @@ for (const name of LISTEN) {
 }
 
 // Every method of the API is in one of the lists.
-type Listed = (typeof SEND)[number] | (typeof INVOKE)[number] | (typeof LISTEN)[number] | 'platform'
+type Listed = (typeof SEND)[number] | (typeof INVOKE)[number] | (typeof LISTEN)[number] | 'platform' | 'pathOfFile'
 const complete: Exclude<keyof MarianneApi, Listed> extends never ? true : false = true
 void complete
 

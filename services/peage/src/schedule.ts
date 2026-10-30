@@ -7,7 +7,7 @@ import type { Trip } from './types'
 
 const HOUR = 3600_000
 /** Under this, a deadline is urgent. */
-const URGENT_MS = 24 * HOUR
+export const URGENT_MS = 24 * HOUR
 
 /** When a trip's toll is due; null for a network no longer in the catalog. */
 export function dueOf(trip: Trip): Date | null {
@@ -19,6 +19,14 @@ export function dueOf(trip: Trip): Date | null {
 export function unpaid(trips: Trip[]): Trip[] {
   const due = (t: Trip) => dueOf(t)?.getTime() ?? Infinity
   return trips.filter((t) => !t.paidAt).sort((a, b) => due(a) - due(b) || a.at.localeCompare(b.at))
+}
+
+/** The unpaid trips with their deadline, the soonest first; those of a network no longer in the catalog are left out. */
+export function dueTrips(trips: Trip[]): Array<{ trip: Trip; due: Date }> {
+  return unpaid(trips).flatMap((t) => {
+    const due = dueOf(t)
+    return due ? [{ trip: t, due }] : []
+  })
 }
 
 /** The paid trips, the last paid first. */
@@ -51,10 +59,7 @@ export function tripDeadlines(trips: Trip[]): ServiceDeadline[] {
 
 /** The line of the Mobilité dashboard: what is left to pay and the first deadline; null when nothing is. */
 export function tripSummary(trips: Trip[], now: Date): ServiceSummary | null {
-  const due = unpaid(trips).flatMap((t) => {
-    const d = dueOf(t)
-    return d ? [{ trip: t, due: d }] : []
-  })
+  const due = dueTrips(trips)
   if (!due.length) return null
   const [first] = due
   const count = `${due.length} trajet${due.length > 1 ? 's' : ''} à payer`

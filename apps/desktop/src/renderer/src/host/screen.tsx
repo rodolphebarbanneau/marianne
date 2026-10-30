@@ -8,6 +8,7 @@ import { useApp } from '../app/context'
 import { Boundary } from '../components/ui'
 import { api, isMac } from '../lib/api'
 import { useProfile } from '../lib/profile'
+import { ReviewDialog } from '../pages/services/dialogs'
 import { useServices } from '.'
 import { SERVICE_VIEWS } from './registry'
 
@@ -79,6 +80,7 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
   const [tab, setTab] = useState(() => firstTab(tabs, params))
   const [badges, setBadges] = useState<Record<string, string>>({})
   const [tools, setTools] = useState<HTMLElement | null>(null)
+  const [reviewing, setReviewing] = useState(false)
   const listeners = useRef(new Set<(id: string) => void>())
   const body = useRef<HTMLDivElement>(null)
   // The services' list may come after the screen: its first tab then.
@@ -107,6 +109,12 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
 
   // F2…F9: the tabs, in their order (F1 stays GUIDE), unless the key is one of the user's shortcuts or a dialog is open.
   const { palette, settingsPage, guideOpen, config } = app
+
+  // Opening a screen of one's services: the Services page says when it was last opened.
+  const added = !!state?.added
+  useEffect(() => {
+    if (added) void api.serviceOpened(id)
+  }, [id, added])
   useEffect(() => {
     if (!barred) return
     const onKey = (e: KeyboardEvent) => {
@@ -131,8 +139,9 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
     )
   const m = state.manifest
   const settings = app.settings?.services
-  const star = () =>
-    void app.setSettings({ services: { starred: state.starred ? (settings?.starred ?? []).filter((x) => x !== id) : [...(settings?.starred ?? []), id] } })
+  // The star pins the service as a tile of the Services page, at the end.
+  const pin = () =>
+    void app.setSettings({ services: { pinned: state.pinned ? (settings?.pinned ?? []).filter((x) => x !== id) : [...(settings?.pinned ?? []), id] } })
   const viewing = state.available && state.on && !state.error && !(state.access.asked.length > 0 && state.access.granted === null) && !!View && !!host
 
   return (
@@ -151,9 +160,16 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
         <span className="small dim">{m.name} · rattaché à aucun dossier</span>
         {/* A screen without tabs: its tools at the header's end. */}
         {viewing && !barred && <span className="service-tools" ref={setTools} />}
-        <button className={`star${state.starred ? ' on' : ''}`} onClick={star} title={state.starred ? 'retirer des favoris' : 'mettre en favori'}>
-          {state.starred ? '★' : '☆'}
-        </button>
+        {state.added && (
+          <button
+            className={`star${state.pinned ? ' on' : ''}`}
+            onClick={pin}
+            title={state.pinned ? 'désépingler' : 'épingler en tuile'}
+            aria-pressed={state.pinned}
+          >
+            {state.pinned ? '★' : '☆'}
+          </button>
+        )}
       </div>
       {/* The tabs stay above the content, which scrolls under them; each with its key. */}
       {viewing && barred && (
@@ -178,7 +194,14 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
       )}
       <div className="service-body" ref={body}>
         <div className="service-content">
-          {state.error ? (
+          {!state.added ? (
+            <div className="box-note">
+              3615 {serviceCode(m)} n’est pas parmi vos services.{' '}
+              <button className="link" onClick={() => setReviewing(true)}>
+                + l’ajouter
+              </button>
+            </div>
+          ) : state.error ? (
             <div className="box-note">Ce service n’a pas pu démarrer : {state.error}</div>
           ) : !state.available ? (
             <div className="box-note">
@@ -209,6 +232,16 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
           )}
         </div>
       </div>
+      {reviewing && (
+        <ReviewDialog
+          subject={{ kind: 'official', state }}
+          onAdded={() => {
+            setReviewing(false)
+            toast(`3615 ${serviceCode(m)} ajouté à mes services`)
+          }}
+          onClose={() => setReviewing(false)}
+        />
+      )}
     </div>
   )
 }

@@ -1,0 +1,2116 @@
+{
+  "format": 1,
+  "published": "2026-10-29T06:00:00.000Z",
+  "services": [
+    {
+      "code": "dechets",
+      "version": "2.1.0",
+      "name": "Collecte des déchets",
+      "description": "jours de collecte, bacs, déchetteries de votre commune",
+      "category": "daily",
+      "keywords": ["poubelle", "tri", "recyclage", "collecte", "déchetterie"],
+      "author": "Communes ouvertes",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["jours de collecte de la commune"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "w": "blanc",
+          "v": "vert",
+          "V": "vert-clair"
+        },
+        "pixels": ["...ww...", "vvvvvvvv", ".vvvvvv.", ".vVvvVv.", ".vVvvVv.", ".vVvvVv.", ".vvvvvv.", "........"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-09-25",
+      "file": {
+        "url": "https://services.example.invalid/dechets.3615",
+        "size": 326842,
+        "sha256": "0403afaf4b6493b26eefb19f913493d75c65be8d2ec1bdac5859d19f790f46ef"
+      }
+    },
+    {
+      "code": "petitions",
+      "version": "1.0.4",
+      "name": "Pétitions citoyennes",
+      "description": "les pétitions de l’Assemblée et du Sénat, et où elles en sont",
+      "category": "democracy",
+      "keywords": ["pétition", "signer", "signatures"],
+      "author": "Civic Lab",
+      "hosts": ["petitions.assemblee-nationale.fr", "petitions.senat.fr"],
+      "connections": [],
+      "reads": ["opinions.leaning", "opinions.themes"],
+      "tools": ["chercher une pétition"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "w": "blanc",
+          "d": "gris-clair",
+          "v": "vert"
+        },
+        "pixels": ["wwwwww..", "w....w..", "w.dd.w..", "w....w..", "w.dd.w.v", "w....wv.", "wwwwwvv.", ".....v.."]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-09-08",
+      "file": {
+        "url": "https://services.example.invalid/petitions.3615",
+        "size": 151954,
+        "sha256": "309c5e45b52f1952961cfebd9c9afad45a832b9918195186d121771d960eb8fa"
+      }
+    },
+    {
+      "code": "boussole",
+      "version": "0.9.2",
+      "name": "Boussole électorale",
+      "description": "un questionnaire pour situer vos réponses, rien n’est envoyé",
+      "category": "democracy",
+      "keywords": ["vote", "questionnaire", "programme", "élection"],
+      "author": "Boussole libre",
+      "hosts": [],
+      "connections": [],
+      "reads": ["opinions.leaning"],
+      "tools": ["situer une réponse au questionnaire"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "c": "cyan",
+          "r": "rouge",
+          "w": "blanc"
+        },
+        "pixels": ["..cccc..", ".c..r.c.", "c..rr..c", "c..rw..c", "c..ww..c", "c..w...c", ".c....c.", "..cccc.."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-08-14",
+      "file": {
+        "url": "https://services.example.invalid/boussole.3615",
+        "size": 44887,
+        "sha256": "bc8c994dc1f5f7ebc191f292c7d380c53ba097e6e87af7c2b3745cbe2b68eafb"
+      }
+    },
+    {
+      "code": "assos",
+      "version": "1.2.0",
+      "name": "Associations",
+      "description": "les associations près de chez vous, par thème",
+      "category": "culture",
+      "keywords": ["association", "bénévolat", "club"],
+      "author": "Asso-data",
+      "hosts": ["entreprise.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher une association"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "m": "magenta",
+          "j": "jaune"
+        },
+        "pixels": ["........", ".mm..jj.", ".mm..jj.", "mmmmjjjj", "mmmmjjjj", "m..mj..j", "m..mj..j", "........"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-07-17",
+      "file": {
+        "url": "https://services.example.invalid/assos.3615",
+        "size": 41913,
+        "sha256": "a7af804b7a492f8f9d27eec5f0a60c7703b4a8874c303ef93f2fa7fb3141147a"
+      }
+    },
+    {
+      "code": "pharmagarde",
+      "version": "1.3.0",
+      "name": "Pharmacies de garde",
+      "description": "la pharmacie de garde la plus proche, ce soir et ce week-end",
+      "category": "health",
+      "keywords": ["pharmacie", "garde", "médicament", "nuit", "urgence"],
+      "author": "Collectif Santé libre",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["trouver la pharmacie de garde"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "v": "vert",
+          "V": "vert-clair"
+        },
+        "pixels": ["..vvvv..", "..vVVv..", "vvvVVvvv", "vVVVVVVv", "vvvVVvvv", "..vVVv..", "..vvvv..", "........"]
+      },
+      "status": "validated",
+      "recommended": true,
+      "published": "2026-10-12",
+      "file": {
+        "url": "https://services.example.invalid/pharmagarde.3615",
+        "size": 259171,
+        "sha256": "dd0d55d766e2163052496bc3af6c56b3125fa9fb55afe773adca6b997dc00cf3"
+      }
+    },
+    {
+      "code": "air",
+      "version": "0.8.1",
+      "name": "Qualité de l’air",
+      "description": "pollution et pollens, aujourd’hui et demain",
+      "category": "environment",
+      "keywords": ["pollution", "pollen", "allergie", "qualité"],
+      "author": "Atmo libre",
+      "hosts": ["data.atmo-france.org"],
+      "connections": [],
+      "reads": [],
+      "tools": ["qualité de l’air de la commune"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "c": "cyan",
+          "C": "cyan-clair",
+          "v": "vert",
+          "V": "vert-clair"
+        },
+        "pixels": ["cccccc..", "......c.", ".CCCCC..", "........", "vvvvvvv.", ".......v", "..VVVVV.", "........"]
+      },
+      "status": "validated",
+      "recommended": true,
+      "published": "2026-10-20",
+      "file": {
+        "url": "https://services.example.invalid/air.3615",
+        "size": 201987,
+        "sha256": "f9d99aa4ac6acf3b17944b94d454bb4361773753ac1d33a8d20145a66d22da1f"
+      }
+    },
+    {
+      "code": "velo",
+      "version": "1.1.0",
+      "name": "Vélos en libre-service",
+      "description": "stations et vélos disponibles en temps réel",
+      "category": "territory",
+      "keywords": ["vélo", "bicyclette", "station", "mobilité"],
+      "author": "Roue libre",
+      "hosts": ["transport.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["stations de vélos les plus proches"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "j": "jaune",
+          "w": "blanc"
+        },
+        "pixels": ["........", "....jj..", "...j....", ".ww.jww.", "w..wjw.w", "w..ww..w", ".ww..ww.", "........"]
+      },
+      "status": "validated",
+      "recommended": true,
+      "published": "2026-09-19",
+      "file": {
+        "url": "https://services.example.invalid/velo.3615",
+        "size": 92375,
+        "sha256": "03d50bbf13761b0a54802c442b3198a548b5a75b114cab3d906329c7a8a6b7ea"
+      }
+    },
+    {
+      "code": "carburant",
+      "version": "3.0.2",
+      "name": "Prix des carburants",
+      "description": "les stations les moins chères autour de vous",
+      "category": "daily",
+      "keywords": ["essence", "gazole", "station", "prix", "voiture"],
+      "author": "Prix libres",
+      "hosts": ["donnees.roulez-eco.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["prix des carburants autour d’une adresse"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "r": "rouge",
+          "w": "blanc"
+        },
+        "pixels": ["rrrrr...", "r...r.r.", "r...r..r", "rrrrr..r", "rrrrr..r", "rrrrr.rr", "rrrrr...", "wwwwww.."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-10-26",
+      "file": {
+        "url": "https://services.example.invalid/carburant.3615",
+        "size": 103077,
+        "sha256": "568ef4be2f1a25efbde76d315f03624272712e2c7d4e906bf2b4bf31715f0bfe"
+      }
+    },
+    {
+      "code": "biblio",
+      "version": "0.4.0",
+      "name": "Bibliothèques",
+      "description": "horaires, animations et catalogues des médiathèques",
+      "category": "culture",
+      "keywords": ["livre", "médiathèque", "lecture"],
+      "author": "Lecture publique",
+      "hosts": ["www.data.gouv.fr", "data.culture.gouv.fr"],
+      "connections": [],
+      "reads": ["opinions.themes"],
+      "tools": ["horaires d’une médiathèque"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "m": "magenta",
+          "j": "jaune",
+          "c": "cyan",
+          "w": "blanc"
+        },
+        "pixels": ["........", "mm.jj...", "mm.jj.cc", "mm.jj.cc", "mm.jj.cc", "mm.jj.cc", "wwwwwwww", "........"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-08-29",
+      "file": {
+        "url": "https://services.example.invalid/biblio.3615",
+        "size": 222005,
+        "sha256": "97baf3ae7f46a415877321cd9ba503380da9a7a5b12b7f17a81cf31f6aff311e"
+      }
+    },
+    {
+      "code": "covoit",
+      "version": "1.4.0",
+      "name": "Covoiturage",
+      "description": "trajets partagés au départ de votre commune, et les aides au covoiturage",
+      "category": "territory",
+      "keywords": ["voiture", "trajet", "mobilité", "partage"],
+      "author": "Mobilités partagées",
+      "hosts": ["transport.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["trajets au départ de la commune"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "c": "cyan",
+          "C": "cyan-clair",
+          "w": "blanc"
+        },
+        "pixels": ["........", "..cccc..", ".c....c.", "cccccccc", "cCccccCc", "cccccccc", ".w....w.", "........"]
+      },
+      "status": "validated",
+      "recommended": true,
+      "published": "2026-10-07",
+      "file": {
+        "url": "https://services.example.invalid/covoit.3615",
+        "size": 92344,
+        "sha256": "1a41b652d3cf4bce71ec6a31381f0fed246f6c2cee6fe65657699aa365f87002"
+      }
+    },
+    {
+      "code": "marches",
+      "version": "0.3.1",
+      "name": "Marchés de plein air",
+      "description": "les marchés près de chez vous, jours et horaires",
+      "category": "daily",
+      "keywords": ["marché", "producteurs", "alimentation"],
+      "author": "Collectif des marchés",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["marchés de la semaine"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "r": "rouge",
+          "w": "blanc",
+          "j": "jaune",
+          "v": "vert"
+        },
+        "pixels": ["........", "rwrwrwrw", "rwrwrwrw", ".j....j.", ".j.vv.j.", ".jvvvvj.", "jjjjjjjj", "........"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-08-02",
+      "file": {
+        "url": "https://services.example.invalid/marches.3615",
+        "size": 397055,
+        "sha256": "b0a87700dd53020193a441d8cd243058f13250d3e436288355f8dd4183b7f402"
+      }
+    },
+    {
+      "code": "horaires",
+      "version": "0.1.0",
+      "name": "Commerces ouverts",
+      "description": "boulangeries, bureaux de poste, stations : ce qui est ouvert maintenant",
+      "category": "daily",
+      "keywords": [],
+      "author": "Quartier libre",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Commerces ouverts »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "J": "jaune-sombre",
+          "j": "jaune"
+        },
+        "pixels": ["Jjj..jjJ", "J......J", "j.j..j.j", ".j....j.", "j..jj..j", "jjjjjjjj", "........", ".jJ..Jj."]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-10-28",
+      "file": {
+        "url": "https://services.example.invalid/horaires.3615",
+        "size": 246619,
+        "sha256": "9dfffc1a6d5517585eb2c4e64f92bff55a7f78b82471defd983e0a3d4d2fe994"
+      }
+    },
+    {
+      "code": "eau",
+      "version": "1.8.3",
+      "name": "Qualité de l’eau",
+      "description": "les analyses de l’eau du robinet de votre commune",
+      "category": "health",
+      "keywords": [],
+      "author": "Eau claire",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Qualité de l’eau »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "V": "vert-clair",
+          "v": "vert"
+        },
+        "pixels": ["Vvv..vvV", "vv....vv", "V..vv..V", "vv.VV.vv", ".vVvvVv.", "v.v..v.v", "..V..V..", "...vv..."]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-09-21",
+      "file": {
+        "url": "https://services.example.invalid/eau.3615",
+        "size": 31071,
+        "sha256": "5e8dcaca6e50204e8f52af1156cd72a53a186e16fc49bdf037fa0f1cf2f8d321"
+      }
+    },
+    {
+      "code": "coupures",
+      "version": "2.6.1",
+      "name": "Coupures d’électricité",
+      "description": "coupures en cours et travaux prévus dans votre rue",
+      "category": "daily",
+      "keywords": [],
+      "author": "Réseau ouvert",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher dans « Coupures d’électricité »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "j": "jaune"
+        },
+        "pixels": ["j.jjjj.j", "..j..j..", "jj.jj.jj", ".j....j.", "j..jj..j", "...jj...", "..jjjj..", "j..jj..j"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-08-15",
+      "file": {
+        "url": "https://services.example.invalid/coupures.3615",
+        "size": 107332,
+        "sha256": "b97e35cb6d843f7a60a2d77620fde04ddd51952f6b4f199a89462f3c4154de5b"
+      }
+    },
+    {
+      "code": "rappels",
+      "version": "0.4.4",
+      "name": "Rappels de produits",
+      "description": "les produits rappelés : alimentation, jouets, voitures",
+      "category": "daily",
+      "keywords": [],
+      "author": "Conso libre",
+      "hosts": [],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Rappels de produits »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "j": "jaune",
+          "J": "jaune-sombre"
+        },
+        "pixels": ["..jJJj..", "j.jjjj.j", ".jjjjjj.", "jj....jj", "jJ....Jj", "j......j", "jj....jj", "j.jjjj.j"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-07-09",
+      "file": {
+        "url": "https://services.example.invalid/rappels.3615",
+        "size": 264180,
+        "sha256": "0f1c04bc7a281a46ed3144550ce5c7a7acca54a636fdb51e119836952b8ea05c"
+      }
+    },
+    {
+      "code": "travaux",
+      "version": "1.2.2",
+      "name": "Travaux et voirie",
+      "description": "rues fermées, chantiers et déviations de votre commune",
+      "category": "territory",
+      "keywords": [],
+      "author": "Communes ouvertes",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Travaux et voirie »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "c": "cyan",
+          "C": "cyan-clair"
+        },
+        "pixels": ["cc.CC.cc", "cc.cc.cc", ".CccccC.", ".cccccc.", "c.cccc.c", ".c....c.", ".Cc..cC.", ".cCccCc."]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-06-02",
+      "file": {
+        "url": "https://services.example.invalid/travaux.3615",
+        "size": 348299,
+        "sha256": "fa6004a62d47143469eb017adacb1852b441571ceeee674f1bc5da150ec95bda"
+      }
+    },
+    {
+      "code": "cantine",
+      "version": "2.9.0",
+      "name": "Menus de la cantine",
+      "description": "les menus des écoles de votre commune, semaine par semaine",
+      "category": "daily",
+      "keywords": [],
+      "author": "Parents d’élèves",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Menus de la cantine »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "j": "jaune",
+          "J": "jaune-sombre"
+        },
+        "pixels": ["j.JJJJ.j", "jjjjjjjj", "..j..j..", ".jj..jj.", "..j..j..", "jJ.jj.Jj", "........", "..jjjj.."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-09-23",
+      "file": {
+        "url": "https://services.example.invalid/cantine.3615",
+        "size": 66468,
+        "sha256": "3cfabea5a62f67563585c8e8cfbb34d7b87c9e5bfd56f528ede3d53177e8c392"
+      }
+    },
+    {
+      "code": "encombrants",
+      "version": "0.7.3",
+      "name": "Encombrants",
+      "description": "les collectes d’encombrants et les points de dépôt",
+      "category": "daily",
+      "keywords": [],
+      "author": "Communes ouvertes",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Encombrants »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "j": "jaune",
+          "J": "jaune-sombre"
+        },
+        "pixels": ["jjj..jjj", ".jJjjJj.", ".JJjjJJ.", "jj....jj", "jjj..jjj", "j.J..J.j", ".j.jj.j.", ".j....j."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-08-17",
+      "file": {
+        "url": "https://services.example.invalid/encombrants.3615",
+        "size": 118416,
+        "sha256": "0372f7c84ab13ae0f0332664d1624fc2c7f842f41a8a6696a34014e4b827961a"
+      }
+    },
+    {
+      "code": "parking",
+      "version": "1.5.1",
+      "name": "Stationnement",
+      "description": "zones, tarifs et places libres dans les parkings",
+      "category": "territory",
+      "keywords": [],
+      "author": "Ville en commun",
+      "hosts": [],
+      "connections": [],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher dans « Stationnement »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "C": "cyan-clair",
+          "c": "cyan"
+        },
+        "pixels": ["Cc....cC", ".c.cc.c.", "ccc..ccc", "..cccc..", "Cc....cC", ".C.cc.C.", "c..cc..c", "c.c..c.c"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-07-11",
+      "file": {
+        "url": "https://services.example.invalid/parking.3615",
+        "size": 104486,
+        "sha256": "6a9160f13041b805fc6b467cc1dc181fc65d83b601e5336e8f7684fc61ca2abe"
+      }
+    },
+    {
+      "code": "fourriere",
+      "version": "2.3.4",
+      "name": "Fourrière",
+      "description": "les véhicules enlevés, les horaires et les tarifs",
+      "category": "daily",
+      "keywords": [],
+      "author": "Ville en commun",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Fourrière »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "j": "jaune",
+          "J": "jaune-sombre"
+        },
+        "pixels": ["j..JJ..j", "J.J..J.J", "..j..j..", ".jjjjjj.", ".j.JJ.j.", "j......j", ".jj..jj.", "jjj..jjj"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-06-04",
+      "file": {
+        "url": "https://services.example.invalid/fourriere.3615",
+        "size": 136265,
+        "sha256": "8c1c8cb902da2e56de9e06bdc650cb9d52c1a77a1c1f98453e6651632c8ca231"
+      }
+    },
+    {
+      "code": "conseil",
+      "version": "0.1.2",
+      "name": "Conseil municipal",
+      "description": "les ordres du jour, les délibérations et les votes de votre conseil",
+      "category": "democracy",
+      "keywords": [],
+      "author": "Communes ouvertes",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Conseil municipal »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "B": "bleu-clair",
+          "w": "blanc"
+        },
+        "pixels": ["..B..B..", ".BB..BB.", "..w..w..", "..B..B..", "..B..B..", "BBwwwwBB", "Bw.BB.wB", "B..BB..B"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-09-25",
+      "file": {
+        "url": "https://services.example.invalid/conseil.3615",
+        "size": 268065,
+        "sha256": "7de7b735829f14a8964b661ed2edacb97dd3f1929d2c67bfe4fa36d43e1922b3"
+      }
+    },
+    {
+      "code": "actes",
+      "version": "1.8.0",
+      "name": "Recueil des actes",
+      "description": "les arrêtés de votre préfecture et de votre mairie",
+      "category": "administration",
+      "keywords": [],
+      "author": "Actes publics",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Recueil des actes »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "B": "bleu-clair",
+          "b": "bleu"
+        },
+        "pixels": ["..B..B..", "b.b..b.b", "b.b..b.b", "bB....Bb", "...bb...", ".b....b.", ".b....b.", "BBbbbbBB"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-08-19",
+      "file": {
+        "url": "https://services.example.invalid/actes.3615",
+        "size": 395639,
+        "sha256": "a8f25234727c08e8966d4e4c17b7399bbea9d9ba7d09934b91ee720631589486"
+      }
+    },
+    {
+      "code": "rdv",
+      "version": "2.6.3",
+      "name": "Rendez-vous en mairie",
+      "description": "les créneaux libres pour une carte d’identité ou un passeport",
+      "category": "administration",
+      "keywords": [],
+      "author": "Créneaux libres",
+      "hosts": [],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Rendez-vous en mairie »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "b": "bleu",
+          "B": "bleu-clair"
+        },
+        "pixels": ["b......b", ".bb..bb.", "B.BbbB.B", "..bbbb..", ".b....b.", "BbbbbbbB", "b.B..B.b", "........"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-07-13",
+      "file": {
+        "url": "https://services.example.invalid/rdv.3615",
+        "size": 346156,
+        "sha256": "f4cba078bd953bc00acbbbdbe8ff2c5351ac68908428b8d13bd51d88c3308ca9"
+      }
+    },
+    {
+      "code": "audiences",
+      "version": "0.4.1",
+      "name": "Audiences publiques",
+      "description": "les audiences des tribunaux près de chez vous",
+      "category": "administration",
+      "keywords": [],
+      "author": "Justice ouverte",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher dans « Audiences publiques »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "b": "bleu",
+          "B": "bleu-clair"
+        },
+        "pixels": ["b..BB..b", "..BBBB..", "bB.BB.Bb", "BB....BB", "B..bb..B", "bbbbbbbb", "bB.bb.Bb", "b..bb..b"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-06-06",
+      "file": {
+        "url": "https://services.example.invalid/audiences.3615",
+        "size": 357954,
+        "sha256": "18615a065390cd57019b80a687f653d09110aef64ff51649473eb391239e2305"
+      }
+    },
+    {
+      "code": "cadastre",
+      "version": "1.2.4",
+      "name": "Cadastre",
+      "description": "parcelles, plans et surfaces de votre commune",
+      "category": "territory",
+      "keywords": [],
+      "author": "Terrain commun",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Cadastre »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "c": "cyan",
+          "C": "cyan-clair"
+        },
+        "pixels": ["cC.cc.Cc", "c.c..c.c", ".c....c.", "CccccccC", "cC....Cc", "ccC..Ccc", ".cccccc.", "c..CC..c"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-09-27",
+      "file": {
+        "url": "https://services.example.invalid/cadastre.3615",
+        "size": 333920,
+        "sha256": "774e1d75311f4545bcb01de8df5f850d0467dc0df0ffc4c9a70d66d20fa1c295"
+      }
+    },
+    {
+      "code": "permis",
+      "version": "2.9.2",
+      "name": "Permis de construire",
+      "description": "les permis déposés et accordés autour de chez vous",
+      "category": "territory",
+      "keywords": [],
+      "author": "Urbanisme ouvert",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Permis de construire »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "C": "cyan-clair",
+          "c": "cyan"
+        },
+        "pixels": ["C..cc..C", "cccccccc", "ccc..ccc", ".cccccc.", "cCccccCc", "C......C", "cCc..cCc", ".CCCCCC."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-08-21",
+      "file": {
+        "url": "https://services.example.invalid/permis.3615",
+        "size": 355401,
+        "sha256": "4f12a8b706274df9e05b2bf9cfc650c9f85b83f50f6d5fda8604a7ae0f88ba6e"
+      }
+    },
+    {
+      "code": "entreprises",
+      "version": "0.7.0",
+      "name": "Annuaire des entreprises",
+      "description": "Siret, dirigeants et comptes publiés",
+      "category": "economy",
+      "keywords": [],
+      "author": "Données d’entreprise",
+      "hosts": [],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Annuaire des entreprises »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "j": "jaune",
+          "w": "blanc"
+        },
+        "pixels": ["j.j..j.j", "j......j", "jwjjjjwj", ".j.jj.j.", "j.jjjj.j", ".jjjjjj.", "..jjjj..", "j......j"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-07-15",
+      "file": {
+        "url": "https://services.example.invalid/entreprises.3615",
+        "size": 124314,
+        "sha256": "0749d825cd99513f12f6b57acdde25a2a30d219944ae9b17cec2baac8fae030a"
+      }
+    },
+    {
+      "code": "appels",
+      "version": "1.5.3",
+      "name": "Appels d’offres",
+      "description": "les marchés publics des collectivités, par secteur",
+      "category": "economy",
+      "keywords": [],
+      "author": "Commande publique",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Appels d’offres »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "j": "jaune",
+          "w": "blanc"
+        },
+        "pixels": ["jj.ww.jj", "...jj...", ".jw..wj.", ".j.jj.j.", ".j....j.", "w.j..j.w", ".j.jj.j.", "jjj..jjj"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-06-08",
+      "file": {
+        "url": "https://services.example.invalid/appels.3615",
+        "size": 103839,
+        "sha256": "829215a03fd7c506ea573f7a3d9eba9ab635a4f62862917adc6d1e1bc28a3610"
+      }
+    },
+    {
+      "code": "subventions",
+      "version": "2.3.1",
+      "name": "Subventions",
+      "description": "ce que votre commune verse aux associations, ligne par ligne",
+      "category": "economy",
+      "keywords": [],
+      "author": "Budget ouvert",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher dans « Subventions »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "w": "blanc",
+          "j": "jaune"
+        },
+        "pixels": ["w.jwwj.w", "w.wjjw.w", ".j....j.", "jwjjjjwj", "j..jj..j", ".jjwwjj.", "jw....wj", "j.wwww.j"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-09-29",
+      "file": {
+        "url": "https://services.example.invalid/subventions.3615",
+        "size": 332045,
+        "sha256": "044963d39d00b49894210d90b423d0d37ff76d24725503a000efd2f1affd9f9d"
+      }
+    },
+    {
+      "code": "immo",
+      "version": "0.1.4",
+      "name": "Prix de l’immobilier",
+      "description": "les ventes de votre rue et de votre quartier",
+      "category": "economy",
+      "keywords": [],
+      "author": "Pierre ouverte",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Prix de l’immobilier »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "j": "jaune",
+          "w": "blanc"
+        },
+        "pixels": [".jwjjwj.", "j.jjjj.j", "jj.ww.jj", "..jjjj..", "j..jj..j", "j......j", "..jjjj..", "jj....jj"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-08-23",
+      "file": {
+        "url": "https://services.example.invalid/immo.3615",
+        "size": 286745,
+        "sha256": "b2f3b89d661a709c01fe926346f98ee90be3bd6f808b7d8eb4debeda8204fb85"
+      }
+    },
+    {
+      "code": "loyers",
+      "version": "1.8.2",
+      "name": "Loyers de référence",
+      "description": "l’encadrement des loyers et les loyers moyens de votre ville",
+      "category": "economy",
+      "keywords": [],
+      "author": "Habitat libre",
+      "hosts": [],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Loyers de référence »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "j": "jaune",
+          "w": "blanc"
+        },
+        "pixels": ["jjj..jjj", ".j....j.", ".w....w.", "..j..j..", "........", "j......j", ".j....j.", "..wjjw.."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-07-17",
+      "file": {
+        "url": "https://services.example.invalid/loyers.3615",
+        "size": 236534,
+        "sha256": "83015a27b9c41d40ca3eb154098563f042e4ebda9ddff9fe1e0a459123e70d49"
+      }
+    },
+    {
+      "code": "formation",
+      "version": "2.6.0",
+      "name": "Formations",
+      "description": "les formations près de chez vous, et ce que finance votre CPF",
+      "category": "economy",
+      "keywords": [],
+      "author": "Apprendre ensemble",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Formations »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "w": "blanc",
+          "j": "jaune"
+        },
+        "pixels": ["w.j..j.w", "jjwjjwjj", "...jj...", "j......j", "..w..w..", "jjjjjjjj", "...jj...", "jjjjjjjj"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-06-10",
+      "file": {
+        "url": "https://services.example.invalid/formation.3615",
+        "size": 42416,
+        "sha256": "852b152410d013dc10758c508b9436b02b28952d6ff02385a4bb0222ad7bc9dc"
+      }
+    },
+    {
+      "code": "amendements",
+      "version": "0.4.3",
+      "name": "Suivi des amendements",
+      "description": "les amendements que vous suivez, du dépôt au vote",
+      "category": "democracy",
+      "keywords": [],
+      "author": "Civic Lab",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Suivi des amendements »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "B": "bleu-clair",
+          "w": "blanc"
+        },
+        "pixels": ["B.BBBB.B", "BB.BB.BB", "ww.ww.ww", "BBBBBBBB", "B......B", "BBwBBwBB", ".BwBBwB.", "..BBBB.."]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-10-01",
+      "file": {
+        "url": "https://services.example.invalid/amendements.3615",
+        "size": 109356,
+        "sha256": "7fdc448d4c6bf3d902760c4fdf7821bd86fab245c7f132cea3004b8584161853"
+      }
+    },
+    {
+      "code": "lobbys",
+      "version": "1.2.1",
+      "name": "Registre des lobbys",
+      "description": "qui rencontre les élus, et sur quels textes",
+      "category": "democracy",
+      "keywords": [],
+      "author": "Transparence ouverte",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher dans « Registre des lobbys »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "B": "bleu-clair",
+          "w": "blanc"
+        },
+        "pixels": ["BBB..BBB", "w.BBBB.w", "BBBwwBBB", "..B..B..", "BBB..BBB", ".BBwwBB.", "B......B", "BB....BB"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-08-25",
+      "file": {
+        "url": "https://services.example.invalid/lobbys.3615",
+        "size": 100192,
+        "sha256": "9e8f3d9fcefac5eb925b46bca3723e18e331ff959b5ca6d8b4a94e441d27356f"
+      }
+    },
+    {
+      "code": "declarations",
+      "version": "2.9.4",
+      "name": "Déclarations des élus",
+      "description": "patrimoine et intérêts déclarés par vos élus",
+      "category": "democracy",
+      "keywords": [],
+      "author": "Transparence ouverte",
+      "hosts": [],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Déclarations des élus »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "B": "bleu-clair",
+          "w": "blanc"
+        },
+        "pixels": ["...BB...", "BB.ww.BB", "BBBwwBBB", ".B....B.", "BB....BB", "B.wBBw.B", "B......B", "BBBBBBBB"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-07-19",
+      "file": {
+        "url": "https://services.example.invalid/declarations.3615",
+        "size": 36257,
+        "sha256": "7e4ab79c687fb3b3966279db73cb4ec17ca86ce337213faa392883c52268b7f6"
+      }
+    },
+    {
+      "code": "referendum",
+      "version": "0.7.2",
+      "name": "Référendums locaux",
+      "description": "les consultations et référendums de votre commune et de votre région",
+      "category": "democracy",
+      "keywords": [],
+      "author": "Civic Lab",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Référendums locaux »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "B": "bleu-clair",
+          "w": "blanc"
+        },
+        "pixels": [".B....B.", "BB....BB", "B.B..B.B", "..BBBB..", ".B.ww.B.", "BBB..BBB", "BB.ww.BB", "..BBBB.."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-06-12",
+      "file": {
+        "url": "https://services.example.invalid/referendum.3615",
+        "size": 165160,
+        "sha256": "cd1121eaa919aed12b10725a9632b1d74b113eaab1d13e04985641c447c02171"
+      }
+    },
+    {
+      "code": "participatif",
+      "version": "1.5.0",
+      "name": "Budget participatif",
+      "description": "les projets proposés et votés dans votre ville",
+      "category": "democracy",
+      "keywords": [],
+      "author": "Ville en commun",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Budget participatif »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "B": "bleu-clair",
+          "w": "blanc"
+        },
+        "pixels": ["........", "..B..B..", "BB.BB.BB", ".BBBBBB.", "..BBBB..", "B.BBBB.B", "B.B..B.B", "wBBwwBBw"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-10-03",
+      "file": {
+        "url": "https://services.example.invalid/participatif.3615",
+        "size": 222593,
+        "sha256": "f4726dab34598ea8d232ba5498e84b929389012c293a520e4f91e5e165178b65"
+      }
+    },
+    {
+      "code": "questions",
+      "version": "2.3.3",
+      "name": "Questions au gouvernement",
+      "description": "les questions écrites et orales, et leurs réponses",
+      "category": "democracy",
+      "keywords": [],
+      "author": "Parlement ouvert",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Questions au gouvernement »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "w": "blanc",
+          "B": "bleu-clair"
+        },
+        "pixels": ["wwB..Bww", "BB....BB", "BBB..BBB", "B......B", "B.w..w.B", ".BB..BB.", "B......B", ".BBBBBB."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-08-27",
+      "file": {
+        "url": "https://services.example.invalid/questions.3615",
+        "size": 373702,
+        "sha256": "1bbe336a4e04f002a813e8b7fa96c08ef51886db06b9fa862144c290955828bb"
+      }
+    },
+    {
+      "code": "agenda",
+      "version": "0.1.1",
+      "name": "Agenda des élus",
+      "description": "les rendez-vous publics de vos élus",
+      "category": "democracy",
+      "keywords": [],
+      "author": "Parlement ouvert",
+      "hosts": [],
+      "connections": [],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher dans « Agenda des élus »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "B": "bleu-clair",
+          "w": "blanc"
+        },
+        "pixels": ["..BBBB..", "BB....BB", ".BB..BB.", "..BBBB..", ".BBwwBB.", ".B.BB.B.", "B.wBBw.B", ".B....B."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-07-21",
+      "file": {
+        "url": "https://services.example.invalid/agenda.3615",
+        "size": 229125,
+        "sha256": "82eb4e8c81c243225173037875b713c025dec0313dac9913cc0272615e7373e9"
+      }
+    },
+    {
+      "code": "urgences",
+      "version": "1.8.4",
+      "name": "Urgences",
+      "description": "les services d’urgence les plus proches",
+      "category": "health",
+      "keywords": [],
+      "author": "Collectif Santé libre",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Urgences »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "V": "vert-clair",
+          "v": "vert"
+        },
+        "pixels": ["..VvvV..", "VvVvvVvV", ".v.vv.v.", "v......v", "v......v", ".v....v.", "v..vv..v", "vvv..vvv"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-06-14",
+      "file": {
+        "url": "https://services.example.invalid/urgences.3615",
+        "size": 250275,
+        "sha256": "74e13ce0f3854a1a3ac0d78f11784e0d2c9f74fbbe1a08c04bfd6c3b9698685f"
+      }
+    },
+    {
+      "code": "medecins",
+      "version": "2.6.2",
+      "name": "Médecins",
+      "description": "médecins, dentistes et kinés près de chez vous, et qui prend de nouveaux patients",
+      "category": "health",
+      "keywords": [],
+      "author": "Santé commune",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Médecins »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "v": "vert",
+          "V": "vert-clair"
+        },
+        "pixels": ["v.v..v.v", ".V....V.", "..v..v..", ".vVvvVv.", "v.vvvv.v", "V.VVVV.V", "v.V..V.v", "v..vv..v"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-10-05",
+      "file": {
+        "url": "https://services.example.invalid/medecins.3615",
+        "size": 142549,
+        "sha256": "ada90a616bd933fffa36d243c5d3d4f31bfa9a780a5a03f6f9f73312b42ca7d3"
+      }
+    },
+    {
+      "code": "vaccins",
+      "version": "0.4.0",
+      "name": "Vaccinations",
+      "description": "le calendrier des vaccins et les rappels à faire",
+      "category": "health",
+      "keywords": [],
+      "author": "Santé commune",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Vaccinations »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "V": "vert-clair",
+          "v": "vert"
+        },
+        "pixels": ["........", "..V..V..", "V.vvvv.V", "vv.vv.vv", "vVVvvVVv", "..vvvv..", ".VVVVVV.", ".vv..vv."]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-08-29",
+      "file": {
+        "url": "https://services.example.invalid/vaccins.3615",
+        "size": 84929,
+        "sha256": "cbda3b3e18a276296c4c2fc5268a053a5bf8218ff486577ebb6a39b0d0f48f20"
+      }
+    },
+    {
+      "code": "donsang",
+      "version": "1.2.3",
+      "name": "Don du sang",
+      "description": "les collectes près de chez vous et leurs créneaux",
+      "category": "health",
+      "keywords": [],
+      "author": "Sang solidaire",
+      "hosts": [],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Don du sang »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "V": "vert-clair",
+          "v": "vert"
+        },
+        "pixels": ["Vv....vV", ".vv..vv.", "v......v", ".vvVVvv.", "v.vvvv.v", "V.v..v.V", "..vvvv..", "v..vv..v"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-07-23",
+      "file": {
+        "url": "https://services.example.invalid/donsang.3615",
+        "size": 357072,
+        "sha256": "fe1a6476ba9f1ce8b128657370c3eee0ff68adeaf52ab0cc87dcadbb1eaa0b14"
+      }
+    },
+    {
+      "code": "medicaments",
+      "version": "2.9.1",
+      "name": "Médicaments",
+      "description": "notices, remboursements et ruptures de stock",
+      "category": "health",
+      "keywords": [],
+      "author": "Base médicament libre",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher dans « Médicaments »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "v": "vert",
+          "V": "vert-clair"
+        },
+        "pixels": ["v..vv..v", "vv.vv.vv", "vV....Vv", "..vVVv..", "V..vv..V", "vvvVVvvv", "v..vv..v", "........"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-06-16",
+      "file": {
+        "url": "https://services.example.invalid/medicaments.3615",
+        "size": 184006,
+        "sha256": "043559995088768e057b4312cbf939722430d1d9ebe496c12d27423c2b140ac5"
+      }
+    },
+    {
+      "code": "defib",
+      "version": "0.7.4",
+      "name": "Défibrillateurs",
+      "description": "les défibrillateurs les plus proches, sur une carte",
+      "category": "health",
+      "keywords": [],
+      "author": "Secours ouvert",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Défibrillateurs »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "v": "vert",
+          "V": "vert-clair"
+        },
+        "pixels": [".vv..vv.", ".vv..vv.", ".V....V.", "vv.vv.vv", "vv.VV.vv", "vv....vv", ".vv..vv.", "v..vv..v"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-10-07",
+      "file": {
+        "url": "https://services.example.invalid/defib.3615",
+        "size": 245448,
+        "sha256": "e29c885667026c4bbbc61ee8451c25572a5d56bd7d4bdc51252b2a25aec0b7fc"
+      }
+    },
+    {
+      "code": "baignade",
+      "version": "1.5.2",
+      "name": "Eaux de baignade",
+      "description": "la qualité de l’eau des plages et des lacs",
+      "category": "health",
+      "keywords": [],
+      "author": "Littoral libre",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Eaux de baignade »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "v": "vert",
+          "V": "vert-clair"
+        },
+        "pixels": ["v..vv..v", "v.vVVv.v", "vv....vv", "vvV..Vvv", "..v..v..", ".V....V.", ".v.VV.v.", "..vVVv.."]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-08-31",
+      "file": {
+        "url": "https://services.example.invalid/baignade.3615",
+        "size": 222757,
+        "sha256": "588fc83f545d8104a595e6ce8e238afb2c33aac01a280086caadd10737622421"
+      }
+    },
+    {
+      "code": "crues",
+      "version": "2.3.0",
+      "name": "Crues et rivières",
+      "description": "le niveau des cours d’eau et la vigilance crues",
+      "category": "environment",
+      "keywords": [],
+      "author": "Eau claire",
+      "hosts": [],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Crues et rivières »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "V": "vert-clair",
+          "c": "cyan"
+        },
+        "pixels": ["VVV..VVV", "V.VccV.V", "V.cVVc.V", ".VVVVVV.", "V..VV..V", "V.c..c.V", "...cc...", ".VV..VV."]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-07-25",
+      "file": {
+        "url": "https://services.example.invalid/crues.3615",
+        "size": 255039,
+        "sha256": "389b3ee1f440afb1e8e30114c9e11a4601235a90cf08c254b70d75c07269cc14"
+      }
+    },
+    {
+      "code": "secheresse",
+      "version": "0.1.3",
+      "name": "Restrictions d’eau",
+      "description": "les arrêtés sécheresse de votre département",
+      "category": "environment",
+      "keywords": [],
+      "author": "Eau claire",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Restrictions d’eau »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "V": "vert-clair",
+          "c": "cyan"
+        },
+        "pixels": ["........", "VV....VV", "V.VVVV.V", "ccVVVVcc", ".V.VV.V.", "...cc...", "VVV..VVV", "Vc....cV"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-06-18",
+      "file": {
+        "url": "https://services.example.invalid/secheresse.3615",
+        "size": 96160,
+        "sha256": "b455e6935e8d87406febfcfae80327bbbbe8384de61cb26b1f6adf9a1a20fde5"
+      }
+    },
+    {
+      "code": "bruit",
+      "version": "1.8.1",
+      "name": "Cartes du bruit",
+      "description": "le bruit des routes, du rail et des avions chez vous",
+      "category": "environment",
+      "keywords": [],
+      "author": "Calme urbain",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher dans « Cartes du bruit »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "V": "vert-clair",
+          "c": "cyan"
+        },
+        "pixels": ["V.cVVc.V", "..V..V..", "VVccccVV", "VcV..VcV", "cVV..VVc", "...VV...", ".V....V.", ".V....V."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-10-09",
+      "file": {
+        "url": "https://services.example.invalid/bruit.3615",
+        "size": 316895,
+        "sha256": "3d9f6ecaa11d152b4e8a69a7892e22c0cbf1c4836329401405db37cf3f90b4e8"
+      }
+    },
+    {
+      "code": "arbres",
+      "version": "2.6.4",
+      "name": "Arbres de la ville",
+      "description": "les arbres de votre rue : essence, âge, plantations",
+      "category": "environment",
+      "keywords": [],
+      "author": "Ville verte",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Arbres de la ville »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "V": "vert-clair",
+          "c": "cyan"
+        },
+        "pixels": [".V....V.", ".cV..Vc.", "c..VV..c", "VV....VV", ".c.cc.c.", ".c.VV.c.", "VVc..cVV", "..c..c.."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-09-02",
+      "file": {
+        "url": "https://services.example.invalid/arbres.3615",
+        "size": 103425,
+        "sha256": "29c117db2f3a2acd102d0cab35ad84f8026070b530ae504b8aaa237a5e468261"
+      }
+    },
+    {
+      "code": "compost",
+      "version": "0.4.2",
+      "name": "Composteurs",
+      "description": "les composteurs partagés près de chez vous",
+      "category": "environment",
+      "keywords": [],
+      "author": "Ville verte",
+      "hosts": [],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Composteurs »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "c": "cyan",
+          "V": "vert-clair"
+        },
+        "pixels": ["cccccccc", "V.VVVV.V", "VcV..VcV", "..cccc..", "VV....VV", "........", "...VV...", ".cVccVc."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-07-27",
+      "file": {
+        "url": "https://services.example.invalid/compost.3615",
+        "size": 391066,
+        "sha256": "035d5bb670ab6dd4f7022533334a06c6d308a137a1b2446b0e532edf0844c742"
+      }
+    },
+    {
+      "code": "jardins",
+      "version": "1.2.0",
+      "name": "Jardins partagés",
+      "description": "les jardins et les parcelles libres",
+      "category": "environment",
+      "keywords": [],
+      "author": "Ville verte",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Jardins partagés »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "c": "cyan",
+          "V": "vert-clair"
+        },
+        "pixels": ["cVV..VVc", "........", "V.VVVV.V", "V.VVVV.V", "...VV...", "VV....VV", "VcVVVVcV", ".V.VV.V."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-06-20",
+      "file": {
+        "url": "https://services.example.invalid/jardins.3615",
+        "size": 61444,
+        "sha256": "b23f52ab780a533c53584390f78f02eabc548bc553bf9562e4fbfe546f2bdbe5"
+      }
+    },
+    {
+      "code": "vigilance",
+      "version": "2.9.3",
+      "name": "Vigilance météo",
+      "description": "orages, canicule, neige : les alertes de votre département",
+      "category": "environment",
+      "keywords": [],
+      "author": "Ciel ouvert",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Vigilance météo »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "c": "cyan",
+          "V": "vert-clair"
+        },
+        "pixels": ["c.VVVV.c", "...VV...", "ccc..ccc", "V.cVVc.V", "..VVVV..", ".V....V.", "V.VVVV.V", "V..VV..V"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-10-11",
+      "file": {
+        "url": "https://services.example.invalid/vigilance.3615",
+        "size": 118894,
+        "sha256": "cdc430e7a6b59ac3573d7f49ff01725686ece36528e1805259c945a08f648d70"
+      }
+    },
+    {
+      "code": "solaire",
+      "version": "0.7.1",
+      "name": "Potentiel solaire",
+      "description": "ce que votre toit pourrait produire",
+      "category": "environment",
+      "keywords": [],
+      "author": "Énergie citoyenne",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher dans « Potentiel solaire »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "V": "vert-clair",
+          "c": "cyan"
+        },
+        "pixels": ["..VccV..", ".c.VV.c.", ".VccccV.", ".VV..VV.", "........", "c......c", ".V.VV.V.", "V..VV..V"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-09-04",
+      "file": {
+        "url": "https://services.example.invalid/solaire.3615",
+        "size": 339302,
+        "sha256": "bdaa9989f92ed3a4c6e859573a063fe8a23b782756b176b29d5d2e09b3ba5db8"
+      }
+    },
+    {
+      "code": "energie",
+      "version": "1.5.4",
+      "name": "Énergie de la commune",
+      "description": "la consommation de votre commune, par secteur",
+      "category": "environment",
+      "keywords": [],
+      "author": "Énergie citoyenne",
+      "hosts": [],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Énergie de la commune »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "V": "vert-clair",
+          "c": "cyan"
+        },
+        "pixels": ["VVVVVVVV", ".V.VV.V.", "VcV..VcV", "VcV..VcV", "..cVVc..", "V.cVVc.V", "..VVVV..", ".VVVVVV."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-07-29",
+      "file": {
+        "url": "https://services.example.invalid/energie.3615",
+        "size": 402891,
+        "sha256": "76fbb79d2a4577a06fbd47014e6c54d236f04ce96d779911c7efeaad3e88a9bf"
+      }
+    },
+    {
+      "code": "marees",
+      "version": "2.3.2",
+      "name": "Marées",
+      "description": "horaires et coefficients, port par port",
+      "category": "environment",
+      "keywords": [],
+      "author": "Littoral libre",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Marées »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "V": "vert-clair",
+          "c": "cyan"
+        },
+        "pixels": ["V.VVVV.V", "..cccc..", ".VV..VV.", ".VV..VV.", "..VVVV..", "..cVVc..", ".VV..VV.", ".V....V."]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-06-22",
+      "file": {
+        "url": "https://services.example.invalid/marees.3615",
+        "size": 92585,
+        "sha256": "18dfc93b15471ea636d03d8e3d30d08c2687a6c752b329fea2dbe431dc92df8d"
+      }
+    },
+    {
+      "code": "chasse",
+      "version": "0.1.0",
+      "name": "Chasse",
+      "description": "les battues prévues autour de chez vous",
+      "category": "environment",
+      "keywords": [],
+      "author": "Forêt commune",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Chasse »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "c": "cyan",
+          "V": "vert-clair"
+        },
+        "pixels": ["c.VVVV.c", "..V..V..", "V..VV..V", "VVc..cVV", ".Vc..cV.", "..VccV..", "..VVVV..", "..c..c.."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-10-13",
+      "file": {
+        "url": "https://services.example.invalid/chasse.3615",
+        "size": 389764,
+        "sha256": "04599f6f3e6ff0a55d6148b27c1edfc8e8d9e612230ccacbbcb1868df84363a1"
+      }
+    },
+    {
+      "code": "trains",
+      "version": "1.8.3",
+      "name": "Trains",
+      "description": "horaires, retards et quais en temps réel",
+      "category": "territory",
+      "keywords": [],
+      "author": "Rail libre",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Trains »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "c": "cyan",
+          "C": "cyan-clair"
+        },
+        "pixels": ["cCc..cCc", "cc.cc.cc", "CCcCCcCC", ".cc..cc.", ".c.cc.c.", "cCc..cCc", "..c..c..", "c......c"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-09-06",
+      "file": {
+        "url": "https://services.example.invalid/trains.3615",
+        "size": 84174,
+        "sha256": "3c97479556ee4c9bc49f62f64c7307a54110fa806c033d7c9655091057c22e01"
+      }
+    },
+    {
+      "code": "bus",
+      "version": "2.6.1",
+      "name": "Bus et tram",
+      "description": "les prochains passages à votre arrêt",
+      "category": "territory",
+      "keywords": [],
+      "author": "Réseau en commun",
+      "hosts": [],
+      "connections": ["geo"],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher dans « Bus et tram »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "C": "cyan-clair",
+          "c": "cyan"
+        },
+        "pixels": ["Cc.cc.cC", "cccccccc", "cc....cc", "c..cc..c", "c.cccc.c", "cc....cc", "...cc...", "..cccc.."]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-07-31",
+      "file": {
+        "url": "https://services.example.invalid/bus.3615",
+        "size": 56968,
+        "sha256": "204f3db77d5e8c68d5982b83a92fdb863288c39a284107fbdfe60c6c91aaed58"
+      }
+    },
+    {
+      "code": "bornes",
+      "version": "0.4.4",
+      "name": "Bornes de recharge",
+      "description": "les bornes libres pour votre voiture électrique",
+      "category": "territory",
+      "keywords": [],
+      "author": "Recharge libre",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Bornes de recharge »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "C": "cyan-clair",
+          "c": "cyan"
+        },
+        "pixels": ["........", ".Cc..cC.", "Ccc..ccC", "cCC..CCc", "C..cc..C", "c.cccc.c", "c......c", ".cc..cc."]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-06-24",
+      "file": {
+        "url": "https://services.example.invalid/bornes.3615",
+        "size": 362303,
+        "sha256": "ed52bc756d0ade0eb55dbec8282300d44d93a23b17aab4741435f8b5b27582e0"
+      }
+    },
+    {
+      "code": "trafic",
+      "version": "1.2.2",
+      "name": "Trafic routier",
+      "description": "bouchons, accidents et routes coupées",
+      "category": "territory",
+      "keywords": [],
+      "author": "Route ouverte",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Trafic routier »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "c": "cyan",
+          "C": "cyan-clair"
+        },
+        "pixels": ["..cccc..", "cc.cc.cc", "cccccccc", ".c....c.", "CccCCccC", "c..cc..c", "cc....cc", "C..cc..C"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-10-15",
+      "file": {
+        "url": "https://services.example.invalid/trafic.3615",
+        "size": 168075,
+        "sha256": "ea3cb7f7c3c45fa0c759ab1df22c6e6504e1e309fc0a17aa630c3e35d61e9766"
+      }
+    },
+    {
+      "code": "reseau",
+      "version": "2.9.0",
+      "name": "Couverture mobile",
+      "description": "la 4G, la 5G et la fibre à votre adresse",
+      "category": "territory",
+      "keywords": [],
+      "author": "Réseau ouvert",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Couverture mobile »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "c": "cyan",
+          "C": "cyan-clair"
+        },
+        "pixels": ["........", "cc.cc.cc", "..cccc..", "ccC..Ccc", ".C.cc.C.", "c.cccc.c", "Cc....cC", "ccC..Ccc"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-09-08",
+      "file": {
+        "url": "https://services.example.invalid/reseau.3615",
+        "size": 49456,
+        "sha256": "ea5b4d4b8900a8f4fda9582960b8d67153247c75f59eea7e0ff8981c02579b70"
+      }
+    },
+    {
+      "code": "rando",
+      "version": "0.7.3",
+      "name": "Randonnées",
+      "description": "balades et sentiers balisés autour de chez vous",
+      "category": "culture",
+      "keywords": [],
+      "author": "Pas à pas",
+      "hosts": [],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Randonnées »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "m": "magenta",
+          "j": "jaune"
+        },
+        "pixels": ["m.j..j.m", "mjmjjmjm", ".mmmmmm.", "jm.mm.mj", ".jm..mj.", "m......m", "mmmmmmmm", "m.mmmm.m"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-08-02",
+      "file": {
+        "url": "https://services.example.invalid/rando.3615",
+        "size": 202698,
+        "sha256": "3e79940118d6dece90cd88a5792c1f515fa5f9a211a3e710b806ffd73991c292"
+      }
+    },
+    {
+      "code": "piscines",
+      "version": "1.5.1",
+      "name": "Piscines",
+      "description": "horaires, bassins et affluence",
+      "category": "culture",
+      "keywords": [],
+      "author": "Sport en commun",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher dans « Piscines »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "m": "magenta",
+          "j": "jaune"
+        },
+        "pixels": ["..mmmm..", "mj.mm.jm", "m.j..j.m", ".mmjjmm.", "m.mmmm.m", "m.j..j.m", "m......m", "..mmmm.."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-06-26",
+      "file": {
+        "url": "https://services.example.invalid/piscines.3615",
+        "size": 241082,
+        "sha256": "e5fb5a7a36d64133894b2db54514121886e75747ce057df721d370c5b26b289a"
+      }
+    },
+    {
+      "code": "sport",
+      "version": "2.3.4",
+      "name": "Équipements sportifs",
+      "description": "stades, gymnases et terrains en accès libre",
+      "category": "culture",
+      "keywords": [],
+      "author": "Sport en commun",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Équipements sportifs »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "m": "magenta"
+        },
+        "pixels": [".mm..mm.", ".m.mm.m.", ".mmmmmm.", "...mm...", ".m....m.", "m......m", "mmmmmmmm", "mmmmmmmm"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-10-17",
+      "file": {
+        "url": "https://services.example.invalid/sport.3615",
+        "size": 114805,
+        "sha256": "c4afade6e52f868a2c64d23e5cd2b26bd03be3a38fbc248b1374a2c6f0d40ffd"
+      }
+    },
+    {
+      "code": "musees",
+      "version": "0.1.2",
+      "name": "Musées",
+      "description": "expositions, horaires et gratuités",
+      "category": "culture",
+      "keywords": [],
+      "author": "Culture commune",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Musées »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "m": "magenta",
+          "j": "jaune"
+        },
+        "pixels": ["m......m", "..jmmj..", "mm....mm", "m.mmmm.m", "..mmmm..", "j......j", "..m..m..", "mm....mm"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-09-10",
+      "file": {
+        "url": "https://services.example.invalid/musees.3615",
+        "size": 127938,
+        "sha256": "0950125de6bc5e48c7aa2561467084e88425aa73ca64f7382406894febb9be3f"
+      }
+    },
+    {
+      "code": "cinema",
+      "version": "1.8.0",
+      "name": "Cinémas",
+      "description": "les séances près de chez vous",
+      "category": "culture",
+      "keywords": [],
+      "author": "Salle obscure",
+      "hosts": [],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Cinémas »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "m": "magenta",
+          "j": "jaune"
+        },
+        "pixels": ["..mjjm..", "m.mmmm.m", "j.jmmj.j", ".jmmmmj.", "m..mm..m", ".mj..jm.", "...jj...", "..j..j.."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-08-04",
+      "file": {
+        "url": "https://services.example.invalid/cinema.3615",
+        "size": 329908,
+        "sha256": "f465563e9a00e9669b8d70f5d2820f4fc60b72ef7b5eb35e13e4fdc80f0e12c1"
+      }
+    },
+    {
+      "code": "patrimoine",
+      "version": "2.6.3",
+      "name": "Patrimoine",
+      "description": "monuments historiques et journées du patrimoine",
+      "category": "culture",
+      "keywords": [],
+      "author": "Pierres vives",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Patrimoine »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "j": "jaune",
+          "m": "magenta"
+        },
+        "pixels": ["..j..j..", "mm.jj.mm", "mj.jj.jm", ".j....j.", ".jm..mj.", ".m.mm.m.", "jmjjjjmj", "mmmjjmmm"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-06-28",
+      "file": {
+        "url": "https://services.example.invalid/patrimoine.3615",
+        "size": 31680,
+        "sha256": "a2d286f6edbcc720b486c317eec654d7e5e3b8c33b20038338d68af7aabc18c7"
+      }
+    },
+    {
+      "code": "festivals",
+      "version": "0.4.1",
+      "name": "Fêtes et festivals",
+      "description": "ce qui se passe ce week-end dans votre commune",
+      "category": "culture",
+      "keywords": [],
+      "author": "Sortir ensemble",
+      "hosts": ["www.data.gouv.fr", "api-adresse.data.gouv.fr"],
+      "connections": ["geo"],
+      "reads": ["opinions.themes"],
+      "tools": ["chercher dans « Fêtes et festivals »"],
+      "sync": true,
+      "icon": {
+        "palette": {
+          "m": "magenta",
+          "j": "jaune"
+        },
+        "pixels": ["........", "mmjmmjmm", ".j....j.", ".mmmmmm.", "m..mm..m", "jmm..mmj", "m.mmmm.m", "...mm..."]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-10-19",
+      "file": {
+        "url": "https://services.example.invalid/festivals.3615",
+        "size": 39864,
+        "sha256": "639580879bb522ff94ad8cc0543aa987d43272ddefd0ca521e74000ab8c5928a"
+      }
+    },
+    {
+      "code": "archives",
+      "version": "1.2.4",
+      "name": "Archives",
+      "description": "état civil ancien, cadastre napoléonien, registres numérisés",
+      "category": "culture",
+      "keywords": [],
+      "author": "Mémoire ouverte",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Archives »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "m": "magenta",
+          "j": "jaune"
+        },
+        "pixels": ["mmm..mmm", "jmmmmmmj", "m.j..j.m", "jmmjjmmj", ".jm..mj.", ".m.mm.m.", ".mmmmmm.", ".mjjjjm."]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-09-12",
+      "file": {
+        "url": "https://services.example.invalid/archives.3615",
+        "size": 173084,
+        "sha256": "9383d8a2b0aaeabaef9bbd461bb07bdd2f7ca11858c5f1370914feaade07a963"
+      }
+    },
+    {
+      "code": "benevolat",
+      "version": "2.9.2",
+      "name": "Bénévolat",
+      "description": "les missions de bénévolat près de chez vous",
+      "category": "culture",
+      "keywords": [],
+      "author": "Asso-data",
+      "hosts": [],
+      "connections": ["geo"],
+      "reads": [],
+      "tools": ["chercher dans « Bénévolat »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "j": "jaune",
+          "m": "magenta"
+        },
+        "pixels": ["jmm..mmj", ".m.jj.m.", "j.mmmm.j", "m.mmmm.m", "mmmjjmmm", "........", "mm.mm.mm", "m.mmmm.m"]
+      },
+      "status": "validated",
+      "recommended": false,
+      "published": "2026-08-06",
+      "file": {
+        "url": "https://services.example.invalid/benevolat.3615",
+        "size": 254320,
+        "sha256": "e4adb5582099af1720042c8599cd8cf88cf577287dc7a950463521077e6a3e7c"
+      }
+    },
+    {
+      "code": "stages",
+      "version": "0.7.0",
+      "name": "Stages de 3e",
+      "description": "les stages d’observation proposés aux collégiens",
+      "category": "economy",
+      "keywords": [],
+      "author": "Apprendre ensemble",
+      "hosts": ["www.data.gouv.fr"],
+      "connections": [],
+      "reads": [],
+      "tools": ["chercher dans « Stages de 3e »"],
+      "sync": false,
+      "icon": {
+        "palette": {
+          "j": "jaune",
+          "w": "blanc"
+        },
+        "pixels": ["........", "j......j", "jw.jj.wj", "jjjwwjjj", ".j.ww.j.", "........", ".jj..jj.", "jjjwwjjj"]
+      },
+      "status": "unvalidated",
+      "recommended": false,
+      "published": "2026-06-30",
+      "file": {
+        "url": "https://services.example.invalid/stages.3615",
+        "size": 355518,
+        "sha256": "15295de8fbfef26dd60eb819930198e4e8f065ac64922a22d1dd3fd7aa554c6f"
+      }
+    }
+  ],
+  "withdrawn": [
+    {
+      "code": "covoit",
+      "version": "1.3.2",
+      "sha256": "b3eb102f2584211802768f0cfa51ec1551eafeec391db1f3bcebed22f5c13c16",
+      "reason": "Cette version envoyait l’adresse complète au lieu de la seule commune ; la 1.4.0 corrige ce défaut."
+    },
+    {
+      "code": "carburant",
+      "version": "3.0.1",
+      "sha256": "9a9ac1d6490e0f3b1d13a1d2d3eb67cec7f25f9d14248471c5de92ab79f6e8cf",
+      "reason": "Cette version interrogeait un site qu’elle ne déclarait pas."
+    }
+  ]
+}

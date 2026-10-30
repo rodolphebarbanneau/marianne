@@ -3,6 +3,7 @@ import * as z from 'zod'
 import { departmentCode, findDepartments, franceMap, type BundledDepartment } from './map'
 import { describeCommune, describeDepartment, describeFrance } from './report'
 import { Territory } from './territory'
+import { carteTile } from './tile'
 import type { CarteMethods } from './types'
 
 /** 3615 CARTE: the map of France, its départements and communes, and their figures. */
@@ -68,7 +69,10 @@ export const service = defineService<CarteMethods>({
         departmentFigures: () => territory.departmentFigures(),
         communeFigures: (department) => territory.communeFigures(checked(department))
       },
-      tools: [figuresTool(territory)]
+      tools: [figuresTool(territory)],
+      tile: () => carteTile(territory, ctx.home())
     }
-  }
+  },
+  // Legal populations change once a year: once a day is plenty.
+  tile: { everyMinutes: 1440 }
 })

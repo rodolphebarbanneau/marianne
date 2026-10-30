@@ -21,6 +21,8 @@ export const paths = {
   work: join(home, 'work'),
   /** Each service's public data (services/<code>), written by its sync job. */
   services: join(home, 'services'),
+  /** Community services: the signed catalogue kept (catalogue/) and the .3615 packages added (packages/<code>). */
+  community: join(home, 'community'),
   /** The user's own skills, next to the built-in ones. */
   skills: join(home, 'skills'),
   logs: join(home, 'logs'),
