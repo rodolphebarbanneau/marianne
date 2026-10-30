@@ -1,11 +1,15 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { Waits } from './wait'
 
 /**
  * The building blocks Marianne's window and services' views share. They take Marianne's look
  * from its stylesheet (classes .spinner, .field, .overlay, .modal), so a service has no styles of
  * its own to write for them.
  */
+
+/** What the screen around a view waits for; none outside one. */
+export const WaitContext = createContext<Waits | null>(null)
 
 const FRAMES = ['◐', '◓', '◑', '◒']
 
@@ -31,6 +35,11 @@ function useLater(ms: number): boolean {
 
 /** "les prévisions" → "les prévisions…". */
 const coming = (label: string) => (/[….]$/.test(label) ? label : `${label}…`)
+
+/** How long a `Loading` box takes to appear, so a quick answer doesn't flash it… */
+const LOADING_AFTER_MS = 200
+/** …and, once it has, the least a screen held back leaves it there, for the same reason. */
+const LOADING_LEAST_MS = 350
 
 /** A meter's cells: as many as the lock screen's opening bar. */
 const METER_CELLS = 32
@@ -74,10 +83,14 @@ export function Meter({ share, cells = METER_CELLS }: { share?: number | null; c
  * is given, saying what is coming (`label`, "les prévisions de Bordeaux"), with a Meter (lit to
  * `progress`, 0 to 1, when the share is known; cell after cell otherwise) and a line of `detail`.
  * It appears after a moment, so a quick answer doesn't flash it. `inline`: one line instead, for a
- * part of a page already shown (a list in a card).
+ * part of a page already shown (a list in a card). While a screen opens, `LoadingGate` waits for it
+ * too; a wait that says how far it is (`progress`, even unknown: a download) shows at once instead.
  */
 export function Loading({ label, progress, detail, inline }: { label?: string; progress?: number | null; detail?: string; inline?: boolean }) {
-  const shown = useLater(inline ? 0 : 200)
+  const shown = useLater(inline ? 0 : LOADING_AFTER_MS)
+  const waits = useContext(WaitContext)
+  const reports = progress !== undefined
+  useEffect(() => (reports ? undefined : waits?.hold(label)), [waits, label, reports])
   if (inline)
     return (
       <p className="state-line dim" role="status">
@@ -99,6 +112,100 @@ export function Loading({ label, progress, detail, inline }: { label?: string; p
           {detail && <span className="small dim">{detail}</span>}
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * A screen shown whole: one `Loading` box in its place until all it loads has come (`useCall`,
+ * `useStored`, any `Loading` in it), its children there meanwhile, at their width, loading unseen.
+ * Marianne holds each tab back so; a pane opened over a tab holds itself back by the same means. It
+ * waits for what the screen loads as it opens: after that, a filter or a search says so in place.
+ * `tab`: when it changes, it holds back again, its children kept. `label`: what is coming, until a
+ * `Loading` among them says better.
+ */
+export function LoadingGate({ children, label, tab = '' }: { children: ReactNode; label?: string; tab?: string }) {
+  const [came, setCame] = useState<string | null>(null)
+  const [said, setSaid] = useState<{ tab: string; what: string } | null>(null)
+  const current = useRef(tab)
+  current.current = tab
+  const [waits] = useState(() => new Waits((what) => setSaid({ tab: current.current, what })))
+  // Its children's effects have run: what they load is counted.
+  useEffect(() => {
+    const opened = Date.now()
+    let later: ReturnType<typeof setTimeout> | undefined
+    const stop = waits.watch(() => {
+      const since = Date.now() - opened
+      if (since < LOADING_AFTER_MS) setCame(tab)
+      else later = setTimeout(() => setCame(tab), LOADING_AFTER_MS + LOADING_LEAST_MS - since)
+    })
+    return () => {
+      stop()
+      clearTimeout(later)
+    }
+  }, [waits, tab])
+  const shown = came === tab
+  return (
+    <>
+      {!shown && <Loading label={said?.tab === tab ? said.what : label} />}
+      <WaitContext.Provider value={waits}>
+        <div className={shown ? 'load-gate' : 'load-gate waiting'}>{children}</div>
+      </WaitContext.Provider>
+    </>
+  )
+}
+
+/** What a `StickyPanel` keeps from the edges of the space it has. */
+const PANEL_GAP = 10
+
+/** Where a side panel goes: as far as it was, within what leaves its top in view (a panel that fits) or its end (a taller one). */
+export const panelTop = (top: number, room: number, height: number) => Math.min(PANEL_GAP, Math.max(room - height - PANEL_GAP, top))
+
+/**
+ * A side panel kept in view while what it sits beside scrolls, without a scroll bar of its own.
+ * Taller than the space it has, it moves with the page, either way, until an end of it shows, then
+ * stays: all of it is a short scroll away, wherever the page is. `at`: what it shows; when that
+ * changes, its top comes back into view.
+ */
+export function StickyPanel({ className, at, children }: { className?: string; at?: string; children: ReactNode }) {
+  const panel = useRef<HTMLDivElement>(null)
+  const toTop = useRef(() => {})
+  useEffect(() => {
+    const el = panel.current
+    let view: HTMLElement | null = null
+    for (let p = el?.parentElement ?? null; p && !view; p = p.parentElement) if (/auto|scroll/.test(getComputedStyle(p).overflowY)) view = p
+    if (!el || !view) return
+    const scroller = view
+    let top = PANEL_GAP
+    let last = scroller.scrollTop
+    const place = () => {
+      // Sticky offsets count from inside the scroller's padding.
+      top = panelTop(top, scroller.clientHeight - parseFloat(getComputedStyle(scroller).paddingTop), el.offsetHeight)
+      el.style.top = `${top}px`
+    }
+    const scrolled = () => {
+      top -= scroller.scrollTop - last
+      last = scroller.scrollTop
+      place()
+    }
+    toTop.current = () => {
+      top = PANEL_GAP
+      place()
+    }
+    place()
+    scroller.addEventListener('scroll', scrolled, { passive: true })
+    const observer = new ResizeObserver(place)
+    observer.observe(el)
+    observer.observe(scroller)
+    return () => {
+      scroller.removeEventListener('scroll', scrolled)
+      observer.disconnect()
+    }
+  }, [])
+  useEffect(() => toTop.current(), [at])
+  return (
+    <div ref={panel} className={`sticky-panel${className ? ` ${className}` : ''}`}>
+      {children}
     </div>
   )
 }

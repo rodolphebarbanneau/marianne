@@ -23,6 +23,8 @@ What a tab shows is yours, from `@marianne/sdk/view` and Marianne's classes:
 | what a page, a tab or a pane waits for           | `<Loading label="les prévisions de Bordeaux" />`: a box in the middle, one per page      |
 | a share of something done (a download, a sync)   | `<Meter share={0.4} />`: the cells of every wait, lit to the share                       |
 | a part of a page already shown that waits        | `<Loading inline label="…" />`, or `<Spinner />` in a line (a search list, a button)     |
+| a pane opened over a tab                         | `<LoadingGate>…</LoadingGate>`: shown whole, as a tab is                                 |
+| a side panel that stays in view                  | `<StickyPanel at={id}>`: no scroll bar; taller than the window, it follows the page      |
 | what couldn't come                               | `<Failure title="Prévisions indisponibles" error={…} retry={…} />` (`inline` for a part) |
 | something to do first (an address, a permission) | `<Notice action={{ label: 'renseigner mon adresse', onClick }}>…</Notice>`               |
 | a form                                           | `<Field label hint error>`, Marianne's inputs and `.btn`                                 |
@@ -38,7 +40,7 @@ Marianne's classes, styled by her stylesheet: `.card`, `.grid`, `.rows` and `.ro
 
 ## States, the same everywhere
 
-- **Waiting**: one `Loading` box per page, tab or pane, saying what is coming. It shows after a moment, so a quick answer doesn't flash it. Wait for what the page needs together rather than stacking boxes; parts that come later wait inline.
+- **Waiting**: a tab shows whole. Marianne holds it back, one `Loading` box in its place, until all it loads as it opens has come: every `useCall`, every `useStored`, and any `Loading` in it (it then says what is coming, in the box). So load through them, and write each part as if it were alone: `Loading` where it waits for itself, `inline` for a part of a page. A pane over a tab does the same with `LoadingGate`. It gives up after 10 seconds, what still waits showing in place, so a site that doesn't answer doesn't hold the page. A wait that says how far it is (`progress`, a first download) shows at once; so does what comes later (a filter, a search).
 - **Failing**: `Failure`, where the content would have been, with `retry` when trying again can work.
 - **Empty**: one dim sentence saying what would be there and how to get some ("Aucun trajet à payer.").
 - Never a blank space: the content, a wait, a failure or an empty sentence.
@@ -49,7 +51,7 @@ Marianne's classes, styled by her stylesheet: `.card`, `.grid`, `.rows` and `.ro
 - **The Minitel touches, sparingly**: the pixel font for titles, inverse blocks for codes, mosaic cells for small charts. Nothing moves but a wait.
 - **Colours** from Marianne's variables only (`--fg`, `--dim`, `--hi`, `--muted`, `--accent`, `--rule`, `--bg-raised`, the eight colours `--rouge`, `--vert`…); data's own colours (a political group's) excepted.
 - **Classes** prefixed with your code (`.meteo-days`); never restyle Marianne's classes for the whole window.
-- **Layout** by the room the column gives you, not the window's: `@container service (max-width: 760px) { … }`. No fixed widths; a side panel may stick (`position: sticky`) within the page. Look at it 1440, 800 and 520 pixels wide.
+- **Layout** by the room the column gives you, not the window's: `@container service (max-width: 760px) { … }`. No fixed widths; a side panel stays in view with `StickyPanel`. Look at it 1440, 800 and 520 pixels wide.
 
 ## Tabs
 

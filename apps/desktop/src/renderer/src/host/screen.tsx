@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PROFILE_FIELDS, serviceCode, tabKey, type ProfileField, type ServiceState, type ServiceTab } from '@marianne/sdk'
-import { Loading, ServiceFrameProvider, ServiceHostProvider, type ServiceFrame, type ServiceHost, type ShownPage } from '@marianne/sdk/view'
+import { Loading, LoadingGate, ServiceFrameProvider, ServiceHostProvider, type ServiceFrame, type ServiceHost, type ShownPage } from '@marianne/sdk/view'
 import { publicSource } from '@shared/public'
 import { accelOf, matches, SHORTCUTS } from '@shared/shortcuts'
 import type { ServiceFileReview } from '@shared/catalogue'
@@ -249,7 +249,9 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
             <ServiceHostProvider host={host}>
               <ServiceFrameProvider frame={frame}>
                 <Boundary label={m.name}>
-                  <View />
+                  <LoadingGate tab={shown} label={tabs.find((t) => t.id === shown)?.label ?? m.name}>
+                    <View />
+                  </LoadingGate>
                 </Boundary>
               </ServiceFrameProvider>
             </ServiceHostProvider>

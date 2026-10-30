@@ -6,7 +6,7 @@ import './runtime.css'
 import { Component, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { ServiceTab } from '@marianne/sdk'
-import { Failure, Loading, ServiceFrameProvider, ServiceHostProvider, type ServiceFrame, type ServiceHost } from '@marianne/sdk/view'
+import { Failure, Loading, LoadingGate, ServiceFrameProvider, ServiceHostProvider, type ServiceFrame, type ServiceHost } from '@marianne/sdk/view'
 import { readToFrame, type FrameHost, type FrameLook, type FromFrame, type ScreenBridge } from '../shared/community'
 import { removeConnections } from './isolate'
 
@@ -167,7 +167,9 @@ function Screen({ View }: { View: ComponentType }) {
         <ServiceHostProvider host={host}>
           <ServiceFrameProvider frame={frame}>
             <Boundary>
-              <View />
+              <LoadingGate tab={s.tab}>
+                <View />
+              </LoadingGate>
             </Boundary>
           </ServiceFrameProvider>
         </ServiceHostProvider>

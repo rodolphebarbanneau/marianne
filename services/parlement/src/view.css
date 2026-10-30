@@ -757,12 +757,6 @@ button.parlement-bt-row:hover {
   padding: 14px 8px 6px;
   border-bottom: 1px solid var(--rule);
 }
-/* Kept in view by StickyPanel (its top), with no scroll bar of its own. */
-.parlement-bt-detail {
-  position: sticky;
-  top: 10px;
-  min-width: 0;
-}
 .parlement-card {
   border: 1px solid var(--rule);
   background: var(--bg-raised);

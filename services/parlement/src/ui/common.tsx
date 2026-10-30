@@ -1,11 +1,11 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState } from 'react'
 import { useCall, type Loaded } from '@marianne/sdk/view'
 import { ordinal } from '../links'
 import { parisDay } from '../time'
 import type { BallotLine, Chamber, Clip, Favorites, MemberCard, MemberVote, Mine, ParlementMethods, Position, Shelf, VideoItem, VideoQuery } from '../types'
 
 // The SDK's blocks and hooks, for the screen's modules.
-export { Failure, Loading, useDebounced } from '@marianne/sdk/view'
+export { Failure, Loading, StickyPanel, useDebounced } from '@marianne/sdk/view'
 
 /** What the view's parts share: typed calls, navigation, the user's stored data, French formats, the small marks. */
 
@@ -129,32 +129,6 @@ export function FollowButton({ id, kind = 'members' }: { id: string; kind?: keyo
 }
 
 // ---------------------------------------------------------------- blocks
-
-/**
- * A side panel kept in view while what it details scrolls, without a scroll bar of its own: taller
- * than the window, it scrolls with the page until its end shows, then stays.
- */
-export function StickyPanel({ className, children }: { className?: string; children: ReactNode }) {
-  const panel = useRef<HTMLDivElement>(null)
-  const [top, setTop] = useState(10)
-  useEffect(() => {
-    const el = panel.current
-    if (!el) return
-    let scroller: HTMLElement | null = null
-    for (let p = el.parentElement; p && !scroller; p = p.parentElement) if (/auto|scroll/.test(getComputedStyle(p).overflowY)) scroller = p
-    const place = () => setTop(Math.min(10, (scroller?.clientHeight ?? window.innerHeight) - el.offsetHeight - 10))
-    place()
-    const observer = new ResizeObserver(place)
-    observer.observe(el)
-    if (scroller) observer.observe(scroller)
-    return () => observer.disconnect()
-  }, [])
-  return (
-    <div ref={panel} className={className} style={{ top }}>
-      {children}
-    </div>
-  )
-}
 
 /** A chamber, as a Videotex code: AN cyan, SÉNAT magenta. */
 export function ChamberCode({ chamber }: { chamber: Chamber }) {

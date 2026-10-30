@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ServiceTools, useHost, useStored, useTab, useTabBadges } from '@marianne/sdk/view'
+import { LoadingGate, ServiceTools, useHost, useStored, useTab, useTabBadges } from '@marianne/sdk/view'
 import { parseVideoRef, videoKey } from './links'
 import type { Clips, Favorites, ParlementMethods, Shelf, VideoItem } from './types'
 import { AgendaTab, MeetingPane } from './ui/agenda'
@@ -202,7 +202,9 @@ function Screen() {
               <button className="small dim parlement-back" onClick={back}>
                 ← retour
               </button>
-              <Pane target={top} />
+              <LoadingGate>
+                <Pane target={top} />
+              </LoadingGate>
             </div>
           )}
           {/* The tab stays under its panes, as it was left. A sync that brings new data shows it: the tab loads again. */}
