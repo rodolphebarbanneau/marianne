@@ -401,7 +401,9 @@ export async function serviceMedia(
   transport: Transport = httpsTransport
 ): Promise<{ status: number; type: string; body: Buffer; range?: string } | null> {
   const headers: Record<string, string> = { 'User-Agent': userAgent(), Accept: '*/*', 'Accept-Encoding': 'gzip, deflate, br' }
-  if (range && RANGE.test(range)) headers.Range = range
+  // A range is of the bytes as stored: a server that compressed its 206 would send a Content-Range
+  // that no longer matches what is decoded here, so a range is asked for uncompressed.
+  if (range && RANGE.test(range)) Object.assign(headers, { Range: range, 'Accept-Encoding': 'identity' })
   const answer = await slotsOf(m.id).run(`3615 ${serviceCode(m)}`, () => serviceFetch(m, url, { method: 'GET', headers }, transport))
   const type = String(answer.headers['content-type'] ?? '')
     .split(';')[0]

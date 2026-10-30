@@ -160,10 +160,14 @@ describe('a community service’s requests', () => {
       'https://cdn.example.fr/page': { headers: { 'content-type': 'text/html' }, body: Buffer.from('<script>') }
     })
     expect(await serviceMedia(manifest, 'https://cdn.example.fr/v.m3u8', null, ua, t)).toMatchObject({ status: 200, type: 'application/vnd.apple.mpegurl' })
+    expect(asked[0].headers['Accept-Encoding']).toBe('gzip, deflate, br')
     expect(await serviceMedia(manifest, 'https://cdn.example.fr/s.ts', 'bytes=0-9', ua, t)).toMatchObject({ status: 206, range: 'bytes 0-9/100' })
     expect(asked[1].headers.Range).toBe('bytes=0-9')
+    // A range is of the stored bytes: asked for uncompressed, so that its Content-Range matches what comes.
+    expect(asked[1].headers['Accept-Encoding']).toBe('identity')
     await serviceMedia(manifest, 'https://cdn.example.fr/s.ts', 'bytes=0-9, 20-29', ua, t)
     expect(asked[2].headers.Range).toBeUndefined()
+    expect(asked[2].headers['Accept-Encoding']).toBe('gzip, deflate, br')
     expect(await serviceMedia(manifest, 'https://cdn.example.fr/page', null, ua, t)).toBeNull()
     await expect(serviceMedia(manifest, 'https://evil.example.com/v.m3u8', null, ua, t)).rejects.toThrow(/déclaré/)
   })
