@@ -72,6 +72,10 @@ export function usePolling({ reload, loading }: Pick<Loaded<unknown>, 'reload' |
   }, [on, shown, loading, everyMs, reload])
 }
 
+/** Enter alone confirms a field. With a modifier it is Marianne's (Ctrl+Entrée, a new folder); while composing a character, the composition's. */
+export const confirms = (e: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey' | 'isComposing'>) =>
+  e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && !e.isComposing
+
 // ---------------------------------------------------------------- navigation
 
 export type Tab = 'home' | 'hemicycle' | 'ballots' | 'members' | 'videos' | 'agenda'

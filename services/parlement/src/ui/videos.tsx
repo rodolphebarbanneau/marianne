@@ -17,6 +17,7 @@ import { addDays, clock, parisDay } from '../time'
 import type { Chamber, Clip, LiveStream, MemberCard, Passage, VideoItem, VideoOpen, VideoQuery, VideoType } from '../types'
 import {
   ChamberCode,
+  confirms,
   dateTime,
   Face,
   Failure,
@@ -36,7 +37,20 @@ import {
   yourTitle
 } from './common'
 import { Thumb } from './home'
-import { clipOf, keptOf, livePage, mediaChapters, shareLine, shareLink, snapAt, streamOf, streamTarget, suspensions, type AgendaLine } from './media'
+import {
+  CLIP_TITLE_MAX,
+  clipOf,
+  keptOf,
+  livePage,
+  mediaChapters,
+  shareLine,
+  shareLink,
+  snapAt,
+  streamOf,
+  streamTarget,
+  suspensions,
+  type AgendaLine
+} from './media'
 import { videoRef } from './members'
 
 /**
@@ -570,6 +584,12 @@ function ClipsShelf() {
   const { clips, setClips } = useStore()
   const [removing, setRemoving] = useState<Clip | null>(null)
   const [renaming, setRenaming] = useState<{ clip: Clip; title: string } | null>(null)
+  const rename = () => {
+    const title = renaming?.title.trim()
+    if (!renaming || !title) return
+    setClips(clips.map((c) => (c.id === renaming.clip.id ? { ...c, title } : c)))
+    setRenaming(null)
+  }
   const shown = clips.filter((c) => nav.shows(c.chamber ?? 'an'))
   if (!shown.length)
     return (
@@ -631,21 +651,24 @@ function ClipsShelf() {
           <div className="in">
             <span className="label">renommer l’extrait</span>
             <Field label="titre de l’extrait" wide>
-              <input autoFocus value={renaming.title} onChange={(e) => setRenaming({ ...renaming, title: e.target.value })} />
+              <input
+                autoFocus
+                value={renaming.title}
+                maxLength={CLIP_TITLE_MAX}
+                onChange={(e) => setRenaming({ ...renaming, title: e.target.value })}
+                onKeyDown={(e) => {
+                  if (!confirms(e.nativeEvent)) return
+                  e.preventDefault()
+                  rename()
+                }}
+              />
             </Field>
           </div>
           <div className="foot">
             <button className="btn" onClick={() => setRenaming(null)}>
               annuler
             </button>
-            <button
-              className="btn primary"
-              disabled={!renaming.title.trim()}
-              onClick={() => {
-                setClips(clips.map((c) => (c.id === renaming.clip.id ? { ...c, title: renaming.title.trim() } : c)))
-                setRenaming(null)
-              }}
-            >
+            <button className="btn primary" disabled={!renaming.title.trim()} onClick={rename}>
               renommer
             </button>
           </div>

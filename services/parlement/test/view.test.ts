@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { pollDelay } from '../src/ui/common'
+import { confirms, pollDelay } from '../src/ui/common'
 
-// When the screen's pollers (the lives, a live's video, the agenda) ask the main side again.
+// The screen's own rules: when its pollers (the lives, a live's video, the agenda) ask the main side again, which key confirms a field.
 
 describe('asking again', () => {
   const at = { on: true, shown: true, loading: false, everyMs: 30_000 }
@@ -19,5 +19,25 @@ describe('asking again', () => {
     expect(pollDelay({ ...at, sinceAnswer: 300_000 })).toBe(0)
     // Away a moment: the rest of its period.
     expect(pollDelay({ ...at, sinceAnswer: 20_000 })).toBe(10_000)
+  })
+})
+
+describe('a field', () => {
+  const key = (over: Partial<KeyboardEvent> = {}) => ({
+    key: 'Enter',
+    ctrlKey: false,
+    metaKey: false,
+    altKey: false,
+    shiftKey: false,
+    isComposing: false,
+    ...over
+  })
+
+  it('is confirmed by Enter alone, and leaves Marianne her shortcuts', () => {
+    expect(confirms(key())).toBe(true)
+    // Ctrl+Entrée: a new folder.
+    expect([key({ ctrlKey: true }), key({ metaKey: true }), key({ altKey: true }), key({ shiftKey: true })].map(confirms)).toEqual([false, false, false, false])
+    expect(confirms(key({ isComposing: true }))).toBe(false)
+    expect(confirms(key({ key: 'a' }))).toBe(false)
   })
 })

@@ -55,13 +55,18 @@ export function keptOf(clips: readonly Clip[], v: Ref): MediaSpan[] {
   return clips.filter((c) => c.video === v.id && (c.chamber ?? 'an') === v.chamber).map((c) => ({ from: c.start - v.offsetMs, to: c.end - v.offsetMs }))
 }
 
+/** A clip's title at most: about two lines of « extraits », where a chapter and its speaker, as the player names a clip, fit. */
+export const CLIP_TITLE_MAX = 160
+
+const clipTitle = (title: string) => (title.length > CLIP_TITLE_MAX ? `${title.slice(0, CLIP_TITLE_MAX - 1).trimEnd()}…` : title)
+
 /** A clip cut in the player, as kept in « extraits » (at the portal's time, as its links). */
 export function clipOf(v: Pick<VideoDetail, 'id' | 'chamber' | 'offsetMs' | 'title' | 'date' | 'thumbnail'>, clip: MediaClip, id: string, now: Date): Clip {
   return {
     id,
     video: v.id,
     chamber: v.chamber,
-    title: clip.title.trim() || v.title,
+    title: clipTitle(clip.title.trim() || v.title),
     videoTitle: v.title,
     date: v.date,
     start: Math.round(clip.from + v.offsetMs),
