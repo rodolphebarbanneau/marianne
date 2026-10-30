@@ -38,15 +38,24 @@ A service's code is lowercase letters and digits, without accents: `meteo`, `par
   "marianne": {
     "code": "meteo",
     "name": "Météo",
-    "description": "le temps de votre commune, maintenant et sur 7 jours",
+    "description": "le temps de votre commune, maintenant, heure par heure et sur 15 jours (Météo-France)",
     "category": "daily",
-    "tabs": [],
+    "tabs": [
+      { "id": "today", "label": "aujourd’hui" },
+      { "id": "hours", "label": "48 heures" },
+      { "id": "week", "label": "7 jours" },
+      { "id": "trend", "label": "15 jours" }
+    ],
+    "search": { "placeholder": "une autre commune : nom ou code postal" },
     "keywords": ["temps", "pluie"],
     "connections": ["geo"],
-    "hosts": ["api.open-meteo.com"],
+    "hosts": ["api.open-meteo.com", "air-quality-api.open-meteo.com", "ensemble-api.open-meteo.com"],
     "links": [],
     "domains": [],
-    "tools": [{ "name": "forecast", "label": "prévisions" }],
+    "tools": [
+      { "name": "forecast", "label": "prévisions" },
+      { "name": "hourly", "label": "heure par heure" }
+    ],
     "icon": {
       "palette": { "j": "jaune", "J": "jaune-sombre", "w": "blanc", "C": "cyan-clair" },
       "pixels": ["j.j.....", ".jjj....", "jjjJjww.", ".jJwwwww", "..wwwwww", "...wwww.", "..C.C.C.", ".C.C.C.."]
@@ -63,7 +72,7 @@ A service's code is lowercase letters and digits, without accents: `meteo`, `par
 - `search`: the screen's search field, drawn by Marianne in its header, `{ "placeholder": "chercher dans les titres" }` (French, one line); the view reads it with `useSearch()`.
 - `links`: URL prefixes the service opens itself; a link in an answer that starts with one opens the service with `params.url`.
 - `domains`: the domains it is useful for (`DOMAIN_IDS`: identity, family, health, taxes, work, retirement, housing, mobility, justice, business). Their dashboards show its line, and its deadlines and the tasks it proposes must belong to one of them.
-- `permissions`: what of the user's profile it asks to read, among `PROFILE_FIELDS` (`vehicles.plate`, `vehicles.model`…, `opinions.leaning`, `opinions.themes`, `opinions.sources`), and what for, in one French line: `{ "profile": ["vehicles.plate"], "purpose": "retrouver vos passages en flux libre" }`. The first time the user opens the service, Marianne asks them, field by field; they can take it back in the settings. Nothing else of the profile is ever available to a service.
+- `permissions`: what of the user's profile it asks to read, among `PROFILE_FIELDS` (`vehicles.plate`, `vehicles.model`…, `opinions.leaning`, `opinions.themes`, `opinions.sources`), and what for, in one French line: `{ "profile": ["vehicles.plate"], "purpose": "retrouver vos passages en flux libre" }`. The first time the user opens the service, Marianne asks them, field by field; they can take it back in the settings. Nothing else of the profile is ever available to a service. `opinions.sources` serves `ctx.news`: built-in services only; a community service that asks for it is refused when it is added.
 - `tools`: the tools its main side lends the engines, by `name` and French `label`, as `defineTool` gives them. « Avant d’ajouter » lists them before the user adds the service; a community service may lend no other (the host refuses a tool it didn't declare). The tests check that the declaration and the runtime agree.
 - `icon`: its icon, a picture in the Marianne palette (below), exactly 8 × 8. Without one, Marianne draws a neutral frame.
 - A package with a sync job exports `"./sync"` too.
@@ -115,18 +124,18 @@ export const service = defineService<MeteoMethods>({
 
 The context is all a service gets of Marianne:
 
-| `ctx.`     | what                                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------------------- |
-| `manifest` | its manifest                                                                                                  |
-| `http`     | `json`, `text`, `page` (as a browser): HTTPS to its declared hosts only, Marianne's user agent                |
-| `log`      | Marianne's log, prefixed with the service                                                                     |
-| `storage`  | the user's data for it (favorites…), in the encrypted archive; throws while locked                            |
-| `dataDir`  | a folder of this computer for its public data (its sync job fills it); never personal data                    |
-| `geo`      | `findCommunes`, `getCommune`: the communes of France                                                          |
-| `home()`   | the commune of the user's address, or null                                                                    |
-| `profile`  | `granted()`, `vehicles()`, `leaning()`, `themes()`, `sources()`: the fields the user granted it, nothing else |
-| `news`     | the headlines Marianne reads for it (below); present only with `"news": true`                                 |
-| `sync`     | `status()` and `run()` of its sync job                                                                        |
+| `ctx.`     | what                                                                                                                                |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `manifest` | its manifest                                                                                                                        |
+| `http`     | `json`, `text`, `page` (as a browser): HTTPS to its declared hosts only, Marianne's user agent                                      |
+| `log`      | Marianne's log, prefixed with the service                                                                                           |
+| `storage`  | the user's data for it (favorites…), in the encrypted archive; throws while locked                                                  |
+| `dataDir`  | a folder of this computer for its public data (its sync job fills it); never personal data                                          |
+| `geo`      | `findCommunes`, `getCommune`: the communes of France                                                                                |
+| `home()`   | the commune of the user's address (a community service gets the commune's centre; a built-in one, the address's own place), or null |
+| `profile`  | `granted()`, `vehicles()`, `leaning()`, `themes()`, `sources()`: the fields the user granted it, nothing else                       |
+| `news`     | the headlines Marianne reads for it (below); present only with `"news": true`                                                       |
+| `sync`     | `status()` and `run()` of its sync job                                                                                              |
 
 `ctx.http` keeps a GET's answer 5 minutes, unless the request's `cacheMs` says otherwise (0: not at all).
 
@@ -138,7 +147,7 @@ The context is all a service gets of Marianne:
 - `instructions`: a few lines (English) added to the engines' instructions while the service is on.
 - `today(day)`: its lines of "Aujourd'hui" for a day (`TodayItem`), each opening the service with its `params`. No screen shows them since the Actualités page left the frame: they wait for a day's agenda (a 3615 CALENDRIER, still to come).
 - `summary(domain)`: its line on the dashboard of one of its domains (`ServiceSummary`: a French sentence, an urgency, the `params` to open it with), or null. It is data: Marianne lays out every service's line the same way.
-- `deadlines()`: the deadlines it knows of (`ServiceDeadline`), from what it keeps in `ctx.storage`; they join the user's deadlines and reminders. Called often: no network.
+- `deadlines()`: the deadlines it knows of (`ServiceDeadline`), from what it keeps in `ctx.storage`; they join the user's deadlines and reminders; a community service's only once the catalogue validates it (the engines read them as the user's). Called often: no network.
 - `tasks()`: the planned tasks it proposes (`ServiceTaskTemplate`, below), from what it keeps. Read when the Démarches pages show: no network. Built-in services only for now.
 - `tile()`: its tile on the Services page, once the user pins it (below), or null for the default tile.
 
@@ -157,9 +166,13 @@ export const service = defineService<MeteoMethods>({
         if (!home) return { title: 'votre commune ?', lines: [{ text: 'votre adresse, dans Réglages › Identité', tone: 'dim' }] }
         const f = await forecastOf(ctx, home.code)
         return {
-          value: { text: `${f.now}°`, unit: `${home.name} · averses à 16 h` },
-          visual: { kind: 'bars', bars: f.days.map((d) => ({ value: d.max, label: d.day, text: `${d.max}°`, color: d.rain ? 'cyan' : 'jaune' })) },
-          lines: [{ text: 'vent 25 km/h, rafales 50', tone: 'dim' }]
+          value: { text: `${f.now}°`, unit: `${home.name} · ciel dégagé` },
+          // The week's highs, drawn from its coldest low: a mild week isn't flat.
+          visual: { kind: 'bars', range: [f.weekLow, f.weekHigh], bars: f.days.map((d) => ({ value: d.max, label: d.day, text: `${d.max}°`, color: d.rain ? 'cyan' : 'jaune' })) },
+          lines: [
+            { text: 'pluie dans 30 min', tone: 'accent' },
+            { text: 'aujourd’hui 9° / 18°', tone: 'dim' }
+          ]
         }
       }
     }
@@ -219,7 +232,7 @@ runSync(async (ctx) => {
 })
 ```
 
-Marianne builds it as its own entry (`out/main/sync-<code>.js`) and runs it in an Electron utility process, away from the app: when the service is on and its data is older than `everyHours`, and when the user asks. Downloads are conditional (ETag) and limited to the declared hosts; temporary files are removed after the run. `download(url, { force, label, optional })`: `force` downloads even when unchanged, `label` names it in the progress, `optional` returns null for a file the site doesn't have (404) instead of failing the run. The last run is kept in `<dataDir>/sync.json`. Write the data atomically (a transaction, or a new file renamed over the old one): the main side may read while the job runs.
+Marianne builds it as its own entry (`out/main/sync-<code>.js`) and runs it in an Electron utility process, away from the app: when the service is on and its data is older than `everyHours`, and when the user asks. Downloads are conditional (ETag) and limited to the declared hosts, each redirect checked before it is followed (5 at most); temporary files are removed after the run. `download(url, { force, label, optional })`: `force` downloads even when unchanged, `label` names it in the progress, `optional` returns null for a file the site doesn't have (404) instead of failing the run. The last run is kept in `<dataDir>/sync.json`. Write the data atomically (a transaction, or a new file renamed over the old one): the main side may read while the job runs.
 
 ### News
 
@@ -325,7 +338,7 @@ The 3615 kiosk: its head is the page's one search (the 3615 bar: a code or words
 
 ## Tests
 
-Each package has its own `test/` and `vitest.config.ts`; `npm test` at the root runs the app's tests and every package's (vitest projects). Test the pure parts (parsers, queries, formatting) without the network; the main side through `fakeContext` from `@marianne/sdk/testing`, built from the service's package.json (`fakeContext(pkg, { answer, answerText, communes, home, profile, dataDir, sync, news })`: the network's answers, JSON and text, which it records, a storage in memory, the communes and the commune of the address, the profile fields given (`profile.sources` among them), a data folder, the sync job's status and, for `"news": true`, what `ctx.news` reads: `{ read, sources, articles, filtered }`; it returns `{ ctx, urls, stored }`); a sync job's logic through `execute` from `@marianne/sdk/sync`, with a fake `download`. `npm run typecheck` checks the app and each package (`tsc -p services/<code>`).
+Each package has its own `test/` and `vitest.config.ts`; `npm test` at the root runs the app's tests and every package's (vitest projects). Test the pure parts (parsers, queries, formatting) without the network; the main side through `fakeContext` from `@marianne/sdk/testing`, built from the service's package.json (`fakeContext(pkg, { answer, answerText, communes, home, profile, dataDir, sync, news })`: the network's answers, JSON and text, which it records, a storage in memory, the communes and the commune of the address, the profile fields given (`profile.sources` among them), a data folder, the sync job's status and, for `"news": true`, what `ctx.news` reads: `{ read, sources, articles, filtered }`; a host the manifest doesn't declare refused, as Marianne does, and only the vehicles' fields granted; it returns `{ ctx, urls, stored }`); a sync job's logic through `execute` from `@marianne/sdk/sync`, with a fake `download`. `npm run typecheck` checks the app and each package (`tsc -p services/<code>`).
 
 ## Community services
 
@@ -349,9 +362,9 @@ A service is added on this computer, for every account that has it. Each account
 
 ### What runs where, and why
 
-- **Its main side** runs in a worker of a hidden, sandboxed page of its own (`main/community/runtime`): no document, no Node, no Electron, no `window.marianne`; a session of its own that keeps nothing, cancels every request but its own files and sends what it can't cancel (WebRTC, name resolution) to a proxy that leads nowhere; every permission refused. The page holds the bridge (`window.__marianneService`) and relays: the service's context is a request for each part, the network and the communes answered later, the storage, the commune and the profile fields granted at once (the worker waits on memory it shares with its page). The main process answers each with the context a built-in service gets for that manifest, narrowed: HTTPS to its declared hosts only, each redirect checked again and never to an address of this computer or its network, at most 6 requests at a time (its pictures included) and 24 waiting, each done within 60 s, its answers inflated as they come within their limit (10 MB) and its cache kept within 16 MB; its own records of the archive, within a quota (1 000 records, 16 MB); the commune of the address with its centre, never the address's own place; the fields the user granted. Only that sandbox's main frame may use the bridge, and only so often: its page counts and measures each call before it crosses (only JSON text within its length goes, and a reply is cut to its kind's size there), the main process checks both again before it reads anything.
-- **Its screen** runs in a view of its own over the screen's content (`main/community/runtime/screen.ts`), locked down the same way: its own session, its own files only, its declared hosts' pictures fetched by the main process through the scheme, its page sandboxed (no dialog, no popup, no download, from it or any frame it makes: `print()` from a child frame does nothing). Its preload measures and counts what it sends before it crosses. The window draws the frame around it (`renderer/src/host/community-screen.tsx`) and hides it while something covers it (a dialog, the palette, the settings, the guide). Its view gets the same `useHost`, `useTab`, `useTabBadges`, `useSearch` and `useKeys` as a built-in screen, each a message to the main process, which answers its calls and data itself and hands the window the rest: a question for Marianne (a page it shows is labelled as its own), another screen, a tab to show, a toast (« 3615 X · … », drawn by the window over its bottom bar: nothing of the window's is drawn in the screen). A link on its declared hosts or its `links`, a copy, and a video handed to the mini-player, need the user's click, Enter or Space in the screen within the 5 seconds before (a scroll or another key doesn't count; for a video, the player's P too); the link opens once the user agrees, nothing focused for an Enter. Its keys come from its input, not its page: F1 to F9 go to the window, échap when the screen doesn't use it, the user's shortcut to lock the account locks it; only the user's keys, clicks and scrolls there keep the account awake. A reload of the window, a navigation or a crash of its page closes the screen (the page opens it again). No name is looked up as a hint, in any page of the app (`blink-settings` in `main/index.ts`): a `<link rel="dns-prefetch">` goes to the system's resolver whatever a session's proxy says, and a name can carry a message to the DNS servers of its author. Measured with Chromium's net log, in the packaged app too: it no longer happens; STUN and TURN servers given by name, from a frame the screen makes, are not looked up, and a TURN server over TCP given by its address is not connected to (no candidate either).
-- **The host** sees it as a built-in service: its methods, tools (their arguments as JSON Schema, rebuilt from a short list of keywords and checked before they cross), tile, summaries, lines of "Aujourd'hui" and deadlines (kept, read again every minute and after it stores something) reach it through its sandbox, with a time limit each (a method 30 s, a tool 60 s, a tile, a summary or a day's lines 10 s) and a size (a tool's result 256 KB, a tile 64 KB). Its tools never learn the folder they are called from. What a tool is sent stops at `CommunityService` until it passes: its schema, 1 KB at most as JSON (`MAX_TOOL_ARGUMENTS_BYTES`), and, unless the catalogue validates the service, the user's yes on a card showing it argument by argument (`main/community/runtime/consent.ts`), at each call. No answer, or no conversation to show the card in, is a no; a call with no arguments has nothing to ask. For the engines, it is « a community service »: its instructions and guides count only once the catalogue validates it (its guides named after it, never in the place of Marianne's), the description of a tool it doesn't validate is short and says so, and the engines are told to send community tools only what the request needs.
+- **Its main side** runs in a worker of a hidden, sandboxed page of its own (`main/community/runtime`): no document, no Node, no Electron, no `window.marianne`; a session of its own that keeps nothing, cancels every request but its own files and sends what it can't cancel (WebRTC, name resolution) to a proxy that leads nowhere; every permission refused. The page holds the bridge (`window.__marianneService`) and relays: the service's context is a request for each part, the network and the communes answered later, the storage, the commune and the profile fields granted at once (the worker waits on memory it shares with its page). The main process answers each with the context a built-in service gets for that manifest, narrowed: HTTPS to its declared hosts only, each redirect checked again and never to an address of this computer or its network, at most 6 requests at a time (its pictures included) and 24 waiting, each done within 60 s, its answers inflated as they come within their limit (10 MB) and its cache kept within 16 MB; its own records of the archive, within a quota (1 000 records, 16 MB); the commune of the address with its centre, never the address's own place; the fields the user granted. Only that sandbox's main frame may use the bridge, and only so often: its page counts and measures each call before it crosses (only JSON text within its length goes, and a reply over its kind's size is refused there), the main process checks both again before it reads anything.
+- **Its screen** runs in a view of its own over the screen's content (`main/community/runtime/screen.ts`), locked down the same way: its own session, its own files only, its declared hosts' pictures fetched by the main process through the scheme, its page sandboxed (no dialog, no popup, no download, from it or any frame it makes: `print()` from a child frame does nothing). Its preload measures and counts what it sends before it crosses. The window draws the frame around it (`renderer/src/host/community-screen.tsx`) and hides it while something covers it (a dialog, the palette, the settings, the guide). Its view gets the same `useHost`, `useTab`, `useTabBadges`, `useSearch` and `useKeys` as a built-in screen, each a message to the main process, which answers its calls and data itself and hands the window the rest: a question for Marianne (a page it shows is labelled as its own), another screen, a tab to show, a toast (« 3615 X · … », drawn by the window over its bottom bar: nothing of the window's is drawn in the screen). A link on its declared hosts or its `links`, a copy, a question for Marianne, another screen, and a video handed to the mini-player, need the user's click, Enter or Space in the screen within the 5 seconds before (a scroll or another key doesn't count; for a video, the player's P too); the link opens once the user agrees, nothing focused for an Enter. Its keys come from its input, not its page: F1 to F9 go to the window, échap when the screen doesn't use it, the user's shortcut to lock the account locks it; only the user's keys, clicks and scrolls there keep the account awake. A reload of the window, a navigation or a crash of its page closes the screen (the page opens it again). No name is looked up as a hint, in any page of the app (`blink-settings` in `main/index.ts`): a `<link rel="dns-prefetch">` goes to the system's resolver whatever a session's proxy says, and a name can carry a message to the DNS servers of its author. Measured with Chromium's net log, in the packaged app too: it no longer happens; STUN and TURN servers given by name, from a frame the screen makes, are not looked up, and a TURN server over TCP given by its address is not connected to (no candidate either).
+- **The host** sees it as a built-in service: its methods, tools (their arguments as JSON Schema, rebuilt from a short list of keywords and checked before they cross), tile, summaries, lines of "Aujourd'hui" and deadlines (kept, read again every minute and after it stores something) reach it through its sandbox, with a time limit each (a method 30 s, a tool 60 s, a tile, a summary or a day's lines 10 s) and a size (a tool's result 256 KB, a tile 64 KB). Its tools never learn the folder they are called from. What a tool is sent stops at `CommunityService` until it passes: its schema, 1 KB at most as JSON (`MAX_TOOL_ARGUMENTS_BYTES`), and, unless the catalogue validates the service, the user's yes on a card showing it argument by argument (`main/community/runtime/consent.ts`), at each call. No answer, or no conversation to show the card in, is a no; a call with no arguments has nothing to ask. For the engines, it is « a community service »: its instructions, guides and deadlines count only once the catalogue validates it (its guides named after it, never in the place of Marianne's), and the titles and ids of its deadlines and day's lines, and a summary's text, are one line each, the description of a tool it doesn't validate is short and says so, and the engines are told to send community tools only what the request needs.
 - It runs while an open account has it among its services and doesn't switch it off: it starts at the unlock (`activate` then, rather than at Marianne's start) and stops at the lock. A crash or a hang stops it; Marianne starts it again once, then leaves it off with the reason, its tools withdrawn. Removing it (Réglages › Services) also removes it from this computer.
 
 `marianne-service:` serves its pages (`apps/desktop/src/main/community/runtime/scheme.ts`): marianne-service://<code>/ the service's `main.js` (its imports pointed at Marianne's modules), `view.js` and `view.css` (nothing else of its folder), marianne-service://<code>/~runtime/ Marianne's runtime (`apps/desktop/src/runtime`, built into `out/runtime` with the main process, listed when the app starts: the two pages, the worker, the modules of the screen's import map, the stylesheet and the fonts), marianne-service://<code>/~picture/… its declared hosts' pictures, and marianne-service://<code>/~media/… their videos' playlists and pieces. Only while the service is active, and each session its own code only.

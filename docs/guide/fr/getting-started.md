@@ -13,7 +13,7 @@ Rassurez-vous, vous ne taperez la phrase de passe qu’une fois par ordinateur. 
 
 Juste après la création, Marianne vous montre votre clé de secours. Si vous oubliez votre phrase de passe, c’est le seul moyen d’ouvrir l’archive. Copiez-la ou imprimez-la, et rangez-la à part. Sans phrase de passe ni clé de secours, personne ne peut rouvrir l’archive, pas même nous.
 
-Vous pouvez en refaire une dans Réglages › Phrase de passe et code. L’ancienne cesse alors aussitôt de marcher.
+Vous pouvez en refaire une dans Réglages › Phrase de passe et code, en redonnant votre phrase de passe. L’ancienne cesse alors aussitôt de marcher.
 
 ## Le code sur cet ordinateur
 

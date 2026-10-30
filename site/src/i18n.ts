@@ -152,7 +152,7 @@ const fr = {
     title: 'Les Services, code 3615.',
     lead: 'Des petits outils d’information publique, avec leurs codes, comme au temps du Minitel. Ils ne sont rattachés à aucun dossier, et chacun peut écrire le sien.',
     items: [
-      { code: 'METEO', name: 'Météo', text: 'le temps de votre commune, maintenant et sur 7 jours (Météo-France)' },
+      { code: 'METEO', name: 'Météo', text: 'le temps de votre commune, maintenant, heure par heure et sur 15 jours (Météo-France)' },
       { code: 'PEAGE', name: 'Péage en flux libre', text: 'les autoroutes sans barrière : vos trajets, l’échéance de 72 heures, le paiement officiel' },
       { code: 'INFOS', name: 'Les infos', text: 'l’actualité de vos sources, regroupée en sujets : qui en parle, comment chacun titre' },
       {
@@ -483,7 +483,7 @@ const en: typeof fr = {
     title: 'The Services, code 3615.',
     lead: 'Small public-information tools, with their codes, as in the days of the Minitel. They aren’t tied to a folder, and anyone can write one.',
     items: [
-      { code: 'METEO', name: 'Weather', text: 'the weather of your commune, now and over 7 days (Météo-France)' },
+      { code: 'METEO', name: 'Weather', text: 'the weather of your commune, now, hour by hour and over 15 days (Météo-France)' },
       { code: 'PEAGE', name: 'Free-flow tolls', text: 'barrier-free motorways: your trips, the 72-hour deadline, the official payment' },
       { code: 'INFOS', name: 'The news', text: 'the news of your sources, grouped into subjects: who covers it, how each one headlines it' },
       {
