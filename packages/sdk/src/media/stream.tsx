@@ -116,6 +116,12 @@ export function useStream(
         play()
       })
       hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => setPlaying(data.level))
+      // A playlist that doesn't say its levels' sizes (the Assemblée's): the one playing takes the picture's.
+      const sized = () => {
+        const height = v.videoHeight
+        if (height) setLevels((ls) => ls.map((l) => (l.index === hls.currentLevel && !l.height ? { ...l, height } : l)))
+      }
+      v.addEventListener('resize', sized)
       // Playing again: the counts start over, so that a long sitting survives several hiccups.
       hls.on(Hls.Events.FRAG_BUFFERED, () => {
         networkRetries = 0
@@ -142,6 +148,7 @@ export function useStream(
       hls.attachMedia(v)
       return () => {
         clearTimeout(reload)
+        v.removeEventListener('resize', sized)
         hlsRef.current = null
         hls.destroy()
       }

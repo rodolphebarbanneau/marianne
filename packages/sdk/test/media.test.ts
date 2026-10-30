@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { chapterEnd, chapterIndexAt, clipTitleAt, parentIndex, saidAt, spanAt } from '../src/media/chapters'
 import { startedPlaying } from '../src/media/handover'
 import { keyAction, ownsKeys, SKIP_MS } from '../src/media/keys'
+import { heightLabel } from '../src/media/menu'
 import { DEFAULT_PREFS, parsePrefs } from '../src/media/prefs'
 import { clockTime, delay, duration, nextSpeed, readTime, speedLabel, timeWriter, videoTime } from '../src/media/time'
 import { at, CLIP_MARGIN, cutsIn, msAt, segment, separatorMask, share, trackRange } from '../src/media/track'
@@ -303,5 +304,14 @@ describe('a player that starts playing', () => {
     expect(startedPlaying(c.media, 'https://v.example.fr/b.m3u8')).toBeNull()
     expect(c.shown()).toBeNull()
     expect(startedPlaying(undefined, 'https://v.example.fr/b.m3u8')).toBeNull()
+  })
+})
+
+describe('the quality menu', () => {
+  it('says a level by its height, or by its bitrate when its playlist doesn’t say its size, never « 0p »', () => {
+    expect(heightLabel({ height: 1080, bitrate: 5_000_000 })).toBe('1080p')
+    expect(heightLabel({ height: 0, bitrate: 2_500_000 })).toBe('2,5 Mb/s')
+    expect(heightLabel({ height: 0, bitrate: 800_000 })).toBe('0,8 Mb/s')
+    expect(heightLabel({ height: 0, bitrate: 0 })).toBe('inconnue')
   })
 })

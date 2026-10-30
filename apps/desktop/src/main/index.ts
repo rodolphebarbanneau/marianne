@@ -100,9 +100,11 @@ if (!app.requestSingleInstanceLock()) {
     session.setIdleMinutes(configStore.get().lockAfterMinutes)
     sync.hasKey = (id) => (id === 'legifrance' ? session.unlocked && keychain.hasApi('piste') : true)
 
-    // Our own pages may only write to the clipboard; the built-in browser has its own session.
-    electronSession.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'clipboard-sanitized-write'))
-    electronSession.defaultSession.setPermissionCheckHandler((_wc, permission) => permission === 'clipboard-sanitized-write')
+    // Our own pages may write to the clipboard and show a video full screen (the player's « plein
+    // écran »), nothing else; the built-in browser and community services have sessions of their own.
+    const ours = (permission: string) => permission === 'clipboard-sanitized-write' || permission === 'fullscreen'
+    electronSession.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => callback(ours(permission)))
+    electronSession.defaultSession.setPermissionCheckHandler((_wc, permission) => ours(permission))
 
     // Locked, nothing personal stays around: the browser's cookies, the opened copies.
     session.on('locked', (reason) => {
