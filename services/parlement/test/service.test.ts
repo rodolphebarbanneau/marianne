@@ -472,6 +472,17 @@ describe('the meetings live broadcasts show', () => {
     expect([...liveMeetings(meetings, [{ ...live, meeting: 'AN-XXXX' }], now).keys()]).toEqual(['AN-2130'])
   })
 
+  it('keeps, of two broadcasts that show one meeting, the one with its video, in either order', () => {
+    // The API's, its video not found, and the portal's: both the sitting under way.
+    const api = stream('AN-0900', 'an', 'Séance publique')
+    const portal = { ...stream('AN-2130', 'an', 'Séance publique'), video: '19655971_6ae44b8fc51ef', meeting: 'AN-2130' }
+    for (const streams of [
+      [api, portal],
+      [portal, api]
+    ])
+      expect(liveMeetings(meetings, streams, now)).toEqual(new Map([['AN-2130', portal]]))
+  })
+
   it('is, for a committee, the meeting named, or at the Sénat the latest of that committee', () => {
     expect([...liveMeetings(meetings, [stream('AN-COM', 'an', 'Commission des lois')], now).keys()]).toEqual(['AN-COM'])
     expect([...liveMeetings(meetings, [stream('5981999_y', 'se', 'Affaires sociales')], now).keys()]).toEqual(['SE-COM'])

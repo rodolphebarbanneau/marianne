@@ -482,6 +482,23 @@ describe('a live at the Assemblée', () => {
     expect(await liveStreams(over, false, ON_AIR)).toEqual([])
   })
 
+  it('gives the channel’s live to the broadcast on air, whichever the API lists first', async () => {
+    // Announced, for the meeting the portal's live names: the API is late, or the sitting started early.
+    const announced = { ...API_LIVE, isLive: false, reunionUid: 'RUANR5L17S2027IDS31006', debutDateTime: '2026-10-30 15:00:00' }
+    for (const diffusions of [
+      [announced, API_LIVE],
+      [API_LIVE, announced]
+    ]) {
+      const streams = await liveStreams(portalToday({ diffusions }), true, ON_AIR)
+      const onAir = streams.find((s) => s.id === API_LIVE.reunionUid)
+      const later = streams.find((s) => s.id === announced.reunionUid)
+      expect(onAir).toMatchObject({ live: true, video: LIVE_ID, meeting: 'RUANR5L17S2027IDS31006', hls: readSmil(LIVE_SMIL).hls })
+      expect([later?.live, later?.video]).toEqual([false, undefined])
+      // One hémicycle, one live.
+      expect(streams.filter((s) => s.live)).toHaveLength(1)
+    }
+  })
+
   it('finds the hémicycle’s live from the portal’s live page while the search doesn’t list it yet', async () => {
     const http = fakeHttp({
       'https://www.assemblee-nationale.fr/dyn/api/live/streams': '{"diffusions":[]}',
