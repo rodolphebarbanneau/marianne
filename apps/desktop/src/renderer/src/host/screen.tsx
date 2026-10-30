@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PROFILE_FIELDS, serviceCode, tabKey, type ProfileField, type ServiceState, type ServiceTab } from '@marianne/sdk'
-import { Loading, LoadingGate, ServiceFrameProvider, ServiceHostProvider, type ServiceFrame, type ServiceHost, type ServiceKey, type ShownPage } from '@marianne/sdk/view'
+import {
+  Loading,
+  LoadingGate,
+  ServiceFrameProvider,
+  ServiceHostProvider,
+  type ServiceFrame,
+  type ServiceHost,
+  type ServiceKey,
+  type ShownPage
+} from '@marianne/sdk/view'
 import { publicSource } from '@shared/public'
 import { accelOf, matches, SHORTCUTS } from '@shared/shortcuts'
 import type { ServiceFileReview } from '@shared/catalogue'

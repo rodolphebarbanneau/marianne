@@ -6,7 +6,16 @@ import './runtime.css'
 import { Component, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import type { ServiceTab } from '@marianne/sdk'
-import { Failure, Loading, LoadingGate, ServiceFrameProvider, ServiceHostProvider, type ServiceFrame, type ServiceHost, type ServiceKey } from '@marianne/sdk/view'
+import {
+  Failure,
+  Loading,
+  LoadingGate,
+  ServiceFrameProvider,
+  ServiceHostProvider,
+  type ServiceFrame,
+  type ServiceHost,
+  type ServiceKey
+} from '@marianne/sdk/view'
 import { readToFrame, type FrameHost, type FrameLook, type FrameMedia, type FromFrame, type ScreenBridge } from '../shared/community'
 import { removeConnections } from './isolate'
 
