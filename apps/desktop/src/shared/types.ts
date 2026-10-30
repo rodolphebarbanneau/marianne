@@ -1,4 +1,4 @@
-import type { DomainId, ServiceTile } from '@marianne/sdk'
+import type { DomainId, ServiceTaskTemplate, ServiceTile, TaskEvery } from '@marianne/sdk'
 
 /**
  * Types shared by the main process and the screens. Identifiers are in English; everything the
@@ -8,7 +8,7 @@ import type { DomainId, ServiceTile } from '@marianne/sdk'
 export type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? (T[K] extends unknown[] ? T[K] : DeepPartial<T[K]>) : T[K] }
 
 /** The ten domains of public life: part of the services' contract, so listed once, in the SDK. */
-export type { DomainId }
+export type { DomainId, ServiceTaskTemplate, TaskEvery }
 
 // ---------------------------------------------------------------- engines
 
@@ -242,8 +242,10 @@ export interface ChatMessage {
   engine?: EngineId
   model?: string
   ms?: number
-  /** System messages: "conversation résumée le…". */
-  note?: 'compacted'
+  /** System messages: "conversation résumée le…", or the line that opens a planned task's run. */
+  note?: 'compacted' | 'task'
+  /** note 'task': how the run ended, once it has. */
+  outcome?: TaskOutcome
 }
 
 /** One folder = one conversation, a unit of work like a branch and its pull request. */
@@ -271,7 +273,67 @@ export interface Folder {
   woke: boolean
   /** Taken out of "Classés" by hand: not settled automatically again until a new message. */
   keepOpen: boolean
+  /** The planned task that comes back in it. */
+  task?: string
 }
+
+// ---------------------------------------------------------------- planned tasks
+
+/** marianne: she does the work on the task's day · remind: the folder only comes back. */
+export type TaskRunner = 'marianne' | 'remind'
+/** nothing: nothing to tell · found: something to see · waiting: she needs the user · failed · done: a reminder given. */
+export type TaskOutcome = 'nothing' | 'found' | 'waiting' | 'failed' | 'done'
+
+export interface TaskRun {
+  at: string
+  /** Its day, when it ran later than planned (« rattrapée »). */
+  due?: string
+  outcome: TaskOutcome
+  /** French, one line. */
+  text?: string
+}
+
+export type TaskOrigin = { kind: 'user' } | { kind: 'agent' } | { kind: 'service'; service: string; template: string }
+
+/** A folder that comes back: in the archive, its folder holds the conversation. */
+export interface PlannedTask {
+  id: string
+  folderId: string
+  domain: DomainId | ''
+  /** French, short; it goes in notifications, so never an identifier. */
+  title: string
+  runner: TaskRunner
+  origin: TaskOrigin
+  every: TaskEvery
+  /** French: "tous les 2 jours". */
+  everyLabel: string
+  /** What it is about, as the user knows it. */
+  entity?: { id: string; label: string }
+  /** What Marianne is asked at each run. */
+  instruction?: string
+  /** The hosts reachable without asking, for this task's runs only. */
+  sites: string[]
+  /** French, what the sheet said she may do. */
+  allows?: string[]
+  /** French, what she will never do. */
+  never?: string
+  /** French: why this rhythm. */
+  why?: string
+  notify: 'found' | 'always'
+  /** Its next day, YYYY-MM-DD: it runs at the first opening on or after it. */
+  next: string
+  on: boolean
+  runs: TaskRun[]
+}
+
+/** A task a service proposes, with the service it comes from. */
+export interface TaskTemplate extends ServiceTaskTemplate {
+  service: string
+}
+
+export type CreateTask =
+  | { kind: 'template'; service: string; template: string; rhythm: number; notify: PlannedTask['notify'] }
+  | { kind: 'reminder'; title: string; domain: DomainId | ''; every: TaskEvery }
 
 export type FolderStatus = 'approval' | 'question' | 'working' | 'failed' | 'done' | 'woke' | 'idle'
 
@@ -288,6 +350,8 @@ export interface FolderSummary {
   /** "étape 3 sur 5 · avant le 28/05" */
   meta: string
   unread: boolean
+  /** The planned task that comes back in it. */
+  task?: string
 }
 
 export interface FolderView {

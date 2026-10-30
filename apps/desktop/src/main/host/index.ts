@@ -18,7 +18,7 @@ import type { HomeCommune, ServiceModule, ServiceRuntime } from '@marianne/sdk/m
 import type { ServiceFileReview } from '../../shared/catalogue'
 import type { TodayEvent } from '../../shared/public'
 import { accelOf } from '../../shared/shortcuts'
-import type { TileState } from '../../shared/types'
+import type { TaskTemplate, TileState } from '../../shared/types'
 import { accounts } from '../account'
 import { approvals } from '../approvals'
 import { verdictOf, type CatalogueStore } from '../community/catalogue'
@@ -689,6 +689,22 @@ class ServiceHost extends EventEmitter {
         return (runtime!.deadlines?.() ?? []).filter((d) => manifest.domains.includes(d.domain)).map((d) => ({ ...d, service: manifest.id }))
       } catch (err) {
         log.warn(`Deadlines of 3615 ${manifest.id.toUpperCase()}:`, (err as Error).message)
+        return []
+      }
+    })
+  }
+
+  /**
+   * The tasks the built-in services that are on propose. Not the community's: a task's instruction
+   * feeds the engine, and its sites are reached without asking.
+   */
+  taskTemplates(): TaskTemplate[] {
+    return this.active().flatMap(({ manifest, runtime, builtIn }) => {
+      if (!builtIn) return []
+      try {
+        return (runtime!.tasks?.() ?? []).filter((t) => manifest.domains.includes(t.domain)).map((t) => ({ ...t, service: manifest.id }))
+      } catch (err) {
+        log.warn(`Tasks of 3615 ${manifest.id.toUpperCase()}:`, (err as Error).message)
         return []
       }
     })

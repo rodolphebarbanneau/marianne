@@ -10,6 +10,7 @@ import { content } from '../content'
 import { keychain, siteOf } from '../keychain'
 import { profile } from '../profile/store'
 import { session } from '../session'
+import { tasks } from '../tasks'
 import { callingFolder } from './folder'
 import { consequential, Consents } from './online'
 import { clip, DOMAIN_IDS, fold, plural, tool, TOKEN, ToolError, type ToolContext } from './tool'
@@ -55,7 +56,10 @@ const refusal = (decision: Decision, nothing: string) =>
 /** Consent to go to the site of `url` from this folder: once per folder, or once per site, as the user chose. */
 async function online(folderId: string, url: string, reason: string): Promise<void> {
   const site = siteOf(url)
-  const ask = accounts.settings().browser.askOnline
+  // A planned task's run has the sites the user gave it, and for anything else asks site by site:
+  // « any site of this folder » was said of a conversation, not of a run nobody watches.
+  if (tasks.allows(folderId, site)) return
+  const ask = tasks.runningIn(folderId) ? 'site' : accounts.settings().browser.askOnline
   if (consents.has(folderId, site, ask)) return
   const decision = await approvals.request(folderId, {
     kind: 'online',

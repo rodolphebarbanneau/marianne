@@ -1,5 +1,5 @@
 import { DOMAIN_IDS } from '@marianne/sdk'
-import type { Attachment, ChatMessage, SkillInfo, WebAccess } from '../../shared/types'
+import type { Attachment, ChatMessage, PlannedTask, SkillInfo, WebAccess } from '../../shared/types'
 
 /** The names of Marianne's MCP tools the prompt refers to (src/main/tools). */
 const TOOLS = {
@@ -22,6 +22,8 @@ const TOOLS = {
   signIn: 'sign_in',
   handOver: 'hand_over',
   taskProgress: 'task_progress',
+  taskPropose: 'task_propose',
+  taskReport: 'task_report',
   readForm: 'read_form',
   fillForm: 'fill_form',
   readDocument: 'read_document',
@@ -97,6 +99,10 @@ Always answer the user in French, whatever language these instructions, the tool
 - Be clear and concrete, explain acronyms, get to the point: the answer first, the details after.
 - Sober Markdown: short headings, lists, tables to compare. No emoji.
 
+# Planned tasks
+
+When the user wants something checked or remembered on a rhythm, propose it with ${TOOLS.taskPropose}: the folder then comes back on its day, with you doing the work or with a reminder. A task has a day and no time of day: it needs Marianne open and the archive unlocked, so it runs at the first opening on or after its day, and it can't protect someone who doesn't open the app. Say so when that matters. A task can only look and report.
+
 # Skills
 
 Before handling a request of one of these kinds, read the matching guide with the ${TOOLS.skill} tool:
@@ -126,6 +132,8 @@ export function recap(messages: ChatMessage[]): string {
   const lines: string[] = []
   let total = 0
   for (const m of [...messages].reverse()) {
+    // The lines that open a task's runs are for the user's eyes.
+    if (m.note === 'task') continue
     const text = m.parts
       .map((p) =>
         p.type === 'text'
@@ -146,6 +154,27 @@ export function recap(messages: ChatMessage[]): string {
     lines.unshift(line)
   }
   return lines.length ? `<history>\nThe conversation so far (before a handover):\n\n${lines.join('\n\n')}\n</history>\n\n` : ''
+}
+
+/**
+ * What a planned task's run asks: the user's instruction, in a frame that says nobody may be
+ * watching, what a run may do, and how it ends. The task's own words stay inside the frame.
+ */
+export function taskMessage(task: PlannedTask): string {
+  const entity = task.entity ? `\nIt is about: ${task.entity.id}.` : ''
+  const sites = task.sites.length
+    ? `You may open ${task.sites.join(', ')} without asking, for this run only; any other site needs the user's yes on a card.`
+    : "It has no site of its own: any site needs the user's yes on a card."
+  return `<planned_task title="${attr(task.title)}">
+${task.instruction ?? ''}${entity}
+</planned_task>
+
+This turn was started by a task the user planned, not by a message: they may not be watching. Do what the task says and nothing else.
+- ${sites}
+- A run looks and reports. Never pay, sign, send or change anything for the user, and never start another task; if something needs them, leave it for them.
+- If a site asks for a code or a challenge, use hand_over once, then report "waiting".
+- Finish with ${TOOLS.taskReport}: "nothing" when there is nothing to bring them, "found" when there is, "waiting" when you need them, "failed" when you could not do it.
+- Keep your last message short, in French. When there is nothing to report, one line.`
 }
 
 /**

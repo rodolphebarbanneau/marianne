@@ -409,6 +409,53 @@ export interface ServiceDeadline {
   params?: Record<string, string | number>
 }
 
+/** How often something comes back: every `n` days, weeks, months or years. */
+export interface TaskEvery {
+  unit: 'day' | 'week' | 'month' | 'year'
+  n: number
+}
+
+/** A rhythm a service offers for a task: what the user chooses from. */
+export interface ServiceTaskRhythm {
+  every: TaskEvery
+  /** French, lowercase: "tous les 2 jours". */
+  label: string
+  /** French, one line: what this rhythm means here. */
+  note?: string
+  /** The note warns: too spaced for what the task is for. */
+  warn?: boolean
+}
+
+/**
+ * A planned task a service proposes, for what it covers (a vehicle): data, which Marianne lays out
+ * on the sheet the user reads before saying yes. A service proposes and never schedules: nothing
+ * runs without that yes, and a task can only look and report.
+ */
+export interface ServiceTaskTemplate {
+  /** Stable within the service, for one entity: "tolls:<vehicle id>". */
+  id: string
+  domain: DomainId
+  /** French, short: "Péages en flux libre". */
+  title: string
+  /** French: what it checks, "les passages en flux libre non payés". */
+  checks: string
+  /** French, one line: where. */
+  detail?: string
+  /** What it is about: an entity's id and how the user knows it. */
+  entity?: { id: string; label: string }
+  /** The rhythms offered, the usual one at `rhythm`. */
+  rhythms: ServiceTaskRhythm[]
+  rhythm: number
+  /** French, one line each: what Marianne may do at each run. */
+  allows: string[]
+  /** French: what she will never do. */
+  never: string
+  /** What Marianne is asked at each run, in English. */
+  instruction: string
+  /** The hosts she may open at each run without asking again, for this task only. */
+  sites: string[]
+}
+
 /**
  * A line of "Aujourd'hui" on the Actualités page that a service contributes: a sitting of the
  * Assemblée, a weather alert… Opening it opens the service with `params`.

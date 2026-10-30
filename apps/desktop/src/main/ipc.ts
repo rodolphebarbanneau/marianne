@@ -29,6 +29,9 @@ import { content } from './content'
 import { engineEvents, engineLights, engineStatus, forgetTranscripts, listModels, listSkills, openLogin } from './engines'
 import { exportAll } from './export'
 import { folders } from './folders'
+import { everyLabel } from '../shared/tasks'
+import type { CreateTask, PlannedTask, TaskEvery } from '../shared/types'
+import { tasks } from './tasks'
 import { keychain } from './keychain'
 import { searchAddress, searchCommunes, lookupSiren } from './lookup'
 import { openedArchives } from './opened-archives'
@@ -198,6 +201,7 @@ export function registerIpc(): void {
   handle('snoozeFolder', (id: string, until: string) => folders.snooze(id, until))
   handle('settleFolder', (id: string, settled: boolean) => folders.settle(id, settled))
   handle('deleteFolder', (id: string) => {
+    tasks.forgetFolder(id)
     chat.cancel(id)
     folders.remove(id)
     forgetTranscripts(id)
@@ -230,6 +234,50 @@ export function registerIpc(): void {
   handle('updateProfile', (op: ProfileOp) => profile.apply(op))
   handle('tokenValues', () => profile.tokens().map((t) => ({ token: t.token, label: t.label, value: display(t) })))
   handle('getDeadlines', (days?: number) => deadlines(new Date(), days ?? 400))
+
+  // ---------- planned tasks ----------
+  handle('listTasks', () => tasks.list())
+  handle('taskTemplates', () => services.taskTemplates())
+  handle('createTask', (request: CreateTask) => {
+    if (request.kind === 'reminder') {
+      const title = request.title.trim()
+      if (!title) throw new Error('Dites ce qui doit revenir.')
+      return tasks.create({
+        title,
+        domain: request.domain,
+        runner: 'remind',
+        origin: { kind: 'user' },
+        every: request.every,
+        everyLabel: everyLabel(request.every)
+      })
+    }
+    // The instruction and the sites come from the service here, never from the window.
+    const template = services.taskTemplates().find((t) => t.service === request.service && t.id === request.template)
+    const rhythm = template?.rhythms[request.rhythm]
+    if (!template || !rhythm) throw new Error('Cette tâche n’est plus proposée.')
+    return tasks.create({
+      title: template.title,
+      domain: template.domain,
+      runner: 'marianne',
+      origin: { kind: 'service', service: template.service, template: template.id },
+      every: rhythm.every,
+      everyLabel: rhythm.label,
+      entity: template.entity,
+      instruction: template.instruction,
+      sites: template.sites,
+      allows: template.allows,
+      never: template.never,
+      why: rhythm.note,
+      notify: request.notify
+    })
+  })
+  handle('updateTask', (id: string, patch: { every?: TaskEvery; notify?: PlannedTask['notify'] }) => {
+    const every = patch.every ? { every: patch.every, everyLabel: everyLabel(patch.every) } : {}
+    void tasks.update(id, { ...every, ...(patch.notify ? { notify: patch.notify } : {}) })
+  })
+  handle('setTaskOn', (id: string, on: boolean) => void tasks.setOn(id, on))
+  handle('runTask', (id: string) => tasks.runNow(id))
+  handle('removeTask', (id: string) => tasks.remove(id))
   handle('listProcedures', () => content.get().procedures)
   handle('listDocuments', () => documents.list())
   handle('addDocuments', (options: { domain: DomainId; folderId?: string }) => addFiles('Ajouter des pièces à l’archive', options.domain, options.folderId))
@@ -363,6 +411,9 @@ export function registerIpc(): void {
     if (JSON.stringify(next.sources) !== JSON.stringify(prev.sources)) broadcast('services', services.states())
   })
   folders.on('list', pushFolders)
+  tasks.on('change', () => {
+    if (session.unlocked) broadcast('tasks', tasks.list())
+  })
   folders.on('folder', (id: string) => {
     const view = chat.view(id)
     if (view) broadcast('folder', view)

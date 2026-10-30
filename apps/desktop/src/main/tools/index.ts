@@ -12,12 +12,14 @@ import { legifranceTools } from './legifrance'
 import { openfiscaTools } from './openfisca'
 import { profileTools } from './profile'
 import { servicePublicTools } from './service-public'
+import { taskTools } from './tasks'
 import type { Tool } from './tool'
 
 /** Marianne's own tools; the services add theirs (serviceTools). */
 export const ALL_TOOLS: Tool[] = [
   ...profileTools,
   ...folderTools,
+  ...taskTools,
   ...browserTools,
   ...servicePublicTools,
   ...labourTools,

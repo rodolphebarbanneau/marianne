@@ -13,6 +13,7 @@ import type {
   ServiceManifest,
   ServiceMethods,
   ServiceSummary,
+  ServiceTaskTemplate,
   ServiceTile,
   SyncStatus,
   TodayItem
@@ -187,6 +188,11 @@ export interface ServiceRuntime<M extends ServiceMethods = ServiceMethods> {
   summary?(domain: DomainId): Promise<ServiceSummary | null>
   /** The deadlines it knows of, from what it keeps (ctx.storage): read often, so no network. */
   deadlines?(): ServiceDeadline[]
+  /**
+   * The planned tasks it proposes, from what it keeps: read when the Démarches pages show, so no
+   * network. Built-in services only for now: a task's instruction feeds the engine.
+   */
+  tasks?(): ServiceTaskTemplate[]
   /**
    * Its tile on the Services page, once the user pins it: data that Marianne lays out (see
    * ServiceTile). Called when the page shows and every `tile.everyMinutes` while it does; it reads

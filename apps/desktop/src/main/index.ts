@@ -21,6 +21,7 @@ import { ensureDirs, paths } from './paths'
 import { sync } from './public/sync'
 import { screens, services } from './host'
 import { session } from './session'
+import { tasks } from './tasks'
 import { startBackground } from './tray'
 import { updater } from './updater'
 import { isMac, isWin, loadShellEnv } from './util'
@@ -123,6 +124,7 @@ if (!app.requestSingleInstanceLock()) {
     for (const file of serviceFilesIn(process.argv.slice(1), process.cwd())) openedServiceFiles.open(file)
     openedServiceFiles.ready()
     startBackground()
+    tasks.start()
 
     configStore.on('change', (next: DeviceConfig, prev: DeviceConfig) => {
       // Service-Public turned on, or pointed at another URL: index it now.

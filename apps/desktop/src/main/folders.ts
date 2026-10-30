@@ -40,7 +40,7 @@ export function statusOf(folder: Folder, messages: ChatMessage[], running: boole
 
 /** Whether a folder should be settled now, by the automatic rule. */
 export function shouldAutoSettle(folder: Folder, status: FolderStatus, at = Date.now()): boolean {
-  if (folder.settledAt || folder.pinned || folder.keepOpen || folder.procedure || folder.snoozedUntil) return false
+  if (folder.settledAt || folder.pinned || folder.keepOpen || folder.procedure || folder.snoozedUntil || folder.task) return false
   if (status === 'working' || status === 'approval') return false
   return at - Date.parse(folder.updatedAt) >= AUTO_SETTLE_DAYS * DAY
 }
@@ -168,7 +168,8 @@ class Folders extends EventEmitter {
         status,
         updatedAt: f.updatedAt,
         meta: this.describe(f),
-        unread: !f.seen
+        unread: !f.seen,
+        task: f.task
       })
     }
     return out.sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt.localeCompare(a.updatedAt))

@@ -1,15 +1,28 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import { redact } from '@marianne/profile'
-import type { ApprovalPart, ChatMessage, EngineId, Folder, ProgressPart, SendRequest, SetupPart, TextPart, ToolPart } from '../shared/types'
+import type {
+  ApprovalPart,
+  ChatMessage,
+  EngineId,
+  Folder,
+  PlannedTask,
+  ProgressPart,
+  SendRequest,
+  SetupPart,
+  TaskOutcome,
+  TextPart,
+  ToolPart
+} from '../shared/types'
 import { approvals } from './approvals'
 import { configStore } from './config'
 import { content } from './content'
-import { listSkills, runTurn, systemPrompt, userMessage, type EngineEvent } from './engines'
+import { listSkills, runTurn, systemPrompt, taskMessage, userMessage, type EngineEvent } from './engines'
 import { folders, titleFrom } from './folders'
 import { log } from './log'
 import { profile } from './profile/store'
 import { services } from './host'
+import { tasks, type TaskTurnEnd } from './tasks'
 import { legifranceReady } from './tools'
 
 /**
@@ -20,6 +33,8 @@ import { legifranceReady } from './tools'
 
 const UPDATE_EVERY_MS = 60
 const TURN_MINUTES = 30
+/** A run looks and reports: if it takes longer, something is wrong (time waiting for the user doesn't count). */
+const TASK_MINUTES = 10
 
 /** Applies engine events to the assistant message being written. */
 class AnswerBuilder {
@@ -83,6 +98,9 @@ class Chat extends EventEmitter {
   constructor() {
     super()
     folders.isRunning = (id) => this.active.has(id)
+    tasks.isBusy = () => this.active.size > 0
+    tasks.runTurn = (task, line) => this.runTask(task, line)
+    tasks.addLine = (folderId, text, outcome) => void this.addTaskLine(folderId, text, outcome)
     approvals.canShow = (id) => this.writing.has(id)
     approvals.on('part', (id: string, part: ApprovalPart | SetupPart) => {
       const w = this.writing.get(id)
@@ -172,12 +190,48 @@ class Chat extends EventEmitter {
     this.active.get(id)?.abort()
   }
 
+  /** The line that opens a run in its folder's conversation. */
+  private addTaskLine(folderId: string, text: string, outcome?: TaskOutcome): ChatMessage[] {
+    const messages = folders.messages(folderId)
+    messages.push({ id: randomUUID(), role: 'system', at: new Date().toISOString(), parts: [{ type: 'text', text }], note: 'task', outcome })
+    folders.saveMessages(folderId, messages)
+    return messages
+  }
+
+  /** A planned task's turn: no user message, the task's instruction instead; resolves when it is over. */
+  private async runTask(task: PlannedTask, line: string): Promise<TaskTurnEnd> {
+    const folder = folders.get(task.folderId)
+    if (!folder) throw new Error('Dossier introuvable.')
+    if (this.active.has(folder.id)) throw new Error('Marianne répond déjà dans ce dossier.')
+    const messages = this.addTaskLine(folder.id, line)
+    const opening = messages[messages.length - 1]
+    const answer = await this.turn(folder, messages, opening, { text: taskMessage(task), timeoutMs: TASK_MINUTES * 60_000 })
+    const reported = tasks.takeReport()
+    // A card left unanswered: she needed the user, whatever else she wrote.
+    const unanswered = answer.parts.some((p) => p.type === 'approval' && p.status === 'expired')
+    const end: TaskTurnEnd =
+      answer.status === 'error'
+        ? { outcome: 'failed', text: answer.error }
+        : answer.status === 'cancelled'
+          ? { outcome: 'failed', text: 'vérification interrompue' }
+          : unanswered
+            ? { outcome: 'waiting', text: reported?.text ?? 'une question attend votre réponse' }
+            : (reported ?? { outcome: 'found', text: 'la vérification n’a pas conclu : à relire' })
+    opening.outcome = end.outcome
+    try {
+      folders.saveMessages(folder.id, messages)
+    } catch (err) {
+      log.warn('Could not save the run of', folder.id, (err as Error).message)
+    }
+    return end
+  }
+
   /** Stop every turn: the session is locking. */
   cancelAll(): void {
     for (const controller of this.active.values()) controller.abort()
   }
 
-  private async turn(folder: Folder, messages: ChatMessage[], user: ChatMessage): Promise<void> {
+  private async turn(folder: Folder, messages: ChatMessage[], user: ChatMessage, run?: { text: string; timeoutMs: number }): Promise<ChatMessage> {
     const engine = folder.engine
     const cfg = configStore.get()
     const answer: ChatMessage = {
@@ -209,7 +263,7 @@ class Chat extends EventEmitter {
     const attempt = async (resume: boolean) => {
       const earlier = messages.slice(0, messages.indexOf(user))
       const attachments = user.parts.filter((p) => p.type === 'page' || p.type === 'document')
-      const text = user.parts.map((p) => (p.type === 'text' ? p.text : '')).join('\n')
+      const text = run?.text ?? user.parts.map((p) => (p.type === 'text' ? p.text : '')).join('\n')
       const tokens = profile.tokens()
       // Claude names its session up front; the others give theirs in their first event.
       const sessionId = resume ? w.folder.sessions[engine] : engine === 'claude' ? randomUUID() : undefined
@@ -229,7 +283,7 @@ class Chat extends EventEmitter {
         resume,
         web: cfg.web,
         signal: controller.signal,
-        timeoutMs: TURN_MINUTES * 60_000,
+        timeoutMs: run?.timeoutMs ?? TURN_MINUTES * 60_000,
         waitedMs: () => approvals.waitedMs(folder.id),
         onEvent: (e) => {
           if (e.type === 'session') w.folder = folders.update(folder.id, { sessions: { ...w.folder.sessions, [engine]: e.id } })
@@ -273,6 +327,7 @@ class Chat extends EventEmitter {
       this.emit('folder', { folder: w.folder, messages, running: false })
       log.info(`Turn ${folder.id} ${answer.status} in ${answer.ms}ms (${engine}/${answer.model})`)
     }
+    return answer
   }
 }
 
