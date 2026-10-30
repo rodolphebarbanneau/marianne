@@ -203,8 +203,40 @@ function feedMedia(n: Node, title: string): MediaRef | undefined {
   return undefined
 }
 
-/** The items of an RSS 2.0, RSS 1.0 (RDF) or Atom feed, in the feed's order. */
-export function parseFeed(xml: string, source: string, now = new Date()): FeedItem[] {
+/** What a news sitemap says of an article: when it was published, and its picture. */
+export interface SitemapEntry {
+  published: string
+  image?: string
+  caption?: string
+}
+
+/**
+ * A news sitemap (sitemaps.org, with Google News' publication dates and image entries), by the
+ * article's address as a feed links it (trackers aside). Entries without a date are left out.
+ */
+export function parseSitemap(xml: string): Map<string, SitemapEntry> {
+  const doc = parser.parse(xml) as Node
+  const urls = ((doc.urlset as Node | undefined)?.url ?? []) as unknown
+  const out = new Map<string, SitemapEntry>()
+  for (const u of (Array.isArray(urls) ? urls : [urls]) as Node[]) {
+    if (!u || typeof u !== 'object') continue
+    const loc = cleanUrl(text(u.loc))
+    const news = u['news:news'] as Node | undefined
+    const published = date(news?.['news:publication_date'], u.lastmod)
+    if (!loc || !published) continue
+    const image = (Array.isArray(u['image:image']) ? u['image:image'][0] : u['image:image']) as Node | undefined
+    const src = cleanUrl(text(image?.['image:loc']))
+    const caption = plainText(text(image?.['image:caption']), 200)
+    out.set(loc, { published, ...(src ? { image: src } : {}), ...(caption ? { caption } : {}) })
+  }
+  return out
+}
+
+/**
+ * The items of an RSS 2.0, RSS 1.0 (RDF) or Atom feed, in the feed's order. `dates`: the source's
+ * news sitemap, for the items the feed leaves undated (their time, their picture).
+ */
+export function parseFeed(xml: string, source: string, now = new Date(), dates?: Map<string, SitemapEntry>): FeedItem[] {
   const doc = parser.parse(xml) as Node
   const channel = (doc.rss as Node | undefined)?.channel as Node | undefined
   const atom = doc.feed as Node | undefined
@@ -221,7 +253,8 @@ export function parseFeed(xml: string, source: string, now = new Date()): FeedIt
     const id = itemId(source, guid || url)
     const summary = plainText(text(n.description ?? n.summary ?? n['media:description'] ?? n.content))
     const cat = category(n.category ?? n['dc:subject'])
-    const media = feedMedia(n, title)
+    const listed = dates?.get(url)
+    const media = feedMedia(n, title) ?? (listed?.image ? { url: listed.image, kind: 'photo' as const, alt: listed.caption ?? title } : undefined)
     // The article's own text, when the feed gives it: the start is read from it, not from the page.
     const encoded = text(n['content:encoded'])
     const start = encoded ? readerStart(/<p[\s>]/i.test(encoded) ? encoded : `<p>${encoded}</p>`, summary) : ''
@@ -230,7 +263,7 @@ export function parseFeed(xml: string, source: string, now = new Date()): FeedIt
       source,
       title,
       url,
-      published: date(n.pubDate, n['dc:date'], n.published, n.updated) || undated(id, url, now),
+      published: date(n.pubDate, n['dc:date'], n.published, n.updated) || listed?.published || undated(id, url, now),
       ...(cat ? { category: cat } : {}),
       ...(summary && summary !== title ? { summary } : {}),
       ...(media ? { media } : {}),
@@ -247,10 +280,37 @@ interface Feed {
   source: string
   section?: string
   url: string
+  /** The source's news sitemap, when its feeds give no dates. */
+  dates?: string
 }
 
 export const catalogueFeeds = (catalogue: NewsSource[]): Feed[] =>
-  catalogue.flatMap((s) => (s.sections?.length ? s.sections.map((x) => ({ source: s.id, section: x.id, url: x.feed })) : [{ source: s.id, url: s.feed }]))
+  catalogue.flatMap((s) =>
+    (s.sections?.length ? s.sections.map((x) => ({ source: s.id, section: x.id, url: x.feed })) : [{ source: s.id, url: s.feed }]).map((f) =>
+      s.dates ? { ...f, dates: s.dates } : f
+    )
+  )
+
+const sitemaps = new Map<string, { at: number; entries: Map<string, SitemapEntry> }>()
+const pendingSitemaps = new Map<string, Promise<Map<string, SitemapEntry>>>()
+
+/** A source's news sitemap, from the cache when fresh; one request for all of its feeds. */
+function sitemapEntries(url: string): Promise<Map<string, SitemapEntry>> {
+  const hit = sitemaps.get(url)
+  if (hit && Date.now() - hit.at < FEED_TTL) return Promise.resolve(hit.entries)
+  let job = pendingSitemaps.get(url)
+  if (!job) {
+    job = fetchAsBrowser(url, { accept: 'application/xml, text/xml;q=0.9, */*;q=0.5', maxBytes: FEED_BYTES })
+      .then((xml) => {
+        const entries = parseSitemap(xml)
+        sitemaps.set(url, { at: Date.now(), entries })
+        return entries
+      })
+      .finally(() => pendingSitemaps.delete(url))
+    pendingSitemaps.set(url, job)
+  }
+  return job
+}
 
 const feeds = new Map<string, { at: number; items: FeedItem[] }>()
 const pending = new Map<string, Promise<FeedItem[]>>()
@@ -262,12 +322,22 @@ async function feedItems(feed: Feed): Promise<FeedItem[]> {
   if (hit && Date.now() - hit.at < FEED_TTL) return hit.items
   let job = pending.get(key)
   if (!job) {
-    job = fetchAsBrowser(feed.url, {
-      accept: 'application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5',
-      maxBytes: FEED_BYTES
-    })
-      .then((xml) => {
-        const items = parseFeed(xml, feed.source)
+    // An undated feed is read with its sitemap; without the sitemap (it failed), its items are dated as before.
+    const dates = feed.dates
+      ? sitemapEntries(feed.dates).catch((err: unknown) => {
+          log.warn(`News sitemap ${feed.source} failed:`, (err as Error).message)
+          return undefined
+        })
+      : Promise.resolve(undefined)
+    job = Promise.all([
+      fetchAsBrowser(feed.url, {
+        accept: 'application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5',
+        maxBytes: FEED_BYTES
+      }),
+      dates
+    ])
+      .then(([xml, entries]) => {
+        const items = parseFeed(xml, feed.source, new Date(), entries)
         feeds.set(key, { at: Date.now(), items })
         return items
       })
