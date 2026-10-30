@@ -16,7 +16,7 @@ const rect = (el: Element) => {
 
 /** The box, short of the mini-player when it is over it: the screen drawn over the window would hide it. */
 const placeOf = (el: HTMLElement) => {
-  const mini = document.querySelector('.mini-area > .mini')
+  const mini = document.querySelector('.mini-area > .mp-mini')
   return roomBeside(rect(el), mini ? rect(mini) : null)
 }
 

@@ -100,21 +100,21 @@ export function Track({ range, at: pos, buffered, total, live, chapters, gaps, k
     >
       <div className="mp-track" ref={track}>
         <span className="mp-cells" style={{ '--sep': mask } as CSSProperties}>
-          <i className="base" />
-          <Fill range={range} from={0} to={Math.max(buffered, pos)} kind="buf" />
-          <Fill range={range} from={0} to={pos} kind="played" />
+          <i className="mp-cell-base" />
+          <Fill range={range} from={0} to={Math.max(buffered, pos)} kind="mp-cell-buf" />
+          <Fill range={range} from={0} to={pos} kind="mp-cell-played" />
           {gaps.map((g) => (
-            <Fill key={`${g.from}-${g.to}`} range={range} from={g.from} to={g.to} kind="susp" />
+            <Fill key={`${g.from}-${g.to}`} range={range} from={g.from} to={g.to} kind="mp-cell-susp" />
           ))}
           {clip && (
             <>
-              <Fill range={range} from={range.lo} to={clip.from} kind="shade" />
-              <Fill range={range} from={clip.to} to={range.hi} kind="shade" />
-              <Fill range={range} from={clip.from} to={clip.to} kind="clip" />
+              <Fill range={range} from={range.lo} to={clip.from} kind="mp-cell-shade" />
+              <Fill range={range} from={clip.to} to={range.hi} kind="mp-cell-shade" />
+              <Fill range={range} from={clip.from} to={clip.to} kind="mp-cell-clip" />
             </>
           )}
-          {lit >= 0 && <Fill range={range} from={chapters[lit].at} to={chapterEnd(chapters, lit, range.hi)} kind="hov" />}
-          {live && !cutting && <i className="live" style={{ left: 'calc(100% - 10px)', right: 0 }} />}
+          {lit >= 0 && <Fill range={range} from={chapters[lit].at} to={chapterEnd(chapters, lit, range.hi)} kind="mp-cell-hov" />}
+          {live && !cutting && <i className="mp-cell-live" style={{ left: 'calc(100% - 10px)', right: 0 }} />}
         </span>
         {!cutting &&
           kept.map((k) => {
@@ -124,9 +124,9 @@ export function Track({ range, at: pos, buffered, total, live, chapters, gaps, k
         {hover !== null && !cutting && !quiet && (
           <>
             <span className="mp-tip" style={{ left: `clamp(120px, ${at(range, hover)}, calc(100% - 120px))` }}>
-              <span className="t">{when(hover)}</span>
+              <span className="mp-tip-at">{when(hover)}</span>
               {(said?.subject || said?.speaker) && (
-                <span className="c">
+                <span className="mp-tip-said">
                   {said.subject && <b>{said.subject.title}</b>}
                   {said.speaker}
                 </span>
@@ -157,11 +157,11 @@ export function Track({ range, at: pos, buffered, total, live, chapters, gaps, k
 export function MiniTrack({ at: pos, total, live }: { at: number; total: number; live?: boolean }) {
   const range = { lo: 0, hi: Math.max(1, total) }
   return (
-    <div className="mini-track">
+    <div className="mp-mini-track">
       <span className="mp-cells">
-        <i className="base" />
-        <Fill range={range} from={0} to={pos} kind="played" />
-        {live && <i className="live" style={{ left: 'calc(100% - 6px)', right: 0 }} />}
+        <i className="mp-cell-base" />
+        <Fill range={range} from={0} to={pos} kind="mp-cell-played" />
+        {live && <i className="mp-cell-live" style={{ left: 'calc(100% - 6px)', right: 0 }} />}
       </span>
     </div>
   )

@@ -29,7 +29,7 @@ function Bound({
     else onChange(v)
   }
   return (
-    <span className="b">
+    <span className="mp-bound">
       <span className="dim">{label}</span>
       <input
         value={text}
@@ -88,17 +88,17 @@ export function ClipStrip(p: ClipStripProps) {
         onChange={(to) => p.onChange({ ...clip, to: Math.max(to, clip.from + 1000) })}
         onHere={p.onToHere}
       />
-      <span className="len">durée {duration(clip.to - clip.from)}</span>
+      <span className="mp-len">durée {duration(clip.to - clip.from)}</span>
       <span>
         <button className="btn small" disabled={!p.onSnap} onClick={p.onSnap} title="les bornes de l’intervention en cours, d’après l’ordre du jour">
           ⇤ caler sur l’intervention ⇥
         </button>
       </span>
-      <span className="title">
+      <span className="mp-title">
         <span className="dim">titre</span>
         <input value={clip.title} aria-label="titre de l’extrait" onChange={(e) => p.onChange({ ...clip, title: e.target.value })} />
       </span>
-      <span className="acts">
+      <span className="mp-acts">
         <button className="btn small" onClick={p.onReplay}>
           ▶ revoir l’extrait
         </button>

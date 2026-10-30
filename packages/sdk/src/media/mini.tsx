@@ -86,7 +86,7 @@ export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, onTime,
     return `${y < area.top + area.height / 2 ? 't' : 'b'}${x < area.left + area.width / 2 ? 'l' : 'r'}` as MiniCorner
   }
   const down = (e: ReactPointerEvent) => {
-    if (e.button !== 0 || full || (e.target as Element).closest('button, .mini-cap')) return
+    if (e.button !== 0 || full || (e.target as Element).closest('button, .mp-mini-cap')) return
     press.current = { x: e.clientX, y: e.clientY, id: e.pointerId }
   }
   const move = (e: ReactPointerEvent) => {
@@ -105,15 +105,18 @@ export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, onTime,
     if (drag.target !== corner) onCorner(drag.target)
   }
 
-  const lift = { '--mini-bottom': `${14 + (bottom ?? 0)}px` } as CSSProperties
+  const lift = { '--mp-mini-bottom': `${14 + (bottom ?? 0)}px` } as CSSProperties
   const style = drag ? { ...lift, transform: `translate(${drag.dx}px, ${drag.dy}px)` } : lift
   const idle = !hover && !drag
   return (
     <>
-      {drag && CORNERS.map((c) => <span key={c} className={`mini-ghost ${c}${c === drag.target ? ' target' : ''}`} style={{ ...lift, height: drag.height }} />)}
+      {drag &&
+        CORNERS.map((c) => (
+          <span key={c} className={`mp-mini-ghost mp-${c}${c === drag.target ? ' mp-target' : ''}`} style={{ ...lift, height: drag.height }} />
+        ))}
       <div
         ref={root}
-        className={`mini ${corner}${drag ? ' dragging' : ''}${idle ? ' idle' : ''}${full ? ' full' : ''}`}
+        className={`mp-mini mp-${corner}${drag ? ' mp-dragging' : ''}${idle ? ' mp-idle' : ''}${full ? ' mp-full' : ''}`}
         style={style}
         role="region"
         aria-label={`mini-lecteur : ${media.title}`}
@@ -128,12 +131,12 @@ export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, onTime,
           <div className="mp-screen">
             <video ref={video} poster={media.poster || undefined} playsInline />
           </div>
-          <div className="mini-over">
-            <div className="row">
-              <span className="grip" title="glisser vers un coin">
+          <div className="mp-mini-over">
+            <div className="mp-mini-row">
+              <span className="mp-mini-grip" title="glisser vers un coin">
                 <Icon name="grip" size={16} />
               </span>
-              <span className="keys">
+              <span className="mp-mini-keys">
                 <button className="mp-btn" onClick={() => onExpand(at())} title="revenir à la page de la vidéo">
                   <Icon name="expand" />
                 </button>
@@ -152,7 +155,7 @@ export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, onTime,
                 </button>
               </span>
             </div>
-            <div className="mid">
+            <div className="mp-mini-mid">
               <button className="mp-btn" onClick={() => skip(-SKIP_MS)} title="reculer de 10 s">
                 <SkipIcon dir={-1} />
               </button>
@@ -163,20 +166,20 @@ export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, onTime,
                 <SkipIcon dir={1} />
               </button>
             </div>
-            <span className="mini-foot" />
+            <span className="mp-mini-foot" />
           </div>
           <MiniTrack at={pb.time} total={total} live={live} />
           {stream.error && <p className="mp-note bad">✗ {stream.error}</p>}
         </div>
-        <button className="mini-cap" onClick={() => onExpand(at())} title="revenir à la page de la vidéo">
+        <button className="mp-mini-cap" onClick={() => onExpand(at())} title="revenir à la page de la vidéo">
           {media.badge && (
             <span className="mp-badge" data-badge={media.badge}>
               {media.badge}
             </span>
           )}
           {live && <span className="mp-onair">● direct</span>}
-          <span className="t">{media.title}</span>
-          <span className="tc">{videoTime(pb.time, total)}</span>
+          <span className="mp-mini-title">{media.title}</span>
+          <span className="mp-mini-time">{videoTime(pb.time, total)}</span>
         </button>
       </div>
     </>

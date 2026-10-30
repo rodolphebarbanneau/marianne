@@ -437,7 +437,7 @@ export function Player(props: PlayerProps) {
   return (
     <div
       ref={root}
-      className={`mp${full ? ' full' : ''}${idle && calm ? ' idle' : ''}`}
+      className={`mp${full ? ' mp-full' : ''}${idle && calm ? ' mp-idle' : ''}`}
       tabIndex={0}
       aria-label={title ? `lecteur vidéo : ${title}` : 'lecteur vidéo'}
       onKeyDown={onKey}
@@ -483,7 +483,7 @@ export function Player(props: PlayerProps) {
               </span>
             )}
             {live && <span className="mp-onair">● en direct</span>}
-            <span className="what">
+            <span className="mp-what">
               {title && <b>{title}</b>}
               {(said.subject || said.speaker) && <span className="dim"> · {[said.subject?.title, said.speaker].filter(Boolean).join(' · ')}</span>}
             </span>
@@ -506,7 +506,7 @@ export function Player(props: PlayerProps) {
           </span>
         )}
         {flash && (
-          <span className={`mp-flash ${flash.dir < 0 ? 'back' : 'fwd'}`} aria-hidden="true">
+          <span className={`mp-flash ${flash.dir < 0 ? 'mp-back' : 'mp-fwd'}`} aria-hidden="true">
             <Icon name={flash.dir < 0 ? 'chevBack' : 'chevFwd'} size={22} />
             {flash.dir < 0 ? '−' : '+'}
             {flash.seconds} s
@@ -566,16 +566,16 @@ export function Player(props: PlayerProps) {
               {mode === 'heure' ? (
                 <>
                   {when(time)}
-                  {live && !atEdge && <span className="late">{delay(Math.max(0, pb.edge - time))}</span>}
+                  {live && !atEdge && <span className="mp-late">{delay(Math.max(0, pb.edge - time))}</span>}
                 </>
               ) : (
                 <>
-                  {videoTime(time, total)} <span className="of">/ {videoTime(total, total)}</span>
+                  {videoTime(time, total)} <span className="mp-of">/ {videoTime(total, total)}</span>
                 </>
               )}
             </span>
             {live && (
-              <button className={`mp-live${atEdge ? ' edge' : ''}`} onClick={toLive} title={atEdge ? 'au direct' : 'revenir au direct (Fin)'}>
+              <button className={`mp-live${atEdge ? ' mp-edge' : ''}`} onClick={toLive} title={atEdge ? 'au direct' : 'revenir au direct (Fin)'}>
                 <Icon name="dot" size={11} />
                 DIRECT
               </button>
@@ -603,7 +603,7 @@ export function Player(props: PlayerProps) {
               aria-expanded={menu !== null}
             >
               <Icon name="gear" />
-              {gearTag && <span className="badge-x">{gearTag}</span>}
+              {gearTag && <span className="mp-tag">{gearTag}</span>}
             </button>
             {canPin && !full && (
               <button className="mp-btn mp-wide" onClick={pinNow} title="mini-lecteur : la vidéo dans un coin, partout dans Marianne (P)">
