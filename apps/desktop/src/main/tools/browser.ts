@@ -1,7 +1,7 @@
 import { siteReady } from '@marianne/profile'
 import * as z from 'zod'
 import type { LoginKind } from '../../shared/sites'
-import type { BrowserState } from '../../shared/types'
+import type { BrowserState, PlannedTask } from '../../shared/types'
 import { accounts } from '../account'
 import { approvals, type Decision } from '../approvals'
 import { browser, HumanControlError, type PageElement, type PageView } from '../browser'
@@ -10,7 +10,7 @@ import { content } from '../content'
 import { keychain, siteOf } from '../keychain'
 import { profile } from '../profile/store'
 import { session } from '../session'
-import { tasks } from '../tasks'
+import { siteAllowed, tasks } from '../tasks'
 import { callingFolder } from './folder'
 import { consequential, Consents, reading } from './online'
 import { clip, DOMAIN_IDS, fold, plural, tool, TOKEN, ToolError, type ToolContext } from './tool'
@@ -54,16 +54,27 @@ async function act<T>(run: () => T | Promise<T>): Promise<T> {
 const beyondRun = (what: string) =>
   new ToolError(`A planned task's run cannot ${what}: nobody is watching. Stop here and report "waiting" with task_report, saying what the user should do.`)
 
+/**
+ * The run a call started in (ToolContext.run), while it still runs; null for a conversation's call.
+ * A call that outlives its run (the user's message stopped it while a page loaded) stops here: it
+ * never goes on as a conversation's, so nothing it reached becomes the folder's consent.
+ */
+function runOf(ctx: ToolContext): PlannedTask | null {
+  if (!ctx.run) return null
+  if (tasks.runningIn(ctx.run.folderId) !== ctx.run) throw new ToolError('The planned task’s run is over: stop here.')
+  return ctx.run
+}
+
 const refusal = (decision: Decision, nothing: string) =>
   new ToolError(`${decision === 'refused' ? 'The user refused' : 'No answer from the user'}: ${nothing}. Do not retry; ask them what they want to do.`)
 
 /** Consent to go to the site of `url` from this folder: once per folder, or once per site, as the user chose. */
-async function online(folderId: string, url: string, reason: string): Promise<void> {
+async function online(folderId: string, url: string, reason: string, run: PlannedTask | null): Promise<void> {
   const site = siteOf(url)
   // A run has the sites the user gave it. It neither reads nor adds to the folder's consents: those
   // were given to a conversation, and what a run opens mustn't widen what a conversation may.
-  if (tasks.runningIn(folderId)) {
-    if (tasks.allows(folderId, url)) return
+  if (run) {
+    if (siteAllowed(run, url)) return
     throw beyondRun(`reach ${site}`)
   }
   const ask = accounts.settings().browser.askOnline
@@ -87,7 +98,7 @@ async function current(ctx: ToolContext): Promise<{ folderId: string; url: strin
   const state = browser.state()
   if (!state.url || state.folderId !== folderId) throw new ToolError('No page of this folder is open in the browser: open one with open_site.')
   if (state.controller === 'human') throw new ToolError(HUMAN)
-  await online(folderId, state.url, 'Marianne veut continuer sur ce site pour ce dossier.')
+  await online(folderId, state.url, 'Marianne veut continuer sur ce site pour ce dossier.', runOf(ctx))
   return { folderId, url: state.url, title: state.title }
 }
 
@@ -177,16 +188,18 @@ export const browserTools = [
       const folderId = callingFolder(ctx.folderId).id
       if (!/^https:\/\//i.test(url)) throw new ToolError('Only https addresses are opened.')
       if (browser.state().controller === 'human') throw new ToolError(HUMAN)
-      await online(folderId, url, reason)
+      const run = runOf(ctx)
+      await online(folderId, url, reason, run)
       await act(() => browser.open(url, folderId))
       const setting = accounts.settings().browser.show
       // A planned task's run happens out of sight: it doesn't take the user's screen.
-      const visible = !tasks.runningIn(folderId) && (setting === 'always' || (setting === 'ask' && show))
+      const visible = !run && (setting === 'always' || (setting === 'ask' && show))
       if (visible) browser.reveal()
       await browser.settled()
       const { url: landed, title } = browser.state()
       // Where the address led: its redirects are part of opening it, for a conversation. A run stops there.
-      if (landed && tasks.runningIn(folderId)) await online(folderId, landed, reason)
+      // Read again: a run the user's message ended while the page loaded stops here, adding nothing.
+      if (landed && runOf(ctx)) await online(folderId, landed, reason, run)
       else if (landed) consents.add(folderId, siteOf(landed))
       pages.delete(folderId)
       forms.delete(folderId)
@@ -224,7 +237,8 @@ export const browserTools = [
       const { folderId, url, title } = await current(ctx)
       const read = element(folderId, url, id)
       const label = (await act(() => browser.elementLabel(id))) || read.label
-      if (tasks.runningIn(folderId)) {
+      const run = runOf(ctx)
+      if (run) {
         if (flagged || !reading({ ...read, label }, purpose)) throw beyondRun(`click « ${label || id} »`)
       } else if (flagged || consequential({ ...read, label }, purpose)) {
         const shown = label || 'cet élément'
@@ -246,9 +260,15 @@ export const browserTools = [
       }
       await act(() => browser.click(id))
       const after = browser.state()
-      if (after.url && siteOf(after.url) !== siteOf(url)) {
+      // A run: still running (runOf stops it otherwise), and on one of its sites: its hosts, not
+      // the whole registrable domain.
+      if (run && runOf(ctx) && after.url && !siteAllowed(run, after.url)) {
+        browser.back()
+        throw beyondRun(`follow « ${label || id} » there`)
+      }
+      if (!run && after.url && siteOf(after.url) !== siteOf(url)) {
         try {
-          await online(folderId, after.url, `Le clic sur « ${label || id} » mène à ce site.`)
+          await online(folderId, after.url, `Le clic sur « ${label || id} » mène à ce site.`, null)
         } catch (err) {
           browser.back()
           throw new ToolError(`The click led to ${siteOf(after.url)}. ${(err as Error).message} Went back to the previous page.`)
@@ -270,9 +290,10 @@ export const browserTools = [
       if (read.secret) throw new ToolError('Never type a password: sign_in fills the login from the keychain, or hand_over lets the user type it.')
       if (read.role === 'link' || read.role === 'button') throw new ToolError(`${id} is a ${read.role}, not a field: use click.`)
       if (TOKEN.test(value)) throw new ToolError('Tokens with no value in the profile: use request_setup so the user fills them in.')
-      // In a run, the one identifier the user agreed to on the sheet: its entity's, and no other.
-      const run = tasks.runningIn(folderId)
-      if (run && ctx.resolved && value !== run.entity?.label) throw beyondRun('type this identifier')
+      // In a run, the one identifier the user agreed to on the sheet, exactly: its entity's. Nothing
+      // else is typed (no other identifier, no text of the engine's), and nothing at all without one.
+      const run = runOf(ctx)
+      if (run && (!run.entity || value !== run.entity.label)) throw beyondRun('type this')
       await act(() => browser.type(id, value))
       return `Typed into « ${read.label || id} ». Nothing is sent until the form is submitted.`
     }

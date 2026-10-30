@@ -1,7 +1,7 @@
 import { DOMAINS } from '@marianne/profile'
 import type * as z from 'zod'
 import { PUBLIC_SOURCES } from '../../shared/public'
-import type { DomainId, PublicSourceId } from '../../shared/types'
+import type { DomainId, PlannedTask, PublicSourceId } from '../../shared/types'
 import { configStore } from '../config'
 
 /**
@@ -29,6 +29,11 @@ export interface ToolContext {
   folderId?: string
   /** The arguments held [[tokens]], replaced by the user's values: keep the result coarse. */
   resolved?: boolean
+  /**
+   * The planned task's run the call started in, if any (mcp.ts): it holds the call to the run's
+   * rules to its end, and a call that outlives its run stops rather than act as a conversation's.
+   */
+  run?: PlannedTask | null
 }
 
 /** Typed tool definition (infers `run`'s arguments from `input`). */

@@ -4,6 +4,7 @@ import type { BrowserState, PagePart } from '../../shared/types'
 import { keychain, siteOf } from '../keychain'
 import { log } from '../log'
 import { session } from '../session'
+import { holdToRun, mayOpen, type RunGuard } from './run-guard'
 import {
   CLICK_SCRIPT,
   FILL_SCRIPT,
@@ -57,6 +58,14 @@ class Browser extends EventEmitter {
   private folderId = ''
   private waiting = ''
   private usedAt = 0
+  /** While a planned task runs, the sites its page may go to (run-guard.ts). */
+  private runGuard: RunGuard = null
+  private downloadsHeld = false
+
+  /** A planned task's run starts (its sites) or ends (null): its page is held to them, nothing downloads. */
+  setRunGuard(guard: RunGuard): void {
+    this.runGuard = guard
+  }
 
   /** The window the panel lives in. */
   attach(win: BrowserWindow): void {
@@ -73,6 +82,13 @@ class Browser extends EventEmitter {
     const web = electronSession.fromPartition(PARTITION)
     // Websites get nothing beyond plain browsing: no camera, location, notifications…
     web.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'clipboard-sanitized-write' || permission === 'fullscreen'))
+    // Nobody watches a run: nothing it reaches is saved on the computer.
+    if (!this.downloadsHeld) {
+      this.downloadsHeld = true
+      web.on('will-download', (e) => {
+        if (this.runGuard) e.preventDefault()
+      })
+    }
     const view = new WebContentsView({
       webPreferences: { partition: PARTITION, sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck: false }
     })
@@ -82,11 +98,14 @@ class Browser extends EventEmitter {
     // Marianne keeps working while the panel is closed.
     wc.setBackgroundThrottling(false)
     // Popups open in the same view; mail and phone links go to the system, other schemes nowhere.
+    // During a run, a popup opens only on its sites, and nothing goes to the system.
     wc.setWindowOpenHandler(({ url }) => {
-      if (/^https?:/i.test(url)) void wc.loadURL(url)
-      else if (/^(mailto|tel):/i.test(url)) void shell.openExternal(url)
+      if (/^https?:/i.test(url)) {
+        if (mayOpen(this.runGuard, url)) void wc.loadURL(url)
+      } else if (/^(mailto|tel):/i.test(url) && !this.runGuard) void shell.openExternal(url)
       return { action: 'deny' }
     })
+    holdToRun(wc, () => this.runGuard)
     for (const event of ['did-navigate', 'did-navigate-in-page', 'page-title-updated', 'did-start-loading', 'did-stop-loading'] as const) {
       wc.on(event as 'did-navigate', () => this.changed())
     }
