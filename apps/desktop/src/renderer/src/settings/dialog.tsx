@@ -42,7 +42,18 @@ export function SettingsDialog() {
   const [page, section] = (MOVED[app.settingsPage ?? ''] ?? app.settingsPage ?? 'identity').split('#')
   const [query, setQuery] = useState('')
   const pageRef = useRef<HTMLDivElement>(null)
+  const box = useRef<HTMLDivElement>(null)
   const close = () => app.openSettings(null)
+
+  // The focus, as a Modal takes it: the keys are the settings', not those of a field behind them (the 3615 bar,
+  // the composer), and it goes back there when they close.
+  useEffect(() => {
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    if (!box.current?.contains(document.activeElement)) box.current?.focus({ preventScroll: true })
+    return () => {
+      if (before?.isConnected) before.focus({ preventScroll: true })
+    }
+  }, [])
 
   // The section may come after the first drawing, and what is above it too (the profile, the catalogue are asked
   // for): it is kept at the top while the page settles, until the user scrolls or the page has been still a moment.
@@ -72,7 +83,7 @@ export function SettingsDialog() {
 
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      // A shortcut being recorded takes Échap for itself.
+      // A shortcut being recorded, the search box and a dialog over the settings (Modal) take Échap for themselves.
       if (e.key === 'Escape' && !e.defaultPrevented) close()
     }
     window.addEventListener('keydown', key)
@@ -83,7 +94,7 @@ export function SettingsDialog() {
   const title = SETTINGS_PAGES.find((p) => p.id === page)?.label ?? ''
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="settings">
+      <div ref={box} className="settings" role="dialog" aria-modal="true" aria-label="réglages" tabIndex={-1}>
         <nav className="settings-nav">
           <span className="title px">RÉGLAGES</span>
           <SearchField value={query} onChange={setQuery} placeholder="chercher un réglage" />

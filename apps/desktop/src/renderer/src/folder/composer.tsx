@@ -2,13 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import type { Procedure } from '@marianne/content'
 import { domainInfo } from '@marianne/profile'
 import { ENGINE_LABELS } from '@shared/config'
+import { accelOf, matches } from '@shared/shortcuts'
 import type { Attachment, DomainId, EngineId } from '@shared/types'
 import { useApp, type ComposerSeed } from '../app/context'
-import { api, errorText } from '../lib/api'
+import { api, errorText, isMac } from '../lib/api'
 
 /**
  * Where the user writes to Marianne: on the first page (a new folder) and at the bottom of a
- * folder. Entrée sends, maj+entrée goes to the line, ↑ in an empty box takes back the last message.
+ * folder. Entrée sends, maj+entrée goes to the line, ↑ in an empty box takes back the last message
+ * (or the keys chosen in Réglages for ENVOI and CORRECTION).
  */
 export function Composer({
   folderId,
@@ -111,7 +113,7 @@ export function Composer({
           {inDomain && !procedure && (
             <span className="chip">
               domaine : {domainInfo(inDomain).short}{' '}
-              <button className="link" onClick={() => setInDomain(null)}>
+              <button className="link" aria-label="retirer le domaine" title="retirer le domaine" onClick={() => setInDomain(null)}>
                 ✕
               </button>
             </span>
@@ -119,7 +121,7 @@ export function Composer({
           {procedure && (
             <span className="chip">
               démarche : {procedure.title}{' '}
-              <button className="link" onClick={() => setProcedure(null)}>
+              <button className="link" aria-label="retirer la démarche" title="retirer la démarche" onClick={() => setProcedure(null)}>
                 ✕
               </button>
             </span>
@@ -127,7 +129,12 @@ export function Composer({
           {attachments.map((a, i) => (
             <span key={i} className="chip">
               {a.type === 'page' ? `page : ${a.title || a.url}` : `pièce : ${a.title}`}{' '}
-              <button className="link" onClick={() => setAttachments(attachments.filter((_, j) => j !== i))}>
+              <button
+                className="link"
+                aria-label={`retirer ${a.type === 'page' ? 'la page' : 'la pièce'} ${a.title || (a.type === 'page' ? a.url : '')}`.trim()}
+                title={a.type === 'page' ? 'retirer la page' : 'retirer la pièce'}
+                onClick={() => setAttachments(attachments.filter((_, j) => j !== i))}
+              >
                 ✕
               </button>
             </span>
@@ -141,10 +148,11 @@ export function Composer({
         placeholder={placeholder}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          // ENVOI and CORRECTION on the keys Réglages gives them.
+          if (matches(e, accelOf('send', isMac, app.config.shortcuts), isMac)) {
             e.preventDefault()
             void send()
-          } else if (e.key === 'ArrowUp' && !text && lastUserText) {
+          } else if (!text && lastUserText && matches(e, accelOf('edit', isMac, app.config.shortcuts), isMac)) {
             e.preventDefault()
             setText(lastUserText)
           }

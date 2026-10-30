@@ -92,7 +92,7 @@ function Select<T extends string>({ value, options, onSave }: { value: T; option
   )
 }
 
-/** "11 Chemin des Sablons, 78820 Juziers": an address as the field shows it. */
+/** "12 rue de l’Exemple, 75000 Paris": an address as the field shows it. */
 const addressLine = (a: { street: string; postcode: string; city: string }) => [a.street, `${a.postcode} ${a.city}`.trim()].filter(Boolean).join(', ')
 
 /**
@@ -392,7 +392,12 @@ function Records<T extends { id: string }>({
               <button className="btn small" onClick={() => setEditing(x)}>
                 modifier
               </button>{' '}
-              <button className="btn small danger" onClick={() => confirm(`Supprimer « ${label(x)} » ?`) && onDelete(x.id)}>
+              <button
+                className="btn small danger"
+                aria-label={`supprimer ${label(x)}`}
+                title="supprimer"
+                onClick={() => confirm(`Supprimer « ${label(x)} » ?`) && onDelete(x.id)}
+              >
                 ✕
               </button>
             </span>
@@ -590,7 +595,12 @@ export function DocumentsPane() {
               <button className="btn small" onClick={() => void api.exportDocument(d.id)}>
                 exporter
               </button>{' '}
-              <button className="btn small danger" onClick={() => confirm(`Supprimer « ${d.title} » de l’archive ?`) && void api.deleteDocument(d.id)}>
+              <button
+                className="btn small danger"
+                aria-label={`supprimer ${d.title} de l’archive`}
+                title="supprimer de l’archive"
+                onClick={() => confirm(`Supprimer « ${d.title} » de l’archive ?`) && void api.deleteDocument(d.id)}
+              >
                 ✕
               </button>
             </span>

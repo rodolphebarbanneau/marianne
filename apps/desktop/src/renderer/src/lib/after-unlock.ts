@@ -10,13 +10,23 @@ export interface AfterUnlockState {
   offerPin: boolean
 }
 
-let state: AfterUnlockState = { recoveryKey: '', resetPassword: false, offerPin: false }
+const NOTHING: AfterUnlockState = { recoveryKey: '', resetPassword: false, offerPin: false }
+let state: AfterUnlockState = NOTHING
 const listeners = new Set<() => void>()
 
 export const afterUnlock = {
   get: (): AfterUnlockState => state,
   set(patch: Partial<AfterUnlockState>): void {
     state = { ...state, ...patch }
+    for (const listener of listeners) listener()
+  },
+  /**
+   * The account locked: what it was to show goes with it. A recovery key not yet noted would
+   * otherwise open over the next account in this window, and stay in memory meanwhile.
+   */
+  reset(): void {
+    if (state === NOTHING) return
+    state = NOTHING
     for (const listener of listeners) listener()
   },
   subscribe(listener: () => void): () => void {

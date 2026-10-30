@@ -20,7 +20,7 @@ import {
   type SearchRow,
   type TodoItem
 } from '../lib/demarches'
-import { useDocuments } from '../lib/profile'
+import { useDocuments, useProfile } from '../lib/profile'
 import { useTasks } from '../lib/tasks'
 import { SearchHead, SearchView } from './demarches/search-view'
 import { Sommaire } from './demarches/sommaire'
@@ -53,11 +53,18 @@ export function ProceduresPage() {
   const services = useServices()
   const documents = useDocuments()
   const tasks = useTasks()
+  const profile = useProfile()
   const [deadlines, setDeadlines] = useState<Deadline[]>([])
   const [procedures, setProcedures] = useState<Procedure[]>([])
-  // Asked again when a task has run: it may have found something to pay.
+  // Asked again when the profile changes (a date set in Réglages), and when a task has run: it may have found something to pay.
   const lastRuns = tasks.map((t) => t.runs.at(-1)?.at ?? '').join()
-  useEffect(() => void api.getDeadlines(120).then(setDeadlines), [lastRuns])
+  useEffect(() => {
+    let alive = true
+    void api.getDeadlines(120).then((list) => alive && setDeadlines(list))
+    return () => {
+      alive = false
+    }
+  }, [lastRuns, profile])
   useEffect(() => void api.listProcedures().then(setProcedures), [])
 
   const [tab, setTabState] = useState<Tab>(lastTab)

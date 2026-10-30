@@ -1,29 +1,15 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { foldText, NEUTRAL_ICON, PROFILE_FIELDS, type PixelArt, type ServiceManifest, type ServiceState, type ServiceTrust } from '@marianne/sdk'
 import { Modal, Pixels, ServiceIcon, Spinner } from '@marianne/sdk/view'
 import type { CatalogueEntry, ServiceFileReview } from '@shared/catalogue'
 import { SearchField } from '../../components/ui'
 import { api, errorText } from '../../lib/api'
 import { bytes, dayMonth } from '../../lib/format'
-import { plainKey } from '../../lib/keys'
+import { plainKey, useDialogEnter } from '../../lib/keys'
 import type { Listing } from './model'
 import { Code, Community, Official, TrustMark } from './parts'
 
 /** The Services page's dialogs: choosing the pinned services, a .3615 file, and « avant d’ajouter ». */
-
-/** Enter in a dialog: its main button, unless the focus is on another button. Ctrl+Enter stays the app's (a new folder). */
-function useEnter(run: (() => void) | null) {
-  useEffect(() => {
-    if (!run) return
-    const key = (e: KeyboardEvent) => {
-      if (!plainKey(e, 'Enter') || (e.target as HTMLElement | null)?.closest?.('button, a, textarea')) return
-      e.preventDefault()
-      run()
-    }
-    window.addEventListener('keydown', key)
-    return () => window.removeEventListener('keydown', key)
-  }, [run])
-}
 
 function Head({ title, close, closeLabel = 'fermer ✕' }: { title: string; close: () => void; closeLabel?: string }) {
   return (
@@ -53,7 +39,7 @@ export function PinsDialog({
   onClose: () => void
 }) {
   const [query, setQuery] = useState('')
-  useEnter(onClose)
+  useDialogEnter(onClose)
   const q = foldText(query.trim())
   const shown = services.filter((l) => !q || [l.code, l.name, l.description].some((t) => foldText(t).includes(q))).sort((a, b) => a.code.localeCompare(b.code))
   return (
@@ -128,7 +114,7 @@ export function FileDialog({ onReview, onClose }: { onReview: (review: ServiceFi
       .finally(() => setBusy(false))
   }
   const choose = () => !busy && read(api.chooseServiceFile())
-  useEnter(choose)
+  useDialogEnter(choose)
   return (
     <Modal wide onClose={onClose} label="ajouter un fichier .3615">
       <Head title="AJOUTER UN FICHIER .3615" close={onClose} />
@@ -399,7 +385,7 @@ export function ReviewDialog({ subject, onAdded, onClose }: { subject: ReviewSub
       .catch((err: unknown) => setError(errorText(err)))
       .finally(() => setBusy(false))
   }
-  useEnter(allowed && !busy ? add : null)
+  useDialogEnter(allowed && !busy ? add : null)
   const code = facts.code.toUpperCase()
   return (
     <Modal wide onClose={onClose} label={`avant d’ajouter 3615 ${code}`}>

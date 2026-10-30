@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { accelOf, matches, SHORTCUTS, shortcutLabel, type CommandId } from '@shared/shortcuts'
+import { lockIntent } from '../lib/after-unlock'
 import { api, isMac } from '../lib/api'
 import { useApp } from './context'
 
@@ -23,7 +24,11 @@ export function useActions(): Actions {
       updates: () => app.openSettings('about'),
       sidebar: app.toggleSidebar,
       lock: () => api.lock(),
-      account: () => api.lock(),
+      // The lock screen opens on the list of accounts, not on this one's password.
+      account: () => {
+        lockIntent.list = true
+        api.lock()
+      },
       fullscreen: () => api.toggleFullscreen(),
       reload: app.reload,
       guide: () => app.openGuide(!app.guideOpen),
@@ -39,7 +44,10 @@ export function useShortcutLabel(): (id: string) => string {
   return (id) => shortcutLabel(accelOf(id, isMac, config.shortcuts), isMac)
 }
 
-/** The application's shortcuts, everywhere but where the user types (pages and dialogs have their own keys). */
+/**
+ * The application's shortcuts, everywhere: only SUITE, RETOUR and échap give way where the user
+ * types (a page's text box still turns the pages), and a key a page or a dialog took is its own.
+ */
 export function useShortcuts(actions: Actions, recording: boolean): void {
   const app = useApp()
   useEffect(() => {

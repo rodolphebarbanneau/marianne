@@ -1,9 +1,9 @@
-import type { ProfileField } from '@marianne/sdk'
+import { readManifest, type ProfileField, type ServiceState } from '@marianne/sdk'
 import { describe, expect, it } from 'vitest'
 import type { NewsSource } from '../../src/shared/news'
 import { acceptSources, byLean, choiceOf, giveLean, isAccepted, keepSections, sidesOf } from '../../src/shared/news-choice'
 import { keptSections, leanOf } from '../../src/shared/news'
-import { readSummary } from '../../src/renderer/src/settings/readers'
+import { opinionReaders, readSummary } from '../../src/renderer/src/settings/readers'
 
 const source = (id: string, more: Partial<NewsSource> = {}): NewsSource => ({
   id,
@@ -106,5 +106,30 @@ describe('« qui peut les lire », with three fields', () => {
     expect(readSummary(['opinions.sources'], ['opinions.sources'])).toEqual({ text: 'sources', on: true })
     expect(readSummary(all, ['vehicles.plate'])).toEqual({ text: 'refusé', on: false })
     expect(readSummary(all, null)).toEqual({ text: 'pas encore demandé', on: false })
+  })
+
+  it('lists the user’s services only: one removed has nothing to accept or refuse', () => {
+    const service = (code: string, asked: ProfileField[], added = true): ServiceState => ({
+      manifest: readManifest({
+        name: `@marianne/service-${code}`,
+        version: '1.0.0',
+        marianne: { code, name: code, description: code, category: 'daily', hosts: [] }
+      }),
+      available: true,
+      on: added,
+      added,
+      pinned: false,
+      tools: [],
+      builtIn: true,
+      access: { asked, granted: null }
+    })
+    const { asking, others } = opinionReaders([
+      service('infos', ['opinions.sources'], false),
+      service('parlement', all),
+      service('meteo', ['vehicles.critair']),
+      service('carte', [], false)
+    ])
+    expect(asking.map((s) => s.manifest.id)).toEqual(['parlement'])
+    expect(others.map((s) => s.manifest.id)).toEqual(['meteo'])
   })
 })

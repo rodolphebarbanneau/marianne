@@ -276,6 +276,11 @@ export const floating = () => document.getElementById('root') ?? document.body
  * it doesn't, so a stray click loses nothing typed in it. `wide`: for a list or a review that needs
  * the room (760 pixels rather than 580). It takes the focus when it opens (the keys are then its
  * own, not those of a field behind it) and gives it back when it closes.
+ *
+ * Échap is the dialog's alone, even one without `onClose` (a recovery key to note): heard on the
+ * document, it comes after the dialog's own fields (a search box takes the first one to empty
+ * itself) and before the window's listeners, which leave a key taken. Otherwise the same Échap
+ * would also take a service's screen back to the Services, or close the settings under the dialog.
  */
 export function Modal({ children, onClose, wide, label }: { children: ReactNode; onClose?: () => void; wide?: boolean; label?: string }) {
   const box = useRef<HTMLDivElement>(null)
@@ -288,10 +293,13 @@ export function Modal({ children, onClose, wide, label }: { children: ReactNode;
     }
   }, [])
   useEffect(() => {
-    if (!onClose) return
-    const key = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', key)
-    return () => window.removeEventListener('keydown', key)
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      e.preventDefault()
+      onClose?.()
+    }
+    document.addEventListener('keydown', key)
+    return () => document.removeEventListener('keydown', key)
   }, [onClose])
   return createPortal(
     <div className="overlay">

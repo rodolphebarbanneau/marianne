@@ -12,7 +12,11 @@ export function TitleBar() {
   return (
     <header className="titlebar">
       <div className="brand">
-        <button className="icon-btn" title={`replier la barre latérale (${label('sidebar')})`} onClick={app.toggleSidebar}>
+        <button
+          className="icon-btn"
+          title={`${app.config.ui.sidebarOpen ? 'replier' : 'déplier'} la barre latérale (${label('sidebar')})`}
+          onClick={app.toggleSidebar}
+        >
           <PanelIcon />
         </button>
         <button className="mark" title={`parler à Marianne : nouveau dossier (${label('marianne')})`} onClick={() => app.goPage('home')}>

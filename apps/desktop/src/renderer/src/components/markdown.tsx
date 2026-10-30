@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm'
 import type { TokenValue } from '@shared/api'
 import { useApp } from '../app/context'
 import { serviceForLink, useServices } from '../host'
+import { webHost } from '../lib/address'
 import { useTokens } from '../lib/tokens'
 import { api } from '../lib/api'
 import { Modal } from './ui'
@@ -144,11 +145,13 @@ const components: Components = {
     return <Link href={href ?? ''}>{children}</Link>
   },
   // No remote image: loading it would tell its server when the answer is read, and what its URL carries.
+  // Its host only, when it has one: an address that doesn't parse (« http:// ») must not blank the answer.
   img({ alt, src }) {
+    const host = webHost(src)
     return (
       <span className="dim">
         [image{alt ? ` : ${alt}` : ''}
-        {typeof src === 'string' && /^https?:/.test(src) ? ` · ${new URL(src).hostname}` : ''}]
+        {host ? ` · ${host}` : ''}]
       </span>
     )
   },

@@ -20,7 +20,6 @@ export const FilterIcon = svg('M2 3.5h12 M4 8h8 M6.5 12.5h3')
 export const NewIcon = svg('M2.5 3.5h7 M2.5 3.5v10h10v-6 M7 9l6.5-6.5')
 /** Three square dots, like mosaic blocks: drawn 2 wide, they want a stroke of 2. */
 export const MoreIcon = svg('M2 8h2 M7 8h2 M12 8h2')
-export const BrowserIcon = svg('M1.5 2.5h13v11h-13z M1.5 5.5h13 M9.5 5.5v8')
 export const CloseIcon = svg('M3.5 3.5l9 9 M12.5 3.5l-9 9')
 /** Two sheets, the front one to take: copy. */
 export const CopyIcon = svg('M5.5 5.5h8v8h-8z M10.5 5.5v-3h-8v8h3')

@@ -132,9 +132,11 @@ function FolderRow({ folder: f, on }: { folder: FolderSummary; on: boolean }) {
   const [snoozing, setSnoozing] = useState(false)
   const domain = domainOf(f.domain)
   const status = f.status === 'idle' ? when(f.updatedAt) : f.status === 'working' ? STATUS.working : STATUS[f.status]
+  // A click anywhere on the row opens the folder; for the keys, its title is the button. The row itself can't be
+  // one: a button holds no other, and veille and classer are buttons.
   return (
     <div style={{ position: 'relative' }}>
-      <button className={`fi${on ? ' on' : ''}${f.unread ? ' unread' : ''}`} onClick={() => app.go({ kind: 'folder', id: f.id })}>
+      <div className={`fi${on ? ' on' : ''}${f.unread ? ' unread' : ''}`} onClick={() => app.go({ kind: 'folder', id: f.id })}>
         <span className="l1">
           <span className={`badge${domain ? '' : ' none'}`}>{domain?.badge ?? '··'}</span>
           {f.pinned && <span className="pin" />}
@@ -161,14 +163,16 @@ function FolderRow({ folder: f, on }: { folder: FolderSummary; on: boolean }) {
             </button>
           </span>
         </span>
-        <span className="l2">{f.title}</span>
+        <button className="l2" aria-current={on ? 'page' : undefined}>
+          {f.title}
+        </button>
         <span className="l3">
           <span>{f.meta}</span>
           <span className="right">
             <span className="badge">{ENGINE_BADGES[f.engine]}</span>
           </span>
         </span>
-      </button>
+      </div>
       {snoozing && <SnoozeMenu folderId={f.id} onClose={() => setSnoozing(false)} />}
     </div>
   )
@@ -199,17 +203,25 @@ export function SnoozeMenu({ folderId, onClose, style }: { folderId: string; onC
   )
 }
 
-/** A small menu that closes on Échap or a click outside. */
+/**
+ * A small menu that closes on Échap or a click outside. That Échap is the menu's alone, as a
+ * dialog's (Modal): taken on the document, before the window's listeners, which leave a key taken;
+ * a folder would stop Marianne with it, a service's screen go back to the Services.
+ */
 export function Popover({ children, onClose, style }: { children: React.ReactNode; onClose: () => void; style?: React.CSSProperties }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const down = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && onClose()
-    const key = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      e.preventDefault()
+      onClose()
+    }
     document.addEventListener('mousedown', down)
-    window.addEventListener('keydown', key)
+    document.addEventListener('keydown', key)
     return () => {
       document.removeEventListener('mousedown', down)
-      window.removeEventListener('keydown', key)
+      document.removeEventListener('keydown', key)
     }
   }, [onClose])
   return (

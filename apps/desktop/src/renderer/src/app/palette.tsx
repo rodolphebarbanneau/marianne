@@ -12,7 +12,7 @@ import { useApp, type PaletteMode } from './context'
 /**
  * The three keyboard dialogs, after Omarchy: commands (ctrl+k, each with its shortcut), the
  * application menu (ctrl+space, the Minitel's SOMMAIRE, in levels), and search everywhere
- * (ctrl+shift+enter, the magnifier). A search bar on top; arrows, Entrée, Échap.
+ * (ctrl+alt+space, the magnifier). A search bar on top; arrows, Entrée, Échap.
  */
 
 interface Row {
@@ -79,7 +79,7 @@ export function Palette({ actions }: { actions: Actions }) {
           DOMAINS.map((d) => ({
             label: d.label,
             children: () => [
-              { label: `Tous les dossiers ${d.label.toLowerCase()}`, run: actions.procedures },
+              { label: `Tous les dossiers ${d.label.toLowerCase()}`, run: () => app.go({ kind: 'domain', id: d.id, tab: 'dossiers' }) },
               ...procedures.filter((p) => p.domain === d.id).map((p) => ({ label: p.title, run: () => startProcedure(p) }))
             ]
           }))

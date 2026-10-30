@@ -8,7 +8,7 @@ import { useServices } from '../host'
 import { api, errorText } from '../lib/api'
 import { useParliamentGroups } from '../lib/content'
 import { useProfile } from '../lib/profile'
-import { ASK_LABELS, OPINION_FIELDS, readSummary } from './readers'
+import { ASK_LABELS, OPINION_FIELDS, opinionReaders, readSummary } from './readers'
 import { SourcesSection } from './sources'
 
 /**
@@ -160,8 +160,7 @@ function Readers({ declared }: { declared: boolean }) {
   const { openRoute } = useApp()
   const [open, setOpen] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const asking = services.filter((s) => s.access.asked.some((f) => OPINION_FIELDS.includes(f)))
-  const others = services.filter((s) => !asking.includes(s))
+  const { asking, others } = opinionReaders(services)
   const q = query.trim().toLowerCase()
   const shown = asking.filter((s) => !q || `${s.manifest.id} ${s.manifest.name} ${s.manifest.description}`.toLowerCase().includes(q))
   const grant = (s: ServiceState, fields: ProfileField[]) => {

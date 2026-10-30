@@ -2,7 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } fr
 import type { BrowserState, KeychainEntry } from '@shared/types'
 import { useApp } from '../app/context'
 import { CloseIcon } from '../components/icons'
+import { addressUrl } from '../lib/address'
 import { api, errorText, useLive } from '../lib/api'
+import { plainKey } from '../lib/keys'
 import { overlay } from '../lib/overlay'
 
 const rect = (el: HTMLElement) => {
@@ -91,10 +93,13 @@ export function BrowserPanel({ folderId }: { folderId: string }) {
           placeholder="adresse ou recherche sur service-public.fr"
           onChange={(e) => setAddress(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              if (!state?.url || state.folderId !== folderId) api.browserOpen(/^https?:/.test(address) ? address : `https://${address}`, folderId)
-              else api.browserNavigate(address)
-            }
+            // Entrée alone: ctrl+entrée stays the app's (a new folder).
+            if (!plainKey(e, 'Enter')) return
+            const url = addressUrl(address)
+            if (!url) return
+            // No page of this folder's yet: one opens for it. On its page, the main process reads the address the same way (browser.navigate).
+            if (!state?.url || state.folderId !== folderId) api.browserOpen(url, folderId)
+            else api.browserNavigate(address)
           }}
         />
         <span className={`pilot${human ? ' human' : ''}`}>{human ? 'vous pilotez' : 'Marianne pilote'}</span>

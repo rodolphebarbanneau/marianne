@@ -39,17 +39,6 @@ export function Gauge({ usage, title }: { usage: Usage; title?: string }) {
   )
 }
 
-/** A page's head, the same on every page: its title (shown in pixel capitals), what it is about, its tools on the right. */
-export function PageHead({ title, detail, children }: { title: string; detail?: ReactNode; children?: ReactNode }) {
-  return (
-    <div className="page-head">
-      <h1 className="section-title">{title}</h1>
-      {detail && <span className="detail">{detail}</span>}
-      {children && <span className="tools">{children}</span>}
-    </div>
-  )
-}
-
 /** A search box: the magnifier, then the text, in a frame that lights up while typing. Échap empties it first. */
 export function SearchField({
   value,
