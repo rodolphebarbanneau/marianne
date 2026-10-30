@@ -1,4 +1,4 @@
-import { LEANS, sideOf, SIDES, type Lean, type Side } from '@marianne/sdk'
+import { LEANS, sideOf, type Lean, type Side } from '@marianne/sdk'
 import type { NewsChoice } from '@marianne/profile'
 import { keptSections, leanOf, refusedSources, regionOf, type NewsSource } from './news'
 
@@ -73,9 +73,15 @@ export function giveLean(choice: NewsChoice, source: NewsSource, lean: Lean | nu
 export const byLean = (sources: NewsSource[], choice: NewsChoice): NewsSource[] =>
   [...sources].sort((a, b) => LEANS.indexOf(leanOf(a, choice)) - LEANS.indexOf(leanOf(b, choice)) || a.name.localeCompare(b.name, 'fr'))
 
-/** The accepted sources by side (à gauche, au centre, à droite, sans classement). */
-export function sidesOf(sources: NewsSource[], choice: NewsChoice): Record<Side, number> {
-  const count = Object.fromEntries(SIDES.map((s) => [s, 0])) as Record<Side, number>
-  for (const s of sources) if (isAccepted(choice, s.id)) count[sideOf(leanOf(s, choice))]++
+/**
+ * The accepted sources by side (à gauche, au centre, à droite, sans classement). A side none of
+ * the sources belongs to is left out: it would say 0 of nothing.
+ */
+export function sidesOf(sources: NewsSource[], choice: NewsChoice): Partial<Record<Side, number>> {
+  const count: Partial<Record<Side, number>> = {}
+  for (const s of sources) {
+    const side = sideOf(leanOf(s, choice))
+    count[side] = (count[side] ?? 0) + (isAccepted(choice, s.id) ? 1 : 0)
+  }
   return count
 }

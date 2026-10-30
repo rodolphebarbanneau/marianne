@@ -9,7 +9,7 @@
 
 /**
  * A source's editorial line, from the left to the right, or « sans classement ». Marianne gives a
- * default for each source (indicative, its basis in the list); the user may give their own.
+ * default for each source; the user may give their own.
  */
 export const LEANS = ['gauche', 'centre-gauche', 'centre', 'centre-droit', 'droite', 'aucune'] as const
 export type Lean = (typeof LEANS)[number]

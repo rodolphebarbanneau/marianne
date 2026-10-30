@@ -17,15 +17,13 @@ describe('the shipped content', () => {
     expect(content.parliament.filter((g) => g.chamber === 'se').length).toBeGreaterThanOrEqual(8)
   })
 
-  it('gives every news source an editorial line, and every regional one its regions', () => {
+  it('gives every news source a default editorial line, and every regional one its regions', () => {
     for (const s of content.newsSources) {
+      // The fact-checkers take no side; every other source has one, which the user may change.
       expect(s.lean, s.id).toBeDefined()
-      if (s.lean !== 'aucune') expect(s.leanBasis, s.id).toMatch(/consulté le \d{1,2} \w+ \d{4}/)
+      expect(s.lean === 'aucune', s.id).toBe(s.group === 'factcheck')
       expect(!!s.regions, s.id).toBe(s.group === 'regional')
     }
-    // Public broadcasters and fact-checkers declare no line.
-    for (const id of ['franceinfo', 'france-24', 'rfi', 'les-decodeurs', 'vrai-ou-faux'])
-      expect(content.newsSources.find((s) => s.id === id)?.lean, id).toBe('aucune')
   })
 
   it('files each démarche in its domain’s folder, under its id', () => {

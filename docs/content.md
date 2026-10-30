@@ -163,7 +163,6 @@ The folder that follows a démarche shows its steps and the actions of the step 
     { "id": "politique", "label": "politique", "feed": "https://www.lemonde.fr/politique/rss_full.xml" }
   ],
   "lean": "centre-gauche",
-  "leanBasis": "Wikipédia, article « Le Monde » : « Il est classé politiquement au centre gauche » (consulté le 30 octobre 2026)",
   "paywall": ".article__wrapper--premium"
 }
 ```
@@ -172,13 +171,12 @@ The folder that follows a démarche shows its steps and the actions of the step 
 - `feed`: the front page's feed, RSS 2.0 or Atom. It stays, even with sections: older versions of the app read it alone.
 - `sections`: the source's feeds, the front page first (its feed is `feed`, its id `une`), then three to six useful ones (`politique`, `international`, `économie`…). Ids are lowercase words joined by hyphens, labels French and lowercase, each id and feed once. A user keeps all of them unless they untick some.
 - `regions`: a regional source's area, as INSEE region codes (`53` Bretagne, `52` Pays de la Loire…); required for a `regional` source, refused for another. Without an address, every source is accepted; with one, the regional sources of other regions start set aside.
-- `lean`: Marianne's default editorial line, one of `gauche`, `centre-gauche`, `centre`, `centre-droit`, `droite`, `aucune` (sans classement). It is indicative, shown as the source's colour, never used to sort or pick; the user may give a source another colour. Absent, `aucune`.
-- `leanBasis`: where the `lean` comes from, required for any `lean` but `aucune`: a reference anyone can check that states the editorial line (the outlet's own statement, its encyclopaedia article, a published study of the press), quoted briefly, with the day it was read, in French, on one line. Who owns an outlet is not its line. A source without such a statement is `aucune`, as are the public broadcasters, the news channels that declare no line and the fact-checkers. The scale stops at `gauche` and `droite`: a reference that goes further puts the source at the end.
+- `lean`: Marianne's default editorial line, one of `gauche`, `centre-gauche`, `centre`, `centre-droit`, `droite`, `aucune` (sans classement). It is Marianne's classification, shown as the source's colour, never used to sort or pick; the user may give any source another position in Réglages › Identité › sources d'information, « sans classement » among them. The scale stops at `gauche` and `droite`. Every source has one but the fact-checkers, which take no side: `aucune`. Absent, `aucune`.
 - `paywall`: for a source with paid articles whose pages don't say so (`isAccessibleForFree` in their JSON-LD), a CSS selector found on its paid pages only: nothing past the summary is read there. Check it on a paid page and on a free one.
 - `start`: `false` when the source asked that no start of its articles be shown: its summary alone.
 - `dates`: for a source whose feeds carry no dates (Le Parisien), its news sitemap (sitemaps.org with Google News' `publication_date`, as its `robots.txt` lists it): an undated title takes the time, and the picture, its sitemap gives. Without it, an undated title is dated when Marianne first sees it, and its whole feed would land in the hour of a first reading.
 
-Before proposing a source or a section, check that each feed answers and carries recent articles. A source is a newsroom writing in French, with an open feed that works; its `lean` comes with its basis, or it is `aucune`.
+Before proposing a source or a section, check that each feed answers and carries recent articles. A source is a newsroom writing in French, with an open feed that works.
 
 ## Parliamentary groups
 
@@ -204,7 +202,7 @@ Every change goes through a pull request, read by a maintainer; the démarches o
 - each claim of the change against its sources, which must be official and say what the text says;
 - that a skill only tells the engine how to use Marianne's tools, and nothing that would set its instructions aside;
 - the actions: the right site, setting, document type, sheet or service;
-- a news source's feeds, that they answer, and its `lean` against its `leanBasis`: the reference must say it;
+- a news source's feeds, that they answer, and its `lean`;
 - `updated` bumped, and the `owner`.
 
 `verified` records that a reviewer read the whole file against its sources: they set it, to the day they did, in a pull request of their own or in a review commit, never the author of the change. A later change bumps `updated` and leaves `verified` as it was: a `verified` older than `updated` means the last change has not been checked yet.

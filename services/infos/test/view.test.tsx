@@ -91,6 +91,14 @@ describe('« à la une »', () => {
     expect(sides.filter((x) => x.includes('muted')).length).toBe(sides.length - 1)
   })
 
+  it('leaves out of « qui en parle » a side none of the sources shown belongs to', () => {
+    const sides = (html: string) => [...html.matchAll(/<div class="sd(?: none)?"><span class="l">([^<]+)<\/span>/g)].map((m) => m[1])
+    const r = readingFor()
+    expect(sides(front(r))).toEqual(['à gauche', 'au centre', 'à droite', 'sans classement'])
+    const placed = { ...r, sources: r.sources.map((s) => (s.lean === 'aucune' ? { ...s, lean: 'centre' as const } : s)) }
+    expect(sides(front(placed))).toEqual(['à gauche', 'au centre', 'à droite'])
+  })
+
   it('keeps the numbers when the theme filter hides rows', () => {
     const r = readingFor()
     const html = front(r, { listed: r.subjects.filter((s) => s.themes.length), chosen: r.subjects[2], mine: true })

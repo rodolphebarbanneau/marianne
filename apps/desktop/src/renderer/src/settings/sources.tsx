@@ -177,7 +177,7 @@ export function SourcesSection({ stored, address, onChange }: { stored: NewsChoi
                 <i style={{ background: leanColor(l) }} />
                 {LEAN_LABELS[l]}
                 {l === defaultLean(s) && (
-                  <span className="small muted" title={s.leanBasis}>
+                  <span className="small muted" title="le classement par défaut de Marianne : vous pouvez le changer">
                     {' '}
                     · Marianne
                   </span>
@@ -243,7 +243,7 @@ export function SourcesSection({ stored, address, onChange }: { stored: NewsChoi
                   )}
                 </span>
                 <span className="sides">
-                  {SIDES.map((side) => (
+                  {SIDES.filter((side) => sides[side] !== undefined).map((side) => (
                     <span key={side}>
                       <i style={{ background: leanColor(SIDE_LEANS[side]) }} />
                       {SIDE_LABELS[side]} {sides[side]}

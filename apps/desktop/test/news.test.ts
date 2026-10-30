@@ -77,14 +77,13 @@ const source = (id: string, group: NewsSource['group'], more: Partial<NewsSource
 const CATALOGUE: NewsSource[] = [
   source('le-monde', 'national', {
     lean: 'centre-gauche',
-    leanBasis: 'test',
     sections: [
       { id: 'une', label: 'à la une', feed: 'https://le-monde.fr/une.xml' },
       { id: 'sport', label: 'sport', feed: 'https://le-monde.fr/sport.xml' }
     ]
   }),
-  source('la-croix', 'national', { lean: 'centre', leanBasis: 'test' }),
-  source('cnews', 'broadcast', { lean: 'droite', leanBasis: 'test' }),
+  source('la-croix', 'national', { lean: 'centre' }),
+  source('cnews', 'broadcast', { lean: 'droite' }),
   source('ouest-france', 'regional', { regions: ['53', '52'] }),
   source('le-progres', 'regional', { regions: ['84'] }),
   source('les-decodeurs', 'factcheck')

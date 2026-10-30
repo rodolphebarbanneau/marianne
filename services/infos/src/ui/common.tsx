@@ -153,9 +153,9 @@ export function Spectrum({ sources, telling }: { sources: InfosSource[]; telling
   )
 }
 
-/** The sources of each side, in the order of their colours. */
+/** The sources of each side, in the order of their colours; a side none of them belongs to is left out, it would say « 0 sur 0 ». */
 export function sidesOf(sources: InfosSource[]): Array<{ side: Side; label: string; sources: InfosSource[] }> {
-  return SIDES.map((side) => ({ side, label: SIDE_LABELS[side], sources: sources.filter((s) => sideOf(s.lean) === side) }))
+  return SIDES.map((side) => ({ side, label: SIDE_LABELS[side], sources: sources.filter((s) => sideOf(s.lean) === side) })).filter((s) => s.sources.length > 0)
 }
 
 /** A subject's number, as a Minitel sommaire numbers its lines: type it, then ENVOI. The first in accent. */
