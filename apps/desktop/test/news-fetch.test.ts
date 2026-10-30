@@ -1,11 +1,11 @@
 import type { LookupAddress } from 'node:dns'
-import { describe, expect, it, vi } from 'vitest'
-import { fetchCapped, lasting, type Hop, type HopTransport } from '../src/main/http'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fetchCapped, fetchText, lasting, type Hop, type HopTransport } from '../src/main/http'
 
 /**
  * The article reader's fetch (fetchCapped): only the open web, each redirect checked again, each
- * name resolved and refused when it leads to this computer or its network. The network and the
- * resolver are the test's.
+ * name resolved and refused when it leads to this computer or its network. And the data sources'
+ * cache (fetchText). The network and the resolver are the test's.
  */
 
 vi.mock('electron', () => ({ app: { getVersion: () => '0.0.0' }, net: {}, session: {} }))
@@ -102,5 +102,35 @@ describe('the reader’s fetch', () => {
     const timedOut = await fetchCapped('https://journal.fr/a', OPTS, { transport: slow, resolve }).catch((e: Error) => e)
     expect((timedOut as Error).message).toMatch(/délai dépassé/)
     expect(lasting(timedOut)).toBe(false)
+  })
+})
+
+describe('the data sources’ cache', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('gives each read an answer as recent as it asks, whoever asked first', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    const start = Date.parse('2026-10-30T15:00:00+01:00')
+    vi.setSystemTime(start)
+    let answers = 0
+    vi.stubGlobal('fetch', async () => new Response(`answer ${++answers}`))
+    const url = 'https://videos.example.fr/php/eventsearch.php?Date=30%2F10%2F2026'
+    // The day's videos, kept 2 minutes by the recordings of a meeting.
+    expect(await fetchText(url, { cacheMs: 120_000 })).toBe('answer 1')
+    // 30 seconds later the lives, which take 20 seconds at most: asked again, not held to the 2 minutes.
+    vi.setSystemTime(start + 30_000)
+    expect(await fetchText(url, { cacheMs: 20_000 })).toBe('answer 2')
+    expect(await fetchText(url, { cacheMs: 120_000 })).toBe('answer 2')
+    vi.setSystemTime(start + 45_000)
+    expect(await fetchText(url, { cacheMs: 20_000 })).toBe('answer 2')
+    // An answer the 20-second reader left serves the 2-minute one as long as it is recent enough for it.
+    vi.setSystemTime(start + 130_000)
+    expect(await fetchText(url, { cacheMs: 120_000 })).toBe('answer 2')
+    expect(await fetchText(url, { cacheMs: 20_000 })).toBe('answer 3')
+    expect(await fetchText(url, { cacheMs: 0 })).toBe('answer 4')
+    expect(answers).toBe(4)
   })
 })
