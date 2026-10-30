@@ -14,7 +14,7 @@ Marianne fetches public information (the news, the services' data) from its publ
 
 ## Community services
 
-A community service (a .3615 file, or the community catalogue once it opens) runs apart: it sees neither your folders, nor your documents, nor your identifiers, connects only to the sites it declares, and knows only the commune of your address. « ✓ validé » (validated) means the project reviewed this version; « non validé » (not validated) and « hors catalogue » (outside the catalogue), that no one did: add only what you know. When Marianne uses its tools in a folder, it sends them what they need to answer you.
+A community service (a .3615 file, or the community catalogue once it opens) runs apart: it sees neither your folders, nor your documents, nor your identifiers, connects only to the sites it declares, and knows only the commune of your address. « ✓ validé » (validated) means the project reviewed this version; « non validé » (not validated) and « hors catalogue » (outside the catalogue), that no one did: add only what you know. When Marianne uses its tools in a folder, it sends them what they need to answer you, never more than a short message. For a service that isn't « ✓ validé », it first shows you what would leave, every time: nothing goes without your approval.
 
 ## Backing up
 

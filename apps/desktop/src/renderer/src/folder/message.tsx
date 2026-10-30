@@ -98,8 +98,9 @@ function ToolLine({ part }: { part: ToolPart }) {
 function ApprovalCard({ part }: { part: ApprovalPart }) {
   const { setBrowserOpen } = useApp()
   const pending = part.status === 'pending'
-  const status = { pending: '', accepted: 'accepté', refused: 'refusé', expired: 'sans suite' }[part.status]
-  const kind = { proposal: 'proposition', form: 'formulaire', online: 'votre accord' }[part.kind]
+  const sending = part.kind === 'service'
+  const status = { pending: '', accepted: sending ? 'envoyé' : 'accepté', refused: 'refusé', expired: 'sans suite' }[part.status]
+  const kind = { proposal: 'proposition', form: 'formulaire', online: 'votre accord', service: 'votre accord' }[part.kind]
   return (
     <div className={`inline-card${pending ? ' ask' : ''}`}>
       <span className="h">
@@ -123,12 +124,12 @@ function ApprovalCard({ part }: { part: ApprovalPart }) {
         {pending && (
           <div className="acts">
             <button className="btn primary" onClick={() => api.respondApproval(part.id, true)}>
-              approuver
+              {sending ? 'envoyer' : 'approuver'}
             </button>
             <button className="btn" onClick={() => api.respondApproval(part.id, false)}>
               refuser
             </button>
-            {part.kind !== 'proposal' && (
+            {(part.kind === 'form' || part.kind === 'online') && (
               <button className="btn" onClick={() => setBrowserOpen(true)}>
                 voir la page ◨
               </button>
@@ -136,7 +137,7 @@ function ApprovalCard({ part }: { part: ApprovalPart }) {
             <span className="small dim">
               {part.kind === 'online'
                 ? 'cela vous engage : Marianne ne le fait jamais sans vous'
-                : part.kind === 'form'
+                : part.kind === 'form' || sending
                   ? 'rien n’est envoyé sans votre accord'
                   : 'rien n’est modifié sans votre accord'}
             </span>

@@ -205,7 +205,7 @@ export interface DocumentPart {
 export interface ApprovalPart {
   type: 'approval'
   id: string
-  kind: 'proposal' | 'form' | 'online'
+  kind: 'proposal' | 'form' | 'online' | 'service'
   title: string
   reason?: string
   /** What will be written or done, with real values (never sent to the engine). */

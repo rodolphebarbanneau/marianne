@@ -14,7 +14,7 @@ Marianne va chercher l’information publique (les actualités, les données des
 
 ## Les services de la communauté
 
-Un service de la communauté (un fichier .3615, ou le catalogue de la communauté quand il ouvrira) tourne à part : il ne voit ni vos dossiers, ni vos documents, ni vos identifiants, ne se connecte qu’aux sites qu’il annonce, et ne connaît que la commune de votre adresse. « ✓ validé » veut dire que le projet a relu cette version ; « non validé » et « hors catalogue », que personne ne l’a fait : n’ajoutez que ce que vous connaissez. Quand Marianne se sert de ses outils dans un dossier, elle leur envoie ce dont ils ont besoin pour vous répondre.
+Un service de la communauté (un fichier .3615, ou le catalogue de la communauté quand il ouvrira) tourne à part : il ne voit ni vos dossiers, ni vos documents, ni vos identifiants, ne se connecte qu’aux sites qu’il annonce, et ne connaît que la commune de votre adresse. « ✓ validé » veut dire que le projet a relu cette version ; « non validé » et « hors catalogue », que personne ne l’a fait : n’ajoutez que ce que vous connaissez. Quand Marianne se sert de ses outils dans un dossier, elle leur envoie ce dont ils ont besoin pour vous répondre, jamais plus d’un court message. Pour un service qui n’est pas « ✓ validé », elle vous montre d’abord ce qui partirait, à chaque fois : rien ne part sans votre accord.
 
 ## Sauvegarder
 

@@ -42,6 +42,11 @@ function cleanTmp(): void {
 // French dates in forms (jj/mm/aaaa) and French defaults, whatever the system language.
 app.commandLine.appendSwitch('lang', 'fr')
 
+// No name looked up as a hint, from any page. A community service's screen reaches nothing else, but
+// a <link rel="dns-prefetch"> goes to the system's resolver whatever its session's proxy says, and a
+// name can carry a message to the DNS servers of its author (docs/services.md).
+app.commandLine.appendSwitch('blink-settings', 'dnsPrefetchingEnabled=false')
+
 // Community services' pages (main/community/runtime/scheme.ts): a scheme of their own, secure and
 // standard (an origin per service), whose module scripts load in a frame without an origin of its own.
 protocol.registerSchemesAsPrivileged([{ scheme: SERVICE_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }])

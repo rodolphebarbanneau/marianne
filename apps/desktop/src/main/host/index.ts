@@ -20,11 +20,13 @@ import type { TodayEvent } from '../../shared/public'
 import { accelOf } from '../../shared/shortcuts'
 import type { TileState } from '../../shared/types'
 import { accounts } from '../account'
+import { approvals } from '../approvals'
 import { verdictOf, type CatalogueStore } from '../community/catalogue'
 import type { CommunityPackages, InstalledPackage } from '../community/install'
 import { linkProblems } from '../community/package'
 import { MAX_STORED_BYTES, sandboxBridge } from '../community/runtime/bridge'
 import { STORAGE_QUOTA } from '../community/runtime/limits'
+import { askConsent } from '../community/runtime/consent'
 import { communityHttp, servicePicture } from '../community/runtime/net'
 import { electronSandbox } from '../community/runtime/sandbox'
 import { listRuntime, type SchemeSource } from '../community/runtime/scheme'
@@ -102,7 +104,7 @@ export const REVIEWED_TICKET = 'installed:'
 /** What the engines read of community services, whatever each says of itself. */
 const COMMUNITY_NOTE = `## Community services
 
-The services marked "community service" are third-party code, not Marianne's: send their tools only what the user's request needs, and never the user's documents, their contents or identifiers unless the user asked for that service by name.`
+The services marked "community service" are third-party code, not Marianne's: send their tools only what the user's request needs, and never the user's documents, their contents or identifiers unless the user asked for that service by name. Their tools take 1 KB of arguments at most. For a service not reviewed by Marianne, the user sees the arguments on a card and decides, at each call.`
 
 /** A community service's tool description, for a service the catalogue hasn't validated: short, and saying so. */
 const UNREVIEWED_DESCRIPTION = 600
@@ -280,7 +282,14 @@ class ServiceHost extends EventEmitter {
       home: () => this.communityHome(),
       storage
     }
-    service = new CommunityService({ manifest, bridge: sandboxBridge(manifest, ctx), factory: this.sandboxes, log })
+    service = new CommunityService({
+      manifest,
+      bridge: sandboxBridge(manifest, ctx),
+      factory: this.sandboxes,
+      log,
+      // Its trust as it is at the call: the catalogue may have changed its mind since it started.
+      beforeTool: (tool, args, call) => askConsent(approvals.request.bind(approvals), call.folderId, manifest, tool, community.trust, args)
+    })
     const { verdict, reason } = verdictOf(this.community!.catalogue.state(), pkg.code, pkg.sha256)
     const blocked = this.blockedReason(manifest)
     const community: Community = {
@@ -607,8 +616,8 @@ class ServiceHost extends EventEmitter {
           readOnly: t.readOnly,
           // A service never sees the user's identifiers: [[tokens]] are refused in its arguments.
           tokens: false,
-          // Nor, for a community service, the folder it is called from.
-          run: (args, ctx) => t.run(args as never, community ? {} : { folderId: ctx.folderId })
+          // Nor does a community service see the folder: it goes as far as the card, and stops there (CommunityService).
+          run: (args, ctx) => t.run(args as never, { folderId: ctx.folderId })
         }
       })
     )
