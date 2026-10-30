@@ -1,7 +1,8 @@
 import { daysUntil, DOMAINS, today, type Deadline, type DocumentMeta } from '@marianne/profile'
 import { foldText } from '@marianne/sdk'
+import type { ServiceState } from '@marianne/sdk'
 import type { Procedure } from '@marianne/content'
-import type { DomainId, FolderSummary, PlannedTask, TaskRun, TaskTemplate } from '@shared/types'
+import type { DomainId, FolderSummary, PlannedTask, TaskOutcome, TaskRun, TaskTemplate } from '@shared/types'
 
 /**
  * What the Démarches pages compute, without React: « à faire », the weeks to come, the one search.
@@ -67,6 +68,8 @@ export interface TodoItem {
   /** The action's word; empty: the row alone opens it. */
   act: string
   target: TodoTarget
+  /** It waits for the user, in the words of the sommaire's state line. */
+  wait?: string
 }
 
 const SOURCES: Record<Deadline['source'], string> = { rule: 'règle', calendar: 'calendrier officiel', user: 'vous', agent: 'Marianne', service: 'service' }
@@ -104,6 +107,7 @@ export function todoItems({ folders, deadlines, documents, tasks }: TodoSources,
   for (const f of folders) {
     if (f.settledAt || (f.status !== 'approval' && f.status !== 'question')) continue
     const approval = f.status === 'approval'
+    const wait = approval ? 'attend votre accord' : 'une question pour vous'
     items.push({
       key: `folder:${f.id}`,
       rank: 1,
@@ -112,26 +116,28 @@ export function todoItems({ folders, deadlines, documents, tasks }: TodoSources,
       domain: f.domain,
       title: f.title,
       chip: 'dossier',
-      detail: f.meta || (approval ? 'attend votre accord' : 'une question pour vous'),
+      detail: f.meta || wait,
       act: 'répondre',
-      target: { kind: 'folder', id: f.id }
+      target: { kind: 'folder', id: f.id },
+      wait
     })
   }
   for (const t of tasks) {
     const run = lastRun(t)
     if (!t.on || !run || (run.outcome !== 'waiting' && run.outcome !== 'failed')) continue
-    const waiting = run.outcome === 'waiting'
+    const wait = run.outcome === 'waiting' ? 'une tâche vous attend' : 'tâche sans suite'
     items.push({
       key: `task:${t.id}`,
       rank: 1,
       date: '',
-      when: { text: waiting ? 'une tâche vous attend' : 'tâche sans suite', tone: 'you' },
+      when: { text: wait, tone: 'you' },
       domain: t.domain,
       title: t.title,
       chip: 'tâche planifiée',
       detail: run.text ?? '',
       act: 'ouvrir',
-      target: { kind: 'folder', id: t.folderId }
+      target: { kind: 'folder', id: t.folderId },
+      wait
     })
   }
   for (const d of deadlines) {
@@ -171,6 +177,72 @@ export function todoItems({ folders, deadlines, documents, tasks }: TodoSources,
 
 /** Under 2: what presses, shown first, the rest a click further. */
 export const presses = (item: TodoItem) => item.rank < 2
+
+/** What is said of what presses, beside its section's name. */
+export function pressingLine(n: number): string {
+  if (!n) return 'rien ne presse'
+  return n > 1 ? `${n} vous attendent ou arrivent dans les ${PRESSING_DAYS} jours` : `1 vous attend ou arrive dans les ${PRESSING_DAYS} jours`
+}
+
+export interface DomainLine {
+  /** What waits for the user; empty: nothing. */
+  wait: string
+  /** The next échéance, « title · when »; empty: none within 45 days. */
+  next: string
+  /** Folders in progress: neither settled nor asleep. */
+  folders: number
+  /** Tasks that are on. */
+  tasks: number
+  /** Nothing at all: the row steps back. */
+  idle: boolean
+}
+
+/** A title as a state line has room for it: « Passage A13 à payer · AB-123-CD » keeps what to do. */
+const shortTitle = (title: string) => title.split(' · ')[0].split(' : ')[0]
+
+/**
+ * A domain's line of the sommaire. What waits comes from « à faire », so that the two never
+ * disagree; a task that needs the user counts as a folder does.
+ */
+export function domainLine(domain: DomainId, sources: TodoSources, now = new Date()): DomainLine {
+  const folders = sources.folders.filter((f) => f.domain === domain && !f.settledAt && !f.snoozedUntil).length
+  const tasks = sources.tasks.filter((t) => t.domain === domain && t.on).length
+  const waits = todoItems(sources, domain, now).flatMap((x) => x.wait ?? [])
+  const wait = waits.length > 1 ? `${waits.length} vous attendent` : (waits[0] ?? '')
+  const [coming] = sources.deadlines
+    .filter((d) => d.domain === domain && d.status === 'todo' && daysUntil(d.date, now) <= TODO_DAYS)
+    .sort((a, b) => a.date.localeCompare(b.date))
+  const next = coming ? `${shortTitle(coming.title)} · ${whenOf(coming.date, now).text}` : ''
+  return { wait, next, folders, tasks, idle: !wait && !next && !folders && !tasks }
+}
+
+/** The services shown on a domain's line. ANNUAIRE is in every domain: it would say nothing there. */
+export const domainServices = (services: ServiceState[], domain: DomainId) =>
+  services.filter((s) => s.added && s.on && s.manifest.domains.includes(domain) && s.manifest.id !== 'annuaire')
+
+/** The day of the next task that is on: « dimanche 1er nov. »; empty: none. */
+export function nextTaskDay(tasks: PlannedTask[]): string {
+  const [next] = tasks
+    .filter((t) => t.on)
+    .map((t) => t.next)
+    .sort()
+  return next ? `${weekdayOf(next)} ${shortDate(next)}` : ''
+}
+
+const RUN_CELLS: Record<TaskOutcome, { look: string; word: string }> = {
+  nothing: { look: '', word: 'rien trouvé' },
+  found: { look: 'found', word: 'trouvé' },
+  waiting: { look: 'you', word: 'vous attend' },
+  failed: { look: 'failed', word: 'échec' },
+  done: { look: 'done', word: 'fait' }
+}
+
+/** A run's cell: its look, and what it says on hover. Only a quiet run shows that it was caught up: what one found matters more. */
+export function runCell(run: TaskRun): { look: string; title: string } {
+  const { look, word } = RUN_CELLS[run.outcome]
+  const day = shortDate(today(new Date(run.at)))
+  return { look: look || (run.due ? 'late' : ''), title: `${day} · ${word}${run.due ? ' · rattrapée' : ''}${run.text ? ` : ${run.text}` : ''}` }
+}
 
 /** The Monday of a date's week. */
 function monday(from: Date): Date {

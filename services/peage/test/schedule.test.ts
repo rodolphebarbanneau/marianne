@@ -77,7 +77,7 @@ describe('deadlines', () => {
         title: 'Péage A13-A14 : trajet du 28/10 à payer',
         due: '2026-10-31T14:30:00+01:00',
         detail: 'sur www.sanef.com (Sanef), jamais depuis un lien reçu par SMS',
-        params: { trip: 't1' }
+        params: { trip: 't1', vehicle: 'v1' }
       }
     ])
   })

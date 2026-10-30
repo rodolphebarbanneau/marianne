@@ -58,7 +58,7 @@ export function Shell() {
             {view.kind === 'folder' ? (
               <FolderScreen id={view.id} />
             ) : view.kind === 'domain' ? (
-              <DomainPage id={view.id} />
+              <DomainPage id={view.id} tab={view.tab} />
             ) : view.kind === 'service' ? (
               <ServiceScreen id={view.id} params={view.params ?? {}} />
             ) : view.page === 'procedures' ? (

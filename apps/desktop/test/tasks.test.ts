@@ -132,6 +132,26 @@ describe('a task', () => {
     expect(tasks.list()).toEqual([])
   })
 
+  it('takes a new rhythm: the reason for the old one goes, and the next day counts from the last run', async () => {
+    const task = tasks.create({ ...TOLLS, why: 'un passage se paie dans les 72 h' })
+    await tasks.tick()
+    const changed = tasks.update(task.id, { every: { unit: 'week', n: 1 }, everyLabel: 'chaque semaine' })
+    expect(changed).toMatchObject({ next: '2026-11-06', why: undefined, everyLabel: 'chaque semaine' })
+    expect(folders.get(task.folderId)?.snoozedUntil).toBe(dayStart('2026-11-06'))
+  })
+
+  it('keeps its reason and its day when only how it tells the user changes', () => {
+    const task = tasks.create({ ...REMINDER, why: 'tous les 6 mois' })
+    expect(tasks.update(task.id, { notify: 'always' })).toMatchObject({ next: task.next, why: 'tous les 6 mois', notify: 'always' })
+  })
+
+  it('never puts the next day in the past', async () => {
+    const task = tasks.create(TOLLS)
+    await tasks.tick()
+    vi.setSystemTime(new Date(2026, 11, 20))
+    expect(tasks.update(task.id, { every: { unit: 'day', n: 1 }, everyLabel: 'chaque jour' }).next).toBe('2026-12-20')
+  })
+
   it('paused, files its folder away; taken up again, it sleeps until its day', () => {
     const task = tasks.create(REMINDER)
     tasks.setOn(task.id, false)

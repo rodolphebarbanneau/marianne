@@ -62,6 +62,7 @@ export function tollTasks(vehicles: Vehicle[]): ServiceTaskTemplate[] {
             rhythm: 1,
             allows: ALLOWS(v.plate),
             never: NEVER,
+            unplanned: 'péages non vérifiés',
             instruction: instruction(v.id),
             sites: SITES
           }

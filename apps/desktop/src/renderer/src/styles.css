@@ -4091,6 +4091,7 @@ button.choice:hover {
   padding-top: 0;
 }
 .dm-dom .kiosk-top {
+  container: kiosk / inline-size;
   padding-bottom: 0;
 }
 .dm-dom .service-tabs {
@@ -4175,12 +4176,12 @@ button.choice:hover {
 }
 /* « à faire »: a search row, its when and its block in front. */
 .srow.dm-t {
-  grid-template-columns: 128px auto minmax(0, 1fr) 150px 92px;
+  grid-template-columns: 11em auto minmax(0, 1fr) 150px 92px;
   gap: 10px;
   padding: 4px 8px;
 }
 .srow.dm-t.here {
-  grid-template-columns: 136px minmax(0, 1fr) auto;
+  grid-template-columns: 11em minmax(0, 1fr) auto;
 }
 .srow.dm-t > .dm-src {
   justify-self: start;
@@ -4188,6 +4189,18 @@ button.choice:hover {
 .srow.dm-t.first {
   box-shadow: inset 2px 0 0 var(--accent);
   background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+/* Narrow: a search row drops its third column, which here is the title; what gives way is the source. */
+@container kiosk (max-width: 720px) {
+  .srow.dm-t {
+    grid-template-columns: 11em auto minmax(0, 1fr) 92px;
+  }
+  .srow.dm-t > :nth-child(3) {
+    display: flex;
+  }
+  .srow.dm-t > .dm-src {
+    display: none;
+  }
 }
 .dm-2 {
   gap: 1px;
@@ -4298,6 +4311,13 @@ button.choice:hover {
 }
 .dm-som tbody tr.sel td.dom {
   box-shadow: inset 2px 0 0 var(--accent);
+}
+/* Narrow: the category gives way first, the state then shrinks on its own. */
+@container kiosk (max-width: 980px) {
+  .dm-som th:first-child,
+  .dm-som td.cat {
+    display: none;
+  }
 }
 /* A week's marks: an échéance, a square, red when late or within 3 days; its date and title on hover. */
 .dm-mk {
@@ -4694,6 +4714,20 @@ button.choice:hover {
   border-style: dashed;
   background: transparent;
 }
+/* Narrow: what stands side by side stacks, what is the user's first. */
+@container service (max-width: 760px) {
+  .dm-two,
+  .dm-ents,
+  .dm-tcard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dm-tcard .cmd {
+    align-items: flex-start;
+  }
+  .dm-tcard .cmd .nx {
+    text-align: left;
+  }
+}
 .dm-proc {
   display: grid;
   grid-template-columns: 54px minmax(0, 1fr) auto;
@@ -4739,7 +4773,7 @@ button.choice:hover {
   color: var(--dim);
 }
 /* The new task, from a service's template. */
-.modal.dm-modal {
+.modal:has(> .dm-modal) {
   width: min(720px, 100%);
 }
 .dm-modal .mh {
