@@ -6,7 +6,7 @@ import { ArchivePath } from '../components/archive-path'
 import { Guide } from '../app/guide'
 import { ReloadIcon } from '../components/icons'
 import { Logo } from '../components/logo'
-import { Identicon, Modal, Spinner } from '../components/ui'
+import { Identicon, Meter, Modal, Spinner } from '../components/ui'
 import { afterUnlock, lockIntent, opening } from '../lib/after-unlock'
 import { api, errorText, isMac, useLive } from '../lib/api'
 import { accountLabel, clock, shortDate } from '../lib/format'
@@ -375,18 +375,11 @@ function UnlockField({ mode, value, onChange }: { mode: 'pin' | 'password' | 're
   )
 }
 
-const SEGMENTS = 32
-
-/** The opening bar, in place of the field: filled step by step, the next block blinking, what it's doing under it. */
+/** The opening bar, in place of the field: filled step by step, the next block blinking (a Meter, as every wait), what it's doing under it. */
 function OpeningBar({ steps, done }: Opening) {
-  const filled = Math.round((done / steps.length) * SEGMENTS)
   return (
-    <div className="opening-bar" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done}>
-      <div className="meter">
-        {Array.from({ length: SEGMENTS }, (_, i) => (
-          <i key={i} className={i < filled ? 'on' : i === filled ? 'on now' : ''} />
-        ))}
-      </div>
+    <div className="opening-bar">
+      <Meter share={done / steps.length} />
       <span>
         {steps[done]}… <span className="dim">{`${done + 1}/${steps.length}`}</span>
       </span>

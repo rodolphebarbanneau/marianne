@@ -37,6 +37,7 @@ const entry = (code: string, name: string, more: Partial<CatalogueEntry> = {}): 
   keywords: [],
   author: 'Collectif',
   hosts: ['data.example.fr'],
+  links: [],
   connections: [],
   reads: [],
   tools: [],
@@ -136,5 +137,13 @@ describe('the 3615 bar', () => {
       { text: 'eau', mark: true }
     ])
     expect(highlight('Météo', [])).toEqual([{ text: 'Météo', mark: false }])
+  })
+})
+
+describe('« 3615 » typed before a code', () => {
+  it('is the kiosk’s, not a word to find', () => {
+    expect(searchTerms('3615 météo')).toEqual(['meteo'])
+    expect(flatten(search(all, '3615 meteo')).map((l) => l.code)).toEqual(['meteo'])
+    expect(searchTerms('3615')).toEqual([])
   })
 })

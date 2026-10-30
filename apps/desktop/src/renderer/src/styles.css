@@ -511,37 +511,25 @@ textarea.notes {
 .state-box.failed .state-what {
   color: var(--fg);
 }
-/* The bar, in cells as the screen's mosaics: filled to the share when it is known, a wave going
-   through it otherwise. */
-.state-bar {
+/* A wait's bar (Meter), the lock screen's opening bar and every page's: mosaic cells, lit in yellow to the share, or one
+   after another while nothing says how far; the next cell blinks. A cell is on or off: nothing slides or fades. */
+.meter {
+  width: 100%;
+  height: 14px;
   display: grid;
-  grid-template-columns: repeat(24, minmax(0, 1fr));
-  gap: 3px;
-  height: 8px;
+  gap: 2px;
 }
-.state-bar i {
-  background: var(--sel);
+.meter i {
+  background: var(--rule);
 }
-.state-bar i.on {
+.meter i.on {
   background: var(--accent);
 }
-.state-bar.moving i {
-  animation: state-wave 1.32s ease-in-out infinite;
-}
-@keyframes state-wave {
-  0%,
-  100% {
-    background: var(--sel);
-  }
-  30% {
-    background: var(--accent);
-  }
-  60% {
-    background: var(--sel);
-  }
+.meter i.now {
+  animation: blink 1.2s steps(1) infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .state-bar.moving i {
+  .meter i.now {
     animation: none;
   }
 }
@@ -1518,17 +1506,14 @@ button.ev:hover {
 
 /* ---------- the Services page: the 3615 kiosk, my services, « découvrir » ---------- */
 
-/* The page lays out by the room the sidebar leaves it: a container, as a service's screen is. */
+/* The page takes the window's whole width, and lays out by the room the sidebar leaves it: a container, as a service's
+   screen is. */
 .services-page .kiosk {
   container: kiosk / inline-size;
   display: flex;
   flex-direction: column;
   gap: var(--s4);
-  max-width: var(--content-width);
   padding-bottom: var(--s6);
-}
-.services-page .page-head {
-  margin-bottom: 0;
 }
 /* Layout helpers of the Services page and its dialogs (which float over the window, out of the page). */
 .grow {
@@ -1580,39 +1565,13 @@ button.ev:hover {
 * + .sec-h {
   margin-top: 22px;
 }
-/* The framed + at the end of the page's head: adding a service (« découvrir »). */
-.plus-btn {
-  width: 30px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--rule);
-  background: var(--bg-raised);
-  color: var(--fg);
-}
-.plus-btn:hover {
-  border-color: var(--bleu);
-  color: var(--hi);
-}
-.plus-btn svg {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-}
-
-/* The kiosk's head: QUEL SERVICE ?, the 3615 bar, ENVOI, and a Minitel waiting. */
+/* The kiosk's head, on the screen's own background: QUEL SERVICE ?, the 3615 bar, ENVOI, and a Minitel waiting. */
 .kiosk-head {
-  border: 3px double var(--rule);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 24px;
   align-items: center;
-  padding: 12px 22px 12px 20px;
-  background-image: radial-gradient(circle at 1.5px 1.5px, color-mix(in srgb, var(--dot) 46%, transparent) 0.6px, transparent 0.9px);
-  background-size: 4px 4px;
+  padding: 4px 0 0;
 }
 .kiosk-head .ask {
   font-family: var(--retro);
@@ -1712,7 +1671,6 @@ button.ev:hover {
 @container kiosk (max-width: 620px) {
   .kiosk-head {
     grid-template-columns: minmax(0, 1fr);
-    padding: 12px 14px;
   }
   .kiosk-head .minitel-art {
     display: none;
@@ -2506,6 +2464,28 @@ button.ev:hover {
 .service-content > * {
   max-width: var(--content-width);
   margin-inline: auto;
+}
+/* A community service's screen: a view of its own, drawn by the main process over this box, which
+   fills the body edge to edge; it scrolls inside, where its view runtime draws the same gutters
+   and column (src/runtime/runtime.css). */
+.service-page .service-body.community-host {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+.service-body.community-host > .service-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.service-content > .community-screen {
+  flex: 1;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  margin: 0;
 }
 .service-head {
   display: flex;
@@ -3455,6 +3435,10 @@ button.ev:hover {
   border: 1px solid var(--fg);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
 }
+/* It holds the focus while open (Modal): its frame is already its outline. */
+.modal:focus {
+  outline: none;
+}
 .modal .in {
   padding: 14px 16px;
   display: flex;
@@ -3567,6 +3551,13 @@ button.ev:hover {
   background: var(--fg);
   color: var(--noir);
   padding: 4px 12px;
+}
+/* A community screen (a view of its own, drawn over the page) would cover it: over the bottom bar then. */
+html[data-community-screen] .toast {
+  bottom: 0;
+  min-height: var(--bar-h);
+  display: flex;
+  align-items: center;
 }
 
 /* ---------- launch, unlock ---------- */
@@ -3816,7 +3807,7 @@ button.choice:hover {
 .unlock-controls.away {
   visibility: hidden;
 }
-/* Opening: blocks filled step by step, the next one blinking; what it's doing under them. */
+/* Opening: the blocks of a Meter filled step by step, the next one blinking; what it's doing under them. */
 .opening-bar {
   width: 100%;
   display: flex;
@@ -3824,22 +3815,6 @@ button.choice:hover {
   align-items: center;
   gap: 10px;
   padding-top: 6px;
-}
-.opening-bar .meter {
-  width: 100%;
-  height: 14px;
-  display: grid;
-  grid-template-columns: repeat(32, 1fr);
-  gap: 2px;
-}
-.opening-bar .meter i {
-  background: var(--rule);
-}
-.opening-bar .meter i.on {
-  background: var(--accent);
-}
-.opening-bar .meter i.now {
-  animation: blink 1.2s steps(1) infinite;
 }
 @keyframes blink {
   50% {

@@ -40,7 +40,7 @@ import { franceDigest } from './public/france'
 import { fetchNews } from './public/news'
 import { sync } from './public/sync'
 import { todayEvents } from './public/today'
-import { services } from './host'
+import { REVIEWED_TICKET, screens, services } from './host'
 import { session } from './session'
 import { applyLoginItem } from './tray'
 import { updater } from './updater'
@@ -300,7 +300,17 @@ export function registerIpc(): void {
   handle('addService', (id: string) => services.add(id))
   handle('removeService', (id: string) => services.remove(id))
   handle('serviceOpened', (id: string) => services.opened(id))
+  handle('pinService', (id: string, pinned: boolean) => services.pin(id, pinned === true))
+  handle('switchService', (id: string, on: boolean) => services.switch(id, on === true))
   handle('serviceTiles', () => services.tiles())
+  handle('serviceHelp', (id: string) => services.help(id))
+  // A community screen: a view of its own over the window, its messages checked and relayed (main/community/runtime/screen.ts).
+  on('communityScreenOpen', (code: string) => screens.open(code))
+  on('communityScreenBounds', (rect: Rect | null) => screens.setBounds(rect))
+  on('communityScreenPost', (code: string, message: unknown) => screens.post(code, message))
+  on('communityScreenClose', (code: string) => screens.close(code))
+  screens.on('window', (event: { code: string; message: unknown }) => broadcast('communityScreen', event))
+  services.on('change', () => screens.check())
 
   // ---------- community services: the catalogue, .3615 files ----------
   // Reviews and installs need an open account; a file reviewed waits for the user's agreement until the lock.
@@ -323,7 +333,13 @@ export function registerIpc(): void {
   })
   handle('installServiceFile', async (ticket: string) => {
     withAccount()
+    // A version already on this computer, reviewed by this account now.
+    if (typeof ticket === 'string' && ticket.startsWith(REVIEWED_TICKET)) return services.acceptVersion(ticket)
     await communityPackages.install(ticket)
+  })
+  handle('reviewInstalledService', (code: string) => {
+    withAccount()
+    return services.reviewInstalled(code)
   })
   handle('takeServiceFiles', () => openedServiceFiles.take())
   handle('addCatalogueService', async (code: string) => {

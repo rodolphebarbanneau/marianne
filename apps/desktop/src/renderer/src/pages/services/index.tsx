@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useApp, type ScreenKey } from '../../app/context'
-import { PageHead } from '../../components/ui'
+import { api } from '../../lib/api'
 import { useCatalogue, useServices, useServiceTiles } from '../../host'
 import { CATALOGUE_PAGE, CatalogueNote, CatalogueTable, catalogueRows, RecommendedCards, recommended, TRUST_FILTERS, type TrustFilter } from './discover'
 import { FileDialog, PinsDialog, ReviewDialog, type ReviewSubject } from './dialogs'
@@ -29,7 +29,7 @@ export function ServicesPage() {
   const app = useApp()
   const { go, setSettings, setScreenKeys, toast, openSettings } = app
   const services = useServices()
-  const tiles = useServiceTiles()
+  const tiles = useServiceTiles((app.settings?.services.pinned ?? []).join())
   const catalogue = useCatalogue()
   const all = useMemo(() => listings(services, catalogue.entries), [services, catalogue.entries])
 
@@ -57,15 +57,17 @@ export function ServicesPage() {
 
   // Typing in the 3615 bar, at once: the page is a kiosk.
   useEffect(() => void input.current?.focus({ preventScroll: true }), [])
-  // A .3615 file opened from the system: its review, over the page.
-  useEffect(() => {
-    const show = () => {
-      const review = takeFileReview()
-      if (review) setDialog({ kind: 'review', subject: { kind: 'file', review } })
-    }
-    show()
-    return onFileReview(show)
+  // A .3615 file opened from the system: its review, over the page; several, one after another, never over another dialog.
+  const dialogOpen = useRef(false)
+  dialogOpen.current = dialog !== null
+  const nextFile = useCallback(() => {
+    const review = takeFileReview()
+    if (review) setDialog({ kind: 'review', subject: { kind: 'file', review } })
   }, [])
+  useEffect(() => onFileReview(() => !dialogOpen.current && nextFile()), [nextFile])
+  useEffect(() => {
+    if (!dialog) nextFile()
+  }, [dialog, nextFile])
 
   const open = useCallback((id: string, params: Record<string, string | number> = {}) => go({ kind: 'service', id, params }), [go])
   const review = (l: Listing) => {
@@ -73,10 +75,8 @@ export function ServicesPage() {
     if (l.state) setDialog({ kind: 'review', subject: { kind: 'official', state: l.state } })
     else if (l.entry) setDialog({ kind: 'review', subject: { kind: 'catalogue', listing: l } })
   }
-  const togglePin = (code: string) =>
-    void setSettings({ services: { pinned: pinnedOrder.includes(code) ? pinnedOrder.filter((x) => x !== code) : [...pinnedOrder, code] } })
-  const disabled = app.settings?.services.disabled ?? []
-  const switchOn = (l: Listing, on: boolean) => void setSettings({ services: { disabled: on ? disabled.filter((x) => x !== l.code) : [...disabled, l.code] } })
+  const togglePin = (code: string) => void api.pinService(code, !pinnedOrder.includes(code))
+  const switchOn = (l: Listing, on: boolean) => void api.switchService(l.code, on)
 
   const typed = (next: string) => {
     setQuery(next)
@@ -145,21 +145,6 @@ export function ServicesPage() {
       <div className="page-body">
         <div className="section">
           <div className="kiosk">
-            <PageHead title="Services">
-              <button
-                className="plus-btn"
-                title="ajouter un service"
-                aria-label="ajouter un service"
-                onClick={() => {
-                  clear()
-                  setTab('discover')
-                }}
-              >
-                <svg viewBox="0 0 16 16" aria-hidden>
-                  <path d="M8 2.5v11 M2.5 8h11" />
-                </svg>
-              </button>
-            </PageHead>
             <KioskHead ref={input} query={query} onQuery={typed} onEnvoi={envoi} onKey={onKey} />
             {searching ? (
               <SearchView
@@ -202,7 +187,12 @@ export function ServicesPage() {
                       </span>
                     </div>
                     {pinnedServices.length ? (
-                      <Tiles services={pinnedServices} tiles={tiles} onOpen={open} onOrder={(order) => void setSettings({ services: { pinned: order } })} />
+                      <Tiles
+                        services={pinnedServices}
+                        tiles={tiles}
+                        onOpen={open}
+                        onOrder={(order) => void setSettings({ services: { pinned: [...order, ...pinnedOrder.filter((id) => !order.includes(id))] } })}
+                      />
                     ) : (
                       <p className="dim">Aucun service épinglé : ☆ dans le tableau en fait une tuile.</p>
                     )}

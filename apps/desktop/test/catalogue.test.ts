@@ -31,6 +31,7 @@ function entry(patch: Record<string, unknown> = {}): CatalogueEntry {
     keywords: ['pharmacie'],
     author: 'Collectif Santé libre',
     hosts: ['www.data.gouv.fr'],
+    links: [],
     connections: ['geo'],
     reads: [],
     tools: ['trouver la pharmacie de garde'],
@@ -45,7 +46,14 @@ function entry(patch: Record<string, unknown> = {}): CatalogueEntry {
 }
 
 function index(services: unknown[], patch: Partial<CatalogueIndex> = {}): CatalogueIndex {
-  return { format: CATALOGUE_FORMAT, published: '2026-10-29T06:00:00.000Z', services: services as CatalogueEntry[], withdrawn: [], ...patch }
+  return {
+    format: CATALOGUE_FORMAT,
+    published: '2026-10-29T06:00:00.000Z',
+    expires: '2026-12-31T00:00:00.000Z',
+    services: services as CatalogueEntry[],
+    withdrawn: [],
+    ...patch
+  }
 }
 
 interface Published {
@@ -169,7 +177,9 @@ describe('the index', () => {
     expect(() => readIndex(index([entry()], { format: 2 }), RESERVED)).toThrow(expect.objectContaining({ reason: 'format' }))
     expect(() => readIndex({ ...index([]), format: '1' }, RESERVED)).toThrow(expect.objectContaining({ reason: 'invalid' }))
     expect(() => readIndex([], RESERVED)).toThrow(/not a JSON object/)
-    expect(() => readIndex({ format: 1, published: '2026-10-29', services: [] }, RESERVED)).toThrow(/must be lists/)
+    expect(() => readIndex({ format: 1, published: '2026-10-29', expires: '2026-12-31', services: [] }, RESERVED)).toThrow(/must be lists/)
+    expect(() => readIndex({ ...index([]), expires: undefined }, RESERVED)).toThrow(/"expires" must be an ISO date/)
+    expect(() => readIndex({ ...index([]), expires: '2026-10-01T00:00:00.000Z' }, RESERVED)).toThrow(/after "published"/)
   })
 
   it('gives a file its verdict by its code and its SHA-256', () => {
@@ -267,7 +277,60 @@ describe('the catalogue', () => {
     remote = publish(index([], { published: '2026-10-01T06:00:00.000Z' }), project.privateKey, '"old"')
     await s.check()
     expect(s.state()).toMatchObject({ status: 'ready', entries: [{ code: 'pharmagarde' }] })
-    expect(lines.join('\n')).toMatch(/before the index in use/)
+    expect(lines.join('\n')).toMatch(/before the latest index taken/)
+  })
+
+  it('never takes an older index again, even once the one kept is gone', async () => {
+    const dir = mkdtempSync(join(root, 'highest-'))
+    let remote = publish(index([entry()], { published: '2026-10-29T06:00:00.000Z' }), project.privateKey, '"new"')
+    const first = store({ dir, remote: () => remote, now: () => Date.parse('2026-10-29T08:00:00Z') })
+    await first.s.check()
+    // The index kept is lost (removed, damaged): an older one, signed, is offered.
+    for (const name of [INDEX_FILE, SIGNATURE_FILE]) rmSync(join(dir, name), { force: true })
+    remote = publish(index([], { published: '2026-10-01T06:00:00.000Z' }), project.privateKey, '"old"')
+    const next = store({ dir, remote: () => remote, now: () => Date.parse('2026-10-29T09:00:00Z') })
+    await next.s.check()
+    expect(next.s.state().status).not.toBe('ready')
+    expect(next.lines.join('\n')).toMatch(/before the latest index taken \(2026-10-29T06:00:00.000Z\)/)
+  })
+
+  it('stops counting an index’s validations once it expires, its withdrawals still counted', async () => {
+    let now = Date.parse('2026-10-29T08:00:00Z')
+    const withdrawn = [{ code: 'velo', version: '1.0.0', sha256: 'b'.repeat(64), reason: 'Retirée.' }]
+    const remote = publish(index([entry()], { expires: '2026-11-01T00:00:00.000Z', withdrawn }))
+    const { s } = store({ remote: () => remote, now: () => now })
+    await s.check()
+    expect(s.state()).toMatchObject({ status: 'ready', entries: [{ code: 'pharmagarde' }] })
+    now = Date.parse('2026-11-02T00:00:00Z')
+    expect(s.state()).toMatchObject({ status: 'failed', entries: [], withdrawn, error: expect.stringContaining('a expiré') })
+  })
+
+  it('expires even after a reading failed (a failure keeps the entries it had)', async () => {
+    let now = Date.parse('2026-10-29T08:00:00Z')
+    let remote: Published | 'fail' = publish(index([entry()], { expires: '2026-11-01T00:00:00.000Z' }))
+    const { s } = store({ remote: () => remote, now: () => now })
+    await s.check()
+    remote = 'fail'
+    now = Date.parse('2026-10-31T00:00:00Z')
+    await s.check()
+    expect(s.state()).toMatchObject({ status: 'failed', entries: [{ code: 'pharmagarde' }] })
+    now = Date.parse('2026-11-02T00:00:00Z')
+    expect(s.state()).toMatchObject({ status: 'failed', entries: [], error: expect.stringContaining('a expiré') })
+    await s.check()
+    expect(s.state()).toMatchObject({ entries: [], error: expect.stringContaining('a expiré') })
+  })
+
+  it('keeps an index before its signature: cut short between the two, the index fails its check and is read again', async () => {
+    const dir = mkdtempSync(join(root, 'order-'))
+    const remote = publish(index([entry()]))
+    const { s } = store({ dir, remote: () => remote })
+    await s.check()
+    expect(readFileSync(join(dir, INDEX_FILE))).toEqual(remote.data)
+    // The new index written, not its signature yet: refused, removed.
+    writeFileSync(join(dir, INDEX_FILE), publish(index([entry({ code: 'velo' })], { published: '2026-10-30T06:00:00.000Z' })).data)
+    const next = store({ dir, remote: () => null })
+    expect(next.s.state().status).toBe('loading')
+    expect(existsSync(join(dir, INDEX_FILE))).toBe(false)
   })
 
   it('removes an index kept that no longer checks out', () => {

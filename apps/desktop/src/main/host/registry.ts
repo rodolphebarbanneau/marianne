@@ -27,6 +27,9 @@ export interface BuiltInService {
  * A new built-in service is a package there, a dependency of the app (its package.json), and a
  * line here and in the window's registry.
  */
+/** Services that changed their code: what the user kept follows them (3615 ASSEMBLEE became 3615 PARLEMENT); the old codes stay Marianne's. */
+export const RENAMED_SERVICES: Record<string, string> = { assemblee: 'parlement' }
+
 export const BUILTIN_SERVICES: BuiltInService[] = [
   { pkg: meteo, module: meteoMain, starter: true },
   { pkg: annuaire, module: annuaireMain, starter: true },

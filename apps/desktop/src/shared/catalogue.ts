@@ -28,6 +28,8 @@ export interface CatalogueEntry {
   author: string
   /** The hosts it reaches. */
   hosts: string[]
+  /** The pages it opens itself in the user's browser (URL prefixes on its hosts), shown before it is added. */
+  links: string[]
   /** Marianne's connections it relies on ("geo": it knows the commune of the user's address). */
   connections: string[]
   /** What of the user's profile it asks to read. */
@@ -60,6 +62,8 @@ export interface CatalogueIndex {
   format: number
   /** When the project published it (ISO). */
   published: string
+  /** Until when it may be used (ISO): past it, its validations no longer count, until a newer one comes. */
+  expires: string
   services: CatalogueEntry[]
   withdrawn: Withdrawal[]
 }
@@ -88,6 +92,8 @@ export interface ServiceFileReview {
   sync: boolean
   /** The tools it declares, as the conversation names them. */
   tools: string[]
+  /** The pages it opens itself in the user's browser (its manifest's links). */
+  links: string[]
   /** The catalogue's entry for this exact file, when it lists it. */
   entry?: CatalogueEntry
   /** The version of it already among the user's services, if any. */

@@ -92,7 +92,12 @@ export function trustRank(l: Pick<Listing, 'official' | 'trust'>): number {
 /** Lowercase, accents aside, one character for one: positions stay those of the text (to highlight it). */
 const foldEach = (text: string) => [...text].map((ch) => foldText(ch)[0] ?? ch).join('')
 
-export const searchTerms = (query: string) => foldText(query).split(/\s+/).filter(Boolean)
+/** The words typed, folded; « 3615 » before a code is the kiosk's, not a word to find. */
+export const searchTerms = (query: string) =>
+  foldText(query)
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((w, i) => !(i === 0 && w === '3615'))
 
 /** How well a service matches the words typed (each must be found); why, when the code or name doesn't say it. */
 export function scoreOf(l: Listing, terms: string[]): { score: number; why: string | null } | null {

@@ -185,7 +185,8 @@ interface Facts {
   verdict: ServiceTrust | 'official' | 'refused'
   byline: string
   hosts: string[]
-  geo: boolean
+  /** The pages it opens in the user's browser itself (a community service's links). */
+  links: string[]
   sync: boolean
   tools: string[]
   reads: string[]
@@ -203,7 +204,6 @@ const fromManifest = (m: ServiceManifest) => ({
   version: m.version,
   icon: m.icon,
   hosts: m.hosts,
-  geo: m.connections.includes('geo'),
   reads: m.permissions.profile.map((f) => PROFILE_FIELDS[f])
 })
 
@@ -215,6 +215,7 @@ function factsOf(subject: ReviewSubject): Facts {
       official: true,
       verdict: 'official',
       byline: `par Marianne · version ${s.manifest.version}`,
+      links: [],
       sync: !!s.sync,
       tools: s.tools.map((t) => t.label),
       problems: []
@@ -232,7 +233,7 @@ function factsOf(subject: ReviewSubject): Facts {
       verdict: e.status,
       byline: `par ${e.author} · version ${e.version} · ${bytes(e.file.size)}`,
       hosts: e.hosts,
-      geo: e.connections.includes('geo'),
+      links: e.links,
       sync: e.sync,
       tools: e.tools,
       reads: e.reads.map((f) => PROFILE_FIELDS[f]),
@@ -244,14 +245,13 @@ function factsOf(subject: ReviewSubject): Facts {
   const r = subject.review
   const m = r.manifest
   return {
-    ...(m
-      ? fromManifest(m)
-      : { code: r.fileName.replace(/\.3615$/i, ''), name: r.fileName, description: '', version: '', icon: null, hosts: [], geo: false, reads: [] }),
+    ...(m ? fromManifest(m) : { code: r.fileName.replace(/\.3615$/i, ''), name: r.fileName, description: '', version: '', icon: null, hosts: [], reads: [] }),
     official: false,
     verdict: r.verdict,
     byline: [m ? `par ${m.author || 'un auteur inconnu'}` : '', m ? `version ${m.version}` : '', bytes(r.size), r.fileName].filter(Boolean).join(' · '),
     sync: r.sync,
     tools: r.tools,
+    links: r.links ?? [],
     problems: r.problems,
     sha256: r.sha256,
     ...(r.entry ? { published: r.entry.published } : {}),
@@ -423,7 +423,7 @@ export function ReviewDialog({ subject, onAdded, onClose }: { subject: ReviewSub
             </span>
             <span className="small dim">
               {facts.byline}
-              {facts.replaces && ` · remplace la version ${facts.replaces}`}
+              {facts.replaces && ` · nouvelle version, remplace la version ${facts.replaces}`}
             </span>
             {facts.description && <span className="small">{facts.description}</span>}
           </div>
@@ -447,9 +447,18 @@ export function ReviewDialog({ subject, onAdded, onClose }: { subject: ReviewSub
                     <span className="dim">aucun site</span>
                   )}
                 </Can>
-                {facts.geo && (
-                  <Can mark={MARKS.place} what="connaître">
-                    la commune de votre adresse <span className="small dim">(connexion « communes »)</span>
+                {/* Every service knows the commune of the user's address (never the address itself): always said. */}
+                <Can mark={MARKS.place} what="connaître">
+                  la commune de votre adresse <span className="small dim">(pas votre adresse elle-même)</span>
+                </Can>
+                {facts.links.length > 0 && (
+                  <Can mark={MARKS.net} what="ouvrir dans votre navigateur">
+                    {facts.links.map((l) => (
+                      <span key={l} className="host-chip">
+                        {l}
+                      </span>
+                    ))}{' '}
+                    <span className="small dim">: chaque fois, Marianne vous le demande</span>
                   </Can>
                 )}
                 {facts.sync && (
@@ -460,7 +469,8 @@ export function ReviewDialog({ subject, onAdded, onClose }: { subject: ReviewSub
                 <Can mark={MARKS.tool} what="outils pour Marianne">
                   {facts.tools.length ? (
                     <>
-                      {facts.tools.map((t) => `« ${t} »`).join(', ')} <span className="small dim">: Marianne peut s’en servir dans vos dossiers</span>
+                      {facts.tools.map((t) => `« ${t} »`).join(', ')}{' '}
+                      <span className="small dim">: Marianne peut s’en servir dans vos dossiers, et leur envoie alors ce qu’il faut</span>
                     </>
                   ) : (
                     <span className="dim">aucun</span>
@@ -478,8 +488,8 @@ export function ReviewDialog({ subject, onAdded, onClose }: { subject: ReviewSub
               </div>
             </div>
             <div className="never">
-              <span className="hi">Il ne pourra jamais</span> voir vos dossiers, vos documents ou vos identifiants · se connecter à un autre site · payer,
-              signer ou remplir un formulaire sans vous.
+              <span className="hi">Il ne pourra jamais</span>, de lui-même, voir vos dossiers, vos documents ou vos identifiants · se connecter à un autre site
+              · payer, signer ou remplir un formulaire sans vous.
             </div>
           </>
         )}

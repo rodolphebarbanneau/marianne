@@ -67,7 +67,14 @@ export function MineTable({
           {sortMine(list, sort).map((l) => {
             const s = l.state!
             return (
-              <tr key={l.code} className={s.on ? undefined : 'off'} onClick={() => onOpen(l)}>
+              <tr
+                key={l.code}
+                className={s.on ? undefined : 'off'}
+                tabIndex={0}
+                aria-label={`ouvrir 3615 ${l.code.toUpperCase()}`}
+                onClick={() => onOpen(l)}
+                onKeyDown={(e) => e.target === e.currentTarget && e.key === 'Enter' && onOpen(l)}
+              >
                 <td>
                   <button
                     className={`star${l.pinned ? ' on' : ''}`}

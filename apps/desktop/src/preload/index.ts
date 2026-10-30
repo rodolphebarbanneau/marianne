@@ -21,6 +21,10 @@ const SEND = [
   'cancel',
   'respondApproval',
   'browserBounds',
+  'communityScreenOpen',
+  'communityScreenBounds',
+  'communityScreenPost',
+  'communityScreenClose',
   'browserOpen',
   'browserNavigate',
   'browserBack',
@@ -107,7 +111,11 @@ const INVOKE = [
   'addService',
   'removeService',
   'serviceOpened',
+  'pinService',
+  'switchService',
   'serviceTiles',
+  'serviceHelp',
+  'reviewInstalledService',
   'catalogue',
   'chooseServiceFile',
   'readServiceFile',
@@ -142,6 +150,7 @@ const LISTEN = [
   'onServiceTiles',
   'onCatalogue',
   'onServiceFile',
+  'onCommunityScreen',
   'onContent'
 ] as const
 

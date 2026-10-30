@@ -38,9 +38,8 @@ export function Shell() {
   useEffect(() => {
     const take = () =>
       void api.takeServiceFiles().then((reviews) => {
-        const last = reviews[reviews.length - 1]
-        if (!last) return
-        offerFileReview(last)
+        if (!reviews.length) return
+        for (const review of reviews) offerFileReview(review)
         goPage('services')
       })
     take()

@@ -35,7 +35,7 @@ export function merge<T>(base: T, patch: unknown, open: string[] = []): T {
 const OPEN_KEYS = ['shortcuts']
 
 /** In an account's settings, these records are keyed by service id: each is taken whole. */
-const ACCOUNT_OPEN_KEYS = ['access', 'reads', 'opened']
+const ACCOUNT_OPEN_KEYS = ['access', 'reads', 'opened', 'reviewed']
 
 /** What an older Marianne kept under another name: the starred services are the pinned ones, in their order. */
 function upgraded(stored: unknown): unknown {

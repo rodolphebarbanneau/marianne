@@ -51,15 +51,22 @@ function own(): Skill[] {
   })
 }
 
-/** The content's skills, the services', then the user's (which replace one of the same name). */
+/**
+ * The content's skills, the built-in services', then the user's (which replace one of the same
+ * name); then the community services' (validated ones only, see host): named after their service
+ * (`<code>-<name>`), never in the place of another, never shown as Marianne's.
+ */
 function all(): Skill[] {
   const { skills } = content.get()
   const fromContent = skills.map(({ name, title, description, body }): Skill => ({ name, title, description, body, builtin: true, path: `skills/${name}.md` }))
-  const fromServices = services
-    .skills()
-    .map(({ service, text }): Skill => ({ ...parseSkill(text, `${service}.md`), builtin: true, path: `3615 ${service.toUpperCase()}` }))
+  const fromServices = services.skills().map(({ service, text, community }): Skill => {
+    const skill = parseSkill(text, `${service}.md`)
+    const path = `3615 ${service.toUpperCase()}`
+    return community ? { ...skill, name: `${service}-${skill.name}`, builtin: false, path: `${path} (communauté)` } : { ...skill, builtin: true, path }
+  })
   const byName = new Map<string, Skill>()
-  for (const s of [...fromContent, ...fromServices, ...own()]) byName.set(s.name, s)
+  for (const s of [...fromContent, ...fromServices.filter((s) => s.builtin), ...own()]) byName.set(s.name, s)
+  for (const s of fromServices.filter((s) => !s.builtin)) if (!byName.has(s.name)) byName.set(s.name, s)
   return [...byName.values()]
 }
 

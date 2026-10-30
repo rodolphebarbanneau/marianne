@@ -1,11 +1,12 @@
 import { existsSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { archivesIn, defaultArchiveFolder } from '@marianne/archive'
-import { app, powerMonitor, session as electronSession } from 'electron'
+import { app, powerMonitor, protocol, session as electronSession } from 'electron'
+import { SERVICE_SCHEME } from '../shared/community'
 import type { DeviceConfig } from '../shared/types'
 import { accounts, checkKeystore } from './account'
 import { browser } from './browser'
-import { catalogue, communityPackages } from './community'
+import { catalogue, communityPackages, protectedHosts } from './community'
 import { configStore } from './config'
 import { content } from './content'
 import { wipeScratch } from './engines'
@@ -13,11 +14,12 @@ import { registerIpc } from './ipc'
 import { keychain } from './keychain'
 import { log } from './log'
 import { mcp } from './mcp'
+import { ALL_TOOLS } from './tools'
 import { openedArchives } from './opened-archives'
 import { isServiceFile, openedServiceFiles, serviceFilesIn } from './opened-service-files'
 import { ensureDirs, paths } from './paths'
 import { sync } from './public/sync'
-import { services } from './host'
+import { screens, services } from './host'
 import { session } from './session'
 import { startBackground } from './tray'
 import { updater } from './updater'
@@ -39,6 +41,10 @@ function cleanTmp(): void {
 
 // French dates in forms (jj/mm/aaaa) and French defaults, whatever the system language.
 app.commandLine.appendSwitch('lang', 'fr')
+
+// Community services' pages (main/community/runtime/scheme.ts): a scheme of their own, secure and
+// standard (an origin per service), whose module scripts load in a frame without an origin of its own.
+protocol.registerSchemesAsPrivileged([{ scheme: SERVICE_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }])
 
 // Dev runs keep their own Electron data (and so their own single-instance lock): they never
 // collide with an installed Marianne. An explicit --user-data-dir still wins.
@@ -100,10 +106,12 @@ if (!app.requestSingleInstanceLock()) {
     powerMonitor.on('lock-screen', lockOnSleep)
     powerMonitor.on('suspend', lockOnSleep)
 
-    services.start()
+    services.start({ catalogue, packages: communityPackages, appToolNames: () => ALL_TOOLS.map((t) => t.name), protectedHosts })
     await mcp.start()
     registerIpc()
     whenWindow((win) => browser.attach(win))
+    // Community services' screens: views of their own over the window (each its own session and scheme handler).
+    whenWindow((win) => screens.attach(win))
     showMain(!hidden)
     for (const file of archivesIn(process.argv.slice(1), process.cwd())) openedArchives.open(file)
     openedArchives.ready()

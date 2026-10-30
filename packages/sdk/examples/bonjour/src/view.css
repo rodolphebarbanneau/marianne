@@ -1,0 +1,38 @@
+/* 3615 BONJOUR: its own classes, prefixed with its code; Marianne's variables only. */
+
+.bonjour {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+/* Marianne's .card is a column: this one is a row, the picture beside the words. */
+.bonjour-card {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--s4);
+}
+.bonjour-words {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.bonjour-text {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1.45);
+  line-height: 1.15;
+  color: var(--hi);
+}
+.bonjour-form {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s3);
+}
+.bonjour-form .field {
+  width: min(320px, 100%);
+}
+@container service (max-width: 520px) {
+  .bonjour-card {
+    flex-wrap: wrap;
+  }
+}

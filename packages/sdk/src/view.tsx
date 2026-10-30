@@ -13,7 +13,7 @@ import type { ServiceManifest, ServiceMethods } from './index'
 
 export * from './index'
 export { ServiceFrameProvider, ServiceTools, useTab, useTabBadges, type ServiceFrame } from './frame'
-export { Failure, Field, floating, Loading, Modal, Notice, Spinner } from './ui'
+export { Failure, Field, floating, Loading, Meter, Modal, Notice, Spinner } from './ui'
 export { ICON_CELLS, Pixels, ServiceIcon, usePixelRatio } from './pixels'
 
 /** Something a service hands to Marianne with a question: a page it shows. */

@@ -49,8 +49,9 @@ export function useShortcuts(actions: Actions, recording: boolean): void {
       api.activity()
       const field = (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')
       const typing = !!field
-      // A dialog over the page (the palette, the settings, the guide) keeps échap and the page keys.
-      const onPage = app.view.kind !== 'folder' && !app.palette && !app.settingsPage && !app.guideOpen
+      // A dialog over the page (the palette, the settings, the guide, a page's or a service's own) keeps échap and the page keys.
+      const dialog = !!document.querySelector('#root > .overlay')
+      const onPage = app.view.kind !== 'folder' && !app.palette && !app.settingsPage && !app.guideOpen && !dialog
       // SUITE / RETOUR work from the pages' text boxes too (the composer keeps what was written); a list
       // keeps its keys, and so do a dashboard's and a service's forms, which would lose what was typed.
       const turning = onPage && (!field || (app.view.kind === 'page' && (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement)))

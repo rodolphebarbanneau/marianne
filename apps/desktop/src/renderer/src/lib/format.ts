@@ -9,7 +9,7 @@ export function when(iso: string): string {
   if (!iso) return ''
   const date = new Date(iso)
   const now = new Date()
-  const days = Math.floor((startOfDay(now) - startOfDay(date)) / DAY)
+  const days = Math.round((startOfDay(now) - startOfDay(date)) / DAY)
   if (days <= 0) {
     const minutes = Math.round((now.getTime() - date.getTime()) / 60_000)
     if (minutes < 1) return 'à l’instant'
@@ -37,7 +37,7 @@ export const shortDate = (iso: string) => (iso ? new Date(iso).toLocaleDateStrin
 export function freshness(iso: string, now = new Date()): string {
   const date = new Date(iso)
   const minutes = Math.floor((now.getTime() - date.getTime()) / 60_000)
-  const days = Math.floor((startOfDay(now) - startOfDay(date)) / DAY)
+  const days = Math.round((startOfDay(now) - startOfDay(date)) / DAY)
   if (minutes < 1) return 'à l’instant'
   if (minutes < 60) return `il y a ${minutes} min`
   if (days <= 0) return `il y a ${Math.floor(minutes / 60)} h`
@@ -49,7 +49,7 @@ export function freshness(iso: string, now = new Date()): string {
 export function lastDay(iso: string | undefined, now = new Date()): string {
   if (!iso) return 'jamais'
   const date = new Date(iso)
-  const days = Math.floor((startOfDay(now) - startOfDay(date)) / DAY)
+  const days = Math.round((startOfDay(now) - startOfDay(date)) / DAY)
   if (days <= 0) return 'aujourd’hui'
   if (days === 1) return 'hier'
   if (days < 7) return date.toLocaleDateString('fr-FR', { weekday: 'long' })

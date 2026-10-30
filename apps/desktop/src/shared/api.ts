@@ -5,6 +5,7 @@ import type { ProfileField, ServiceState, ServiceSummary } from '@marianne/sdk'
 import type { NewsSource } from './news'
 import type { FranceDigest, NewsDigest, PublicSourceStatus, TodayEvent } from './public'
 import type { CatalogueState, ServiceFileReview } from './catalogue'
+import type { FromFrame, ToFrame } from './community'
 import type { Site } from './sites'
 import type {
   AccountInfo,
@@ -252,9 +253,24 @@ export interface MarianneApi {
   removeService(id: string): Promise<void>
   /** The user opened a service's screen. */
   serviceOpened(id: string): Promise<void>
+  /** A service pinned as a tile (at the end) or unpinned. */
+  pinService(id: string, pinned: boolean): Promise<void>
+  /** A service switched on or off by the user. */
+  switchService(id: string, on: boolean): Promise<void>
   /** The tiles of the pinned services, as they are; the stale ones are asked again (onServiceTiles tells what comes). */
   serviceTiles(): Promise<Record<string, TileState>>
   onServiceTiles(cb: (tiles: Record<string, TileState>) => void): () => void
+  /** A community service's help (its help.md), for the guide on its screen; '' for a built-in service (the window has it) or none. */
+  serviceHelp(id: string): Promise<string>
+  /** A community service's screen, a view the main process draws over the window: opened, placed (null: hidden), told, closed. */
+  communityScreenOpen(code: string): void
+  communityScreenBounds(rect: Rect | null): void
+  communityScreenPost(code: string, message: ToFrame): void
+  communityScreenClose(code: string): void
+  /** What a community screen asks of the window (checked by the main process). */
+  onCommunityScreen(cb: (event: { code: string; message: FromFrame }) => void): () => void
+  /** The version of a community service another account added on this computer, to review before this account uses it. */
+  reviewInstalledService(code: string): Promise<ServiceFileReview>
   /** The community catalogue, as last read (it is read again when old: onCatalogue tells). */
   catalogue(): Promise<CatalogueState>
   onCatalogue(cb: (state: CatalogueState) => void): () => void

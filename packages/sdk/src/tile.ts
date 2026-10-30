@@ -94,7 +94,13 @@ const ELLIPSIS = '…'
  * weather) cuts that part itself with it.
  */
 export function cutText(text: string, max: number): string {
-  const chars = [...text.replace(/\s+/g, ' ').trim()]
+  // Never more of it than could be kept: a text of a hundred million characters is cut before it is split.
+  const chars = [
+    ...text
+      .slice(0, Math.max(0, max) * 4 + 16)
+      .replace(/\s+/g, ' ')
+      .trim()
+  ]
   return chars.length <= max
     ? chars.join('')
     : `${chars

@@ -21,11 +21,19 @@ export const SERVICE_VERSION = /^\d{1,9}\.\d{1,9}\.\d{1,9}(?:-[0-9A-Za-z.-]{1,32
 
 /**
  * The only entries a .3615 may hold, all at its root. The list is short on purpose: a service
- * arrives built (one main side, one view and its styles, its sync job, its guide, a readme), so
- * there is nothing else to extract, and no folder, link or odd name can lead a file anywhere but
- * into the service's own folder.
+ * arrives built (one main side, one view and its styles, its guide, a readme), so there is
+ * nothing else to extract, and no folder, link or odd name can lead a file anywhere but into the
+ * service's own folder.
  */
-export const PACKAGE_ENTRIES = ['package.json', 'main.js', 'view.js', 'view.css', 'sync.js', 'help.md', 'README.md'] as const
+export const PACKAGE_ENTRIES = ['package.json', 'main.js', 'view.js', 'view.css', 'help.md', 'README.md'] as const
+
+/**
+ * A sync job (sync.js) runs with Node, out of any sandbox: a community service may not have one
+ * in this version, and is refused with it, saying why.
+ */
+export const SYNC_ENTRY = 'sync.js'
+export const NO_SYNC =
+  'Ce service a une tâche de synchronisation (sync.js) : Marianne ne l’exécuterait pas à l’écart du reste, aussi les services de la communauté n’en ont pas encore.'
 const REQUIRED = ['package.json', 'main.js', 'view.js']
 const ALLOWED: ReadonlySet<string> = new Set(PACKAGE_ENTRIES)
 
@@ -139,6 +147,7 @@ function entryProblems(entries: ZipEntry[]): string[] {
     else if (e.name.startsWith('/') || /^[a-zA-Z]:/.test(e.name))
       problems.push(`${name} est un chemin absolu : un service ne peut rien écrire hors de son dossier.`)
     else if (e.name.split('/').includes('..')) problems.push(`${name} sortirait du dossier du service.`)
+    else if (e.name === SYNC_ENTRY) problems.push(NO_SYNC)
     else if (!ALLOWED.has(e.name)) {
       problems.push(`${name} n’a pas sa place dans un service.`)
       folders ||= e.name.includes('/')
@@ -211,8 +220,32 @@ function readEntries(z: Uint8Array, entries: ZipEntry[], directoryOffset: number
   return files
 }
 
+/**
+ * What is wrong with a community service's `links` (the pages it opens itself, and that answers'
+ * links open in it): each must be on one of its own declared hosts, and never on a host a
+ * built-in service declares or opens, nor on a public site of Marianne's (`protectedHosts`): it
+ * would take her answers' links away.
+ */
+export function linkProblems(m: Pick<ServiceManifest, 'id' | 'hosts' | 'links'>, protectedHosts: ReadonlySet<string>): string[] {
+  const problems: string[] = []
+  for (const link of m.links) {
+    let host = ''
+    try {
+      host = new URL(link).hostname
+    } catch {
+      // refused below
+    }
+    if (!host || !m.hosts.includes(host)) problems.push(`Le lien « ${link.slice(0, 80)} » n’est pas sur un site que 3615 ${serviceCode(m)} déclare.`)
+    else if (protectedHosts.has(host))
+      problems.push(
+        `Le lien « ${link.slice(0, 80)} » est sur ${host}, un site que Marianne ouvre elle-même : un service de la communauté ne peut pas l’ouvrir à sa place.`
+      )
+  }
+  return problems
+}
+
 /** The manifest of package.json, checked by the SDK, as the user is told of it. */
-function manifestOf(bytes: Uint8Array, reserved: ReadonlySet<string>): ServiceManifest {
+function manifestOf(bytes: Uint8Array, reserved: ReadonlySet<string>, protectedHosts: ReadonlySet<string>): ServiceManifest {
   if (bytes.length > MAX_MANIFEST_BYTES) throw new PackageRefused([`Le manifeste (package.json) fait plus de ${MAX_MANIFEST_BYTES / 1024} ko.`])
   let pkg: unknown
   try {
@@ -230,6 +263,7 @@ function manifestOf(bytes: Uint8Array, reserved: ReadonlySet<string>): ServiceMa
   const problems: string[] = []
   if (!SERVICE_VERSION.test(manifest.version)) problems.push(`Sa version, « ${manifest.version.slice(0, 40)} », ne se lit pas comme 1.2.3.`)
   if (reserved.has(manifest.id)) problems.push(`3615 ${serviceCode(manifest)} est un service officiel de Marianne : un fichier ne peut pas le remplacer.`)
+  problems.push(...linkProblems(manifest, protectedHosts))
   if (problems.length) throw new PackageRefused(problems)
   return manifest
 }
@@ -237,9 +271,10 @@ function manifestOf(bytes: Uint8Array, reserved: ReadonlySet<string>): ServiceMa
 /**
  * The service in the bytes of a .3615 file, checked: its entries (only PACKAGE_ENTRIES, at the
  * root, within the size limits, intact) and its manifest (valid for the SDK, a version, not the
- * code of a service built into Marianne: `reserved`). Throws PackageRefused saying what is wrong.
+ * code of a service built into Marianne: `reserved`; links only on its own hosts, none on a
+ * site of Marianne's: `protectedHosts`). Throws PackageRefused saying what is wrong.
  */
-export function unpackService(bytes: Uint8Array, options: { reserved: ReadonlySet<string> }): UnpackedService {
+export function unpackService(bytes: Uint8Array, options: { reserved: ReadonlySet<string>; protectedHosts?: ReadonlySet<string> }): UnpackedService {
   if (bytes.length > MAX_SERVICE_FILE_BYTES)
     throw new PackageRefused([`Le fichier fait ${megabytes(bytes.length)} : un service fait au plus ${megabytes(MAX_SERVICE_FILE_BYTES)}.`])
   if (bytes.length < 22) throw new PackageRefused([UNREADABLE])
@@ -247,5 +282,5 @@ export function unpackService(bytes: Uint8Array, options: { reserved: ReadonlySe
   const problems = entryProblems(entries)
   if (problems.length) throw new PackageRefused(problems)
   const files = readEntries(bytes, entries, directoryOffset)
-  return { manifest: manifestOf(files.get('package.json')!, options.reserved), files }
+  return { manifest: manifestOf(files.get('package.json')!, options.reserved, options.protectedHosts ?? new Set()), files }
 }

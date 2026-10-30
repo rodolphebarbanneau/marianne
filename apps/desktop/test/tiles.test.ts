@@ -137,11 +137,38 @@ describe('the tiles of the pinned services', () => {
   it('isn’t made stale by what its own service writes while making it', async () => {
     const { host } = setup()
     const tile = vi.fn(async () => {
-      host.invalidate('meteo')
+      host.invalidate('meteo', true)
       return { title: 'Rennes' }
     })
     host.states([source(tile)])
     await settle()
+    host.states([source(tile)])
+    expect(tile).toHaveBeenCalledTimes(1)
+  })
+
+  it('drops a tile still being made when the account is locked: it was that account’s', async () => {
+    const { host, records } = setup()
+    let answer: (tile: ServiceTile) => void = () => {}
+    host.states([source(() => new Promise<ServiceTile>((resolve) => (answer = resolve)))])
+    host.clear()
+    answer({ title: 'le compte d’avant' })
+    await settle()
+    expect(records.has('meteo')).toBe(false)
+    const tile = vi.fn(async () => ({ title: 'le compte ouvert' }))
+    expect(host.states([source(tile)]).meteo.loading).toBe(true)
+    await settle()
+    expect(host.states([source(tile)], false).meteo.tile).toEqual({ title: 'le compte ouvert' })
+  })
+
+  it('asks again once done when the user changed something while it was being made', async () => {
+    const { host } = setup()
+    let answer: (tile: ServiceTile) => void = () => {}
+    const slow = () => new Promise<ServiceTile>((resolve) => (answer = resolve))
+    host.states([source(slow)])
+    host.invalidate('meteo')
+    answer({ title: 'avant' })
+    await settle()
+    const tile = vi.fn(async () => ({ title: 'après' }))
     host.states([source(tile)])
     expect(tile).toHaveBeenCalledTimes(1)
   })

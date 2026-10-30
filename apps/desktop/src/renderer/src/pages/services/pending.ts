@@ -1,22 +1,21 @@
 import type { ServiceFileReview } from '@shared/catalogue'
 
 /**
- * A .3615 file opened from the system (a double click), waiting for the Services page to show its
- * review: the shell hands it over and opens the page, the page takes it.
+ * .3615 files opened from the system (a double click, several at once), waiting for the Services
+ * page to show their reviews: the shell hands them over and opens the page, the page takes them
+ * one at a time, the next once the review before is closed.
  */
 
-let pending: ServiceFileReview | null = null
+const pending: ServiceFileReview[] = []
 const listeners = new Set<() => void>()
 
 export function offerFileReview(review: ServiceFileReview): void {
-  pending = review
+  pending.push(review)
   for (const listener of listeners) listener()
 }
 
 export function takeFileReview(): ServiceFileReview | null {
-  const review = pending
-  pending = null
-  return review
+  return pending.shift() ?? null
 }
 
 export function onFileReview(listener: () => void): () => void {
