@@ -16,7 +16,7 @@ Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à dr
 
 ## Les pages
 
-- **Démarches** : les domaines de votre vie administrative (impôts, santé, logement, famille…), chacun avec son tableau de bord et ses démarches guidées, étape par étape.
+- **Démarches** : les domaines de votre vie administrative (impôts, santé, logement, famille…), chacun avec sa page et ses démarches guidées, étape par étape.
 - **Services** : les codes 3615, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. Tapez un code ou des mots dans la barre 3615 pour en trouver un. L’étoile épingle un service en tuile, en haut de « mes services », avec ce qu’il a de neuf pour vous : la météo du jour, un péage à payer. « + découvrir » propose les services officiels que vous n’avez pas encore ajoutés, puis ceux de la communauté. Avant d’ajouter un service, Marianne vous montre ce qu’il pourra faire. Un service qui a besoin d’une partie de votre profil, comme votre plaque d’immatriculation pour le péage, vous le demande d’abord.
 
 ## Les infos
@@ -35,6 +35,40 @@ Dans 3615 PARLEMENT, l’onglet vidéos ouvre les séances et les commissions de
 - **Partager le lien** : un lien vers la page officielle de la vidéo, que tout le monde peut ouvrir, au début, à l’instant choisi ou au début de l’extrait. « copier avec le titre » ajoute le sujet, l’orateur, la chambre, le jour et l’heure.
 - **Le direct** : une séance en cours s’ouvre au direct, et la frise remonte jusqu’à son ouverture ; l’ordre du jour se remplit pendant la séance (« ● en cours » marque le dernier point). DIRECT, ou la touche Fin, revient au direct. La séance finie, la page passe à la vidéo enregistrée dès que le portail la propose, au même endroit. Tant que le portail ne propose pas la vidéo d’un direct, on n’en voit que les dernières secondes.
 - **Le mini-lecteur** (P) : la vidéo continue dans un coin de la fenêtre pendant que vous faites autre chose dans Marianne ; il s’ouvre aussi quand vous quittez la page d’une vidéo en lecture. Glissez-le vers un coin ; un clic sur son bandeau ramène à la page de la vidéo, là où elle en est.
+
+## La page Démarches
+
+La barre du haut demande « QUELLE DÉMARCHE ? ». Chaque domaine est un guichet numéroté : tapez son numéro et la machine imprime votre ticket, 08 pour Mobilité, puis ENVOI (entrée) vous y emmène. Tapez plutôt des mots pour tout chercher à la fois : vos dossiers, vos pièces et vos échéances, les démarches guidées, les liens officiels et les domaines. ↑ et ↓ parcourent les résultats, entrée en ouvre un, échap efface la recherche, et la dernière ligne propose toujours de demander à Marianne.
+
+Sous la barre, trois onglets :
+
+- **mes domaines** : ce qui presse, puis une ligne par domaine, avec ce qui vous attend ou sa prochaine échéance, et les huit semaines à venir. Chaque échéance est un carré, rouge si elle est en retard ou à moins de 3 jours.
+- **à faire** : tout, dans l’ordre : ce qui est en retard, ce qui vous attend, ce qui tombe dans les 3 jours, puis les 45 jours à venir.
+- **tâches planifiées** : toutes vos tâches planifiées, chacune avec son interrupteur.
+
+## La page d’un domaine
+
+La page d’un domaine a la même tête, avec le numéro de son guichet : Mobilité, c’est GUICHET 8. La flèche ← ou échap revient à Démarches, et la barre prend une question : Marianne y répond dans un nouveau dossier, rangé dans ce domaine. Quatre onglets, sur F2 à F5 :
+
+- **aperçu** : des questions pour commencer, ce qu’il y a à faire ici, vos véhicules ou vos logements, les semaines à venir, les services qui peuvent aider, vos dossiers et vos tâches.
+- **tâches planifiées** : chaque tâche en détail, puis celles que vos services proposent.
+- **dossiers** : ceux en cours, en veille et classés, et les démarches guidées du domaine.
+- **ressources** : vos pièces, les fiches de Service-Public, les liens officiels.
+
+## Les tâches planifiées
+
+Une tâche planifiée, c’est un dossier qui revient. Marianne peut vérifier quelque chose pour vous à un rythme régulier, comme les péages à payer tous les 2 jours, ou simplement ramener un rappel à son jour. Entre deux fois, le dossier dort dans « En veille » ; à son jour, il revient.
+
+Une tâche commence avec « + nouvelle tâche », depuis ce que vos services proposent sur la page d’un domaine, ou dans une conversation, quand Marianne vous la propose. Elle ne commence jamais sans votre accord, sur une fiche ou une carte qui dit ce qu’elle fait, à quel rythme, et quels sites elle peut joindre.
+
+- **Un jour, pas une heure.** Une vérification se fait à la première ouverture de son jour, ou à la première qui suit. Elle ne se fait que Marianne ouverte et votre archive déverrouillée, et elle attend que Marianne ait fini ce qu’elle fait pour vous.
+- **Elle ne peut pas vous protéger si vous n’ouvrez pas Marianne.** Un péage se paie dans les 72 heures : quelques jours sans ouvrir Marianne, et un passage peut dépasser son délai.
+- **Elle utilise votre moteur.** Chaque vérification utilise votre moteur, comme le ferait une question, avec au plus 12 vérifications par jour. Un rappel ne coûte rien.
+- **Marianne ne paie jamais.** Une vérification peut seulement regarder et rendre compte : elle ne paie pas, ne signe pas, n’envoie rien. Elle va sur les sites que vous lui avez donnés sans redemander, pour cette vérification seulement, et vous demande votre accord pour tout autre site. Si un site veut un code, elle s’arrête et vous attend.
+
+Quand une vérification ne trouve rien, le dossier se rendort, et sa conversation replie ces vérifications en une ligne : cliquez dessus pour les lire. Quand elle trouve quelque chose ou a besoin de vous, le dossier revient et une notification vous prévient ; ce qui vous attend paraît aussi dans « à faire ».
+
+Dans le dossier d’une tâche, « modifier la tâche » l’ouvre sur la page de son domaine, et « mettre en pause » l’arrête jusqu’à ce que vous choisissiez « reprendre ». Pendant la pause, son dossier est dans « Classés ».
 
 ## Votre profil
 
@@ -57,4 +91,4 @@ Comme sur un Minitel, la barre du bas montre les touches de l’écran :
 | SOMMAIRE   | le menu de l’application          | ctrl+espace |
 | GUIDE      | l’aide, les liens, vos raccourcis | F1          |
 
-Et aussi : ctrl+K pour les commandes, ctrl+alt+espace pour chercher partout, ctrl+, pour les réglages, ctrl+maj+R pour recharger la fenêtre. Dans un service, F2, F3… ouvrent ses onglets, et F1 son guide. Sur macOS, cmd remplace ctrl, sauf pour le menu et la recherche. Tous se changent dans Réglages › Raccourcis clavier.
+Et aussi : ctrl+K pour les commandes, ctrl+alt+espace pour chercher partout, ctrl+, pour les réglages, ctrl+maj+R pour recharger la fenêtre. Dans un service, F2, F3… ouvrent ses onglets, et F1 son guide ; sur la page d’un domaine, F2 à F5 ouvrent ses onglets. Sur macOS, cmd remplace ctrl, sauf pour le menu et la recherche. Tous se changent dans Réglages › Raccourcis clavier.

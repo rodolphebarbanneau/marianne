@@ -10,7 +10,7 @@ Le moteur, Claude Code, Codex ou Mistral Vibe, travaille avec votre compte chez 
 
 ## Ce qui va en ligne
 
-Marianne va chercher l’information publique (les titres des journaux, les données des services) à ses sources publiques, ouvre les sites des démarches dans son navigateur, et télécharge ses mises à jour sur GitHub. Ces demandes ne portent rien de personnel, sauf ce que vous avez accepté : la partie de votre profil qu’un service vous a demandée, comme votre plaque pour le péage, et ce que Marianne remplit pour vous sur un site, avec votre accord.
+Marianne va chercher l’information publique (les titres des journaux, les données des services) à ses sources publiques, ouvre les sites des démarches dans son navigateur, et télécharge ses mises à jour sur GitHub. Ces demandes ne portent rien de personnel, sauf ce que vous avez accepté : la partie de votre profil qu’un service vous a demandée, comme votre plaque pour le péage, et ce que Marianne remplit pour vous sur un site, avec votre accord. Une tâche planifiée va sur les sites que vous lui avez donnés sans redemander, et y saisit ce que sa fiche annonce, comme votre plaque pour le péage.
 
 ## Les infos
 

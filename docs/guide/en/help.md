@@ -5,6 +5,7 @@
 - **Forgotten passphrase.** On the lock screen, choose « phrase oubliée ? utiliser la clé de secours » (forgot it? use the recovery key), then a new passphrase.
 - **The PIN no longer works.** After 5 wrong tries, the passphrase is needed again. You can then set a PIN again.
 - **Marianne doesn't answer.** Check that your engine is installed and signed in: the lights at the bottom left, and Réglages › Moteurs (Settings › Engines).
+- **A planned task didn't run.** It only runs while Marianne is open and your archive unlocked, at the first opening of its day or after it, and never while Marianne is answering you. Check that it isn't paused, in Démarches › « tâches planifiées » (planned tasks).
 - **The screen isn't up to date.** Reload the window, with ctrl+shift+R (cmd+shift+R on macOS) or the button at the top right. The archive stays open.
 - **The archive is full.** Make some room in Réglages › Place et emplacement (Settings › Space and location).
 

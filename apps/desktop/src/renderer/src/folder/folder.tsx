@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { Procedure, ProcedureAction } from '@marianne/content'
 import { DOMAINS, setupPage } from '@marianne/profile'
 import { serviceCode, type ServiceState } from '@marianne/sdk'
@@ -14,8 +14,10 @@ import { api, errorText } from '../lib/api'
 import { useSites } from '../lib/content'
 import { shortDate } from '../lib/format'
 import { useDocuments } from '../lib/profile'
+import { useTasks } from '../lib/tasks'
 import { Composer } from './composer'
 import { Message } from './message'
+import { foldLabel, foldRuns, nextLabel, runLabel, type QuietRun } from './runs'
 
 /** One folder = one conversation: its header (title, steps, pièces), the conversation, the composer. */
 export function FolderScreen({ id }: { id: string }) {
@@ -110,9 +112,13 @@ export function FolderScreen({ id }: { id: string }) {
           }}
         >
           <div className="column" ref={column}>
-            {messages.map((m) => (
-              <Message key={m.id} message={m} />
-            ))}
+            {foldRuns(messages).map((row) =>
+              row.kind === 'message' ? (
+                <Message key={row.message.id} message={row.message} />
+              ) : (
+                <QuietRuns key={row.key} runs={row.runs} onToggle={() => (stick.current = false)} />
+              )
+            )}
           </div>
         </div>
         {away && (
@@ -136,9 +142,36 @@ export function FolderScreen({ id }: { id: string }) {
   )
 }
 
+/**
+ * A planned task's runs that found nothing: one line, and a click opens them all, each with its
+ * answer. `onToggle`: the conversation grows above its end, and the reader must not be taken there.
+ */
+function QuietRuns({ runs, onToggle }: { runs: QuietRun[]; onToggle: () => void }) {
+  const [open, setOpen] = useState(false)
+  const toggle = () => {
+    onToggle()
+    setOpen(!open)
+  }
+  if (!open)
+    return (
+      <button className="compacted dm-older" onClick={toggle}>
+        {foldLabel(runs)}
+      </button>
+    )
+  return runs.map((run) => (
+    <Fragment key={run.line.id}>
+      <button className="compacted dm-older" onClick={toggle}>
+        {runLabel(run)}
+      </button>
+      {run.answer && <Message message={run.answer} />}
+    </Fragment>
+  ))
+}
+
 function FolderHead({ view, procedure }: { view: FolderView; procedure: Procedure | null }) {
   const app = useApp()
   const { folder } = view
+  const task = useTasks().find((t) => t.id === folder.task)
   const documents = useDocuments().filter((d) => d.folderId === folder.id)
   const [menu, setMenu] = useState<'more' | 'snooze' | 'engine' | null>(null)
   const [renaming, setRenaming] = useState(false)
@@ -200,6 +233,7 @@ function FolderHead({ view, procedure }: { view: FolderView; procedure: Procedur
       <span className="small dim">
         {domain ? domain.label.toLowerCase() : 'question'} · ouvert le {shortDate(folder.createdAt)} · {ENGINE_LABELS[folder.engine]}
         {folder.settledAt && ` · classé le ${shortDate(folder.settledAt)}`}
+        {task && ` · tâche planifiée, ${task.everyLabel} · ${task.on ? `prochaine ${nextLabel(task.next)}` : 'en pause'}`}
       </span>
       {procedure && (
         <div className="steps">
@@ -227,6 +261,16 @@ function FolderHead({ view, procedure }: { view: FolderView; procedure: Procedur
         <button className="btn small" onClick={() => setPieces(!pieces)}>
           pièces ({documents.length}) {pieces ? '▴' : '▾'}
         </button>
+        {task && domain && (
+          <button className="btn small" onClick={() => app.go({ kind: 'domain', id: domain.id, tab: 'taches' })}>
+            modifier la tâche
+          </button>
+        )}
+        {task && (
+          <button className="btn small" onClick={() => void api.setTaskOn(task.id, !task.on)}>
+            {task.on ? 'mettre en pause' : 'reprendre'}
+          </button>
+        )}
       </div>
       {pieces && (
         <div className="inline-card" style={{ margin: 0 }}>
