@@ -117,6 +117,72 @@ describe('reading the content', () => {
     ])
   })
 
+  it('reads a news source’s sections, regions, editorial line, paywall and start', () => {
+    const press = { id: 'press', name: 'La Presse', group: 'regional', feed: 'https://www.presse.example/rss', homepage: 'https://www.presse.example' }
+    const source = {
+      ...press,
+      sections: [
+        { id: 'une', label: 'à la une', feed: 'https://www.presse.example/rss' },
+        { id: 'politique', label: 'politique', feed: 'https://www.presse.example/politique/rss' }
+      ],
+      regions: ['53', '52'],
+      lean: 'centre',
+      leanBasis: 'une étude de la presse française (2026)',
+      paywall: '.premium',
+      start: false
+    }
+    const files = edited('news-sources.json', () => JSON.stringify({ updated: '2026-10-30', sources: [source] }))
+    expect(readContent(files).newsSources).toEqual([source])
+    // Sans classement needs no basis.
+    const plain = edited('news-sources.json', () => JSON.stringify({ updated: '2026-10-30', sources: [{ ...press, regions: ['84'], lean: 'aucune' }] }))
+    expect(readContent(plain).newsSources).toEqual([{ ...press, regions: ['84'], lean: 'aucune' }])
+  })
+
+  it('checks a news source’s sections, regions, editorial line, paywall and start', () => {
+    const press = { name: 'La Presse', feed: 'https://www.presse.example/rss', homepage: 'https://www.presse.example' }
+    const files = edited('news-sources.json', () =>
+      JSON.stringify({
+        updated: '2026-10-30',
+        sources: [
+          { id: 'a', group: 'national', ...press, lean: 'droite' },
+          { id: 'b', group: 'national', ...press, lean: 'extreme-droite', leanBasis: 'x' },
+          {
+            id: 'c',
+            group: 'national',
+            ...press,
+            sections: [
+              { id: 'politique', label: 'politique', feed: 'https://www.presse.example/politique/rss' },
+              { id: 'politique', label: '', feed: 'http://www.presse.example/rss', color: 'rouge' },
+              { id: 'Sport', label: 'sport', feed: 'https://www.presse.example/politique/rss' }
+            ]
+          },
+          { id: 'd', group: 'national', ...press, sections: [] },
+          { id: 'e', group: 'regional', ...press },
+          { id: 'f', group: 'regional', ...press, regions: ['53', '29', '53'] },
+          { id: 'g', group: 'national', ...press, regions: ['11'], paywall: '', start: true }
+        ]
+      })
+    )
+    expect(problems(files)).toEqual([
+      'news-sources.json: sources[0] (a).leanBasis: required with "lean": "droite": the published reference it comes from, with its date',
+      'news-sources.json: sources[1] (b).lean: "extreme-droite" is not one of gauche, centre-gauche, centre, centre-droit, droite, aucune',
+      'news-sources.json: sources[2] (c).sections[1] (politique).color: unknown key (expected: id, label, feed)',
+      'news-sources.json: sources[2] (c).sections[1] (politique).label: must be text',
+      'news-sources.json: sources[2] (c).sections[1] (politique).feed: "http://www.presse.example/rss" is not https',
+      'news-sources.json: sources[2] (c).sections[2] (Sport).id: "Sport" is not lowercase words joined by hyphens',
+      'news-sources.json: sources[2] (c).sections: id "politique" is used twice',
+      'news-sources.json: sources[2] (c).sections: feed "https://www.presse.example/politique/rss" is listed twice',
+      "news-sources.json: sources[2] (c).sections[0].feed: the front page comes first: its feed is the source's feed (https://www.presse.example/rss)",
+      'news-sources.json: sources[3] (d).sections: must be a list of sections, the front page first',
+      'news-sources.json: sources[4] (e).regions: required for a regional source: the INSEE codes of its regions',
+      'news-sources.json: sources[5] (f).regions: "29" is not an INSEE region code (01, 02, 03, 04, 06, 11, 24, 27, 28, 32, 44, 52, 53, 75, 76, 84, 93, 94)',
+      'news-sources.json: sources[5] (f).regions: "53" is listed twice',
+      'news-sources.json: sources[6] (g).regions: only a regional source has regions',
+      'news-sources.json: sources[6] (g).paywall: must be text',
+      'news-sources.json: sources[6] (g).start: only false: the source asked that no start of its articles be shown'
+    ])
+  })
+
   it('sorts skills by name and démarches by title', () => {
     const files = minimal()
     files['skills/appeals.md'] = files['skills/fines.md'].replace('name: fines', 'name: appeals')

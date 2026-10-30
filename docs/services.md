@@ -59,9 +59,11 @@ A service's code is lowercase letters and digits, without accents: `meteo`, `par
 - `tabs`: the tabs of its screen, in their order, at most `MAX_TABS` (8): `[{ "id": "ballots", "label": "scrutins" }]`, ids lowercase letters, digits and hyphens, labels French and lowercase. Marianne draws the bar under the 3615 header, fixed while the content scrolls, and gives each tab its function key: F2 for the first, then F3… (`tabKey(i)`; F1 is GUIDE). None, or one, and the screen has no bar.
 - `connections`: Marianne's connections the service relies on (`geo` for the communes); it is unavailable while one is off.
 - `hosts`: every host the service reaches, from any side. The main side's network, the sync job's downloads and the window's content policy only allow these.
+- `news`: `true` when it reads headlines through Marianne (`ctx.news`, below) rather than from the press itself: no press host to declare. Built-in services only: a community service that declares it is refused when it is added.
+- `search`: the screen's search field, drawn by Marianne in its header, `{ "placeholder": "chercher dans les titres" }` (French, one line); the view reads it with `useSearch()`.
 - `links`: URL prefixes the service opens itself; a link in an answer that starts with one opens the service with `params.url`.
 - `domains`: the domains it is useful for (`DOMAIN_IDS`: identity, family, health, taxes, work, retirement, housing, mobility, justice, business). Their dashboards show its line, and its deadlines must belong to one of them.
-- `permissions`: what of the user's profile it asks to read, among `PROFILE_FIELDS` (`vehicles.plate`, `vehicles.model`…, `opinions.leaning`, `opinions.themes`), and what for, in one French line: `{ "profile": ["vehicles.plate"], "purpose": "retrouver vos passages en flux libre" }`. The first time the user opens the service, Marianne asks them, field by field; they can take it back in the settings. Nothing else of the profile is ever available to a service.
+- `permissions`: what of the user's profile it asks to read, among `PROFILE_FIELDS` (`vehicles.plate`, `vehicles.model`…, `opinions.leaning`, `opinions.themes`, `opinions.sources`), and what for, in one French line: `{ "profile": ["vehicles.plate"], "purpose": "retrouver vos passages en flux libre" }`. The first time the user opens the service, Marianne asks them, field by field; they can take it back in the settings. Nothing else of the profile is ever available to a service.
 - `tools`: the tools its main side lends the engines, by `name` and French `label`, as `defineTool` gives them. « Avant d’ajouter » lists them before the user adds the service; a community service may lend no other (the host refuses a tool it didn't declare). The tests check that the declaration and the runtime agree.
 - `icon`: its icon, a picture in the Marianne palette (below), exactly 8 × 8. Without one, Marianne draws a neutral frame.
 
@@ -78,10 +80,11 @@ A service's icon and its tile's picture are **grids of named colours, never imag
 
 ### Opinions
 
-The user may say, in Réglages › Identité, which political groups they feel close to (`opinions.leaning`: acronyms of each chamber's groups, from the content's `parliament.json`) and which themes matter to them (`opinions.themes`: ids of `THEMES`, `ecology`, `housing`…). Both are optional, never inferred, and the leaning is sensitive data (RGPD, article 9): a service reads them only when it asked and the user accepted, and Réglages › Identité lists those services with the day each last read them. Engines never receive them.
+The user may say, in Réglages › Identité, which political groups they feel close to (`opinions.leaning`: acronyms of each chamber's groups, from the content's `parliament.json`), which themes matter to them (`opinions.themes`: ids of `THEMES`, `ecology`, `housing`…) and which news sources they read (`opinions.sources`: the sources of the content's `news-sources.json` they accept, the sections they keep, the colours they gave sources). All are optional and never inferred; the leaning and the sources are sensitive data (RGPD, article 9; what one reads says what one thinks): a service reads them only when it asked and the user accepted, and Réglages › Identité lists those services with the day each last read them. Engines never receive them.
 
 - Use a leaning to compare, never to sort, hide or recommend: "votre députée a voté comme vos idées dans 82 % des cas", and offer the other side as well.
 - Themes say nothing of an opinion: they bring matching content forward. `themesOf(text, themes)` (`@marianne/sdk`) tells which themes a text is about, by their words.
+- A source's colour is its editorial line (`Lean`: `gauche` to `droite`, `aucune` for « sans classement »): it shows, and never sorts, hides or picks; accepting or setting a source aside stays the user's choice. Without `opinions.sources` granted, a service sees Marianne's defaults (each with its published basis in the content), never the user's.
 
 ## Domains, guided démarches and services
 
@@ -113,17 +116,18 @@ export const service = defineService<MeteoMethods>({
 
 The context is all a service gets of Marianne:
 
-| `ctx.`     | what                                                                                             |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `manifest` | its manifest                                                                                     |
-| `http`     | `json`, `text`, `page` (as a browser): HTTPS to its declared hosts only, Marianne's user agent   |
-| `log`      | Marianne's log, prefixed with the service                                                        |
-| `storage`  | the user's data for it (favorites…), in the encrypted archive; throws while locked               |
-| `dataDir`  | a folder of this computer for its public data (its sync job fills it); never personal data       |
-| `geo`      | `findCommunes`, `getCommune`: the communes of France                                             |
-| `home()`   | the commune of the user's address, or null                                                       |
-| `profile`  | `granted()`, `vehicles()`, `leaning()`, `themes()`: the fields the user granted it, nothing else |
-| `sync`     | `status()` and `run()` of its sync job                                                           |
+| `ctx.`     | what                                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------- |
+| `manifest` | its manifest                                                                                                  |
+| `http`     | `json`, `text`, `page` (as a browser): HTTPS to its declared hosts only, Marianne's user agent                |
+| `log`      | Marianne's log, prefixed with the service                                                                     |
+| `storage`  | the user's data for it (favorites…), in the encrypted archive; throws while locked                            |
+| `dataDir`  | a folder of this computer for its public data (its sync job fills it); never personal data                    |
+| `geo`      | `findCommunes`, `getCommune`: the communes of France                                                          |
+| `home()`   | the commune of the user's address, or null                                                                    |
+| `profile`  | `granted()`, `vehicles()`, `leaning()`, `themes()`, `sources()`: the fields the user granted it, nothing else |
+| `news`     | the headlines Marianne reads for it (below); present only with `"news": true`                                 |
+| `sync`     | `status()` and `run()` of its sync job                                                                        |
 
 `activate` returns the runtime:
 
@@ -131,7 +135,7 @@ The context is all a service gets of Marianne:
 - `tools`: tools the engines may call while the service is on. Engines see them as `<code>_<name>` (`parlement_ballots`). `label` is French, as the conversation shows the call; `description` and results are English, for the model. Arguments never carry the user's identifiers: the host refuses `[[tokens]]` in them. Throw `ToolError` for a failure the model should read (nothing found, a missing argument).
 - `skills`: guides the engines read when a request calls for them, Markdown with a front matter (`name`, `title`, `description`); import them as text (`import guide from './skills/x.md?raw'`).
 - `instructions`: a few lines (English) added to the engines' instructions while the service is on.
-- `today(day)`: its lines of "Aujourd'hui" on the Actualités page (`TodayItem`); opening one opens the service with its `params`.
+- `today(day)`: its lines of "Aujourd'hui" for a day (`TodayItem`), each opening the service with its `params`. No screen shows them since the Actualités page left the frame; the day's agenda (3615 CALENDRIER) will.
 - `summary(domain)`: its line on the dashboard of one of its domains (`ServiceSummary`: a French sentence, an urgency, the `params` to open it with), or null. It is data: Marianne lays out every service's line the same way.
 - `deadlines()`: the deadlines it knows of (`ServiceDeadline`), from what it keeps in `ctx.storage`; they join the user's deadlines and reminders. Called often: no network.
 - `tile()`: its tile on the Services page, once the user pins it (below), or null for the default tile.
@@ -186,6 +190,24 @@ runSync(async (ctx) => {
 
 Marianne builds it as its own entry (`out/main/sync-<code>.js`) and runs it in an Electron utility process, away from the app: when the service is on and its data is older than `everyHours`, and when the user asks. Downloads are conditional (ETag) and limited to the declared hosts; temporary files are removed after the run. `download(url, { force, label, optional })`: `force` downloads even when unchanged, `label` names it in the progress, `optional` returns null for a file the site doesn't have (404) instead of failing the run. The last run is kept in `<dataDir>/sync.json`. Write the data atomically (a transaction, or a new file renamed over the old one): the main side may read while the job runs.
 
+### News
+
+A service that declares `"news": true` reads the press through `ctx.news`: Marianne reads the whole catalogue (`news-sources.json`, sections included), keeps 7 days of titles, groups them into subjects (`groupSubjects`) and hands them over; the service reaches no press site. With `opinions.sources` granted, it gets the user's accepted sources and sections, and their colours; without it, every source of Marianne's list, unmarked, in Marianne's colours: say so on the screen.
+
+| `ctx.news.`                               | what                                                                                                                          |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `filtered()`                              | the user's sources apply (`opinions.sources` granted); false: all of Marianne's                                               |
+| `read({ day?, all? })`                    | a `NewsReading`: every title of the last 24 hours (or of a day of the 7, `YYYY-MM-DD`), the subjects, the sources that failed |
+| `search(words, { since?, limit?, all? })` | the titles matching words over the 7 days, most recent first                                                                  |
+| `article(id)`                             | a `NewsArticle` for one title on screen: its media and the start of its article; null when there is nothing to read           |
+| `sources({ all? })`                       | `NewsSourceInfo[]`: the catalogue, to name and colour sources (the user's colours when granted, else Marianne's)              |
+
+- `all`: the sources the user set aside too, marked `setAside`, for « toutes »; only for a service that may read `opinions.sources` (without it, everything is there already, unmarked).
+- `read()` gives the single titles with the subjects: a screen arranges the same titles by subject, by time or by source. A subject's id is its first title's, kept as it grows.
+- `article(id)` reads one page when asked, without cookies, and keeps it with the title: the start is 600 characters at most, cut at a sentence; never past a paywall (`paid`, no `start`: the page's `isAccessibleForFree`, or the source's `paywall` rule), never for a source that said `"start": false`. Ask only for the title the screen shows.
+- Everything comes from a feed: Marianne writes no news, and neither does a service (a subject is named by the words its titles share, `subjectWords`).
+- `@marianne/sdk/news` holds the pure helpers both sides share: `titleWords`, `similarity`, `stem`, `subjectWords`, `ownWords`, `isLive`, `withoutLive`, `groupSubjects`, `sideOf`, `LEANS` and `LEAN_LABELS`.
+
 ## View
 
 `src/view.tsx` exports `View`, a React component. Marianne shows it in the service's frame: the 3615 header (the way back to the Services page, its name, its star) and the tabs its manifest declares, both running the window's width and staying where they are; under them, the screen scrolls in a centred column (at most `--content-width`, 1280px) whose scroll bar is the window's edge. The view shows what the tab holds (`useTab`), and draws neither a header nor a bar. Fill the column rather than giving the screen a width of its own, and lay it out by the column's width, not the window's: it is a container named `service` (`@container service (max-width: 760px) { … }`), so a layout answers to the room the sidebar leaves it, on a wide screen as on a tablet.
@@ -202,11 +224,13 @@ export function View() {
 }
 ```
 
-- `useHost()`: the manifest, `call(method, …args)`, `params` (what it was opened with), `home`, `ask(text, page?)` (hand a question to Marianne: a new folder, the question in the composer), `openRoute(route)` (another screen: `settings/identity`, `service/carte`), `openUrl`, `copy`, `toast`, `load(key)`/`save(key, value)` (the same storage as `ctx.storage`).
+- `useHost()`: the manifest, `call(method, …args)`, `params` (what it was opened with), `home`, `ask(text, page?)` (hand a question to Marianne: a new folder, the question in the composer), `openRoute(route, params?)` (another screen: `settings/identity`, `service/carte`; with what it opens with, `openRoute('service/infos', { search: 'budget 2027' })`; a settings page's section, `settings/identity#sources`), `openUrl`, `copy`, `toast`, `load(key)`/`save(key, value)` (the same storage as `ctx.storage`).
 - `useCall(method, args)`: a method's result, loaded again when the arguments change (the previous result is dropped meanwhile); `null` arguments wait. Loaded again with the same arguments (`reload()`, or Marianne giving the screen a new host when what it may read changes), it keeps the previous result until the new one comes: a player or a list stays on screen.
 - `useStored(key, defaults)`: stored data with defaults, and a function that merges, shows and stores.
 - `useTab(onPick?)`: `{ tab, tabs, open(id) }`, the tab shown (`''` without tabs) and a way to show another; `onPick` runs whenever the user picks a tab, the one shown included (a screen with panes over its tabs closes them). Marianne scrolls back to the top on a new tab. The screen opens on the tab its `params.tab` names, else the first.
 - `useTabBadges({ members: '3' })`: a short count beside tabs. `<ServiceTools>`: a few controls of the whole screen at the end of the tab bar (of the header, without tabs).
+- `useSearch()`: `{ query, set(text), clear() }`, what is typed in the header's search field (a manifest with `search`), trimmed and debounced, `''` when empty. Marianne draws the field once the screen shows (not before the consent); « / » reaches it and Échap in it clears it; the query stays across tabs and goes when the user leaves the service; opened with `params.search`, the field is filled. The view decides what it filters, tab by tab.
+- `useKeys(keys)`: the screen's own keys in the bottom bar, after Marianne's, as `ServiceKey`s (`{ key: 'ENVOI', what: 'ouvrir le sujet 1', shortcut: 'Entrée' }`). The bar only shows them: the view still listens to the keyboard itself.
 - `Loading` (`label`, `progress` from 0 to 1, `detail`; `inline` for a part of a page), `Failure` (`title`, `error`, `retry`; `inline`), `Notice` (a note with its `action`): the states of a page, the same in every service (see [services/AGENTS.md](../services/AGENTS.md)). `useDebounced(value, ms)`, `useNow(everyMs)`.
 - `Spinner`, `Field`, `Modal`: the window's blocks (a `Modal` opens over the whole window, out of the screen's layout). Marianne's stylesheet styles them and the usual classes (`.card`, `.grid`, `.btn`, `.rows`, `.dim`…); a service's own styles go in a CSS file its view imports, with class names prefixed by its code (`.meteo-days`).
 
@@ -269,7 +293,7 @@ The 3615 kiosk: its head is the page's one search (the 3615 bar: a code or words
 
 ## Tests
 
-Each package has its own `test/` and `vitest.config.ts`; `npm test` at the root runs the app's tests and every package's (vitest projects). Test the pure parts (parsers, queries, formatting) without the network; the main side through `fakeContext` from `@marianne/sdk/testing`, built from the service's package.json (`fakeContext(pkg, { answer, communes, profile })`: the network's answers, which it records, a storage in memory, the communes and the profile fields given); a sync job's logic through `execute` from `@marianne/sdk/sync`, with a fake `download`. `npm run typecheck` checks the app and each package (`tsc -p services/<code>`).
+Each package has its own `test/` and `vitest.config.ts`; `npm test` at the root runs the app's tests and every package's (vitest projects). Test the pure parts (parsers, queries, formatting) without the network; the main side through `fakeContext` from `@marianne/sdk/testing`, built from the service's package.json (`fakeContext(pkg, { answer, communes, profile, news })`: the network's answers, which it records, a storage in memory, the communes, the profile fields given (`profile.sources` among them) and, for `"news": true`, what `ctx.news` reads: `{ read, sources, articles }`); a sync job's logic through `execute` from `@marianne/sdk/sync`, with a fake `download`. `npm run typecheck` checks the app and each package (`tsc -p services/<code>`).
 
 ## Community services
 

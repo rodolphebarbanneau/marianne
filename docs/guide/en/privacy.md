@@ -6,11 +6,17 @@ Everything you give Marianne, your folders, your documents and your profile, is 
 
 ## What the engine sees
 
-The engine, Claude Code, Codex or Mistral Vibe, works with your account at its maker. It receives the text of your conversations and what it needs to help you, but never your identifiers in clear: social security number, tax number, name, address, IBAN… are replaced by tokens, and put back in place only on your screen. The maker's terms apply to what it receives. It never receives your political leaning or your themes.
+The engine, Claude Code, Codex or Mistral Vibe, works with your account at its maker. It receives the text of your conversations and what it needs to help you, but never your identifiers in clear: social security number, tax number, name, address, IBAN… are replaced by tokens, and put back in place only on your screen. The maker's terms apply to what it receives. It never receives your political leaning, your themes or your news sources.
 
 ## What goes online
 
-Marianne fetches public information (the news, the services' data) from its public sources, opens the formalities' websites in its browser, and downloads its updates from GitHub. These requests carry nothing personal, except what you agreed to: the part of your profile a service asked you for, like your license plate for the tolls, and what Marianne fills in for you on a website, with your approval.
+Marianne fetches public information (the newspapers' headlines, the services' data) from its public sources, opens the formalities' websites in its browser, and downloads its updates from GitHub. These requests carry nothing personal, except what you agreed to: the part of your profile a service asked you for, like your license plate for the tolls, and what Marianne fills in for you on a website, with your approval.
+
+## The news
+
+For 3615 INFOS, Marianne reads the feeds of every newspaper on its list, not only those you accepted: no newspaper can tell which ones you read. It keeps their headlines for 7 days. It reads the start of an article (a few lines) only for the headline shown, when you show it, and never past what a newspaper keeps for its subscribers: the rest is read on its site.
+
+Your news sources are part of your profile, like your leaning: what you read says what you think. The engine never receives them, and no service reads them without your consent, never given in advance (Réglages › Identité › qui peut les lire, who may read them). A service that may not read them gets every newspaper on the list.
 
 ## Community services
 

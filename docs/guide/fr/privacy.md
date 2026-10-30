@@ -6,11 +6,17 @@ Tout ce que vous confiez à Marianne, vos dossiers, vos pièces et votre profil,
 
 ## Ce que voit le moteur
 
-Le moteur, Claude Code, Codex ou Mistral Vibe, travaille avec votre compte chez son éditeur. Il reçoit le texte de vos conversations et ce dont il a besoin pour vous aider, mais jamais vos identifiants en clair : numéro de sécurité sociale, numéro fiscal, nom, adresse, IBAN… sont remplacés par des jetons, et remis à leur place seulement sur votre écran. Les conditions de l’éditeur s’appliquent à ce qu’il reçoit. Il ne reçoit jamais votre sensibilité politique ni vos thèmes.
+Le moteur, Claude Code, Codex ou Mistral Vibe, travaille avec votre compte chez son éditeur. Il reçoit le texte de vos conversations et ce dont il a besoin pour vous aider, mais jamais vos identifiants en clair : numéro de sécurité sociale, numéro fiscal, nom, adresse, IBAN… sont remplacés par des jetons, et remis à leur place seulement sur votre écran. Les conditions de l’éditeur s’appliquent à ce qu’il reçoit. Il ne reçoit jamais votre sensibilité politique, ni vos thèmes, ni vos sources d’information.
 
 ## Ce qui va en ligne
 
-Marianne va chercher l’information publique (les actualités, les données des services) à ses sources publiques, ouvre les sites des démarches dans son navigateur, et télécharge ses mises à jour sur GitHub. Ces demandes ne portent rien de personnel, sauf ce que vous avez accepté : la partie de votre profil qu’un service vous a demandée, comme votre plaque pour le péage, et ce que Marianne remplit pour vous sur un site, avec votre accord.
+Marianne va chercher l’information publique (les titres des journaux, les données des services) à ses sources publiques, ouvre les sites des démarches dans son navigateur, et télécharge ses mises à jour sur GitHub. Ces demandes ne portent rien de personnel, sauf ce que vous avez accepté : la partie de votre profil qu’un service vous a demandée, comme votre plaque pour le péage, et ce que Marianne remplit pour vous sur un site, avec votre accord.
+
+## Les infos
+
+Pour 3615 INFOS, Marianne lit les flux de tous les journaux de sa liste, pas seulement ceux que vous avez acceptés : aucun journal ne peut savoir lesquels vous lisez. Elle garde leurs titres 7 jours. Elle ne lit le début d’un article (quelques lignes) que pour le titre affiché, quand vous l’affichez, et jamais au-delà de ce qu’un journal réserve à ses abonnés : la suite se lit chez lui.
+
+Vos sources d’information font partie de votre profil, comme votre sensibilité : ce que vous lisez dit ce que vous pensez. Le moteur ne les reçoit jamais, et aucun service ne les lit sans votre accord, jamais donné d’avance (Réglages › Identité › qui peut les lire). Un service qui ne peut pas les lire reçoit tous les journaux de la liste.
 
 ## Les services de la communauté
 

@@ -12,7 +12,7 @@ In the app, F1 opens the guide, with links to the project.
 
 ## Writing to us
 
-Open an issue on [GitHub](https://github.com/rodolphebarbanneau/marianne/issues/new/choose): "Bug report" for a problem, "Idea" for an idea, "Content correction" for wrong or outdated information in a formality, "Feedback" for your thoughts. Don't write **any personal data** in it: issues are public.
+Open an issue on [GitHub](https://github.com/rodolphebarbanneau/marianne/issues/new/choose): "Bug report" for a problem, "Idea" for an idea, "Content correction" for wrong or outdated information in a formality or to propose a news source, "Feedback" for your thoughts. Don't write **any personal data** in it: issues are public.
 
 A security vulnerability is reported privately, never in an issue: see the [security policy](https://github.com/rodolphebarbanneau/marianne/blob/main/SECURITY.md).
 
@@ -30,4 +30,4 @@ What we'd like you to try:
 3. Fill in a bit of your profile (Réglages › Moi), if you like: nothing leaves your computer, and the engine never sees your numbers, only tokens.
 4. Ask Marianne a real question, about a formality you have in progress.
 5. Follow a guided formality (Démarches › an area).
-6. Browse the news (Actualités) and the Services: 3615 METEO, CARTE, PARLEMENT, ANNUAIRE, PEAGE.
+6. Browse the Services: 3615 INFOS, METEO, CARTE, PARLEMENT, ANNUAIRE, PEAGE.

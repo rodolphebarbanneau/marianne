@@ -1,6 +1,6 @@
 # Content
 
-Marianne's content is what it knows that anyone may improve: the engines' skills, the guided démarches, the official calendar, the catalog of public sites and the news sources of Actualités. It lives in the `packages/content/` package (`@marianne/content`), is open to contributions **through review only**, ships built into the app, and is updated between releases as a bundle the project signs.
+Marianne's content is what it knows that anyone may improve: the engines' skills, the guided démarches, the official calendar, the catalog of public sites and the news sources of 3615 INFOS. It lives in the `packages/content/` package (`@marianne/content`), is open to contributions **through review only**, ships built into the app, and is updated between releases as a bundle the project signs.
 
 Review is not a formality: skills go into the engines' instructions (a guide that says the wrong thing is a prompt injection), and démarches are legal guidance read by people dealing with their administration. Every change is read by a maintainer, every claim has an official source, and the app only takes a bundle signed with the project's key.
 
@@ -18,7 +18,7 @@ packages/content/
   procedures/<domain>/<id>.md        guided démarches, one folder per domain
   calendar.json                      dates that come back every year
   sites.json                         the public-service websites
-  news-sources.json                  the news feeds of Actualités
+  news-sources.json                  the news sources and their feeds, read for 3615 INFOS
   parliament.json                    the political groups of both chambers, for the leaning
   signing-key.pem                    the project's public key, once it has one
   src/index.ts                       the formats, readContent and the bundle's text (pure)
@@ -149,7 +149,35 @@ The folder that follows a démarche shows its steps and the actions of the step 
 
 ## News sources
 
-`news-sources.json`: the feeds Actualités offers, RSS 2.0 or Atom; Marianne shows what a feed shows (title, time, link), never the article. `group`: `national`, `regional`, `broadcast` or `factcheck`. Check that the feed answers and carries articles before proposing one.
+`news-sources.json`: the press Marianne reads for 3615 INFOS, the same list for everyone (no feed is added by hand), and the sources a user accepts or sets aside in Réglages › Identité. Marianne reads every source, whatever the user chose, and shows what a feed shows (title, time, link, summary) and, for the one title a subject shows, the start of its article: never the whole article, never past a paywall.
+
+```json
+{
+  "id": "le-monde",
+  "name": "Le Monde",
+  "group": "national",
+  "feed": "https://www.lemonde.fr/rss/une.xml",
+  "homepage": "https://www.lemonde.fr",
+  "sections": [
+    { "id": "une", "label": "à la une", "feed": "https://www.lemonde.fr/rss/une.xml" },
+    { "id": "politique", "label": "politique", "feed": "https://www.lemonde.fr/politique/rss_full.xml" }
+  ],
+  "lean": "centre-gauche",
+  "leanBasis": "Wikipédia, article « Le Monde » : « Il est classé politiquement au centre gauche » (consulté le 30 octobre 2026)",
+  "paywall": ".article__wrapper--premium"
+}
+```
+
+- `group`: `national`, `regional`, `broadcast` or `factcheck`.
+- `feed`: the front page's feed, RSS 2.0 or Atom. It stays, even with sections: older versions of the app read it alone.
+- `sections`: the source's feeds, the front page first (its feed is `feed`, its id `une`), then three to six useful ones (`politique`, `international`, `économie`…). Ids are lowercase words joined by hyphens, labels French and lowercase, each id and feed once. A user keeps all of them unless they untick some.
+- `regions`: a regional source's area, as INSEE region codes (`53` Bretagne, `52` Pays de la Loire…); required for a `regional` source, refused for another. Without an address, every source is accepted; with one, the regional sources of other regions start set aside.
+- `lean`: Marianne's default editorial line, one of `gauche`, `centre-gauche`, `centre`, `centre-droit`, `droite`, `aucune` (sans classement). It is indicative, shown as the source's colour, never used to sort or pick; the user may give a source another colour. Absent, `aucune`.
+- `leanBasis`: where the `lean` comes from, required for any `lean` but `aucune`: a reference anyone can check that states the editorial line (the outlet's own statement, its encyclopaedia article, a published study of the press), quoted briefly, with the day it was read, in French, on one line. Who owns an outlet is not its line. A source without such a statement is `aucune`, as are the public broadcasters, the news channels that declare no line and the fact-checkers. The scale stops at `gauche` and `droite`: a reference that goes further puts the source at the end.
+- `paywall`: for a source with paid articles whose pages don't say so (`isAccessibleForFree` in their JSON-LD), a CSS selector found on its paid pages only: nothing past the summary is read there. Check it on a paid page and on a free one.
+- `start`: `false` when the source asked that no start of its articles be shown: its summary alone.
+
+Before proposing a source or a section, check that each feed answers and carries recent articles. A source is a newsroom writing in French, with an open feed that works; its `lean` comes with its basis, or it is `aucune`.
 
 ## Parliamentary groups
 
@@ -175,6 +203,7 @@ Every change goes through a pull request, read by a maintainer; the démarches o
 - each claim of the change against its sources, which must be official and say what the text says;
 - that a skill only tells the engine how to use Marianne's tools, and nothing that would set its instructions aside;
 - the actions: the right site, setting, document type, sheet or service;
+- a news source's feeds, that they answer, and its `lean` against its `leanBasis`: the reference must say it;
 - `updated` bumped, and the `owner`.
 
 `verified` records that a reviewer read the whole file against its sources: they set it, to the day they did, in a pull request of their own or in a review commit, never the author of the change. A later change bumps `updated` and leaves `verified` as it was: a `verified` older than `updated` means the last change has not been checked yet.
@@ -193,5 +222,6 @@ Between releases, newer content reaches the users as a bundle: `content.json`, e
 - 30 seconds after start, then every day, it asks for `https://github.com/rodolphebarbanneau/marianne/releases/latest/download/content.json` (a conditional request: nothing is downloaded when it didn't change), then its signature.
 - It takes a bundle when its signature verifies with the built-in public key (nothing else of the file is read before that), its version is newer than the content in use, and every one of its files is valid for this version of Marianne. Otherwise it keeps what it has and logs why; a bundle it can't read whole is refused whole.
 - The content built into the app counts until the end of the day of its latest `updated`: a bundle built that same day is not newer.
+- A new key or a new file is a change of the format: the versions before it refuse the bundles that carry it, whole, and keep the content they have until they are updated. Make such a change with a release, never as a key that only some bundles carry, and keep what older versions require (a news source's `feed`, every file of `CONTENT_FILES`).
 
 The screens follow: sites, news sources, démarches and the calendar's deadlines come from the content in use.

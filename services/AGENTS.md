@@ -9,32 +9,34 @@ The same for every service, decided by the package and its manifest rather than 
 - **The package**: `services/<code>/`, named `@marianne/service-<code>`, with `src/main.ts`, `src/view.tsx`, `src/help.md`, optionally `src/sync.ts`, and `test/`.
 - **The manifest** (the `marianne` field of `package.json`): code, name, description, category, hosts, the **tabs** of the screen, the **tools** it lends the engines, its **icon**. `readManifest` checks it; a wrong one leaves the service out.
 - **The tile** on the Services page: its head (your icon, code and name) and its foot; you give its body as data (`tile()`).
-- **The frame**: the 3615 header (the way back, the name, the star), the **tab bar** drawn from `tabs` (each tab with its key, F2 to F9, fixed while the content scrolls under it; none for a screen of one page), the margins, the scroll bar, and the centred column (`--content-width`).
+- **The frame**: the 3615 header (the way back, the name, the star, and the **search field** a manifest's `search` asks for), the **tab bar** drawn from `tabs` (each tab with its key, F2 to F9, fixed while the content scrolls under it; none for a screen of one page), the margins, the scroll bar, the centred column (`--content-width`), and the **bottom bar**, where your keys join Marianne's.
 - **The guide** (F1 on the screen): its header, the keys, the service's facts (version, author, the sites it reaches), and your `help.md` in the middle.
 
-So a view never draws a header, a tab bar, a way back to the Services, nor a scrolling container of its own for the page.
+So a view never draws a header, a tab bar, a way back to the Services, a search field, nor a scrolling container of its own for the page.
 
 ## What you compose
 
 What a tab shows is yours, from `@marianne/sdk/view` and Marianne's classes:
 
-| for                                              | use                                                                                      |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| what a page, a tab or a pane waits for           | `<Loading label="les prévisions de Bordeaux" />`: a box in the middle, one per page      |
-| a share of something done (a download, a sync)   | `<Meter share={0.4} />`: the cells of every wait, lit to the share                       |
-| a part of a page already shown that waits        | `<Loading inline label="…" />`, or `<Spinner />` in a line (a search list, a button)     |
-| a pane opened over a tab                         | `<LoadingGate>…</LoadingGate>`: shown whole, as a tab is                                 |
-| a side panel that stays in view                  | `<StickyPanel at={id}>`: no scroll bar; taller than the window, it follows the page      |
-| what couldn't come                               | `<Failure title="Prévisions indisponibles" error={…} retry={…} />` (`inline` for a part) |
-| something to do first (an address, a permission) | `<Notice action={{ label: 'renseigner mon adresse', onClick }}>…</Notice>`               |
-| a form                                           | `<Field label hint error>`, Marianne's inputs and `.btn`                                 |
-| a dialog                                         | `<Modal>` (over the window, échap closes it)                                             |
-| a filter all tabs follow                         | `<ServiceTools>`: at the tab bar's end; one or two small groups                          |
-| a count beside a tab                             | `useTabBadges({ members: '3' })`                                                         |
-| the tab shown, another one                       | `useTab(onPick)`: `{ tab, tabs, open(id) }`                                              |
-| the main side, stored data, the app              | `useCall`, `useStored`, `useHost` (`ask`, `openRoute`, `openUrl`, `copy`, `toast`)       |
-| typing and time                                  | `useDebounced(value)`, `useNow(everyMs)`                                                 |
-| a mosaic in the palette, an icon                 | `<Pixels art={{ palette, pixels }} cell={4} />`, `<ServiceIcon icon={…} />`              |
+| for                                              | use                                                                                                        |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| what a page, a tab or a pane waits for           | `<Loading label="les prévisions de Bordeaux" />`: a box in the middle, one per page                        |
+| a share of something done (a download, a sync)   | `<Meter share={0.4} />`: the cells of every wait, lit to the share                                         |
+| a part of a page already shown that waits        | `<Loading inline label="…" />`, or `<Spinner />` in a line (a search list, a button)                       |
+| a pane opened over a tab                         | `<LoadingGate>…</LoadingGate>`: shown whole, as a tab is                                                   |
+| a side panel that stays in view                  | `<StickyPanel at={id}>`: no scroll bar; taller than the window, it follows the page                        |
+| what couldn't come                               | `<Failure title="Prévisions indisponibles" error={…} retry={…} />` (`inline` for a part)                   |
+| something to do first (an address, a permission) | `<Notice action={{ label: 'renseigner mon adresse', onClick }}>…</Notice>`                                 |
+| a form                                           | `<Field label hint error>`, Marianne's inputs and `.btn`                                                   |
+| a dialog                                         | `<Modal>` (over the window, échap closes it)                                                               |
+| a filter all tabs follow                         | `<ServiceTools>`: at the tab bar's end; one or two small groups                                            |
+| a count beside a tab                             | `useTabBadges({ members: '3' })`                                                                           |
+| a search of the screen                           | `"search": { "placeholder": "…" }` in the manifest, then `useSearch()`: never a search field of your own   |
+| your keys in the bottom bar                      | `useKeys([{ key: 'ENVOI', what: 'ouvrir le sujet 1', shortcut: 'Entrée' }])`: shown only, the view listens |
+| the tab shown, another one                       | `useTab(onPick)`: `{ tab, tabs, open(id) }`                                                                |
+| the main side, stored data, the app              | `useCall`, `useStored`, `useHost` (`ask`, `openRoute(route, params)`, `openUrl`, `copy`, `toast`)          |
+| typing and time                                  | `useDebounced(value)`, `useNow(everyMs)`                                                                   |
+| a mosaic in the palette, an icon                 | `<Pixels art={{ palette, pixels }} cell={4} />`, `<ServiceIcon icon={…} />`                                |
 
 Marianne's classes, styled by her stylesheet: `.card`, `.grid`, `.rows` and `.row`, `.btn` (`small`, `primary`, `danger`), `.chip` (`on`), `.link`, `.label` (a section's heading), `.box-note`, `.dim`, `.small`, `.hi`, `.bad`, `.inv` (an inverse block: a code).
 

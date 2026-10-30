@@ -16,9 +16,14 @@ Marianne opens the sites it needs in the folder's browser, on the right (the « 
 
 ## The pages
 
-- **Actualités** (news): the news from several newspapers, the day's events, a few figures about France.
 - **Démarches** (formalities): the areas of your administrative life (taxes, health, housing, family…), each with its dashboard and its guided formalities, step by step.
-- **Services**: the 3615 codes, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. Type a code or words in the 3615 bar to find one. The star pins a service as a tile, at the top of « mes services » (my services), with what's new for you: today's weather, a toll to pay. « + découvrir » (discover) offers the official services you haven't added yet, then the community's. Before you add a service, Marianne shows you what it will be able to do. A service that needs part of your profile, like your license plate for the tolls, asks you first.
+- **Services**: the 3615 codes, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. Type a code or words in the 3615 bar to find one. The star pins a service as a tile, at the top of « mes services » (my services), with what's new for you: today's weather, a toll to pay. « + découvrir » (discover) offers the official services you haven't added yet, then the community's. Before you add a service, Marianne shows you what it will be able to do. A service that needs part of your profile, like your license plate for the tolls, asks you first.
+
+## The news
+
+3615 INFOS, among your services, shows the headlines of your sources over the last 24 hours, grouped into subjects: a subject is the headlines of different newspapers that say the same thing, ranked by how many sources cover it. « à la une » (front page, F2) shows the list and the chosen subject, the « fil » (wire, F3) the same headlines by time, the « kiosque » (newsstand, F4) source by source. « / » goes to the search field, at the top.
+
+Each source has its colour, its editorial line, from the left (red) to the right (blue), grey without a classification. The one Marianne gives is indicative: its reference is written in the list, and you can change it. The colours don't sort or hide anything. You choose your sources in Réglages › Identité › sources d’information (news sources): accept or set aside (« accepter · écarter ») a newspaper, and its sections with ⚙. The list is Marianne's, the same for everyone.
 
 ## The Parliament's videos
 
@@ -35,7 +40,7 @@ In 3615 PARLEMENT, the vidéos tab opens the sittings and committees of the Asse
 
 In Réglages › Moi (Settings › Me), you can fill in your identity, your household and your documents. It's optional: it helps Marianne prepare your formalities. See [Your data](privacy.md) for what the engine sees of it.
 
-In Réglages › Identité, you may also say which political groups you feel close to, and which themes matter to you, if you wish. Your leaning only serves to compare: 3615 PARLEMENT tells you whether your representatives vote as your ideas, without sorting or hiding anything. Your themes bring forward the news and the ballots about them. You choose which services may read them, and see when they did.
+In Réglages › Identité, you may also say which political groups you feel close to, which themes matter to you, and your news sources, if you wish. Your leaning only serves to compare: 3615 PARLEMENT tells you whether your representatives vote as your ideas, without sorting or hiding anything. Your themes bring forward the headlines and the ballots about them. You choose which services may read them, and see when they did.
 
 ## The keys
 
