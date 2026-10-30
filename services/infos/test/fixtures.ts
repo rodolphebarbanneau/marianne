@@ -24,10 +24,10 @@ export const SOURCES: NewsSourceInfo[] = [
       { id: 'sport', label: 'sport' }
     ]
   },
-  { id: 'franceinfo', name: 'Franceinfo', group: 'broadcast', site: 'francetvinfo.fr', lean: 'aucune' },
+  { id: 'franceinfo', name: 'Franceinfo', group: 'broadcast', site: 'francetvinfo.fr', lean: 'centre' },
   { id: 'cnews', name: 'CNews', group: 'broadcast', site: 'cnews.fr', lean: 'droite', setAside: true },
   { id: 'europe-1', name: 'Europe 1', group: 'broadcast', site: 'europe1.fr', lean: 'droite', setAside: true },
-  { id: 'les-decodeurs', name: 'Les Décodeurs', group: 'factcheck', site: 'lemonde.fr', lean: 'aucune' }
+  { id: 'les-decodeurs', name: 'Les Décodeurs', group: 'factcheck', site: 'lemonde.fr', lean: 'centre' }
 ]
 
 const ASIDE = new Set(['cnews', 'europe-1'])

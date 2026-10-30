@@ -38,8 +38,8 @@ export function choiceOf(stored: NewsChoice | null, sources: NewsSource[], insee
 
 export const isAccepted = (choice: NewsChoice, id: string): boolean => !choice.refused.includes(id)
 
-/** Marianne's editorial line for a source; « sans classement » when the list gives none. */
-export const defaultLean = (source: NewsSource): Lean => source.lean ?? 'aucune'
+/** Marianne's editorial line for a source; the centre when the list gives none. */
+export const defaultLean = (source: NewsSource): Lean => source.lean ?? 'centre'
 
 /** Sources accepted or set aside. A source accepted again keeps the sections it had. */
 export function acceptSources(choice: NewsChoice, ids: string[], accept: boolean): NewsChoice {
@@ -74,7 +74,7 @@ export const byLean = (sources: NewsSource[], choice: NewsChoice): NewsSource[] 
   [...sources].sort((a, b) => LEANS.indexOf(leanOf(a, choice)) - LEANS.indexOf(leanOf(b, choice)) || a.name.localeCompare(b.name, 'fr'))
 
 /**
- * The accepted sources by side (à gauche, au centre, à droite, sans classement). A side none of
+ * The accepted sources by side (à gauche, au centre, à droite). A side none of
  * the sources belongs to is left out: it would say 0 of nothing.
  */
 export function sidesOf(sources: NewsSource[], choice: NewsChoice): Partial<Record<Side, number>> {

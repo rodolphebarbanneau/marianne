@@ -177,8 +177,8 @@ export interface Site {
 export const NEWS_GROUPS = ['national', 'regional', 'broadcast', 'factcheck'] as const
 export type NewsGroup = (typeof NEWS_GROUPS)[number]
 
-/** The editorial lines a source may have, from the left to the right; `aucune`: sans classement. */
-export const NEWS_LEANS = ['gauche', 'centre-gauche', 'centre', 'centre-droit', 'droite', 'aucune'] as const
+/** The editorial lines a source may have, from the left to the right; `centre`: no clear lean. */
+export const NEWS_LEANS = ['gauche', 'centre-gauche', 'centre', 'centre-droit', 'droite'] as const
 export type NewsLean = (typeof NEWS_LEANS)[number]
 
 /** A news source Marianne reads for 3615 INFOS: its public feeds (RSS 2.0 or Atom). */
@@ -193,7 +193,7 @@ export interface NewsSource {
   sections?: Array<{ id: string; label: string; feed: string }>
   /** INSEE region codes: a regional source's area. */
   regions?: string[]
-  /** Marianne's default editorial line, which the user may change; absent: `aucune`. */
+  /** Marianne's default editorial line, which the user may change; absent: `centre`. */
   lean?: NewsLean
   /** Its pages are behind a paywall: a CSS selector that marks a paid article (nothing past the summary is read then). */
   paywall?: string

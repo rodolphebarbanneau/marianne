@@ -20,7 +20,7 @@ const leanColor = (lean: Lean) => `var(--lean-${lean})`
 const leanInk = (lean: Lean) => `var(--lean-${lean}-ink)`
 
 /** The side's colour in the summary: its outermost position's. */
-const SIDE_LEANS: Record<Side, Lean> = { left: 'gauche', centre: 'centre', right: 'droite', none: 'aucune' }
+const SIDE_LEANS: Record<Side, Lean> = { left: 'gauche', centre: 'centre', right: 'droite' }
 
 /** Where the proposals of a new source go: the content form, which has « A news source ». */
 const PROPOSE_URL = `${REPO_URL}/issues/new?template=content.yml`

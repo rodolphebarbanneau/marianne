@@ -223,7 +223,8 @@ const NEWS_ID = /^[a-z0-9][a-z0-9-]{0,47}$/
 
 /**
  * A stored or sent choice, checked: ids as the list writes them (unknown ones kept: the catalogue
- * may have them again), the six positions only; anything else of the wrong shape is dropped. Null
+ * may have them again), the five positions only (the « sans classement » of older versions
+ * goes, its source back to Marianne's line); anything else of the wrong shape is dropped. Null
  * (the defaults) for what isn't a choice at all.
  */
 export function readNewsChoice(raw: unknown): NewsChoice | null {

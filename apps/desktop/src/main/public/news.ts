@@ -484,7 +484,7 @@ export function sourcesFor(catalogue: NewsSource[], view: NewsView, perDay: Reco
         name: s.name,
         group: s.group,
         site,
-        lean: view.granted ? leanOf(s, view.choice) : (s.lean ?? 'aucune'),
+        lean: view.granted ? leanOf(s, view.choice) : (s.lean ?? 'centre'),
         ...(s.sections?.length ? { sections: s.sections.map((x) => ({ id: x.id, label: x.label })) } : {}),
         ...(setAside ? { setAside: true } : {}),
         ...(view.region && s.regions?.includes(view.region) ? { home: true } : {}),

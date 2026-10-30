@@ -151,28 +151,28 @@ describe('the other methods', () => {
 })
 
 describe('the tile', () => {
-  it('shows the first subject: its words, who tells it in their colours, its latest title', async () => {
+  it('shows the first subject: its words, the sources that tell it in their colours, its latest title, how many tell it', async () => {
     const tile = checkTile(await setup().tile())
     expect(tile).toEqual({
       title: 'budget · sénat · adopte',
+      // Only the sources that tell it, from the left to the right: the one that keeps quiet isn't drawn.
       visual: {
         kind: 'blocks',
-        blocks: [
-          { color: 'rouge' },
-          { color: 'rouge-clair' },
-          { color: 'jaune' },
-          { color: 'bleu-clair' },
-          { color: 'bleu' },
-          { color: 'gris-clair' },
-          { color: null }
-        ]
+        blocks: [{ color: 'rouge' }, { color: 'rouge-clair' }, { color: 'blanc' }, { color: 'blanc' }, { color: 'bleu-clair' }, { color: 'bleu' }]
       },
       lines: [
-        { text: 'chez 6 de vos 7 sources', tone: 'live' },
-        { text: 'Budget 2027 : le Sénat adopte les recettes, suivez le vote', tone: 'dim' }
+        { text: 'Budget 2027 : le Sénat adopte les recettes, suivez le vote', tone: 'live' },
+        { text: '6 de vos 7 sources en parlent', tone: 'dim' }
       ],
       params: { subject: 'b1' }
     })
+  })
+
+  it('names the subject with the words that fit whole', async () => {
+    const reading = (await setup().methods.reading({ all: false })) as Reading
+    const [first, ...rest] = reading.subjects
+    const tile = checkTile(infosTile({ ...reading, subjects: [{ ...first, words: ['binance', 'cryptomonnaies', 'cyberattaque'] }, ...rest] }))
+    expect(tile?.title).toBe('binance · cryptomonnaies')
   })
 
   it('says so when there is no subject, or no title', async () => {

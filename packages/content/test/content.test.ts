@@ -132,9 +132,9 @@ describe('reading the content', () => {
     }
     const files = edited('news-sources.json', () => JSON.stringify({ updated: '2026-10-30', sources: [source] }))
     expect(readContent(files).newsSources).toEqual([source])
-    // Sans classement, as for a fact-checker.
-    const plain = edited('news-sources.json', () => JSON.stringify({ updated: '2026-10-30', sources: [{ ...press, regions: ['84'], lean: 'aucune' }] }))
-    expect(readContent(plain).newsSources).toEqual([{ ...press, regions: ['84'], lean: 'aucune' }])
+    // The centre, as for a fact-checker.
+    const plain = edited('news-sources.json', () => JSON.stringify({ updated: '2026-10-30', sources: [{ ...press, regions: ['84'], lean: 'centre' }] }))
+    expect(readContent(plain).newsSources).toEqual([{ ...press, regions: ['84'], lean: 'centre' }])
   })
 
   it('checks a news source’s sections, regions, editorial line, paywall and start', () => {
@@ -162,7 +162,7 @@ describe('reading the content', () => {
       })
     )
     expect(problems(files)).toEqual([
-      'news-sources.json: sources[0] (b).lean: "extreme-droite" is not one of gauche, centre-gauche, centre, centre-droit, droite, aucune',
+      'news-sources.json: sources[0] (b).lean: "extreme-droite" is not one of gauche, centre-gauche, centre, centre-droit, droite',
       'news-sources.json: sources[1] (c).sections[1] (politique).color: unknown key (expected: id, label, feed)',
       'news-sources.json: sources[1] (c).sections[1] (politique).label: must be text',
       'news-sources.json: sources[1] (c).sections[1] (politique).feed: "http://www.presse.example/rss" is not https',

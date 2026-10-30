@@ -134,24 +134,22 @@ html[data-theme='monochrome'] {
   --dot: rgba(210, 235, 220, 0.17);
 }
 
-/* The news sources' colours: a source's editorial line, from the left (red) to the right (blue), grey without a
-   classification (packages/sdk/src/news.ts, LEANS). One property per position and its text's colour, so
+/* The news sources' colours: a source's editorial line, from the left (red) to the right (blue), the centre (no clear
+   lean) a greyish white, so it reads as no side (packages/sdk/src/news.ts, LEANS). One property per position and its text's colour, so
    Réglages › Identité and 3615 INFOS draw a source the same way: var(--lean-centre), var(--lean-centre-ink). */
 :root {
   --lean-gauche: var(--rouge);
   --lean-gauche-ink: var(--noir);
   --lean-centre-gauche: color-mix(in srgb, var(--rouge) 50%, var(--blanc));
   --lean-centre-gauche-ink: var(--noir);
-  --lean-centre: color-mix(in srgb, var(--jaune) 45%, var(--rouge));
+  --lean-centre: color-mix(in srgb, var(--blanc) 55%, #a4a6b2);
   --lean-centre-ink: var(--noir);
   --lean-centre-droit: color-mix(in srgb, var(--bleu) 55%, var(--blanc));
   --lean-centre-droit-ink: var(--noir);
   --lean-droite: var(--bleu);
   --lean-droite-ink: var(--blanc);
-  --lean-aucune: #a4a6b2;
-  --lean-aucune-ink: var(--noir);
 }
-/* Minitel 1: six greys from dark (the left) to light (the right), sans classement the lightest; every block says its
+/* Minitel 1: five greys from dark (the left) to light (the right), the centre in the middle; every block says its
    position in its title too. */
 html[data-theme='monochrome'] {
   --lean-gauche: #4f5551;
@@ -164,8 +162,6 @@ html[data-theme='monochrome'] {
   --lean-centre-droit-ink: var(--noir);
   --lean-droite: #c6ccc8;
   --lean-droite-ink: var(--noir);
-  --lean-aucune: #e1e6e3;
-  --lean-aucune-ink: var(--noir);
 }
 
 /* The Minitel touches. */
@@ -1891,6 +1887,9 @@ button.card:hover {
   align-items: flex-end;
 }
 .v-blocks span {
+  /* Sixteen blocks fit any tile: they share its width, 18 px at most each. */
+  flex: 0 1 18px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1899,8 +1898,8 @@ button.card:hover {
   color: var(--muted);
 }
 .v-blocks i {
-  width: 18px;
-  height: 18px;
+  width: 100%;
+  aspect-ratio: 1;
   display: block;
 }
 .v-blocks i.none {

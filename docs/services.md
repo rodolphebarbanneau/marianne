@@ -84,7 +84,7 @@ The user may say, in Réglages › Identité, which political groups they feel c
 
 - Use a leaning to compare, never to sort, hide or recommend: "votre députée a voté comme vos idées dans 82 % des cas", and offer the other side as well.
 - Themes say nothing of an opinion: they bring matching content forward. `themesOf(text, themes)` (`@marianne/sdk`) tells which themes a text is about, by their words.
-- A source's colour is its editorial line (`Lean`: `gauche` to `droite`, `aucune` for « sans classement »): it shows, and never sorts, hides or picks; accepting or setting a source aside stays the user's choice. Without `opinions.sources` granted, a service sees Marianne's defaults, never the user's.
+- A source's colour is its editorial line (`Lean`: five positions, `gauche` to `droite`, `centre` the middle for a source with no clear lean): it shows, and never sorts, hides or picks; accepting or setting a source aside stays the user's choice. Without `opinions.sources` granted, a service sees Marianne's defaults, never the user's.
 
 ## Domains, guided démarches and services
 
