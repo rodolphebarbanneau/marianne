@@ -1,6 +1,6 @@
 import { today } from '@marianne/profile'
 import type { TaskEvery, TaskOutcome, TaskRun, TaskTemplate } from '@shared/types'
-import { hourOf, shortDate, weekdayOf } from '../../lib/demarches'
+import { dayLabel, hourOf, shortDate, weekdayOf } from '../../lib/demarches'
 
 /** What the planned tasks' cards and sheets compute, without React. */
 
@@ -8,7 +8,7 @@ import { hourOf, shortDate, weekdayOf } from '../../lib/demarches'
 export const withEntity = (t: { title: string; entity?: { label: string } }) => (t.entity ? `${t.title} · ${t.entity.label}` : t.title)
 
 /** A task's next day, in a card: "dim. 1er nov."; on the day or past it, it runs as soon as it can. */
-export const nextShort = (next: string, now = new Date()) => (next <= today(now) ? 'aujourd’hui' : `${weekdayOf(next).slice(0, 3)}. ${shortDate(next)}`)
+export const nextShort = (next: string, now = new Date()) => (next <= today(now) ? 'aujourd’hui' : dayLabel(next, now, `${weekdayOf(next).slice(0, 3)}.`))
 
 /** When a run was: "vendredi 30 oct. à 8 h 02". `at` is in UTC, and a run just after midnight belongs to its own day. */
 export function runWhen(at: string): string {

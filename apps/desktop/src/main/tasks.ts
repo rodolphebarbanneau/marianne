@@ -231,7 +231,8 @@ class Tasks extends EventEmitter {
     const latest = this.get(task.id)
     if (!latest) return
     const run: TaskRun = { at: started.toISOString(), outcome: end.outcome, text: end.text, ...(latest.next < today ? { due: latest.next } : {}) }
-    const next = this.put({ ...latest, next: nextDay(latest, today), runs: [...latest.runs, run].slice(-RUNS_KEPT) })
+    // Run before its day, with « lancer maintenant », it keeps that day: its next occurrence isn't spent.
+    const next = this.put({ ...latest, next: latest.next > today ? latest.next : nextDay(latest, today), runs: [...latest.runs, run].slice(-RUNS_KEPT) })
     const folder = folders.get(task.folderId)
     if (folder) {
       if (end.outcome === 'nothing') {

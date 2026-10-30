@@ -169,6 +169,12 @@ describe('the clock', () => {
     expect(tasks.get(task.id)).toMatchObject({ next: '2026-11-01', runs: [{ outcome: 'nothing', text: 'rien' }] })
   })
 
+  it('run early by hand, keeps its day', async () => {
+    const task = tasks.create({ ...TOLLS, every: { unit: 'month', n: 6 }, first: '2027-04-30' })
+    await tasks.runNow(task.id)
+    expect(tasks.get(task.id)).toMatchObject({ next: '2027-04-30', runs: [{ outcome: 'nothing' }] })
+  })
+
   it('leaves what isn’t due', async () => {
     tasks.create({ ...TOLLS, first: '2026-11-02' })
     await tasks.tick()

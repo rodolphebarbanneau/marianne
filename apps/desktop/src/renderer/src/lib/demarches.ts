@@ -23,6 +23,11 @@ export function shortDate(iso: string): string {
   return `${d === 1 ? '1er' : d} ${MONTHS[m - 1]}`
 }
 
+/** A day of a task, weekday first: "dimanche 1er nov."; so far off it could be read as this year's, with its year. */
+export function dayLabel(day: string, now = new Date(), weekday = weekdayOf(day)): string {
+  return `${weekday} ${shortDate(day)}${daysUntil(day, now) > 300 ? ` ${day.slice(0, 4)}` : ''}`
+}
+
 /** "à 18 h 12", from an ISO date with a time; nothing for a day alone. */
 export function hourOf(iso: string): string {
   if (iso.length <= 10) return ''
@@ -226,7 +231,7 @@ export function nextTaskDay(tasks: PlannedTask[]): string {
     .filter((t) => t.on)
     .map((t) => t.next)
     .sort()
-  return next ? `${weekdayOf(next)} ${shortDate(next)}` : ''
+  return next ? dayLabel(next) : ''
 }
 
 const RUN_CELLS: Record<TaskOutcome, { look: string; word: string }> = {
