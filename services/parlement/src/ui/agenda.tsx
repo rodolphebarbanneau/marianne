@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
+import { Player } from '@marianne/sdk/media'
 import { useHost } from '@marianne/sdk/view'
-import { AGENDA_PAGE, SENATE_AGENDA_PAGE } from '../links'
+import { AGENDA_PAGE, SENATE_AGENDA_PAGE, videoKey } from '../links'
 import { mondayOf } from '../senate'
 import { addDays, parisDay } from '../time'
-import type { AgendaMeeting, Chamber, Meeting } from '../types'
+import type { AgendaMeeting, Chamber, LiveStream, Meeting } from '../types'
 import { CHAMBER_NAMES } from '../types'
 import { ChamberCode, dateTime, Failure, hour, Loading, shortDay, useFollowed, useMethod, useNav } from './common'
 import { Thumb } from './home'
 import { videoRef } from './members'
-import { Player } from './player'
-import { LiveAgenda } from './videos'
+import { LiveAgenda, useVideo, VideoWatch } from './videos'
 
 /** The week of both chambers, side by side: sittings and committees, what is filmed, live or cancelled, the meetings of the user's members marked. */
 
@@ -213,15 +213,25 @@ function Column({ chamber, meetings, indexed }: { chamber: Chamber; meetings: Ag
   )
 }
 
-/** A meeting: its agenda, its broadcast when live, its recordings once on the portal. */
+/** A meeting: its agenda, its broadcast when live (its video, the whole sitting so far), its recordings once on the portal. */
 export function MeetingPane({ id }: { id: string }) {
   const host = useHost()
   const nav = useNav()
   const detail = useMethod('meeting', [id])
-  if (detail.error) return <Failure error={detail.error} retry={detail.reload} />
+  // On air without its video on the portal: asked again, to open the video once there.
+  const waiting = !!detail.data?.stream?.live && !detail.data.stream.video
+  const { reload } = detail
+  useEffect(() => {
+    if (!waiting) return
+    const t = setInterval(reload, 30_000)
+    return () => clearInterval(t)
+  }, [waiting, reload])
+  if (detail.error && !detail.data) return <Failure error={detail.error} retry={detail.reload} />
   if (!detail.data) return <Loading label="la réunion" />
-  const { meeting: m, stream, videos } = detail.data
+  const { meeting: m, stream, videos: all } = detail.data
   const past = Date.parse(m.start) < Date.now()
+  // The live's video is the player above, not a line "en vidéo".
+  const videos = all.filter((v) => !(stream?.live && v.chamber === stream.chamber && v.id === stream.video))
   return (
     <>
       <p className="parlement-row small">
@@ -231,10 +241,11 @@ export function MeetingPane({ id }: { id: string }) {
       </p>
       <h3 className="hi parlement-title">{title(m)}</h3>
       {stream?.live ? (
-        <div className="parlement-watch">
-          <Player src={stream.hls} poster={stream.poster} autoPlay />
-          <LiveAgenda stream={{ ...stream, items: m.items }} />
-        </div>
+        stream.video ? (
+          <MeetingLive chamber={stream.chamber} video={stream.video} />
+        ) : (
+          <MeetingStream stream={stream} items={m.items} />
+        )
       ) : (
         <>
           {m.items.length > 0 && (
@@ -261,9 +272,7 @@ export function MeetingPane({ id }: { id: string }) {
           ))}
         </div>
       )}
-      {!videos.length && !stream && m.video && past && m.state !== 'cancelled' && (
-        <p className="dim">La vidéo n’est pas encore sur le portail : elle y arrive un peu après la réunion.</p>
-      )}
+      {!videos.length && !stream && m.video && past && m.state !== 'cancelled' && <p className="dim">Pas encore de vidéo de cette réunion sur le portail.</p>}
       <p className="parlement-actions">
         <button
           className="btn small"
@@ -280,5 +289,35 @@ export function MeetingPane({ id }: { id: string }) {
         </button>
       </p>
     </>
+  )
+}
+
+/** The meeting on air, its video on the portal: the player and the agenda as it grows. */
+function MeetingLive({ chamber, video }: { chamber: Chamber; video: string }) {
+  const detail = useVideo(videoKey(chamber, video))
+  if (detail.error && !detail.data) return <Failure inline error={detail.error} retry={detail.reload} />
+  if (!detail.data) return <Loading inline label="le direct" />
+  return <VideoWatch v={detail.data} inMeeting />
+}
+
+/** The meeting on air, its video not on the portal yet: the broadcast's last seconds, and the agenda. */
+function MeetingStream({ stream, items }: { stream: LiveStream; items: string[] }) {
+  return (
+    <div className={`parlement-watch${items.length ? '' : ' solo'}`}>
+      <div className="parlement-stack">
+        <Player
+          src={stream.hls}
+          poster={stream.poster}
+          live
+          autoPlay
+          badge={stream.chamber === 'an' ? 'AN' : 'SÉNAT'}
+          title={stream.title || stream.subject || stream.organ}
+        />
+        <p className="small dim">
+          Le portail ne propose pas encore la vidéo de ce direct : on n’en voit ici que les dernières secondes, sans retour en arrière.
+        </p>
+      </div>
+      {items.length > 0 && <LiveAgenda items={items} />}
+    </div>
   )
 }

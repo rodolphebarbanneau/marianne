@@ -1,5 +1,5 @@
 import type { TodayItem } from '@marianne/sdk'
-import { AGENDA_PAGE, SENATE_AGENDA_PAGE } from './links'
+import { AGENDA_PAGE, SENATE_AGENDA_PAGE, videoKey } from './links'
 import type { LiveStream, Meeting } from './types'
 
 /** The Parliament's lines of "Aujourd'hui": the sittings and committee meetings of the day, in both chambers. */
@@ -27,7 +27,7 @@ export function meetingLine(m: Meeting, live = false): TodayItem {
   }
 }
 
-/** A broadcast as a line of the day, when the Assemblée's agenda isn't indexed yet. */
+/** A broadcast as a line of the day, when the Assemblée's agenda isn't indexed yet: its video when the portal has it, else its meeting. */
 export function streamLine(s: LiveStream): TodayItem {
   const detail = s.title || s.subject
   return {
@@ -39,7 +39,7 @@ export function streamLine(s: LiveStream): TodayItem {
     url: s.chamber === 'se' ? SENATE_AGENDA_PAGE : AGENDA_PAGE,
     ...(s.live ? { live: true } : {}),
     source: SOURCES[s.chamber],
-    params: s.chamber === 'se' ? { video: `se:${s.id}` } : { meeting: s.id }
+    params: s.video ? { video: videoKey(s.chamber, s.video) } : s.chamber === 'se' ? { video: `se:${s.id}` } : { meeting: s.meeting ?? s.id }
   }
 }
 

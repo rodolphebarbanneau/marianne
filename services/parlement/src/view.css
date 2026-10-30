@@ -204,14 +204,6 @@
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--s3);
 }
-.parlement-inline {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.parlement-inline input {
-  width: 9ch;
-}
 .parlement-dayline {
   display: flex;
   align-items: baseline;
@@ -1278,7 +1270,7 @@ button.parlement-bt-row:hover {
 .parlement-watch.solo > .parlement-stack {
   max-width: 960px;
 }
-/* An agenda beside a broadcast: its lines, not clickable (no times yet). */
+/* The agenda of a broadcast without its video: its lines, not clickable (no times). */
 .parlement-chapter {
   display: block;
   padding: 4px 8px;
@@ -1287,21 +1279,28 @@ button.parlement-bt-row:hover {
   display: block;
   padding: 4px 8px 6px;
 }
-.parlement-player video {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  background: #000;
+/* The Sénat's badge in the player (fullscreen, mini-player), as its code everywhere. */
+.mp-badge[data-badge='SÉNAT'] {
+  background: var(--magenta);
 }
 .parlement-chapters {
+  position: relative;
   display: flex;
   flex-direction: column;
   max-height: 520px;
   overflow: auto;
   border-top: 1px solid var(--rule);
 }
-.parlement-chapters .label {
+/* Its title stays while the lines scroll under it. */
+.parlement-chapters-h {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   padding: 4px 8px;
+  background: var(--bg);
 }
 .parlement-chapters button {
   display: flex;
@@ -1316,14 +1315,20 @@ button.parlement-bt-row:hover {
 .parlement-chapters button.on {
   background: var(--sel);
 }
+/* The line the player's subject points at, a moment. */
+.parlement-chapters button.shown {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+.parlement-chapters .parlement-now {
+  margin-left: auto;
+  color: var(--rouge);
+  font-size: 0.86em;
+  white-space: nowrap;
+}
 .parlement-chapters .parlement-tc {
   flex: none;
   width: 7ch;
-}
-.parlement-editor {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s3);
 }
 
 /* ---------- agenda ---------- */

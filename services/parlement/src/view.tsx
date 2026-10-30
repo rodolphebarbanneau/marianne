@@ -28,14 +28,19 @@ const NO_VIDEOS: { items: Record<string, VideoItem> } = { items: {} }
 const DEFAULT_PREFS: Prefs = { lens: true }
 
 /**
- * What the screen opens on: a portal link (a video cited in an answer), a video at a passage, a
- * meeting of "Aujourd'hui"; else the tab Marianne opened (`params.tab`, the tile's, or the first).
+ * What the screen opens on: a portal link (a video cited in an answer), a video at a passage or
+ * where the mini-player left it (`t`), a meeting of "Aujourd'hui"; else the tab Marianne opened
+ * (`params.tab`, the tile's, or the first).
  */
 function opening(params: Record<string, string | number>): { tab: Tab | null; stack: Target[] } {
   if (typeof params.url === 'string' && parseVideoRef(params.url)) return { tab: 'videos', stack: [{ kind: 'video', ref: params.url }] }
   if (params.video) {
     const start = Number(params.start)
-    return { tab: 'videos', stack: [{ kind: 'video', ref: String(params.video), ...(start > 0 ? { start } : {}) }] }
+    const t = Number(params.t)
+    return {
+      tab: 'videos',
+      stack: [{ kind: 'video', ref: String(params.video), ...(start > 0 ? { start } : {}), ...(t >= 0 && params.t !== undefined ? { t } : {}) }]
+    }
   }
   if (params.meeting) return { tab: 'agenda', stack: [{ kind: 'meeting', id: String(params.meeting) }] }
   return { tab: null, stack: [] }
@@ -250,6 +255,6 @@ function Pane({ target }: { target: Target }) {
     case 'live':
       return <LivePane chamber={target.chamber} id={target.id} />
     case 'video':
-      return <VideoPane refId={target.ref} start={target.start} stopAt={target.stopAt} clip={target.clip} />
+      return <VideoPane refId={target.ref} start={target.start} t={target.t} stopAt={target.stopAt} />
   }
 }
