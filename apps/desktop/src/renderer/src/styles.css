@@ -792,6 +792,14 @@ textarea.notes {
   flex: 1;
   min-width: 0;
   margin-right: 4px;
+  transition:
+    border-color 0.12s,
+    background-color 0.12s;
+}
+/* The sidebar's search is a ghost: its frame shows under the pointer, and while the user types in it. */
+.side-search .search-field:not(:hover):not(:focus-within) {
+  border-color: transparent;
+  background-color: transparent;
 }
 .side-list {
   flex: 1;
