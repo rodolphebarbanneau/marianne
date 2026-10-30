@@ -2753,6 +2753,8 @@ button.card:hover {
 
 .browser {
   width: var(--browser-w);
+  /* A width kept from a wider window still leaves the conversation its share. */
+  max-width: 75%;
   flex: none;
   border-left: 1px solid var(--rule);
   display: flex;
@@ -2782,6 +2784,19 @@ button.card:hover {
   border-style: dashed;
   color: var(--cyan);
   border-color: var(--cyan);
+}
+/* The browser's edge: on the conversation's side of its line, as the page (a native view) would take the
+   pointer from anything over it. Lit on that line and the pixel before it: at 125 %, the line is less than
+   a CSS pixel, and the page beside it is placed in whole ones. */
+.browser .browser-edge {
+  top: 0;
+  right: auto;
+  left: -7px;
+  width: 7px;
+}
+.browser .browser-edge:hover,
+.browser .browser-edge.drag {
+  background: linear-gradient(var(--accent), var(--accent)) right center / 2px 100% no-repeat;
 }
 /* The page itself is a native view drawn over this box (see main/browser). */
 .browser .viewport {

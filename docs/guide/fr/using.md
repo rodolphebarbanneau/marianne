@@ -12,7 +12,7 @@ Tout ce qui change votre profil, remplit un formulaire, signe, paie ou envoie pa
 
 ## Le navigateur intégré
 
-Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à droite (le bouton « navigateur »). Elle vous demande votre accord avant d’aller en ligne, et toujours avant de signer, payer ou envoyer. Vous pouvez « prendre la main » à tout moment. Quand elle a besoin de vous (FranceConnect, un code reçu par SMS), elle ouvre le navigateur du dossier ; si vous êtes sur un autre écran, un message vous le dit, et le navigateur s’ouvre quand vous revenez au dossier. Le reste du temps, Réglages › Navigateur › « afficher le navigateur » décide : « quand Marianne le propose », « toujours », ou « jamais, il travaille hors de vue ». Ce navigateur oublie tout quand l’archive se verrouille.
+Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à droite (le bouton « navigateur ») ; glissez son bord gauche pour l’élargir ou le rétrécir, et un double-clic sur ce bord lui rend sa largeur par défaut. Elle vous demande votre accord avant d’aller en ligne, et toujours avant de signer, payer ou envoyer. Vous pouvez « prendre la main » à tout moment. Quand elle a besoin de vous (FranceConnect, un code reçu par SMS), elle ouvre le navigateur du dossier ; si vous êtes sur un autre écran, un message vous le dit, et le navigateur s’ouvre quand vous revenez au dossier. Le reste du temps, Réglages › Navigateur › « afficher le navigateur » décide : « quand Marianne le propose », « toujours », ou « jamais, il travaille hors de vue ». Ce navigateur oublie tout quand l’archive se verrouille.
 
 ## Les pages
 
