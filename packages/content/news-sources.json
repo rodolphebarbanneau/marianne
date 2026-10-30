@@ -9,13 +9,41 @@
       "feed": "https://www.lemonde.fr/rss/une.xml",
       "homepage": "https://www.lemonde.fr",
       "sections": [
-        { "id": "une", "label": "à la une", "feed": "https://www.lemonde.fr/rss/une.xml" },
-        { "id": "politique", "label": "politique", "feed": "https://www.lemonde.fr/politique/rss_full.xml" },
-        { "id": "international", "label": "international", "feed": "https://www.lemonde.fr/international/rss_full.xml" },
-        { "id": "economie", "label": "économie", "feed": "https://www.lemonde.fr/economie/rss_full.xml" },
-        { "id": "societe", "label": "société", "feed": "https://www.lemonde.fr/societe/rss_full.xml" },
-        { "id": "culture", "label": "culture", "feed": "https://www.lemonde.fr/culture/rss_full.xml" },
-        { "id": "planete", "label": "planète", "feed": "https://www.lemonde.fr/planete/rss_full.xml" }
+        {
+          "id": "une",
+          "label": "à la une",
+          "feed": "https://www.lemonde.fr/rss/une.xml"
+        },
+        {
+          "id": "politique",
+          "label": "politique",
+          "feed": "https://www.lemonde.fr/politique/rss_full.xml"
+        },
+        {
+          "id": "international",
+          "label": "international",
+          "feed": "https://www.lemonde.fr/international/rss_full.xml"
+        },
+        {
+          "id": "economie",
+          "label": "économie",
+          "feed": "https://www.lemonde.fr/economie/rss_full.xml"
+        },
+        {
+          "id": "societe",
+          "label": "société",
+          "feed": "https://www.lemonde.fr/societe/rss_full.xml"
+        },
+        {
+          "id": "culture",
+          "label": "culture",
+          "feed": "https://www.lemonde.fr/culture/rss_full.xml"
+        },
+        {
+          "id": "planete",
+          "label": "planète",
+          "feed": "https://www.lemonde.fr/planete/rss_full.xml"
+        }
       ],
       "lean": "centre-gauche",
       "leanBasis": "Wikipédia, article « Le Monde » : « Il est classé politiquement au centre gauche » (consulté le 30 octobre 2026)",
@@ -28,13 +56,41 @@
       "feed": "https://www.lefigaro.fr/rss/figaro_actualites.xml",
       "homepage": "https://www.lefigaro.fr",
       "sections": [
-        { "id": "une", "label": "à la une", "feed": "https://www.lefigaro.fr/rss/figaro_actualites.xml" },
-        { "id": "politique", "label": "politique", "feed": "https://www.lefigaro.fr/rss/figaro_politique.xml" },
-        { "id": "international", "label": "international", "feed": "https://www.lefigaro.fr/rss/figaro_international.xml" },
-        { "id": "economie", "label": "économie", "feed": "https://www.lefigaro.fr/rss/figaro_economie.xml" },
-        { "id": "societe", "label": "société", "feed": "https://www.lefigaro.fr/rss/figaro_societe.xml" },
-        { "id": "culture", "label": "culture", "feed": "https://www.lefigaro.fr/rss/figaro_culture.xml" },
-        { "id": "sport", "label": "sport", "feed": "https://www.lefigaro.fr/rss/figaro_sport.xml" }
+        {
+          "id": "une",
+          "label": "à la une",
+          "feed": "https://www.lefigaro.fr/rss/figaro_actualites.xml"
+        },
+        {
+          "id": "politique",
+          "label": "politique",
+          "feed": "https://www.lefigaro.fr/rss/figaro_politique.xml"
+        },
+        {
+          "id": "international",
+          "label": "international",
+          "feed": "https://www.lefigaro.fr/rss/figaro_international.xml"
+        },
+        {
+          "id": "economie",
+          "label": "économie",
+          "feed": "https://www.lefigaro.fr/rss/figaro_economie.xml"
+        },
+        {
+          "id": "societe",
+          "label": "société",
+          "feed": "https://www.lefigaro.fr/rss/figaro_societe.xml"
+        },
+        {
+          "id": "culture",
+          "label": "culture",
+          "feed": "https://www.lefigaro.fr/rss/figaro_culture.xml"
+        },
+        {
+          "id": "sport",
+          "label": "sport",
+          "feed": "https://www.lefigaro.fr/rss/figaro_sport.xml"
+        }
       ],
       "lean": "droite",
       "leanBasis": "Wikipédia, article « Le Figaro » : « sa ligne éditoriale est issue des trois grandes familles de la droite » (consulté le 30 octobre 2026)",
@@ -47,17 +103,41 @@
       "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/collection/accueil-une/?outputType=xml",
       "homepage": "https://www.liberation.fr",
       "sections": [
-        { "id": "une", "label": "à la une", "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/collection/accueil-une/?outputType=xml" },
-        { "id": "politique", "label": "politique", "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/politique/?outputType=xml" },
+        {
+          "id": "une",
+          "label": "à la une",
+          "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/collection/accueil-une/?outputType=xml"
+        },
+        {
+          "id": "politique",
+          "label": "politique",
+          "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/politique/?outputType=xml"
+        },
         {
           "id": "international",
           "label": "international",
           "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/international/?outputType=xml"
         },
-        { "id": "economie", "label": "économie", "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/economie/?outputType=xml" },
-        { "id": "societe", "label": "société", "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/societe/?outputType=xml" },
-        { "id": "culture", "label": "culture", "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/culture/?outputType=xml" },
-        { "id": "planete", "label": "planète", "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/environnement/?outputType=xml" }
+        {
+          "id": "economie",
+          "label": "économie",
+          "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/economie/?outputType=xml"
+        },
+        {
+          "id": "societe",
+          "label": "société",
+          "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/societe/?outputType=xml"
+        },
+        {
+          "id": "culture",
+          "label": "culture",
+          "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/culture/?outputType=xml"
+        },
+        {
+          "id": "planete",
+          "label": "planète",
+          "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/environnement/?outputType=xml"
+        }
       ],
       "lean": "gauche",
       "leanBasis": "Wikipédia, article « Libération (journal) » : « le journal de toutes les gauches » (consulté le 30 octobre 2026)"
@@ -68,7 +148,44 @@
       "group": "national",
       "feed": "https://services.lesechos.fr/rss/les-echos-economie.xml",
       "homepage": "https://www.lesechos.fr",
-      "lean": "aucune"
+      "lean": "aucune",
+      "sections": [
+        {
+          "id": "economie",
+          "label": "économie",
+          "feed": "https://services.lesechos.fr/rss/les-echos-economie.xml"
+        },
+        {
+          "id": "politique",
+          "label": "politique",
+          "feed": "https://services.lesechos.fr/rss/les-echos-politique.xml"
+        },
+        {
+          "id": "monde",
+          "label": "monde",
+          "feed": "https://services.lesechos.fr/rss/les-echos-monde.xml"
+        },
+        {
+          "id": "finance-marches",
+          "label": "finance et marchés",
+          "feed": "https://services.lesechos.fr/rss/les-echos-finance-marches.xml"
+        },
+        {
+          "id": "entreprises",
+          "label": "entreprises",
+          "feed": "https://services.lesechos.fr/rss/les-echos-entreprises.xml"
+        },
+        {
+          "id": "tech-medias",
+          "label": "tech et médias",
+          "feed": "https://services.lesechos.fr/rss/les-echos-tech-medias.xml"
+        },
+        {
+          "id": "idees",
+          "label": "idées",
+          "feed": "https://services.lesechos.fr/rss/les-echos-idees.xml"
+        }
+      ]
     },
     {
       "id": "le-parisien",
@@ -77,16 +194,45 @@
       "feed": "https://feeds.leparisien.fr/leparisien/rss",
       "homepage": "https://www.leparisien.fr",
       "sections": [
-        { "id": "une", "label": "à la une", "feed": "https://feeds.leparisien.fr/leparisien/rss" },
-        { "id": "politique", "label": "politique", "feed": "https://feeds.leparisien.fr/leparisien/rss/politique" },
-        { "id": "international", "label": "international", "feed": "https://feeds.leparisien.fr/leparisien/rss/international" },
-        { "id": "economie", "label": "économie", "feed": "https://feeds.leparisien.fr/leparisien/rss/economie" },
-        { "id": "societe", "label": "société", "feed": "https://feeds.leparisien.fr/leparisien/rss/societe" },
-        { "id": "faits-divers", "label": "faits divers", "feed": "https://feeds.leparisien.fr/leparisien/rss/faits-divers" },
-        { "id": "sport", "label": "sport", "feed": "https://feeds.leparisien.fr/leparisien/rss/sports" }
+        {
+          "id": "une",
+          "label": "à la une",
+          "feed": "https://feeds.leparisien.fr/leparisien/rss"
+        },
+        {
+          "id": "politique",
+          "label": "politique",
+          "feed": "https://feeds.leparisien.fr/leparisien/rss/politique"
+        },
+        {
+          "id": "international",
+          "label": "international",
+          "feed": "https://feeds.leparisien.fr/leparisien/rss/international"
+        },
+        {
+          "id": "economie",
+          "label": "économie",
+          "feed": "https://feeds.leparisien.fr/leparisien/rss/economie"
+        },
+        {
+          "id": "societe",
+          "label": "société",
+          "feed": "https://feeds.leparisien.fr/leparisien/rss/societe"
+        },
+        {
+          "id": "faits-divers",
+          "label": "faits divers",
+          "feed": "https://feeds.leparisien.fr/leparisien/rss/faits-divers"
+        },
+        {
+          "id": "sport",
+          "label": "sport",
+          "feed": "https://feeds.leparisien.fr/leparisien/rss/sports"
+        }
       ],
       "lean": "aucune",
-      "paywall": ".paywall-article-section"
+      "paywall": ".paywall-article-section",
+      "dates": "https://www.leparisien.fr/arc/outboundfeeds/sitemapnews/?outputType=xml&from=0"
     },
     {
       "id": "la-croix",
@@ -95,13 +241,41 @@
       "feed": "https://www.la-croix.com/feeds/rss/site.xml",
       "homepage": "https://www.la-croix.com",
       "sections": [
-        { "id": "une", "label": "à la une", "feed": "https://www.la-croix.com/feeds/rss/site.xml" },
-        { "id": "politique", "label": "politique", "feed": "https://www.la-croix.com/feeds/rss/politique.xml" },
-        { "id": "international", "label": "international", "feed": "https://www.la-croix.com/feeds/rss/international.xml" },
-        { "id": "economie", "label": "économie", "feed": "https://www.la-croix.com/feeds/rss/economie.xml" },
-        { "id": "societe", "label": "société", "feed": "https://www.la-croix.com/feeds/rss/societe.xml" },
-        { "id": "culture", "label": "culture", "feed": "https://www.la-croix.com/feeds/rss/culture.xml" },
-        { "id": "religion", "label": "religion", "feed": "https://www.la-croix.com/feeds/rss/religion.xml" }
+        {
+          "id": "une",
+          "label": "à la une",
+          "feed": "https://www.la-croix.com/feeds/rss/site.xml"
+        },
+        {
+          "id": "politique",
+          "label": "politique",
+          "feed": "https://www.la-croix.com/feeds/rss/politique.xml"
+        },
+        {
+          "id": "international",
+          "label": "international",
+          "feed": "https://www.la-croix.com/feeds/rss/international.xml"
+        },
+        {
+          "id": "economie",
+          "label": "économie",
+          "feed": "https://www.la-croix.com/feeds/rss/economie.xml"
+        },
+        {
+          "id": "societe",
+          "label": "société",
+          "feed": "https://www.la-croix.com/feeds/rss/societe.xml"
+        },
+        {
+          "id": "culture",
+          "label": "culture",
+          "feed": "https://www.la-croix.com/feeds/rss/culture.xml"
+        },
+        {
+          "id": "religion",
+          "label": "religion",
+          "feed": "https://www.la-croix.com/feeds/rss/religion.xml"
+        }
       ],
       "lean": "aucune",
       "paywall": ".article-premium"
@@ -113,13 +287,41 @@
       "feed": "https://www.humanite.fr/feed",
       "homepage": "https://www.humanite.fr",
       "sections": [
-        { "id": "une", "label": "à la une", "feed": "https://www.humanite.fr/feed" },
-        { "id": "politique", "label": "politique", "feed": "https://www.humanite.fr/sections/politique/feed" },
-        { "id": "international", "label": "international", "feed": "https://www.humanite.fr/sections/monde/feed" },
-        { "id": "economie", "label": "économie", "feed": "https://www.humanite.fr/sections/social-et-economie/feed" },
-        { "id": "societe", "label": "société", "feed": "https://www.humanite.fr/sections/societe/feed" },
-        { "id": "culture", "label": "culture", "feed": "https://www.humanite.fr/sections/culture-et-savoir/feed" },
-        { "id": "planete", "label": "planète", "feed": "https://www.humanite.fr/sections/environnement/feed" }
+        {
+          "id": "une",
+          "label": "à la une",
+          "feed": "https://www.humanite.fr/feed"
+        },
+        {
+          "id": "politique",
+          "label": "politique",
+          "feed": "https://www.humanite.fr/sections/politique/feed"
+        },
+        {
+          "id": "international",
+          "label": "international",
+          "feed": "https://www.humanite.fr/sections/monde/feed"
+        },
+        {
+          "id": "economie",
+          "label": "économie",
+          "feed": "https://www.humanite.fr/sections/social-et-economie/feed"
+        },
+        {
+          "id": "societe",
+          "label": "société",
+          "feed": "https://www.humanite.fr/sections/societe/feed"
+        },
+        {
+          "id": "culture",
+          "label": "culture",
+          "feed": "https://www.humanite.fr/sections/culture-et-savoir/feed"
+        },
+        {
+          "id": "planete",
+          "label": "planète",
+          "feed": "https://www.humanite.fr/sections/environnement/feed"
+        }
       ],
       "lean": "gauche",
       "leanBasis": "Wikipédia, article « L’Humanité » : « Sa ligne éditoriale est liée dès ses débuts à la gauche » (consulté le 30 octobre 2026)",
@@ -132,10 +334,26 @@
       "feed": "https://www.lopinion.fr/index.rss",
       "homepage": "https://www.lopinion.fr",
       "sections": [
-        { "id": "une", "label": "à la une", "feed": "https://www.lopinion.fr/index.rss" },
-        { "id": "politique", "label": "politique", "feed": "https://www.lopinion.fr/politique.rss" },
-        { "id": "international", "label": "international", "feed": "https://www.lopinion.fr/international.rss" },
-        { "id": "economie", "label": "économie", "feed": "https://www.lopinion.fr/economie.rss" }
+        {
+          "id": "une",
+          "label": "à la une",
+          "feed": "https://www.lopinion.fr/index.rss"
+        },
+        {
+          "id": "politique",
+          "label": "politique",
+          "feed": "https://www.lopinion.fr/politique.rss"
+        },
+        {
+          "id": "international",
+          "label": "international",
+          "feed": "https://www.lopinion.fr/international.rss"
+        },
+        {
+          "id": "economie",
+          "label": "économie",
+          "feed": "https://www.lopinion.fr/economie.rss"
+        }
       ],
       "lean": "aucune",
       "paywall": ".paywall-premium"

@@ -6,7 +6,7 @@ import type { NewsChoice } from '@marianne/profile'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cutAtSentence } from '../src/main/public/html'
 import { paywalled, readerStart, readSelector } from '../src/main/public/article'
-import { cleanUrl, filterReading, NewsReader, parseFeed, plainText, serviceNews, sourcesFor } from '../src/main/public/news'
+import { cleanUrl, filterReading, NewsReader, parseFeed, parseSitemap, plainText, serviceNews, sourcesFor } from '../src/main/public/news'
 import { regionOf, refusedSources } from '../src/shared/news'
 
 /**
@@ -192,6 +192,26 @@ describe('feeds', () => {
     expect(items[1].published).toBe(now.toISOString())
     expect(parseFeed(xml, 'exemple', new Date('2026-10-29T00:00:00Z'))[1].published).toBe(now.toISOString())
     expect(() => parseFeed('<html><body>Accès refusé</body></html>', 'x')).toThrow('flux')
+  })
+
+  it('dates an undated item by its source’s news sitemap, and takes its picture there', () => {
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+      <url><loc>https://www.leparisien.fr/politique/un-titre-30-10-2026-ABCD.php</loc><news:news><news:publication_date>2026-10-30T09:12:00+01:00</news:publication_date></news:news>
+        <image:image><image:loc>https://www.leparisien.fr/resizer/photo.jpg</image:loc><image:caption><![CDATA[L’Assemblée, jeudi]]></image:caption></image:image></url>
+      <url><loc>https://www.leparisien.fr/sans-date.php</loc></url>
+    </urlset>`
+    const dates = parseSitemap(sitemap)
+    expect([...dates.keys()]).toEqual(['https://www.leparisien.fr/politique/un-titre-30-10-2026-ABCD.php'])
+    const xml = `<?xml version="1.0"?><rss version="2.0"><channel><title>x</title>
+      <item><title>Un titre</title><link>https://www.leparisien.fr/politique/un-titre-30-10-2026-ABCD.php?utm_source=rss</link></item>
+      <item><title>Un autre</title><link>https://www.leparisien.fr/politique/un-autre-30-10-2026-EFGH.php</link></item>
+    </channel></rss>`
+    const at = new Date('2026-10-30T13:00:00Z')
+    const [listed, missing] = parseFeed(xml, 'le-parisien', at, dates)
+    expect(listed.published).toBe('2026-10-30T08:12:00.000Z')
+    expect(listed.media).toMatchObject({ url: 'https://www.leparisien.fr/resizer/photo.jpg', kind: 'photo', alt: 'L’Assemblée, jeudi' })
+    // Not in the sitemap: as before, when Marianne first saw it.
+    expect(missing.published).toBe(at.toISOString())
   })
 
   it('dates an undated item of an earlier day by its address, at noon in Paris', () => {

@@ -201,6 +201,11 @@ export interface NewsSource {
   paywall?: string
   /** It asked that Marianne show no start of its articles: its summary alone. */
   start?: false
+  /**
+   * Its news sitemap (sitemaps.org with Google News' publication dates), for a source whose feeds
+   * give no dates (Le Parisien): an undated title takes the time its sitemap says.
+   */
+  dates?: string
 }
 
 /** The two chambers of the Parlement: the Assemblée nationale and the Sénat. */
@@ -570,7 +575,7 @@ function readSites(file: string, report: Report): { updated: string; sites: Site
   return { updated: data.updated, sites }
 }
 
-const NEWS_KEYS = ['id', 'name', 'group', 'feed', 'homepage', 'sections', 'regions', 'lean', 'leanBasis', 'paywall', 'start'] as const
+const NEWS_KEYS = ['id', 'name', 'group', 'feed', 'homepage', 'sections', 'regions', 'lean', 'leanBasis', 'paywall', 'start', 'dates'] as const
 const NEWS_SECTION_KEYS = ['id', 'label', 'feed'] as const
 /** The INSEE codes of the regions (since 2016), as a commune's `region` gives them. */
 const REGION_CODES = ['01', '02', '03', '04', '06', '11', '24', '27', '28', '32', '44', '52', '53', '75', '76', '84', '93', '94'] as const
@@ -633,6 +638,7 @@ function readNewsSources(file: string, report: Report): { updated: string; sourc
     if (lean && lean !== 'aucune' && leanBasis === undefined)
       report(`${where}.leanBasis`, `required with "lean": "${lean}": the published reference it comes from, with its date`)
     const paywall = optionalField(o, 'paywall', where, report)
+    const dates = optionalField(o, 'dates', where, report, (v) => urlProblem(v, true))
     if (o.start !== undefined && o.start !== false) report(`${where}.start`, 'only false: the source asked that no start of its articles be shown')
     return {
       ...source,
@@ -641,7 +647,8 @@ function readNewsSources(file: string, report: Report): { updated: string; sourc
       ...(lean !== undefined ? { lean } : {}),
       ...(leanBasis !== undefined ? { leanBasis } : {}),
       ...(paywall !== undefined ? { paywall } : {}),
-      ...(o.start === false ? { start: false as const } : {})
+      ...(o.start === false ? { start: false as const } : {}),
+      ...(dates !== undefined ? { dates } : {})
     }
   })
   idsOnce(sources, 'sources', report)
