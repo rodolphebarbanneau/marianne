@@ -7,6 +7,7 @@ import { useApp } from '../../app/context'
 import { useServices } from '../../host'
 import { api, errorText } from '../../lib/api'
 import { proposed } from '../../lib/demarches'
+import { plainKey } from '../../lib/keys'
 import { useTasks, useTaskTemplates } from '../../lib/tasks'
 import { DomainBadge, SourceChip } from '../demarches/todo-row'
 import { hostParts, nextShort, RHYTHMS, rhythmChoices, sameEvery, withEntity } from './model'
@@ -21,7 +22,7 @@ function useEnter(run: (() => void) | null) {
   useEffect(() => {
     if (!run) return
     const key = (e: KeyboardEvent) => {
-      if (e.key !== 'Enter' || (e.target as HTMLElement | null)?.closest?.('button, a, textarea')) return
+      if (!plainKey(e, 'Enter') || (e.target as HTMLElement | null)?.closest?.('button, a, textarea')) return
       e.preventDefault()
       run()
     }
@@ -195,7 +196,7 @@ function PickDialog({
                 aria-label="ce qui doit revenir"
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key !== 'Enter') return
+                  if (!plainKey(e, 'Enter')) return
                   e.preventDefault()
                   send()
                 }}
