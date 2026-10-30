@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { serviceCode } from '@marianne/sdk'
 import type { ServiceFrame, ServiceHost } from '@marianne/sdk/view'
-import type { FrameHost, FrameLook, FrameMedia, FromFrame, ToFrame } from '@shared/community'
+import { ownRoute, type FrameHost, type FrameLook, type FrameMedia, type FromFrame, type ToFrame } from '@shared/community'
 import { useApp } from '../app/context'
 import { useMedia } from '../app/media'
 import { roomBeside } from '../app/pinned'
@@ -58,10 +58,12 @@ export function CommunityScreen({ host, frame, barred }: { host: ServiceHost; fr
   const look = useMemo<FrameLook>(() => ({ theme, crt, fontSize, platform: api.platform }), [theme, crt, fontSize])
   // Its home is the main process's to give (the commune only): the screen gets its params from here.
   const frameHost = useMemo<FrameHost>(() => ({ manifest: host.manifest, params: host.params, home: null }), [host])
-  // The app's mini-player: whether this service's videos may go there, and the one it shows.
+  // The app's mini-player: whether this service's videos may go there, and the one it shows when
+  // this service pinned it (what the user watches from another service is none of its business).
   const { item, corner, desk, playable } = useMedia()
   const can = host.manifest.hosts.some(playable)
-  const mediaOf = (): FrameMedia => ({ can, pinned: item ? { src: item.src, at: desk.position } : null })
+  const mine = !!item && ownRoute(code, item.route)
+  const mediaOf = (): FrameMedia => ({ can, pinned: item && mine ? { src: item.src, at: desk.position } : null })
   const latest = useRef({ host, frame, look, frameHost, barred, mediaOf })
   latest.current = { host, frame, look, frameHost, barred, mediaOf }
   const post = (message: ToFrame) => api.communityScreenPost(code, message)

@@ -45,14 +45,17 @@ export class PinnedDesk {
     this.waiting = { item, handle }
   }
 
-  /** The video back to a page: where it was, ms, when it shows or waits to; null when it isn't this one. */
-  take(src: string): number | null {
-    if (this.waiting?.item.src === src) {
+  /**
+   * The video back to a page: where it was, ms, when it shows or waits to; null when it isn't this
+   * one, or not `mine` (a community screen takes back only what it pinned).
+   */
+  take(src: string, mine: (item: PinnedMedia) => boolean = () => true): number | null {
+    if (this.waiting?.item.src === src && mine(this.waiting.item)) {
       const at = this.waiting.item.at
       this.cancel()
       return at
     }
-    if (this.shown?.src !== src) return null
+    if (this.shown?.src !== src || !mine(this.shown)) return null
     const at = this.at
     this.close()
     return at
