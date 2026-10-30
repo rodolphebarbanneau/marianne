@@ -36,6 +36,24 @@ describe('fakeContext', () => {
     expect(urls).toEqual([])
   })
 
+  it('refuses, as Marianne does, a host the manifest doesn’t declare, and plain http', async () => {
+    const { ctx, urls } = fakeContext(pkg, { answer: () => ({}), answerText: () => '' })
+    const undeclared = '3615 METEO n’a pas déclaré www.example.com (package.json, marianne.hosts).'
+    await expect(ctx.http.json('https://www.example.com/a')).rejects.toThrow(undeclared)
+    await expect(ctx.http.text('https://www.example.com/a')).rejects.toThrow(undeclared)
+    await expect(ctx.http.page('https://www.example.com/a')).rejects.toThrow(undeclared)
+    await expect(ctx.http.json('http://api.open-meteo.com/v1')).rejects.toThrow('n’a pas déclaré api.open-meteo.com')
+    await expect(fakeContext(pkg).ctx.http.json('https://www.example.com/a')).rejects.toThrow(undeclared)
+    expect(urls).toEqual([])
+  })
+
+  it('gives only the vehicles’ fields granted, as Marianne does', () => {
+    const vehicles = [{ id: 'v1', plate: 'AB-123-CD', model: 'Clio', critair: '1' }]
+    expect(fakeContext(pkg, { profile: { granted: ['vehicles.model'], vehicles } }).ctx.profile.vehicles()).toEqual([{ id: 'v1', model: 'Clio' }])
+    expect(fakeContext(pkg, { profile: { granted: ['opinions.themes'], vehicles } }).ctx.profile.vehicles()).toEqual([])
+    expect(fakeContext(pkg, { profile: { vehicles } }).ctx.profile.vehicles()).toEqual([])
+  })
+
   it('stores copies, as the archive does', () => {
     const { ctx, stored } = fakeContext(pkg)
     const trip = { id: 't1' }

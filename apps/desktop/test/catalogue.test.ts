@@ -305,6 +305,26 @@ describe('the catalogue', () => {
     expect(s.state()).toMatchObject({ status: 'failed', entries: [], withdrawn, error: expect.stringContaining('a expiré') })
   })
 
+  it('expires on time, whoever asks, and says so: the host switches the services’ standing then', async () => {
+    const remote = publish(index([entry()]))
+    const { s, changes } = store({ remote: () => remote, now: () => Date.now() })
+    // Two months ahead, past what one timer waits: it waits in steps.
+    vi.useFakeTimers({ now: Date.parse('2026-10-29T08:00:00Z'), toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    try {
+      await s.check()
+      expect(s.state().status).toBe('ready')
+      changes.length = 0
+      await vi.advanceTimersByTimeAsync(Date.parse('2026-12-30T23:59:00Z') - Date.now())
+      expect(changes).toEqual([])
+      await vi.advanceTimersByTimeAsync(2 * 60_000)
+      // Told without anyone asking for its state.
+      expect(changes).toEqual(['failed'])
+      expect(s.state()).toMatchObject({ status: 'failed', entries: [], error: expect.stringContaining('a expiré') })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('expires even after a reading failed (a failure keeps the entries it had)', async () => {
     let now = Date.parse('2026-10-29T08:00:00Z')
     let remote: Published | 'fail' = publish(index([entry()], { expires: '2026-11-01T00:00:00.000Z' }))

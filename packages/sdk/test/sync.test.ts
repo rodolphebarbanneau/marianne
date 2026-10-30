@@ -78,4 +78,39 @@ describe('execute', () => {
     })
     expect(plain.at(-1)).toMatchObject({ type: 'error' })
   })
+
+  it('follows a redirect only to a declared host, checked before it is asked', async () => {
+    const hosts = { ...job, hosts: ['data.example.fr', 'cdn.example.fr'] }
+    const moved = (location: string) => new Response(null, { status: 302, headers: { location } })
+    const served: Record<string, () => Response> = {
+      'https://data.example.fr/dump.zip': () => moved('https://cdn.example.fr/files/dump.zip'),
+      'https://cdn.example.fr/files/dump.zip': () => new Response('dump', { headers: { etag: '"v3"' } }),
+      'https://data.example.fr/away.zip': () => moved('https://elsewhere.fr/dump.zip'),
+      'https://data.example.fr/plain.zip': () => moved('http://cdn.example.fr/dump.zip'),
+      'https://data.example.fr/loop.zip': () => moved('/loop.zip')
+    }
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      expect(init?.redirect).toBe('manual')
+      return served[url]?.() ?? new Response('Not found', { status: 404 })
+    })
+    vi.stubGlobal('fetch', fetch)
+    const followed = await run(async (ctx) => {
+      expect(readFileSync((await ctx.download('https://data.example.fr/dump.zip'))!, 'utf8')).toBe('dump')
+      return { summary: '1 file' }
+    }, hosts)
+    expect(followed.at(-1)).toMatchObject({ type: 'done', etags: { 'https://data.example.fr/dump.zip': '"v3"' } })
+    for (const [file, why] of [
+      ['away.zip', /elsewhere\.fr is not one of the service's hosts/],
+      ['plain.zip', /cdn\.example\.fr is not one of the service's hosts/],
+      ['loop.zip', /plus de 5 redirections/]
+    ] as const) {
+      const refused = await run(async (ctx) => {
+        await ctx.download(`https://data.example.fr/${file}`)
+        return { summary: '' }
+      }, hosts)
+      expect(refused.at(-1), file).toMatchObject({ type: 'error', message: expect.stringMatching(why) })
+    }
+    // Nothing was asked of a host the service didn't declare, nor over plain http.
+    expect(fetch.mock.calls.map(([url]) => new URL(url).origin).filter((o) => !['https://data.example.fr', 'https://cdn.example.fr'].includes(o))).toEqual([])
+  })
 })

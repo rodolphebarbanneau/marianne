@@ -20,7 +20,10 @@ import type { ServiceSync } from './sync'
 /**
  * What a service gets of Marianne: its context. Each capability is narrowed to the service: the
  * network to its declared hosts, the storage to its own records, a data folder of its own.
- * Nothing personal but the commune of the user's address, and never a [[token]] value.
+ * Nothing personal but what the user granted it and the commune of their address, and never a
+ * [[token]] value. A built-in service's commune comes with the address's own place (3615
+ * PARLEMENT finds the user's constituency with it, in its own index); a community service gets the
+ * commune's centre instead (ServiceHost.communityHome).
  */
 
 export { storageKind }

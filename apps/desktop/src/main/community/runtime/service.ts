@@ -5,7 +5,7 @@ import * as z from 'zod'
 import type { BridgeReply, SandboxInvoke, SandboxKind } from '../../../shared/community'
 import type { SandboxBridgeMain } from './bridge'
 import { DescriptionRefused, readDescription, type ServiceDescription } from './description'
-import { logLine, MAX_TOOL_ARGUMENTS_BYTES, RateLimit } from './limits'
+import { isLine, logLine, MAX_TOOL_ARGUMENTS_BYTES, RateLimit } from './limits'
 import { RpcTimeout, SandboxRpc } from './rpc'
 
 /**
@@ -64,8 +64,13 @@ const URGENCIES = new Set(['none', 'soon', 'urgent'])
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 /** What the model should read rather than a crash. */
 const toolError = (message: string) => Object.assign(new Error(message), { name: 'ToolError' })
-const str = (v: unknown, max: number) => typeof v === 'string' && v.length > 0 && v.length <= max
+/**
+ * One line, not empty, within `max`: a title or an id reaches the engines (a deadline's, in the
+ * user's profile), where a line break would let it write a heading of its own.
+ */
+const str = (v: unknown, max: number) => typeof v === 'string' && v.length > 0 && v.length <= max && isLine(v)
 const optStr = (v: unknown, max: number) => v === undefined || (typeof v === 'string' && v.length <= max)
+const optLine = (v: unknown, max: number) => v === undefined || (typeof v === 'string' && v.length <= max && isLine(v))
 
 /** Params to open the service with: short strings and numbers. */
 function params(v: unknown): Record<string, string | number> | undefined {
@@ -83,7 +88,10 @@ export function readToday(v: unknown): TodayItem[] {
     .filter((i): i is Record<string, unknown> => isRecord(i) && str(i.id, 200) && str(i.title, 300) && str(i.start, 40) && str(i.source, 120))
     .filter(
       (i) =>
-        optStr(i.detail, 500) && optStr(i.end, 40) && optStr(i.place, 200) && (i.url === undefined || (typeof i.url === 'string' && /^https:\/\//.test(i.url)))
+        optStr(i.detail, 500) &&
+        optLine(i.end, 40) &&
+        optLine(i.place, 200) &&
+        (i.url === undefined || (typeof i.url === 'string' && /^https:\/\//.test(i.url) && isLine(i.url)))
     )
     .slice(0, MAX_TODAY)
     .map((i) => ({
@@ -268,7 +276,8 @@ export class CommunityService extends EventEmitter {
           this.logDropped = true
           return
         }
-        // One line each, without control characters: it can't write lines of its own in Marianne's log.
+        // One line each, without control characters: it can't write lines of its own in Marianne's log
+        // (nor through what else of it is logged: its errors, its tile's problems, its screen's links go through logLine too).
         const line = logLine(text, MAX_LOG)
         if (level === 'error') this.opts.log.error(`[${this.label}]`, line)
         else if (level === 'warn') this.opts.log.warn(`[${this.label}]`, line)
@@ -297,7 +306,7 @@ export class CommunityService extends EventEmitter {
     } catch (err) {
       if (gen !== this.generation) return
       const message = err instanceof Error ? err.message : String(err)
-      this.opts.log.warn(`${this.label} failed to activate:`, message)
+      this.opts.log.warn(`${this.label} failed to activate:`, logLine(message))
       return this.fail(gen, err instanceof RpcTimeout ? 'il n’a pas répondu à son démarrage.' : `son code a échoué au démarrage (${message.slice(0, 200)}).`)
     }
     if (gen !== this.generation) return
@@ -305,7 +314,7 @@ export class CommunityService extends EventEmitter {
       this.description = readDescription(raw, this.opts.manifest)
     } catch (err) {
       const message = err instanceof DescriptionRefused ? err.message : 'son code ne s’est pas présenté à Marianne.'
-      this.opts.log.warn(`${this.label} refused:`, message)
+      this.opts.log.warn(`${this.label} refused:`, logLine(message))
       return this.fail(gen, message)
     }
     this.tools = this.description.tools.map((t) => this.toolOf(t))
@@ -432,7 +441,7 @@ export class CommunityService extends EventEmitter {
     try {
       this.kept = readDeadlines(await this.request('deadlines', '', []))
     } catch (err) {
-      this.opts.log.warn(`${this.label}: deadlines:`, err instanceof Error ? err.message : String(err))
+      this.opts.log.warn(`${this.label}: deadlines:`, logLine(err instanceof Error ? err.message : String(err)))
     }
   }
 

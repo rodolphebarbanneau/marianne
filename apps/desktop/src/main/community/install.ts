@@ -283,7 +283,7 @@ export class CommunityPackages extends EventEmitter {
   }
 
   private reviewOf(unpacked: UnpackedService, file: { ticket: string; fileName: string; size: number; sha: string }): ServiceFileReview {
-    const { manifest, files } = unpacked
+    const { manifest } = unpacked
     const { verdict, entry, reason } = verdictOf(this.opts.catalogue(), manifest.id, file.sha)
     const installed = this.read(manifest.id)?.version
     return {
@@ -294,7 +294,8 @@ export class CommunityPackages extends EventEmitter {
       manifest,
       verdict,
       problems: [],
-      sync: files.has('sync.js'),
+      // Never a sync job in this version: a file with a sync.js is refused (unpackService, NO_SYNC).
+      sync: false,
       tools: manifest.tools.map((t) => t.label),
       links: manifest.links,
       ...(entry ? { entry } : {}),

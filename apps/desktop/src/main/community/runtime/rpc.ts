@@ -1,5 +1,5 @@
 import type { SandboxInvoke, SandboxKind } from '../../../shared/community'
-import { MAX_REPLY_BYTES } from './limits'
+import { logLine, MAX_REPLY_BYTES } from './limits'
 
 /**
  * The main process's calls into a community service's sandbox: each request goes with an id,
@@ -83,7 +83,8 @@ export class SandboxRpc {
     if (!w || typeof reply !== 'object' || reply === null) return
     const r = reply as { json?: unknown; error?: { name?: unknown; message?: unknown } }
     if ('error' in r) {
-      const e = new Error(typeof r.error?.message === 'string' ? r.error.message.slice(0, MAX_MESSAGE) : `${this.opts.label} a échoué.`)
+      // One line: the message is the service's, and goes to Marianne's log (a failing tile, a failed start) as well as to the user and the model.
+      const e = new Error(typeof r.error?.message === 'string' ? logLine(r.error.message, MAX_MESSAGE) : `${this.opts.label} a échoué.`)
       // By name: the service's ToolError stays one, for the model to read.
       if (r.error?.name === 'ToolError') e.name = 'ToolError'
       this.finish(id, w)

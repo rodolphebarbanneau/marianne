@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events'
 import { readTile, tileMinutes, type ServiceManifest, type ServiceTile } from '@marianne/sdk'
 import type { TileState } from '../../shared/types'
+import { logLine } from '../community/runtime/limits'
 
 /**
  * The tiles of the pinned services: what each service's `tile()` returned last, kept in the
@@ -162,7 +163,8 @@ export class TileHost extends EventEmitter {
       ])
       if (generation !== this.generation) return
       const { tile, problems } = readTile(raw)
-      if (problems.length) this.log.warn(`Tile of 3615 ${id.toUpperCase()}: ${problems.join('; ')}`)
+      // The problems quote the tile's own texts, and a community service's tile is its code's: one line in the log.
+      if (problems.length) this.log.warn(`Tile of 3615 ${id.toUpperCase()}:`, logLine(problems.join('; ')))
       const kept = { tile, at: new Date(this.now()).toISOString() }
       this.kept.set(id, kept)
       this.errors.delete(id)
@@ -171,7 +173,7 @@ export class TileHost extends EventEmitter {
     } catch (err) {
       if (generation !== this.generation) return
       const message = (err as Error).message
-      this.log.warn(`Tile of 3615 ${id.toUpperCase()}:`, message)
+      this.log.warn(`Tile of 3615 ${id.toUpperCase()}:`, logLine(String(message)))
       this.errors.set(id, message)
       this.failures.set(id, (this.failures.get(id) ?? 0) + 1)
     } finally {

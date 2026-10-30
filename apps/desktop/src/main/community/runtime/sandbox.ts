@@ -23,13 +23,32 @@ export interface SandboxOptions {
 /** A proxy nobody listens on: WebRTC, which no content policy governs, may only go through it. */
 const NOWHERE = 'socks5://127.0.0.1:9'
 
-const prepared = new WeakSet<Session>()
+/**
+ * Each key's setup (a session's), begun by the first caller and awaited by every one: a second
+ * caller never goes past it while the first one's is still under way (its proxy not yet in place).
+ * A setup that failed stays failed: its handlers are set already, so it can't run again, and
+ * nothing is made in that session.
+ */
+export function onceEach<K extends object>(): (key: K, setup: () => Promise<void>) => Promise<void> {
+  const setups = new WeakMap<K, Promise<void>>()
+  return (key, setup) => {
+    let running = setups.get(key)
+    if (!running) {
+      // Begun at once, a synchronous failure included in the promise.
+      running = (async () => setup())()
+      setups.set(key, running)
+    }
+    return running
+  }
+}
+
+const setUp = onceEach<Session>()
 
 /** A service's session, set up once: its own scheme handler (its code only), nothing else reachable. */
 async function prepare(code: string, source: SchemeSource): Promise<Session> {
   const ses = electronSession.fromPartition(`community-${code}`, { cache: false })
-  if (!prepared.has(ses)) {
-    prepared.add(ses)
+  // A sandbox started again at once (a restart, an unlock) waits for the one setup: never a window before the proxy is in place.
+  await setUp(ses, async () => {
     const own = `${SERVICE_SCHEME}://${code}/`
     ses.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !details.url.startsWith(own) }))
     ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(false))
@@ -42,7 +61,7 @@ async function prepare(code: string, source: SchemeSource): Promise<Session> {
     ses.setSpellCheckerEnabled(false)
     ses.protocol.handle(SERVICE_SCHEME, schemeHandler(source, code))
     await ses.setProxy({ mode: 'fixed_servers', proxyRules: NOWHERE })
-  }
+  })
   // What a previous run of it kept in memory (an earlier account's) is gone before it starts.
   await ses.clearStorageData()
   await ses.clearCache()

@@ -36,7 +36,7 @@ export interface CatalogueEntry {
   reads: ProfileField[]
   /** The tools it lends the engines, as the conversation names them (French labels). */
   tools: string[]
-  /** It keeps public data on this computer (a sync job). */
+  /** It keeps public data on this computer (a sync job): false in this version, which refuses a community service's sync.js. */
   sync: boolean
   icon: PixelArt | null
   status: CatalogueStatus
@@ -88,7 +88,7 @@ export interface ServiceFileReview {
   verdict: ServiceTrust | 'refused'
   /** Why it was refused, in French, one line each. */
   problems: string[]
-  /** It keeps public data on this computer (it has a sync job). */
+  /** It keeps public data on this computer (it has a sync job): always false in this version, which refuses a file with a sync.js. */
   sync: boolean
   /** The tools it declares, as the conversation names them. */
   tools: string[]

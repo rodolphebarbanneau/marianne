@@ -24,7 +24,8 @@ import type {
  * `defineService`; Marianne calls `activate` once, with a context that is all the service gets
  * of the app: the network (its declared hosts only), the user's data for it (encrypted, in the
  * archive), a folder for public data, the communes. It gives back what its view may call, the
- * tools it lends the engines, its guides for them, its lines of "Aujourd'hui" and its tile.
+ * tools it lends the engines, its guides for them, its tile, and its lines of "Aujourd'hui" (read
+ * by no screen yet; the day's agenda, 3615 CALENDRIER, will).
  */
 
 export * from './index'
@@ -82,6 +83,10 @@ export interface HomeCommune {
   code: string
   name: string
   postcode: string
+  /**
+   * A place: for a community service, the commune's centre (once Marianne knows it), never the
+   * address's own; for a built-in service, the address's own place.
+   */
   latitude?: number
   longitude?: number
 }
@@ -182,7 +187,7 @@ export interface ServiceRuntime<M extends ServiceMethods = ServiceMethods> {
   skills?: string[]
   /** A few lines (English) for the engines' instructions while the service is on. */
   instructions?: string
-  /** Its lines of "Aujourd'hui" for a day (YYYY-MM-DD, Paris time). */
+  /** Its lines of "Aujourd'hui" for a day (YYYY-MM-DD, Paris time): read by no screen yet; the day's agenda, 3615 CALENDRIER, will. */
   today?(day: string): Promise<TodayItem[]>
   /** Its line on the dashboard of one of its domains; null: nothing to say there. */
   summary?(domain: DomainId): Promise<ServiceSummary | null>
@@ -205,7 +210,7 @@ export interface ServiceRuntime<M extends ServiceMethods = ServiceMethods> {
 }
 
 export interface ServiceModule<M extends ServiceMethods = ServiceMethods> {
-  /** Called once, when Marianne starts. */
+  /** Called once: at Marianne's start (built-in), at the unlock (community). */
   activate(ctx: ServiceContext): ServiceRuntime<M>
   /** The service has a sync job (its package exports "./sync"): run it this often. */
   sync?: { everyHours: number }

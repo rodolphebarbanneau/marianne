@@ -46,13 +46,22 @@ for (const [net, prefix] of [
   ['224.0.0.0', 3]
 ] as const)
   BLOCKED.addSubnet(net, prefix, 'ipv4')
+// IPv4-mapped addresses (::ffff:0:0/96) are checked against the IPv4 ranges by BlockList itself;
+// the other ways IPv6 carries an IPv4 address (compatible, translated, NAT64, 6to4) are blocked
+// whole, so that none leads to this computer or its network.
 for (const [net, prefix] of [
-  ['::', 128],
-  ['::1', 128],
+  // The unspecified address, the loopback, and IPv4-compatible addresses (::127.0.0.1).
+  ['::', 96],
+  // IPv4-translated (::ffff:0:a.b.c.d).
+  ['::ffff:0:0:0', 96],
   ['fc00::', 7],
   ['fe80::', 10],
   ['ff00::', 8],
+  // NAT64, the well-known prefix and the local-use one.
   ['64:ff9b::', 96],
+  ['64:ff9b:1::', 48],
+  // 6to4.
+  ['2002::', 16],
   ['2001:db8::', 32]
 ] as const)
   BLOCKED.addSubnet(net, prefix, 'ipv6')
