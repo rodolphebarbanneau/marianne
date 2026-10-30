@@ -95,7 +95,8 @@ export async function senateMeetings(ctx: Pick<ServiceContext, 'http' | 'log'>, 
 }
 
 /**
- * The meetings today's live broadcasts show, by meeting id. A public sitting's broadcast shows the
+ * The meetings today's live broadcasts show, by meeting id. A broadcast whose video names its
+ * meeting (the Assemblée's portal) shows that one. Otherwise a public sitting's broadcast shows the
  * sitting under way, the latest started, whatever meeting the chamber names: the Assemblée's API
  * names the day's first sitting all day long, the Sénat's none. A committee's shows the meeting the
  * Assemblée names, or at the Sénat the latest started of that committee. A broadcast whose meeting
@@ -119,12 +120,16 @@ export function liveMeetings(meetings: Meeting[], streams: LiveStream[], now = D
         .split(/\W+/)
         .filter((w) => words.has(w)).length
     const latest = (list: Meeting[]) => [...list].sort((a, b) => b.start.localeCompare(a.start) || shared(b) - shared(a))[0]
+    // The meeting its video names (the Assemblée's portal says which): that one.
+    const its = s.meeting ? meetings.find((m) => m.id === s.meeting) : undefined
     const named = meetings.find((m) => m.id === s.id)
     const own = meetings.filter((m) => m.chamber === s.chamber && started(m))
     const sitting = s.organ === 'Séance publique' || named?.kind === 'sitting'
-    const shown = sitting
-      ? (latest(own.filter((m) => m.kind === 'sitting')) ?? named)
-      : (named ?? (s.chamber === 'se' ? latest(own.filter((m) => m.kind !== 'sitting' && sameOrgan(m.organ, s.organ))) : undefined))
+    const shown =
+      its ??
+      (sitting
+        ? (latest(own.filter((m) => m.kind === 'sitting')) ?? named)
+        : (named ?? (s.chamber === 'se' ? latest(own.filter((m) => m.kind !== 'sitting' && sameOrgan(m.organ, s.organ))) : undefined)))
     found.set(shown?.id ?? s.id, s)
   }
   return found
@@ -695,7 +700,8 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
       const opened = index.open()
       const indexed = opened ? getMeeting(opened, id) : null
       // Known only from its broadcast (the agenda isn't synced): the broadcast that names it.
-      const stream = (opened ? liveMeetings(meetingsBetween(opened, day, day), streams).get(id) : streams.find((s) => s.id === id && s.live)) ?? null
+      const stream =
+        (opened ? liveMeetings(meetingsBetween(opened, day, day), streams).get(id) : streams.find((s) => (s.id === id || s.meeting === id) && s.live)) ?? null
       const meeting = indexed ?? (stream ? streamMeeting(stream) : null)
       if (!meeting) throw new Error(opened ? `Réunion introuvable : ${id}` : NOT_SYNCED)
       const code = opened ? (getOrgans(opened, [meeting.organId]).get(meeting.organId)?.code ?? '') : ''

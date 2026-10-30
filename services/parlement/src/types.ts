@@ -174,10 +174,21 @@ export interface VideoDetail {
   durationMs: number
   chapters: VideoChapter[]
   speakers: Array<{ name: string; member?: string }>
-  /** HLS playlist (multi-bitrate); empty while the portal is still processing the video. */
+  /**
+   * HLS playlist (multi-bitrate); empty while the portal is still processing the video. A live's
+   * holds the whole sitting so far (DVR: growing, no end), the recording's once it is over.
+   */
   hls: string
+  /** Other playlists of the same stream, to try in order when `hls` fails (a live's CDN mirror). */
+  mirrors: string[]
+  /** Broadcast now (the portal's status): chapters and their times arrive as it goes; ask again every ~30 s. The same id is the recording after. */
+  live: boolean
   /** Where the stream starts in the recording, ms (the Sénat's streams skip the wait before the sitting). */
   offsetMs: number
+  /** Unix ms at the stream's position 0 (offsetMs included): the hémicycle's clock is clockStart + the player's time. 0: unknown. */
+  clockStart: number
+  /** Its broadcast channel: "36" (the Assemblée's hémicycle), "senat1"; '' when unknown. */
+  channel: string
   thumbnail: string
   url: string
 }
@@ -196,11 +207,24 @@ export interface LiveStream {
   place: string
   /** Broadcasting now; false: announced for later today. */
   live: boolean
+  /**
+   * The playlist: with `video`, the whole broadcast so far (DVR); without, the Assemblée's API's,
+   * a window of the last 30 seconds (or nothing, announced).
+   */
   hls: string
+  /** Other playlists of the same stream, to try in order when `hls` fails. */
+  mirrors: string[]
   poster: string
-  /** Its page on the chamber's portal. */
+  /** Its page on the chamber's portal: its video's, or the portal's live page. */
   url: string
-  /** The meeting it shows, when the agenda says which (liveMeetings), and its agenda. */
+  /**
+   * Its video on the chamber's portal (bare id; `video` method: videoKey(chamber, video)): live now,
+   * the recording after. Absent: not found on the portal yet.
+   */
+  video?: string
+  /** Its broadcast channel ("36", "senat1"), to tell which live a video is. */
+  channel?: string
+  /** The meeting it shows (the video's own metadata, or the agenda: liveMeetings), and its agenda. */
   meeting?: string
   items?: string[]
 }
