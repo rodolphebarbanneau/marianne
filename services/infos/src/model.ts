@@ -203,12 +203,25 @@ export function moveTo(order: string[], id: string, target: string): string[] {
   return next
 }
 
-/** A card one place earlier or later (the grip's arrow keys). */
-export function moveBy(order: string[], id: string, step: -1 | 1): string[] {
-  const at = order.indexOf(id)
-  const target = order[at + step]
-  return at < 0 || !target ? order : moveTo(order, id, target)
+/**
+ * A card one place earlier or later among the cards shown (the grip's arrow keys): it takes its
+ * neighbour's place and the neighbour takes its own, so the cards hidden (the set-aside sources, a
+ * search) stay where they were. The order itself when the card can't move.
+ */
+export function moveBy(order: string[], id: string, step: -1 | 1, shown: string[] = order): string[] {
+  const at = shown.indexOf(id)
+  const target = shown[at + step]
+  const from = order.indexOf(id)
+  const to = target === undefined ? -1 : order.indexOf(target)
+  if (at < 0 || from < 0 || to < 0) return order
+  const next = [...order]
+  next[from] = target
+  next[to] = id
+  return next
 }
+
+/** Two orders the same. */
+export const sameOrder = (a: string[], b: string[]) => a.length === b.length && a.every((id, i) => id === b[i])
 
 /** The kiosk was arranged: « rétablir l’ordre et les tailles » shows. */
 export const arranged = (kiosk: Kiosk) => kiosk.order.length > 0 || kiosk.large.length > 0

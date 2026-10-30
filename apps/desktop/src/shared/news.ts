@@ -79,12 +79,17 @@ export const leanOf = (source: NewsSource, choice: NewsChoice | null): Lean => c
 
 /**
  * The sections a source keeps: those the user ticked, or all of them; a source without sections
- * has its front page only (no section ids). Unticking every section sets the source aside.
+ * has its front page only (no section ids). Unticking every section sets the source aside (Réglages
+ * says so by setting it aside): when none of the ticked ones is in the list any more (the list renamed
+ * its sections), the source keeps them all rather than going silent.
  */
 export function keptSections(source: NewsSource, choice: NewsChoice | null): string[] {
   const all = (source.sections ?? []).map((s) => s.id)
   const kept = choice?.sections[source.id]
-  return kept ? all.filter((id) => kept.includes(id)) : all
+  if (!kept) return all
+  const still = all.filter((id) => kept.includes(id))
+  // An empty list is the user's (every section unticked); one whose ids are all gone is the list's.
+  return still.length || !kept.length ? still : all
 }
 
 /** Whether a source is accepted: not set aside, and, with sections, at least one kept. */

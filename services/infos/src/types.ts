@@ -110,8 +110,12 @@ export type InfosMethods = {
   article(id: string): NewsArticle | null
   /** The same subject on the 6 days before today, oldest first. */
   days(id: string, opts: { all: boolean }): DayBefore[]
-  /** When the user last opened INFOS (ISO, null the first time), and now kept as the last visit. */
+  /** When the user last left INFOS (ISO, null the first time): what came since is new. */
   visit(): string | null
-  /** A word Marianne left once, at the move to INFOS; then it goes. */
+  /** The user leaves INFOS (the screen closed, the window hidden): now is kept as the last visit. */
+  leave(): void
+  /** A word Marianne left once, at the move to INFOS, until the screen has shown it. */
   notice(): string | null
+  /** The screen showed the notice: it goes. */
+  noticeSeen(): void
 }

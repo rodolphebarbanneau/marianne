@@ -127,18 +127,24 @@ describe('the other methods', () => {
     expect(read.filter(Boolean)).toHaveLength(6)
   })
 
-  it('visit: the last visit, then now kept for the next', async () => {
+  it('visit: the last visit, kept only when the user leaves', async () => {
     const { methods, stored } = setup()
     expect(await methods.visit()).toBeNull()
+    expect(await methods.visit()).toBeNull()
+    expect(stored.has('lastVisit')).toBe(false)
+    await methods.leave()
     const kept = stored.get('lastVisit') as string
     expect(Date.parse(kept)).toBeGreaterThan(Date.now() - 60_000)
     expect(await methods.visit()).toBe(kept)
   })
 
-  it('notice: the word Marianne left at the move, once', async () => {
+  it('notice: the word Marianne left at the move, until the screen has shown it', async () => {
     const { methods, stored } = setup()
     stored.set('notice', { customFeedsDropped: true })
-    expect(await methods.notice()).toBe('Vos flux ajoutés à la main ne sont plus lus : la liste est celle de Marianne.')
+    const word = 'Vos flux ajoutés à la main ne sont plus lus : la liste est celle de Marianne.'
+    expect(await methods.notice()).toBe(word)
+    expect(await methods.notice()).toBe(word)
+    await methods.noticeSeen()
     expect(stored.has('notice')).toBe(false)
     expect(await methods.notice()).toBeNull()
   })

@@ -1,9 +1,9 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { isLive, LEAN_LABELS, useHost } from '@marianne/sdk/view'
-import { arranged, kioskOrder, matches, moveBy, moveTo } from '../model'
+import { arranged, kioskOrder, matches, moveBy, moveTo, sameOrder } from '../model'
 import { clock, hour } from '../time'
 import type { InfosSource, Kiosk } from '../types'
-import { fill, LeanKey, useInfos } from './common'
+import { fill, LeanKey, NoneFound, useInfos } from './common'
 
 /**
  * F4 · kiosque: the same titles by source, a card each, in the user's order and at their size (a
@@ -16,10 +16,10 @@ const TOP = 10
 
 export function KioskTab({ kiosk, setKiosk }: { kiosk: Kiosk; setKiosk: (patch: Partial<Kiosk>) => void }) {
   const { reading, query } = useInfos()
-  const order = kioskOrder(
-    reading.sources.map((s) => s.id),
-    kiosk
-  )
+  const ids = reading.sources.map((s) => s.id)
+  const order = kioskOrder(ids, kiosk)
+  // Kept only when it changed; Marianne's own order is kept as none, so « rétablir » doesn't offer to put it back.
+  const keep = (next: string[]) => !sameOrder(next, order) && setKiosk({ order: sameOrder(next, ids) ? [] : next })
   // While a card is dragged, the others make room as it passes; dropped, the order is kept.
   const [moving, setMoving] = useState<{ id: string; order: string[] } | null>(null)
   const grip = useRef(false)
@@ -65,7 +65,7 @@ export function KioskTab({ kiosk, setKiosk }: { kiosk: Kiosk; setKiosk: (patch: 
               }}
               onDrop={(e) => moving && e.preventDefault()}
               onDragEnd={() => {
-                if (moving) setKiosk({ order: moving.order })
+                if (moving) keep(moving.order)
                 setMoving(null)
                 grip.current = false
               }}
@@ -88,7 +88,14 @@ export function KioskTab({ kiosk, setKiosk }: { kiosk: Kiosk; setKiosk: (patch: 
                     const step = e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : 0
                     if (!step) return
                     e.preventDefault()
-                    setKiosk({ order: moveBy(order, s.id, step) })
+                    keep(
+                      moveBy(
+                        order,
+                        s.id,
+                        step,
+                        shown.map((x) => x.id)
+                      )
+                    )
                   }}
                 >
                   <i>
@@ -103,7 +110,7 @@ export function KioskTab({ kiosk, setKiosk }: { kiosk: Kiosk; setKiosk: (patch: 
           ))}
         </div>
       ) : (
-        <p className="infos-empty">Aucun titre de vos sources n’en parle.</p>
+        <NoneFound none="Aucune source à montrer." />
       )}
     </div>
   )

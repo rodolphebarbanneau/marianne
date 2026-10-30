@@ -18,9 +18,10 @@ import { content } from '../content'
 import { fetchAsBrowser } from '../http'
 import { log } from '../log'
 import { paths } from '../paths'
+import { session } from '../session'
 import { durationLabel, kindOf, publicUrl, readArticle, readerStart, type MediaRef } from './article'
 import { decodeEntities, plainText } from './html'
-import { NewsHistory, type StoredItem } from './news-history'
+import { AHEAD_MS, NewsHistory, type StoredItem } from './news-history'
 import { parisDay, parisIso } from './time'
 
 export { decodeEntities, plainText }
@@ -44,8 +45,10 @@ const FEED_TTL = 5 * 60_000
 const DAY_MS = 86_400_000
 /** Feeds read at once: the catalogue has dozens. */
 const AT_ONCE = 8
-/** A title dated a little ahead (a clock off) still counts; further ahead, it is an event's date, not news. */
-const AHEAD_MS = 15 * 60_000
+/** A feed is a few hundred kilobytes; one far larger isn't read. */
+const FEED_BYTES = 3 * 1024 * 1024
+/** The articles kept in memory, the last ones asked. */
+const ARTICLES_KEPT = 200
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -259,7 +262,10 @@ async function feedItems(feed: Feed): Promise<FeedItem[]> {
   if (hit && Date.now() - hit.at < FEED_TTL) return hit.items
   let job = pending.get(key)
   if (!job) {
-    job = fetchAsBrowser(feed.url, { accept: 'application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5' })
+    job = fetchAsBrowser(feed.url, {
+      accept: 'application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5',
+      maxBytes: FEED_BYTES
+    })
       .then((xml) => {
         const items = parseFeed(xml, feed.source)
         feeds.set(key, { at: Date.now(), items })
@@ -441,11 +447,18 @@ export class NewsReader {
   /** The last reading of the feeds: when, which sources failed, whether none answered. */
   private last: { at: number; readAt: string; failed: string[]; offline: boolean } | null = null
   private reading: Promise<void> | null = null
-  /** Subjects grouped from the history, kept until it changes. */
+  /** Subjects grouped from the history, kept until its titles change (a title in, changed or gone). */
   private grouped = new Map<string, { version: number; subjects: Array<{ id: string; items: StoredItem[] }>; single: StoredItem[] }>()
-  /** Articles being read, and those that couldn't be lately (asked again after a while). */
-  private articles = new Map<string, Promise<NewsArticle | null>>()
-  private unread = new Map<string, number>()
+  /** The stats of Réglages, kept until the history changes or the 24-hour window moves on. */
+  private counted: { key: string; stats: NewsStats } | null = null
+  /** Articles being read. */
+  private inFlight = new Map<string, Promise<NewsArticle | null>>()
+  /**
+   * Articles read, in memory only and the last ARTICLES_KEPT asked first: which ones the user opened
+   * is theirs, and the history is written in the clear. One that couldn't be read whole (a page or
+   * a picture that didn't answer) is kept five minutes, then asked again.
+   */
+  private articles = new Map<string, { article: NewsArticle | null; until: number }>()
 
   constructor(dir: () => string = () => paths.news) {
     this.history = new NewsHistory(dir)
@@ -491,8 +504,9 @@ export class NewsReader {
       return { items, subjects: this.group(day, items).subjects, failed: [], readAt: this.last?.readAt || new Date().toISOString() }
     }
     const offline = this.last?.offline ?? true
-    // Offline, the window ends with the newest title kept: « hors ligne · titres de 9 h 12 ».
-    const end = offline ? Math.max(Date.parse(this.last?.readAt ?? '') || 0, all.length ? Date.parse(all[0].published) : 0) || Date.now() : windowEnd()
+    // Offline, the window ends with the newest title kept (« hors ligne · titres de 9 h 12 »), never past now.
+    const now = Date.now()
+    const end = offline ? Math.min(now, Math.max(Date.parse(this.last?.readAt ?? '') || 0, all.length ? Date.parse(all[0].published) : 0) || now) : windowEnd()
     const { items, subjects } = this.window(all, end)
     return {
       items,
@@ -530,34 +544,50 @@ export class NewsReader {
     return out
   }
 
-  /** One title's article, read once and kept with it; null when nothing could be read. */
+  /** One title's article, read once and kept in memory; null when nothing could be read. */
   article(id: string): Promise<NewsArticle | null> {
     const item = this.history.get(id)
     if (!item) return Promise.resolve(null)
-    if (item.article !== undefined) return Promise.resolve(structuredClone(item.article))
-    if (Date.now() - (this.unread.get(id) ?? 0) < FEED_TTL) return Promise.resolve(null)
-    let job = this.articles.get(id)
+    const hit = this.articles.get(id)
+    if (hit && Date.now() < hit.until) {
+      // The last asked goes to the end: the first ones are those let go.
+      this.articles.delete(id)
+      this.articles.set(id, hit)
+      return Promise.resolve(structuredClone(hit.article))
+    }
+    let job = this.inFlight.get(id)
     if (!job) {
       const source = content.get().newsSources.find((s) => s.id === item.source)
       job = readArticle(item, source)
-        .then(({ article, read }) => {
-          if (read) this.history.setArticle(id, article)
-          else {
-            if (this.unread.size > 500) this.unread.clear()
-            this.unread.set(id, Date.now())
-          }
+        .then(({ article, settled }) => {
+          this.articles.delete(id)
+          while (this.articles.size >= ARTICLES_KEPT) this.articles.delete(this.articles.keys().next().value!)
+          this.articles.set(id, { article, until: settled ? Infinity : Date.now() + FEED_TTL })
           return article
         })
-        .finally(() => this.articles.delete(id))
-      this.articles.set(id, job)
+        .finally(() => this.inFlight.delete(id))
+      this.inFlight.set(id, job)
     }
     return job.then((a) => structuredClone(a))
+  }
+
+  /** The articles read let go (the account locked: what the user opened isn't kept past it). */
+  forgetArticles(): void {
+    this.articles.clear()
   }
 
   /** What the history says of each source, for Réglages: from what was read, without reading. */
   stats(): NewsStats {
     const now = new Date()
     const all = this.history.all(now)
+    // The same until a title comes or goes, or the window moves (five minutes; the morning's count with it).
+    const key = `${this.history.version} ${windowEnd()} ${parisDay(now)}`
+    if (this.counted?.key === key) return this.counted.stats
+    this.counted = { key, stats: this.count(all, now) }
+    return this.counted.stats
+  }
+
+  private count(all: StoredItem[], now: Date): NewsStats {
     const perDay: Record<string, number> = {}
     if (all.length) {
       // Over the days the history covers (seven at most, one at least): a fresh history isn't a slow day.
@@ -579,6 +609,7 @@ export class NewsReader {
 }
 
 export const news = new NewsReader()
+session.on('locked', () => news.forgetArticles())
 
 /** What ctx.news needs of the host: the service's grant, the user's choice, the region of their address, a note of the read. */
 export interface NewsAccess {

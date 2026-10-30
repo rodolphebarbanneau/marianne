@@ -13,6 +13,7 @@ import {
   useTabBadges,
   type ServiceKey
 } from '@marianne/sdk/view'
+import { keyAction } from './keys'
 import { newSince } from './model'
 import type { InfosMethods, Kiosk, Reading, Subject } from './types'
 import { FailedLine, GearIcon, InfosContext, infosOf } from './ui/common'
@@ -40,11 +41,37 @@ const NO_KIOSK: Kiosk = { order: [], large: [] }
 
 export function View() {
   const host = useHost<InfosMethods>()
-  // Opened again with other params (the tile's subject): a fresh screen.
-  return <Screen key={JSON.stringify(host.params)} />
+  const since = useVisit()
+  // Opened again with other params (the tile's subject): a fresh screen, in the same visit.
+  return <Screen key={JSON.stringify(host.params)} since={since} />
 }
 
-function Screen() {
+/**
+ * The last visit, read once when INFOS opens: what came since is new in the fil, for the whole visit.
+ * Now is kept as the last visit only when the user leaves (the screen closed, the window hidden), so
+ * a screen opened again with other params, or a failed opening, doesn't take « 3 neufs » away.
+ */
+function useVisit(): string | null {
+  const host = useHost<InfosMethods>()
+  const [since, setSince] = useState<string | null>(null)
+  const asked = useRef(false)
+  useEffect(() => {
+    if (!asked.current) {
+      asked.current = true
+      void host.call('visit').then(setSince)
+    }
+    const leave = () => void host.call('leave')
+    const onHide = () => document.visibilityState === 'hidden' && leave()
+    document.addEventListener('visibilitychange', onHide)
+    return () => {
+      document.removeEventListener('visibilitychange', onHide)
+      leave()
+    }
+  }, [host])
+  return since
+}
+
+function Screen({ since }: { since: string | null }) {
   const host = useHost<InfosMethods>()
   const search = useSearch()
   const query = search.query
@@ -56,9 +83,13 @@ function Screen() {
   const [chosen, setChosen] = useState<string | null>(null)
   const [mine, setMine] = useState(false)
   const [typed, setTyped] = useState('')
-  const [since, setSince] = useState<string | null>(null)
   const [kiosk, setKiosk] = useStored<Kiosk>('kiosk', NO_KIOSK)
   const notice = useCall<InfosMethods, 'notice'>('notice', [])
+  // The word Marianne left goes once it has been on screen, not when it is asked for.
+  const noticed = notice.data
+  useEffect(() => {
+    if (noticed) void host.call('noticeSeen')
+  }, [noticed, host])
   const root = useRef<HTMLDivElement | null>(null)
   // The screen's root, as an element to watch: it is drawn again once the titles come (the wait has one of its own).
   const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null)
@@ -91,14 +122,6 @@ function Screen() {
     document.addEventListener('visibilitychange', onShow)
     return () => document.removeEventListener('visibilitychange', onShow)
   }, [apply])
-
-  // The last visit, once: what came since is new in the fil. Kept as now for the next one.
-  const visited = useRef(false)
-  useEffect(() => {
-    if (visited.current) return
-    visited.current = true
-    void host.call('visit').then(setSince)
-  }, [host])
 
   // The user picked a tab (a click, its key), the one shown too: that tab, its subjects closed, the new reading.
   const { tab: picked, open } = useTab(() => {
@@ -165,37 +188,28 @@ function Screen() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.altKey || e.metaKey) return
-      const target = e.target as HTMLElement | null
-      if (target?.closest?.('input, textarea, select, [contenteditable]')) return
-      // Only keys meant for this screen: not while a dialog over the window has the focus.
-      const focus = document.activeElement
-      if (focus && focus !== document.body && !root.current?.contains(focus)) return
       const s = state.current
-      if (e.key === 'Escape' && (s.typed || s.stack.length)) {
-        // Taken before Marianne's échap, which would leave the screen.
-        e.preventDefault()
-        e.stopPropagation()
-        if (s.typed) setTyped('')
-        else close()
-        return
-      }
-      if (!s.numbered) return
-      if (/^\d$/.test(e.key)) {
-        e.preventDefault()
-        setTyped((t) => (t + e.key).slice(-3))
-      } else if (e.key === 'Backspace' && s.typed) {
-        e.preventDefault()
-        setTyped((t) => t.slice(0, -1))
-      } else if (e.key === 'Enter' && !target?.closest?.('button, a, [role="link"], [role="button"]')) {
-        const subject = s.typed ? s.subjects[Number(s.typed) - 1] : s.front ? s.current : null
+      const action = keyAction(e.key, e.target as HTMLElement | null, document.activeElement, {
+        front: s.front,
+        numbered: s.numbered,
+        typed: s.typed,
+        open: s.stack.length
+      })
+      if (!action) return
+      // Taken before Marianne's own keys: her échap, which would leave the screen, skips a key taken.
+      e.preventDefault()
+      e.stopPropagation()
+      if (action === 'clear') setTyped('')
+      else if (action === 'close') close()
+      else if (action === 'digit') setTyped((t) => (t + e.key).slice(-3))
+      else if (action === 'erase') setTyped((t) => t.slice(0, -1))
+      else if (action === 'typed' || action === 'chosen') {
+        const subject = action === 'typed' ? s.subjects[Number(s.typed) - 1] : s.current
         setTyped('')
-        if (!subject) return
-        e.preventDefault()
-        openSubject(subject.id)
-      } else if (s.front && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && s.listed.length) {
-        e.preventDefault()
+        if (subject) openSubject(subject.id)
+      } else if (s.listed.length) {
         const at = s.current ? s.listed.indexOf(s.current) : -1
-        const next = s.listed[Math.min(s.listed.length - 1, Math.max(0, at + (e.key === 'ArrowDown' ? 1 : -1)))]
+        const next = s.listed[Math.min(s.listed.length - 1, Math.max(0, at + (action === 'down' ? 1 : -1)))]
         choose(next.id)
       }
     }

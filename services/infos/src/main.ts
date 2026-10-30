@@ -63,16 +63,15 @@ export const service = defineService<InfosMethods>({
         search: (words, { all }) => ctx.news.search(words, { all: all && ctx.news.filtered() }),
         article: (id) => ctx.news.article(id),
         days: (id, { all }) => daysBefore(ctx, id, all),
-        visit() {
-          const last = ctx.storage.get<string>('lastVisit')
+        // Read when INFOS opens, kept when the user leaves: what came during the visit stays new until then.
+        visit: () => ctx.storage.get<string>('lastVisit'),
+        leave() {
           ctx.storage.set('lastVisit', new Date().toISOString())
-          return last
         },
-        notice() {
-          const notice = ctx.storage.get<{ customFeedsDropped?: boolean }>('notice')
-          if (!notice) return null
+        notice: () => (ctx.storage.get<{ customFeedsDropped?: boolean }>('notice')?.customFeedsDropped ? CUSTOM_FEEDS_DROPPED : null),
+        // Gone once the screen has shown it: asked for and lost on the way (a screen closed at once), it comes again.
+        noticeSeen() {
           ctx.storage.remove('notice')
-          return notice.customFeedsDropped ? CUSTOM_FEEDS_DROPPED : null
         }
       },
       tools: [],

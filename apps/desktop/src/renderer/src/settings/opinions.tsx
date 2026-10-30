@@ -38,7 +38,8 @@ export function OpinionsSection() {
   const { leaning, themes } = profile.opinions
   const save = (change: Partial<Opinions>) =>
     void api
-      .updateProfile({ type: 'opinions', opinions: { ...profile.opinions, ...change } })
+      // Only what changed: the rest stays as Marianne has it, even if this page hasn't seen it yet.
+      .updateProfile({ type: 'opinions', opinions: change })
       .then(() => setError(''))
       .catch((err) => setError(errorText(err)))
   const an = groups.filter((g) => g.chamber === 'an')

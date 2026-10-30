@@ -1,6 +1,6 @@
 import { mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import type { NewsArticle, NewsHeadline } from '@marianne/sdk'
+import type { NewsHeadline } from '@marianne/sdk'
 import { writeFileAtomic } from '../files'
 import { log } from '../log'
 import type { MediaRef } from './article'
@@ -11,10 +11,12 @@ import { nextDay, parisDay } from './time'
  * a feed keeps its last 20 to 50 items only, so the history is what keeps a morning's titles in
  * the evening, the days before, and the counts of Réglages. Public data only, read from the whole
  * catalogue: nothing in it says which sources the user reads, so it lives outside the archive.
- * Each title keeps its article once read (its start and its small picture).
+ * Nor which articles they opened: those are kept in memory only (news.ts), never with the titles.
  */
 
 export const HISTORY_DAYS = 7
+/** A title dated a little ahead (a clock off) still counts; further ahead, it is an event's date, not news. */
+export const AHEAD_MS = 15 * 60_000
 const DAY_MS = 86_400_000
 const FILE = /^(\d{4}-\d{2}-\d{2})\.json$/
 
@@ -26,8 +28,12 @@ export interface StoredItem extends NewsHeadline {
   media?: MediaRef
   /** The start of the article the feed's own text gives (content:encoded). */
   start?: string
-  /** Its article, once read (null: read, and nothing to show); absent: not asked yet. */
-  article?: NewsArticle | null
+}
+
+/** Whether a title belongs in the 7 days that end now (a little ahead allowed). */
+const within = (item: StoredItem, now: Date) => {
+  const t = Date.parse(item.published)
+  return t >= now.getTime() - HISTORY_DAYS * DAY_MS && t <= now.getTime() + AHEAD_MS
 }
 
 const dayOf = (item: StoredItem) => parisDay(new Date(item.published))
@@ -56,13 +62,22 @@ export class NewsHistory {
       if (!FILE.test(file)) continue
       try {
         const list = JSON.parse(readFileSync(join(this.dir(), file), 'utf8')) as StoredItem[]
-        for (const item of Array.isArray(list) ? list : [])
-          if (item && typeof item.id === 'string' && !Number.isNaN(Date.parse(item.published))) this.items.set(item.id, item)
+        for (const item of Array.isArray(list) ? list : []) {
+          if (!item || typeof item.id !== 'string' || Number.isNaN(Date.parse(item.published))) continue
+          // An article an earlier version kept with its title: it isn't read, and goes at the next write of its day.
+          if ('article' in item) {
+            delete (item as { article?: unknown }).article
+            this.dirty.add(file.slice(0, 10))
+          }
+          if (Date.parse(item.published) > now.getTime() + AHEAD_MS) this.dirty.add(file.slice(0, 10))
+          else this.items.set(item.id, item)
+        }
       } catch (err) {
         log.warn(`News history ${file} unreadable, dropped:`, (err as Error).message)
       }
     }
     this.prune(now)
+    this.flush()
     return this.items
   }
 
@@ -94,14 +109,14 @@ export class NewsHistory {
 
   /**
    * Fresh titles in: a new one is kept, one already kept keeps its time (an undated title is dated
-   * when first seen) and its article, and takes what the feed says now. Titles over 7 days old stay out.
+   * when first seen) and takes what the feed says now. Titles over 7 days old stay out, and those
+   * dated ahead (an event's date, a clock far off): they would lead the reading until their day.
    */
   merge(fresh: StoredItem[], now = new Date()): void {
     const items = this.load(now)
     this.prune(now)
-    const cutoff = now.getTime() - HISTORY_DAYS * DAY_MS
     for (const item of fresh) {
-      if (Date.parse(item.published) < cutoff) continue
+      if (!within(item, now)) continue
       const kept = items.get(item.id)
       if (!kept) {
         items.set(item.id, item)
@@ -113,8 +128,7 @@ export class NewsHistory {
         ...item,
         published: kept.published,
         ...(sections.length ? { sections } : {}),
-        ...((item.section ?? kept.section) ? { section: kept.section ?? item.section } : {}),
-        ...(kept.article !== undefined ? { article: kept.article } : {})
+        ...((item.section ?? kept.section) ? { section: kept.section ?? item.section } : {})
       }
       if (JSON.stringify(next) !== JSON.stringify(kept)) {
         items.set(item.id, next)
@@ -137,16 +151,7 @@ export class NewsHistory {
     return this.load(now).get(id)
   }
 
-  /** The article read for a title, kept with it. */
-  setArticle(id: string, article: NewsArticle | null, now = new Date()): void {
-    const item = this.load(now).get(id)
-    if (!item) return
-    item.article = article
-    this.dirty.add(dayOf(item))
-    this.flush()
-  }
-
-  /** The days whose titles changed, written again (an emptied day's file goes). */
+  /** The days whose titles changed, written again (an emptied day's file goes). The version grows: titles came, changed or went. */
   private flush(): void {
     if (!this.dirty.size || !this.items) return
     this.version++

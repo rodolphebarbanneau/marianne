@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { NewsSource } from '@marianne/content'
@@ -19,7 +19,7 @@ const state = vi.hoisted(() => ({
   root: '',
   catalogue: [] as NewsSource[],
   feeds: new Map<string, () => string>(),
-  pages: new Map<string, { body: string | Buffer; type: string }>(),
+  pages: new Map<string, { body: string | Buffer; type: string } | 'timeout'>(),
   fetched: [] as string[],
   resized: [] as number[]
 }))
@@ -36,7 +36,8 @@ vi.mock('../src/main/paths', () => ({
 }))
 vi.mock('../src/main/log', () => ({ log: { info: () => {}, warn: () => {}, error: () => {} } }))
 vi.mock('../src/main/content', () => ({ content: { get: () => ({ newsSources: state.catalogue }) } }))
-vi.mock('../src/main/http', () => ({
+vi.mock('../src/main/http', async (original) => ({
+  ...(await original<typeof import('../src/main/http')>()),
   fetchAsBrowser: async (url: string) => {
     state.fetched.push(url)
     const feed = state.feeds.get(url)
@@ -46,7 +47,8 @@ vi.mock('../src/main/http', () => ({
   fetchCapped: async (url: string) => {
     state.fetched.push(url)
     const page = state.pages.get(url)
-    if (!page) throw new Error(`HTTP 404 de ${new URL(url).host}`)
+    if (page === 'timeout') throw Object.assign(new Error(`Pas de réponse de ${new URL(url).host} (délai dépassé)`), { name: 'TimeoutError' })
+    if (!page) throw Object.assign(new Error(`HTTP 404 de ${new URL(url).host}`), { status: 404 })
     return { bytes: Buffer.from(page.body), type: page.type, whole: true }
   }
 }))
@@ -327,6 +329,55 @@ describe('the reading', () => {
     expect(files.some((f) => existsSync(join(dir, f)))).toBe(false)
   })
 
+  it('leaves out the titles dated ahead, and the window offline never ends past now', async () => {
+    const r = reader()
+    serve({
+      'https://la-croix.fr/rss.xml': [
+        { guid: 'soon', title: 'Un titre daté de dix minutes plus tard', ago: -10 },
+        { guid: 'event', title: 'Le concert de ce soir, daté de son heure', ago: -6 * 60 },
+        { guid: 'now', title: 'Un titre de maintenant', ago: 1 }
+      ]
+    })
+    expect((await r.whole()).items.map((i) => i.title)).toEqual(['Un titre daté de dix minutes plus tard', 'Un titre de maintenant'])
+    expect(r.history.all().some((i) => i.title.includes('concert'))).toBe(false)
+    serve({})
+    vi.setSystemTime((clock += 6 * 60_000))
+    const offline = await r.whole()
+    expect(offline.offline).toBe(true)
+    expect(Date.parse(offline.readAt)).toBeLessThanOrEqual(Date.now())
+
+    // A title ahead an earlier version kept, and the article it kept with its title: both left out.
+    const dir = join(state.root, `news-${++dirs}`)
+    mkdirSync(dir, { recursive: true })
+    const at = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString()
+    const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date(at(-1)))
+    writeFileSync(
+      join(dir, `${day}.json`),
+      JSON.stringify([
+        { id: 'a', source: 'la-croix', title: 'Lu hier', url: 'https://site.fr/a', published: at(-1), article: { start: 'Ce que l’utilisateur a lu.' } },
+        { id: 'b', source: 'la-croix', title: 'Daté demain', url: 'https://site.fr/b', published: at(24 * 60) }
+      ])
+    )
+    const old = new NewsReader(() => dir)
+    expect(old.history.all().map((i) => i.id)).toEqual(['a'])
+    expect(old.history.get('a')).not.toHaveProperty('article')
+    expect(readFileSync(join(dir, `${day}.json`), 'utf8')).not.toMatch(/utilisateur|Daté demain/)
+  })
+
+  it('groups and counts once until a title comes or goes', async () => {
+    morning()
+    const r = reader()
+    const first = await r.whole()
+    const stats = r.stats()
+    expect(r.stats()).toBe(stats)
+    await r.article(first.items[0].id)
+    expect(r.stats()).toBe(stats)
+    vi.setSystemTime((clock += 6 * 60_000))
+    serve({ 'https://la-croix.fr/rss.xml': [{ guid: 'new', title: 'Un titre nouveau dans le flux', ago: 1 }] })
+    await r.whole()
+    expect(r.stats()).not.toBe(stats)
+  })
+
   it('reads a day of the history, and the history alone when no feed answers', async () => {
     morning()
     const r = reader()
@@ -423,12 +474,13 @@ describe('the article', () => {
   const page = (body: string, head = '') =>
     `<html><head>${head}<meta property="og:image" content="/photo.jpg"><meta property="og:image:alt" content="Le quai de la gare"></head><body><nav><p>Menu du site, rubriques et liens de navigation à ne pas lire.</p></nav><article><p class="article__chapo">Le résumé du flux, que la page redit en chapô.</p>${body}<aside><p>Lire aussi : un autre article qui n’a rien à faire dans le début.</p></aside></article></body></html>`
 
-  async function articleOf(entry: Partial<Entry>, html?: string, src = 'la-croix') {
+  async function articleOf(entry: Partial<Entry>, html?: string | 'timeout', src = 'la-croix') {
     const url = `https://${src}.fr/rss.xml`
     serve({ [url]: [{ guid: 'g', title: 'Collision de trains en Espagne', ago: 5, description: 'Le résumé du flux, que la page redit en chapô.', ...entry }] })
     const r = reader()
     const { items } = await r.whole()
-    if (html !== undefined) state.pages.set('https://site.fr/g', { body: html, type: 'text/html; charset=utf-8' })
+    if (html === 'timeout') state.pages.set('https://site.fr/g', 'timeout')
+    else if (html !== undefined) state.pages.set('https://site.fr/g', { body: html, type: 'text/html; charset=utf-8' })
     else state.pages.delete('https://site.fr/g')
     state.pages.set('https://site.fr/photo.jpg', { body: 'img', type: 'image/jpeg' })
     state.pages.set('https://img.fr/feed.jpg', { body: 'img', type: 'image/jpeg' })
@@ -443,11 +495,35 @@ describe('the article', () => {
     expect(article!.start!.endsWith('.')).toBe(true)
     expect(article?.media).toEqual({ kind: 'photo', src: `data:image/jpeg;base64,${Buffer.from('jpeg 400').toString('base64')}`, alt: 'Le quai de la gare' })
     expect(state.resized).toEqual([400])
-    // Kept with the title: not read again.
+    // Kept in memory: not read again.
     state.fetched = []
+    const version = r.history.version
     expect(await r.article(id)).toEqual(article)
     expect(state.fetched).toEqual([])
-    expect(r.history.get(id)?.article).toEqual(article)
+    // Never with the titles, on disk in the clear: the history doesn't change for it (nor its groupings).
+    expect(r.history.version).toBe(version)
+    expect(r.history.get(id)).not.toHaveProperty('article')
+    const dir = join(state.root, `news-${dirs}`)
+    for (const file of readdirSync(dir)) expect(readFileSync(join(dir, file), 'utf8')).not.toMatch(/Phrase numéro|data:image/)
+    // The account locked: let go, read again when asked.
+    r.forgetArticles()
+    expect(await r.article(id)).toEqual(article)
+    expect(state.fetched).toContain('https://site.fr/g')
+  })
+
+  it('keeps only the last articles asked', async () => {
+    const r = reader()
+    serve({
+      'https://la-croix.fr/rss.xml': Array.from({ length: 201 }, (_, i) => ({ guid: `a${i}`, title: `Titre numéro ${i} du jour`, ago: 5 + i }))
+    })
+    const { items } = await r.whole()
+    for (const item of items) await r.article(item.id)
+    state.fetched = []
+    // The first asked went with the 201st; the second is still there.
+    await r.article(items[1].id)
+    expect(state.fetched).toEqual([])
+    await r.article(items[0].id)
+    expect(state.fetched).toEqual(['https://site.fr/a0'])
   })
 
   it('takes the feed’s picture and text first', async () => {
@@ -479,10 +555,38 @@ describe('the article', () => {
     } finally {
       state.catalogue = CATALOGUE
     }
-    const { r, id, article } = await articleOf({})
+    // A page that isn't there: that is its answer, not asked again.
+    const gone = await articleOf({})
+    expect(gone.article).toBeNull()
+    state.fetched = []
+    vi.setSystemTime((clock += 6 * 60_000))
+    expect(await gone.r.article(gone.id)).toBeNull()
+    expect(state.fetched).toEqual([])
+  })
+
+  it('asks again later what didn’t answer: a page or a picture that timed out', async () => {
+    const { r, id, article } = await articleOf({}, 'timeout')
     expect(article).toBeNull()
-    // Nothing answered: not kept, asked again later.
-    expect(r.history.get(id)?.article).toBeUndefined()
+    state.fetched = []
+    expect(await r.article(id)).toBeNull()
+    expect(state.fetched).toEqual([])
+    vi.setSystemTime((clock += 6 * 60_000))
+    state.pages.set('https://site.fr/g', { body: page(para(8)), type: 'text/html' })
+    expect((await r.article(id))?.start).toMatch(/^Phrase numéro 1/)
+
+    // The page read, its picture not: what was read is shown, and the whole asked again later.
+    const late = await articleOf({}, page(para(8)))
+    expect(late.article?.media).toBeDefined()
+    const second = reader()
+    serve({ 'https://la-croix.fr/rss.xml': [{ guid: 'g', title: 'Collision de trains en Espagne', ago: 5 }] })
+    const { items } = await second.whole()
+    state.pages.set('https://site.fr/photo.jpg', 'timeout')
+    const partial = await second.article(items[0].id)
+    expect(partial?.start).toBeDefined()
+    expect(partial?.media).toBeUndefined()
+    vi.setSystemTime((clock += 6 * 60_000))
+    state.pages.set('https://site.fr/photo.jpg', { body: 'img', type: 'image/jpeg' })
+    expect((await second.article(items[0].id))?.media?.kind).toBe('photo')
   })
 
   it('reads pages robustly', () => {
@@ -496,6 +600,14 @@ describe('the article', () => {
     expect(readerStart('<p>Accepter les cookies pour continuer la lecture de cet article sur notre site.</p>')).toBe('')
     expect(cutAtSentence(`M. Dupont est venu. ${'Il a parlé longtemps de la ligne. '.repeat(30)}`, 600)).toMatch(/^M\. Dupont est venu\. Il a parlé.*ligne\.$/)
     expect(cutAtSentence('mot '.repeat(300), 100).endsWith('…')).toBe(true)
+    // At the 600th character a number's point is no sentence's end: never 601 characters, never « 1. ».
+    const before = `${'Une phrase de quarante caractères ici. '.repeat(15).slice(0, 560)}fin.`
+    const number = `${before} Le taux passe à ${'9'.repeat(600 - before.length - 18)}1.5 pour cent cette année.`
+    expect(number.indexOf('1.5') + 1).toBe(600)
+    expect(cutAtSentence(number, 600)).toBe(before)
+    const exact = `${'x'.repeat(39)} ${'mot '.repeat(139)}fin. Et la suite.`
+    expect(exact.indexOf('fin.') + 4).toBe(600)
+    expect(cutAtSentence(exact, 600)).toHaveLength(600)
     expect(readSelector('div.premium-lock, [data-paywall="yes"], #lock')).toHaveLength(3)
     expect(readSelector('div[')).toBeNull()
     expect(paywalled('<meta itemprop="isAccessibleForFree" content="false">')).toBe(true)

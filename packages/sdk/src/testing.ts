@@ -1,8 +1,8 @@
 import {
-  foldText,
   readManifest,
   readTile,
   serviceCode,
+  titleWords,
   type Lean,
   type NewsArticle,
   type NewsReading,
@@ -43,7 +43,8 @@ export interface FakeContextOptions {
   }
   /**
    * What ctx.news gives a service that declares `"news": true`: the reading (by its options: `all`,
-   * a `day`), the catalogue, and the articles by headline id. `search` looks in the reading's items.
+   * a `day`), the catalogue, and the articles by headline id. `search` looks in the reading's items
+   * as Marianne does in its 7 days: each word one of a title's words (title and summary) or the start of one.
    */
   news?: {
     read?: NewsReading | ((opts: { day?: string; all?: boolean }) => NewsReading)
@@ -132,9 +133,14 @@ function fakeNews(news: NonNullable<FakeContextOptions['news']>, granted: boolea
     filtered: () => news.filtered ?? granted,
     read,
     search: async (words, opts = {}) => {
-      const q = foldText(words.trim())
-      const items = (await read({ all: opts.all })).items.filter((i) => !q || foldText(i.title).includes(q))
-      return items.filter((i) => !opts.since || i.published >= opts.since).slice(0, opts.limit ?? 50)
+      const wanted = [...titleWords(String(words ?? ''))]
+      if (!wanted.length) return []
+      const items = (await read({ all: opts.all })).items.filter((i) => {
+        const has = [...titleWords(`${i.title} ${i.summary ?? ''}`)]
+        return wanted.every((w) => has.some((h) => h === w || h.startsWith(w)))
+      })
+      const limit = Math.min(Math.max(1, Math.floor(opts.limit ?? 50)), 200)
+      return items.filter((i) => !opts.since || Date.parse(i.published) >= Date.parse(opts.since)).slice(0, limit)
     },
     article: async (id) => structuredClone(news.articles?.[id] ?? null),
     sources: async () => structuredClone(news.sources ?? [])

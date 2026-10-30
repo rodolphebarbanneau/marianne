@@ -80,10 +80,13 @@ export function SubjectPane({ subject: s }: { subject: Subject }) {
             <span>
               <b>{span(first.published, last.published)}</b>du premier au dernier
             </span>
-            <span>
-              <b>{inRow ?? '…'}</b>
-              {inRow && inRow > 1 ? 'jours d’affilée' : 'jour'}
-            </span>
+            {/* The days before couldn't be read: no count, rather than a wait that never ends. */}
+            {!days.error && (
+              <span>
+                <b>{inRow ?? '…'}</b>
+                {inRow && inRow > 1 ? 'jours d’affilée' : 'jour'}
+              </span>
+            )}
           </div>
 
           <div className="infos-h">

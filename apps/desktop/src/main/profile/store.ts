@@ -172,10 +172,13 @@ class ProfileStore extends EventEmitter {
             )
           ].slice(0, 16)
         const themes = new Set<string>(THEMES.map((t) => t.id))
+        // A part left out of the change stays as it was: two quick changes (a theme, then a source) don't undo each other.
         p.opinions = {
-          leaning: { assembly: acronyms(op.opinions.leaning?.assembly), senate: acronyms(op.opinions.leaning?.senate) },
-          themes: [...new Set((op.opinions.themes ?? []).filter((t) => themes.has(t)))],
-          // Left out of the change, the sources stay as they were.
+          leaning:
+            op.opinions.leaning === undefined
+              ? p.opinions.leaning
+              : { assembly: acronyms(op.opinions.leaning?.assembly), senate: acronyms(op.opinions.leaning?.senate) },
+          themes: op.opinions.themes === undefined ? p.opinions.themes : [...new Set(op.opinions.themes.filter((t) => themes.has(t)))],
           sources: op.opinions.sources === undefined ? p.opinions.sources : readNewsChoice(op.opinions.sources)
         }
         break

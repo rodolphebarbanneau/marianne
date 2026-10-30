@@ -317,7 +317,8 @@ export type ProfileOp =
   | { type: 'deadlineStatus'; key: string; status: DeadlineStatus }
   | { type: 'procedureStep'; id: string; step: number; done: boolean }
   | { type: 'notes'; notes: string }
-  | { type: 'opinions'; opinions: Opinions }
+  /** What changes of the opinions: a part left out stays as it was. */
+  | { type: 'opinions'; opinions: Partial<Opinions> }
   | { type: 'onboarded'; value: boolean }
 
 // ---------------------------------------------------------------- labels

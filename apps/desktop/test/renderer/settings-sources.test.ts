@@ -66,6 +66,12 @@ describe('the sources of Réglages › Identité', () => {
     expect(keptSections(monde, acceptSources(none, ['le-monde'], true))).toEqual(['une', 'politique', 'economie'])
   })
 
+  it('keeps every section of a source whose ticked ones the list no longer has (renamed)', () => {
+    const monde = byId('le-monde')
+    const renamed = { ...defaults, sections: { 'le-monde': ['ancienne-rubrique'] } }
+    expect(keptSections(monde, renamed)).toEqual(['une', 'politique', 'economie'])
+  })
+
   it('gives a source a colour of the user’s, « modifié » while it isn’t Marianne’s, and takes it back with « rétablir »', () => {
     const figaro = byId('le-figaro')
     const changed = giveLean(defaults, figaro, 'centre-droit')

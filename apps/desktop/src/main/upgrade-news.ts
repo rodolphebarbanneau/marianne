@@ -25,7 +25,9 @@ export interface InfosNotice {
 
 /**
  * `catalogue`: the ids of Marianne's news sources. The pick left untouched gives the defaults
- * (opinions.sources null); a pick changed sets aside what it left out. The user's own feeds are no
+ * (opinions.sources null); a pick changed sets aside what it left out. A pick of none of Marianne's
+ * sources (only the user's own feeds, or nothing) said nothing of them: the defaults too, rather
+ * than every one set aside. The user's own feeds are no
  * longer read, and INFOS says so once. INFOS is added, on and pinned, so that the news stays one
  * click away. Settings without `news` were carried over already: nothing happens.
  */
@@ -35,7 +37,7 @@ export function upgradeNews(store: RecordStore, catalogue: string[]): boolean {
   const { news, ...rest } = raw as { news?: { sources?: unknown; custom?: unknown } }
   const picked = Array.isArray(news?.sources) ? news.sources.filter((x): x is string => typeof x === 'string') : OLD_DEFAULT
   const untouched = picked.length === OLD_DEFAULT.length && OLD_DEFAULT.every((id) => picked.includes(id))
-  if (!untouched) {
+  if (!untouched && picked.some((id) => catalogue.includes(id))) {
     const profile = normalize(store.get<Partial<Profile>>(PROFILE, 'main') ?? {})
     const choice: NewsChoice = { refused: catalogue.filter((id) => !picked.includes(id)), sections: {}, leanings: {} }
     store.put(PROFILE, 'main', { ...profile, opinions: { ...profile.opinions, sources: choice } })
