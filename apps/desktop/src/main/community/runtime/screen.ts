@@ -16,7 +16,8 @@ import {
 import { SCREEN_LIMITS } from '../../../shared/screen-channels'
 import { matches, type KeyLike } from '../../../shared/shortcuts'
 import { fromOwn, type SenderEvent } from './bridge'
-import { RateLimit } from './limits'
+import { logLine, RateLimit } from './limits'
+import { onceEach } from './sandbox'
 import { mediaUrl, pictureUrl, schemeHandler, type SchemeSource } from './scheme'
 
 /**
@@ -28,12 +29,12 @@ import { mediaUrl, pictureUrl, schemeHandler, type SchemeSource } from './scheme
  * Marianne only through its preload (preload/community-screen.ts) and this relay, which answers its
  * calls and data itself and hands the window only what the window shows: a question for Marianne,
  * another screen, a link to confirm, a toast, a tab, a key. The user's keys and clicks are read
- * here, from the view's input: a link, a copy or a video for the mini-player needs a recent one,
- * and only they keep the account awake; F1 to F9 go to the window, échap when the screen doesn't
- * use it.
+ * here, from the view's input: a link, a copy, a question for Marianne, another screen or a video
+ * for the mini-player needs a recent one, and only they keep the account awake; F1 to F9 go to the
+ * window, échap when the screen doesn't use it.
  */
 
-/** A link, a copy or a pin asked this long after the user's last key or click in the screen; later, ignored. */
+/** A link, a copy, a question, another screen or a pin asked this long after the user's last key or click in the screen; later, ignored. */
 export const INPUT_WINDOW_MS = 5000
 /** An échap or a « / » the screen hands back, or a pin by the player's P, must follow a real one this closely. */
 const ESCAPE_WINDOW_MS = 1000
@@ -70,7 +71,7 @@ export interface ScreenHost {
 export class ScreenRelay extends EventEmitter {
   private ready = false
   private init: Extract<ToFrame, { type: 'init' }> | null = null
-  /** The user's last click, Enter or Space in the screen: what a link, a copy or a pin needs. */
+  /** The user's last click, Enter or Space in the screen: what a link, a copy, a question, another screen or a pin needs. */
   private lastConsent = -Infinity
   private lastEscape = -Infinity
   /** The user's last « / » in the screen: the frame's search field takes it. */
@@ -198,7 +199,7 @@ export class ScreenRelay extends EventEmitter {
         this.emit('window', { type: 'toast', text: `${this.who} · ${m.done ?? 'copié'}` })
         return
       case 'url':
-        if (!recent || !frameMayOpen(manifest, m.url)) return this.host.log.warn(`${this.who}: a link not opened (${m.url.slice(0, 120)})`)
+        if (!recent || !frameMayOpen(manifest, m.url)) return this.host.log.warn(`${this.who}: a link not opened (${logLine(m.url, 120)})`)
         this.emit('window', m)
         return
       case 'toast':
@@ -220,7 +221,14 @@ export class ScreenRelay extends EventEmitter {
       case 'playing':
         this.emit('window', { type: 'playing' } satisfies FromFrame)
         return
+      // A question for Marianne fills the window's composer, and another screen takes the window away:
+      // only right after the user's click, Enter or Space, so that a screen can't do either as it opens.
+      case 'route':
+        if (!recent) return this.host.log.warn(`${this.who}: another screen asked without the user's click, ignored`)
+        this.emit('window', m)
+        return
       case 'ask': {
+        if (!recent) return this.host.log.warn(`${this.who}: a question asked without the user's click, ignored`)
         // A page it hands with a question is its own: labelled so, its address kept only on its declared hosts.
         const page = m.page && {
           title: `${this.who} · ${m.page.title}`.slice(0, 300),
@@ -251,11 +259,11 @@ export class ScreenRelay extends EventEmitter {
 }
 
 /** A screen's session, set up once: its own files only, its declared hosts' pictures through the scheme, nothing else. */
-const prepared = new WeakSet<Session>()
+const setUp = onceEach<Session>()
 async function prepare(code: string, source: SchemeSource, manifestOf: (code: string) => ServiceManifest | null): Promise<Session> {
   const ses = electronSession.fromPartition(`community-screen-${code}`, { cache: false })
-  if (!prepared.has(ses)) {
-    prepared.add(ses)
+  // Every opening waits for the one setup: a screen opened again at once never gets a view before the proxy is in place.
+  await setUp(ses, async () => {
     const own = `${SERVICE_SCHEME}://${code}/`
     ses.webRequest.onBeforeRequest((details, callback) => {
       if (details.url.startsWith(own)) return callback({})
@@ -276,7 +284,7 @@ async function prepare(code: string, source: SchemeSource, manifestOf: (code: st
     ses.setSpellCheckerEnabled(false)
     ses.protocol.handle(SERVICE_SCHEME, schemeHandler(source, code))
     await ses.setProxy({ mode: 'fixed_servers', proxyRules: NOWHERE })
-  }
+  })
   await ses.clearStorageData()
   await ses.clearCache()
   return ses

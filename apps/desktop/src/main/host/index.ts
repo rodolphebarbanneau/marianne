@@ -25,7 +25,7 @@ import { verdictOf, type CatalogueStore } from '../community/catalogue'
 import type { CommunityPackages, InstalledPackage } from '../community/install'
 import { linkProblems } from '../community/package'
 import { MAX_STORED_BYTES, sandboxBridge } from '../community/runtime/bridge'
-import { STORAGE_QUOTA } from '../community/runtime/limits'
+import { logLine, STORAGE_QUOTA } from '../community/runtime/limits'
 import { askConsent } from '../community/runtime/consent'
 import { communityHttp, serviceMedia, servicePicture } from '../community/runtime/net'
 import { electronSandbox } from '../community/runtime/sandbox'
@@ -49,9 +49,10 @@ import { TILE_KIND, TileHost } from './tiles'
 /**
  * The service host: activates each service with its context, keeps what the user made of them
  * (added, on, pinned), and is the one way the rest of the app reaches them: their views' calls,
- * their engine tools, guides and instructions, their lines of "Aujourd'hui", their tiles, their
- * sync jobs. Only the services the user added and didn't switch off are on. A service that fails
- * to load is left out; the others work.
+ * their engine tools, guides and instructions, their tiles, summaries and deadlines, their sync
+ * jobs, and their lines of "Aujourd'hui" (kept for the day's agenda, 3615 CALENDRIER: no screen
+ * reads them yet). Only the services the user added and didn't switch off are on. A service that
+ * fails to load is left out; the others work.
  *
  * Built-in services run here, in the main process. A community service (a .3615 added on this
  * computer, see main/community) runs in a sandbox of its own (main/community/runtime), started
@@ -270,8 +271,11 @@ class ServiceHost extends EventEmitter {
       if (this.loaded.some((s) => s.builtIn && s.manifest.id === manifest.id)) throw new Error(`${manifest.id} is a built-in service`)
       // Its file was checked when added (unpackService); a manifest changed since is refused the same way.
       if (manifest.news) throw new Error(`${manifest.id} asks for ctx.news, which only built-in services get`)
+      if (manifest.permissions.profile.includes('opinions.sources'))
+        throw new Error(`${manifest.id} asks for opinions.sources, which serve ctx.news: only built-in services get them`)
     } catch (err) {
-      log.error(`Community service ${pkg.code} left out:`, (err as Error).message)
+      // What the manifest says is quoted in the message (a field, a link): one line in the log.
+      log.error(`Community service ${pkg.code} left out:`, logLine((err as Error).message))
       return null
     }
     const sync = new ServiceSync(manifest, 0, () => {})
@@ -654,7 +658,10 @@ class ServiceHost extends EventEmitter {
     return parts.join('\n\n')
   }
 
-  /** Their lines of "Aujourd'hui"; a failing service is left out. */
+  /**
+   * Their lines of "Aujourd'hui"; a failing service is left out. Not read by any screen yet: the
+   * day's agenda (3615 CALENDRIER) will.
+   */
   async today(day: string): Promise<TodayEvent[]> {
     const parts = await Promise.allSettled(
       this.active()
@@ -682,9 +689,15 @@ class ServiceHost extends EventEmitter {
     )
   }
 
-  /** The deadlines the services that are on know of; a failing service is left out. */
+  /**
+   * The deadlines the services that are on know of; a failing service is left out, and so is a
+   * community service the catalogue doesn't validate. They join the user's own deadlines, which
+   * the engines read as part of the user's profile (the profile and deadlines tools): an
+   * unreviewed service's titles would read there as Marianne's lines, as its instructions would.
+   */
   deadlines(): Array<ServiceDeadline & { service: string }> {
-    return this.active().flatMap(({ manifest, runtime }) => {
+    return this.active().flatMap(({ manifest, runtime, community }) => {
+      if (community && community.trust !== 'validated') return []
       try {
         return (runtime!.deadlines?.() ?? []).filter((d) => manifest.domains.includes(d.domain)).map((d) => ({ ...d, service: manifest.id }))
       } catch (err) {
@@ -837,4 +850,5 @@ export const screens = new CommunityScreens({
 })
 
 export const serviceTools = () => services.tools()
+/** Not read by any screen yet: the day's agenda (3615 CALENDRIER) will. */
 export const serviceToday = (day: string) => services.today(day)

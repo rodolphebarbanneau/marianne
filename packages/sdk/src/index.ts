@@ -250,7 +250,8 @@ export function readManifest(pkg: unknown): ServiceManifest {
   for (const link of m.links ?? []) if (!/^https:\/\/[^/]+\//.test(link)) fail(`link "${link}" must be an https:// prefix ending with a path`)
   for (const d of m.domains ?? []) if (!(DOMAIN_IDS as readonly string[]).includes(d)) fail(`unknown domain "${d}"`)
   const permissions = m.permissions ?? { profile: [], purpose: '' }
-  for (const f of permissions.profile ?? []) if (!(f in PROFILE_FIELDS)) fail(`unknown profile field "${f}"`)
+  // Its own keys only: `in` would take `constructor` or `__proto__` for a field.
+  for (const f of permissions.profile ?? []) if (typeof f !== 'string' || !Object.hasOwn(PROFILE_FIELDS, f)) fail(`unknown profile field "${String(f)}"`)
   if (permissions.profile?.length && !permissions.purpose?.trim()) fail('"marianne.permissions.purpose" must say what the profile fields are for')
   if (permissions.purpose && !isLine(permissions.purpose, MANIFEST_LIMITS.purpose))
     fail(`"marianne.permissions.purpose" must be one line of at most ${MANIFEST_LIMITS.purpose} characters`)
@@ -459,8 +460,9 @@ export interface ServiceTaskTemplate {
 }
 
 /**
- * A line of "Aujourd'hui" on the Actualités page that a service contributes: a sitting of the
- * Assemblée, a weather alert… Opening it opens the service with `params`.
+ * A line of "Aujourd'hui" a service contributes (read by no screen yet; the day's agenda, 3615
+ * CALENDRIER, will): a sitting of the Assemblée, a weather alert… Opening it opens the service
+ * with `params`.
  */
 export interface TodayItem {
   id: string

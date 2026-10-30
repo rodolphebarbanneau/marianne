@@ -35,8 +35,17 @@ export const MAX_TOOL_ARGUMENTS_BYTES = 1024
 export const STORAGE_QUOTA = { records: 1000, bytes: 16 * 1024 * 1024 } as const
 
 const code = (n: number) => String.fromCharCode(n)
-/** Control characters and the line separators: a log line holds none. */
-const CONTROL = new RegExp(`[${code(0)}-${code(0x1f)}${code(0x7f)}${code(0x2028)}${code(0x2029)}]+`, 'g')
+/** Control characters (C0, DEL, C1: NEL among them) and the line separators. */
+const CONTROL_CHARS = `${code(0)}-${code(0x1f)}${code(0x7f)}-${code(0x9f)}${code(0x2028)}${code(0x2029)}`
+const CONTROL = new RegExp(`[${CONTROL_CHARS}]+`, 'g')
+// Apart, without the global flag: a global regex's test() remembers where it stopped.
+const NOT_A_LINE = new RegExp(`[${CONTROL_CHARS}]`)
 
-/** A line of a service's log: one line, without control characters, within a length. */
+/**
+ * A line of Marianne's log from what a service controls (its logs, its errors, its links): one
+ * line, without control characters, within a length. It can't write lines of its own there.
+ */
 export const logLine = (text: string, max = 2000) => text.replace(CONTROL, ' ').slice(0, max)
+
+/** Whether a service's text is one line, as a manifest's words are: no control character, no line break. */
+export const isLine = (text: string) => !NOT_A_LINE.test(text)

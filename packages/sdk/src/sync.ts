@@ -11,7 +11,7 @@ import type { SyncProgress } from './index'
  * indexes it into its data folder (a SQLite file…). The package exports it as "./sync": a module
  * that calls `runSync`. Marianne runs it in a process of its own, away from the app, once in a
  * while and when the user asks; downloads are conditional (ETag) and limited to the service's
- * declared hosts.
+ * declared hosts, their redirects included (each one checked before it is followed).
  */
 
 export interface SyncContext {
@@ -50,6 +50,31 @@ interface ParentPort {
   postMessage(message: SyncMessage): void
 }
 
+const REDIRECTS = new Set([301, 302, 303, 307, 308])
+const MAX_REDIRECTS = 5
+
+/** Whether a URL is one the job may download: https, on one of the service's declared hosts. */
+const declared = (u: URL, hosts: string[]) => u.protocol === 'https:' && hosts.includes(u.hostname)
+
+/**
+ * A GET whose redirects are followed by hand, each one checked before it is asked: a download
+ * never ends up on a host the service didn't declare, nor reaches one on the way.
+ */
+async function get(url: URL, headers: Record<string, string>, hosts: string[], signal: AbortSignal): Promise<Response> {
+  let at = url
+  for (let hop = 0; ; hop++) {
+    const res = await fetch(at.href, { headers, redirect: 'manual', signal })
+    if (!REDIRECTS.has(res.status)) return res
+    await res.body?.cancel()
+    const location = res.headers.get('location')
+    if (!location) throw new Error(`Téléchargement impossible (HTTP ${res.status} sans adresse) : ${url.href}`)
+    if (hop >= MAX_REDIRECTS) throw new Error(`Téléchargement impossible (plus de ${MAX_REDIRECTS} redirections) : ${url.href}`)
+    const next = new URL(location, at)
+    if (!declared(next, hosts)) throw new Error(`${next.hostname} is not one of the service's hosts (a redirect from ${url.href})`)
+    at = next
+  }
+}
+
 /** Run the job when Marianne asks: call it once, at the top level of the sync module. */
 export function runSync(job: (ctx: SyncContext) => Promise<SyncResult>): void {
   const port = (process as unknown as { parentPort?: ParentPort }).parentPort
@@ -66,10 +91,10 @@ export async function execute(input: SyncJob, job: (ctx: SyncContext) => Promise
     dataDir: input.dataDir,
     async download(url, options = {}) {
       const u = new URL(url)
-      if (u.protocol !== 'https:' || !input.hosts.includes(u.hostname)) throw new Error(`${u.hostname} is not one of the service's hosts`)
+      if (!declared(u, input.hosts)) throw new Error(`${u.hostname} is not one of the service's hosts`)
       const headers: Record<string, string> = { 'User-Agent': input.userAgent }
       if (etags[url] && !options.force) headers['If-None-Match'] = etags[url]
-      const res = await fetch(url, { headers, redirect: 'follow', signal: AbortSignal.timeout(15 * 60_000) })
+      const res = await get(u, headers, input.hosts, AbortSignal.timeout(15 * 60_000))
       if (res.status === 304 || (res.status === 404 && options.optional)) {
         await res.body?.cancel()
         return null

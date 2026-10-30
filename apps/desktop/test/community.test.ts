@@ -236,6 +236,14 @@ describe('a .3615 file', () => {
     expect(problems(service({ 'package.json': manifest({ search: { placeholder: 'chercher une pharmacie' } }) }))).toEqual([])
   })
 
+  it('may not ask for the user’s news sources: they serve the headlines, which its sandbox never gets', () => {
+    const asking = (profile: string[]) => manifest({ permissions: { profile, purpose: 'trier les titres' } })
+    expect(problems(service({ 'package.json': asking(['opinions.themes', 'opinions.sources']) }))).toEqual([
+      '3615 PHARMAGARDE demande vos sources d’information (« opinions.sources » dans son manifeste) : seuls les services officiels de Marianne les lisent.'
+    ])
+    expect(problems(service({ 'package.json': asking(['opinions.themes']) }))).toEqual([])
+  })
+
   it('is refused when it is damaged, lies about a size, or is protected', () => {
     expect(problems(strToU8('not a zip at all, not even close to one'))).toEqual(['Ce fichier n’est pas une archive .3615 lisible.'])
     expect(problems(patch(service({ 'README.md': 'hello world' }, 0), 'hello world', 'jello world'))).toEqual(['« README.md » est endommagé.'])

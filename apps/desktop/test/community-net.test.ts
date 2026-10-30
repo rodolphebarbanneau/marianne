@@ -57,6 +57,29 @@ describe('a community service’s addresses', () => {
     expect(blockedAddress('not an address')).toBe(true)
   })
 
+  it('nor an IPv4 address carried in IPv6, whichever way', () => {
+    for (const a of [
+      // Mapped, in hexadecimal.
+      '::ffff:7f00:1',
+      // Compatible.
+      '::127.0.0.1',
+      '::7f00:1',
+      '::',
+      // Translated.
+      '::ffff:0:7f00:1',
+      '::ffff:0:93.184.216.34',
+      // NAT64, well-known and local-use.
+      '64:ff9b::7f00:1',
+      '64:ff9b:1::a00:1',
+      // 6to4.
+      '2002:7f00:1::1',
+      '2002:5db8:d822::1'
+    ])
+      expect(blockedAddress(a), a).toBe(true)
+    // Ranges beside them stay open.
+    for (const a of ['2003::1', '64:ff9b:2::1', '::1:0:0:1']) expect(blockedAddress(a), a).toBe(false)
+  })
+
   it('refuses a name that resolves to one of them, after resolution', async () => {
     const lookup = guardedLookup((host, _o, cb) =>
       cb(

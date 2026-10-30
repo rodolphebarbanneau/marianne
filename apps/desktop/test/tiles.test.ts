@@ -71,6 +71,22 @@ describe('the tiles of the pinned services', () => {
     expect(warnings[0]).toMatch(/Tile of 3615 METEO: value.text is cut to 6 characters/)
   })
 
+  it('writes what a tile says wrong, or its failure, on one line of the log: a community service’s words are its code’s', async () => {
+    const { host, warnings } = setup()
+    host.states([source(async () => ({ value: { text: '12\n2026-10-30T09:00:00.000Z [error] faux' } }))])
+    await settle()
+    host.invalidate()
+    host.states([
+      source(async () => {
+        throw new Error('down\r\n2026-10-30T09:00:00.000Z [error] faux')
+      })
+    ])
+    await settle()
+    expect(warnings).toHaveLength(2)
+    for (const w of warnings) expect(w, w).not.toMatch(/[\r\n]/)
+    expect(warnings[1]).toBe('Tile of 3615 METEO: down 2026-10-30T09:00:00.000Z [error] faux')
+  })
+
   it('keeps the last tile when a service fails, and doesn’t ask it again at every look', async () => {
     const at = new Date(T0 - 60 * 60_000).toISOString()
     const { host, later } = setup({ meteo: { tile: { title: 'avant' }, at } })

@@ -42,6 +42,8 @@ const CHECK_EVERY_MS = 24 * 3600_000
 /** After a reading failed, the window asking doesn't try again sooner than this. */
 const RETRY_MS = 10 * 60_000
 const TIMEOUT_MS = 30_000
+/** The longest a timer waits (a little under 25 days): an expiry further away is waited for in steps. */
+const MAX_TIMER_MS = 2 ** 31 - 1
 /** Thousands of services stay far below this; an ed25519 signature is 64 bytes. */
 const MAX_INDEX_BYTES = 4 * 1024 * 1024
 const MAX_SIGNATURE_BYTES = 1024
@@ -296,6 +298,8 @@ export class CatalogueStore extends EventEmitter {
   private inUse: string | null = null
   /** When the index in use expires (ISO). */
   private expires: string | null = null
+  /** Set to that moment: the index expires then whoever asks, and 'change' tells the host (which switches validated services' standing). */
+  private expiry: ReturnType<typeof setTimeout> | null = null
   /** The development file as last read (its modification time and size). */
   private devStamp = ''
   private readonly fetch: typeof fetch
@@ -456,6 +460,26 @@ export class CatalogueStore extends EventEmitter {
     this.log.info(`Community catalogue: index of ${reading.index.published}, ${services.length} services, ${withdrawn.length} withdrawn`)
     this.set({ status: 'ready', entries: services, withdrawn, readAt })
     this.expireIfDue()
+    this.expireOnTime()
+  }
+
+  /** A timer to the index's expiry, so that its validations stop counting then rather than at the next look. */
+  private expireOnTime(): void {
+    if (this.expiry) clearTimeout(this.expiry)
+    this.expiry = null
+    if (!this.expires) return
+    const wait = Date.parse(this.expires) - this.now()
+    if (wait <= 0) return
+    this.expiry = setTimeout(
+      () => {
+        this.expiry = null
+        this.expireIfDue()
+        // Still ahead (a wait in steps, or a clock set back): wait again.
+        if (this.now() < Date.parse(this.expires ?? '')) this.expireOnTime()
+      },
+      Math.min(wait, MAX_TIMER_MS)
+    )
+    this.expiry.unref?.()
   }
 
   /** Past its date, an index's validations no longer count (its withdrawals still do): failed, until a newer one comes. */

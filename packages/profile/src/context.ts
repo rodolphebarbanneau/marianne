@@ -31,6 +31,14 @@ import type { TokenDef } from './tokens'
 const tok = (defs: TokenDef[], token: string) => (defs.some((t) => t.token === token) ? `[[${token}]]` : 'non renseigné')
 const label = (labels: Record<string, string>, value: string) => labels[value] ?? value
 
+const code = (n: number) => String.fromCharCode(n)
+const BREAKS = new RegExp(`[${code(0)}-${code(0x1f)}${code(0x7f)}-${code(0x9f)}${code(0x2028)}${code(0x2029)}]+`, 'g')
+/**
+ * A deadline's words on one line of the list: its title comes from a rule, the user, an engine or
+ * a service, and a line break in it would read as a heading of the profile of its own.
+ */
+const oneLine = (text: string) => text.replace(BREAKS, ' ')
+
 /** The context view of the profile (Markdown, no identifier values). */
 export function contextView(
   p: Profile,
@@ -120,7 +128,7 @@ export function contextView(
   const soon = opts.deadlines.filter((x) => x.status === 'todo' && x.date >= since && (!opts.domain || x.domain === opts.domain)).slice(0, 12)
   if (soon.length) {
     lines.push('', '## Échéances à venir', '')
-    for (const x of soon) lines.push(`- ${x.date} · ${x.domain} · ${x.title}${x.indicative ? ' (date indicative)' : ''} · clé ${x.key}`)
+    for (const x of soon) lines.push(`- ${x.date} · ${x.domain} · ${oneLine(x.title)}${x.indicative ? ' (date indicative)' : ''} · clé ${oneLine(x.key)}`)
   }
 
   const missing = (opts.domain ? [opts.domain] : DOMAINS.map((x) => x.id)).flatMap((id) => missingFor(p, id, sites, true))

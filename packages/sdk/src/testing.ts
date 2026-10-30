@@ -1,4 +1,5 @@
 import {
+  allowedUrl,
   readManifest,
   readTile,
   serviceCode,
@@ -15,9 +16,9 @@ import type { Commune, HomeCommune, Leaning, ProfileField, ServiceContext, Servi
 /**
  * @marianne/sdk/testing: Marianne's part in a service's tests. `fakeContext` builds the context
  * `activate` receives from the service's package.json: a network that answers what the test says
- * and records the URLs asked, a storage in memory, and the communes and profile fields the test
- * gives. No host is reached, nothing is written to disk. `checkTile` says what Marianne would cut
- * of a tile.
+ * and records the URLs asked (refusing, as Marianne does, a host the manifest doesn't declare), a
+ * storage in memory, and the communes and profile fields the test gives. No host is reached,
+ * nothing is written to disk. `checkTile` says what Marianne would cut of a tile.
  */
 
 export interface FakeContextOptions {
@@ -67,21 +68,26 @@ export function fakeContext(pkg: unknown, options: FakeContextOptions = {}): Fak
   const { answer, answerText, communes = [], home = null, profile = {}, dataDir = '', sync = {} } = options
   const urls: URL[] = []
   const stored = new Map<string, unknown>()
-  const offline = async (): Promise<never> => {
+  // As Marianne does: https to a declared host only, so that a test passes only where Marianne would let the service through.
+  const check = (url: string) => {
+    if (!allowedUrl(manifest, url)) throw new Error(`3615 ${serviceCode(manifest)} n’a pas déclaré ${new URL(url).host} (package.json, marianne.hosts).`)
+  }
+  const asked = (url: string): URL => {
+    check(url)
+    const u = new URL(url)
+    urls.push(u)
+    return u
+  }
+  const offline = async (url: string): Promise<never> => {
+    check(url)
     throw new Error(`3615 ${serviceCode(manifest)} reaches no host in tests`)
   }
   const ctx: ServiceContext = {
     manifest,
     http: {
-      json: answer
-        ? async <T>(url: string) => {
-            const u = new URL(url)
-            urls.push(u)
-            return answer(u) as T
-          }
-        : offline,
-      text: answerText ? async (url: string) => (urls.push(new URL(url)), answerText(new URL(url))) : offline,
-      page: answerText ? async (url: string) => (urls.push(new URL(url)), answerText(new URL(url))) : offline
+      json: answer ? async <T>(url: string) => answer(asked(url)) as T : offline,
+      text: answerText ? async (url: string) => answerText(asked(url)) : offline,
+      page: answerText ? async (url: string) => answerText(asked(url)) : offline
     },
     log: { info: () => {}, warn: () => {}, error: () => {} },
     storage: {
@@ -99,7 +105,7 @@ export function fakeContext(pkg: unknown, options: FakeContextOptions = {}): Fak
     home: () => home,
     profile: {
       granted: () => profile.granted ?? [],
-      vehicles: () => profile.vehicles ?? [],
+      vehicles: () => vehicles(profile),
       leaning: () => ((profile.granted ?? []).includes('opinions.leaning') ? (profile.leaning ?? null) : null),
       themes: () => ((profile.granted ?? []).includes('opinions.themes') ? (profile.themes ?? []) : []),
       sources: () =>
@@ -111,6 +117,13 @@ export function fakeContext(pkg: unknown, options: FakeContextOptions = {}): Fak
   }
   if (manifest.news) ctx.news = fakeNews(options.news ?? {}, (profile.granted ?? []).includes('opinions.sources'))
   return { ctx, urls, stored }
+}
+
+/** The vehicles a test gives, with only the fields granted (and their id), as Marianne gives them: none without a vehicles field granted. */
+function vehicles(profile: NonNullable<FakeContextOptions['profile']>): Vehicle[] {
+  const fields = (profile.granted ?? []).filter((f) => f.startsWith('vehicles.')).map((f) => f.slice('vehicles.'.length) as keyof Omit<Vehicle, 'id'>)
+  if (!fields.length) return []
+  return (profile.vehicles ?? []).map((v) => ({ id: v.id, ...Object.fromEntries(fields.filter((f) => v[f] !== undefined).map((f) => [f, v[f]])) }))
 }
 
 /**

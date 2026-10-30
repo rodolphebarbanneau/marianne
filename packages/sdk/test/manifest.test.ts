@@ -85,6 +85,12 @@ describe('readManifest', () => {
     expect(() => readManifest(pkg({ permissions: { profile: ['person.nir'], purpose: 'x' } }))).toThrow(/profile field/)
     expect(() => readManifest(pkg({ permissions: { profile: ['vehicles.plate'], purpose: ' ' } }))).toThrow(/purpose/)
   })
+
+  it('takes no name of an object’s own machinery for a profile field', () => {
+    for (const f of ['constructor', '__proto__', 'toString', 'hasOwnProperty'])
+      expect(() => readManifest(pkg({ permissions: { profile: [f], purpose: 'x' } })), f).toThrow(`unknown profile field "${f}"`)
+    expect(() => readManifest(pkg({ permissions: { profile: [7], purpose: 'x' } }))).toThrow('unknown profile field "7"')
+  })
 })
 
 describe('a screen’s tabs', () => {
