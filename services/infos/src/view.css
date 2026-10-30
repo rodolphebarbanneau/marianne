@@ -249,11 +249,11 @@ mark.infos-q {
   margin-top: var(--s6);
 }
 
-/* Where a source stands: five positions, a gap, « sans classement »; a dotted guide per position, so the
+/* Where a source stands: five positions, from the left to the right; a dotted guide per position, so the
    squares line up from line to line. */
 .infos-trk {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr)) 10px minmax(0, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   height: 18px;
   align-items: stretch;
 }
@@ -267,9 +267,6 @@ mark.infos-q {
   top: -5px;
   bottom: -5px;
   border-left: 1px dotted var(--rule);
-}
-.infos-trk > span.gap::before {
-  display: none;
 }
 .infos-trk i {
   position: absolute;
@@ -299,11 +296,6 @@ mark.infos-q {
 .infos-trk.axis .r {
   grid-column: 4 / span 2;
   text-align: right;
-}
-.infos-trk.axis .n {
-  grid-column: 7;
-  text-align: center;
-  white-space: nowrap;
 }
 
 /* ---------------------------------------------------------------- F2 · à la une */
@@ -684,7 +676,7 @@ mark.infos-q {
   opacity: 0.8;
 }
 
-/* « qui en parle »: one head line (with what is set aside at its right), then the four sides, close. */
+/* « qui en parle »: one head line (with what is set aside at its right), then the three sides, close. */
 .infos-detail .dt-sides {
   display: flex;
   flex-direction: column;
@@ -707,7 +699,7 @@ mark.infos-q {
 }
 .infos-detail .sds {
   display: grid;
-  /* A column for each side that has sources, four at most, sharing the width. */
+  /* A column for each side that has sources, three at most, sharing the width. */
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
   gap: var(--s3);
@@ -772,7 +764,7 @@ mark.infos-q {
 }
 .infos-snip .sn {
   display: grid;
-  grid-template-columns: 42px 104px 100px minmax(0, 1fr) auto;
+  grid-template-columns: 42px 80px 100px minmax(0, 1fr) auto;
   gap: var(--s3);
   align-items: start;
   padding: 5px 0;
@@ -1528,7 +1520,7 @@ mark.infos-q {
     grid-template-columns: minmax(0, 1fr);
   }
   .infos-snip .sn {
-    grid-template-columns: 42px 90px minmax(0, 1fr) auto;
+    grid-template-columns: 42px 70px minmax(0, 1fr) auto;
   }
   .infos-snip .sn > .src,
   .infos-snip .sn.head > :nth-child(3) {

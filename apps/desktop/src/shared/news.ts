@@ -75,7 +75,7 @@ export function refusedSources(catalogue: NewsSource[], choice: NewsChoice | nul
 }
 
 /** A source's editorial line: the user's own when they gave it one, else Marianne's. */
-export const leanOf = (source: NewsSource, choice: NewsChoice | null): Lean => choice?.leanings[source.id] ?? source.lean ?? 'aucune'
+export const leanOf = (source: NewsSource, choice: NewsChoice | null): Lean => choice?.leanings[source.id] ?? source.lean ?? 'centre'
 
 /**
  * The sections a source keeps: those the user ticked, or all of them; a source without sections

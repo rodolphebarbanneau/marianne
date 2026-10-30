@@ -23,7 +23,7 @@ Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à dr
 
 3615 INFOS, parmi vos services, montre les titres de vos sources des dernières 24 heures, regroupés en sujets : un sujet, ce sont les titres de journaux différents qui disent la même chose, rangés par nombre de sources qui en parlent. « à la une » (F2) montre la liste et le sujet choisi, le « fil » (F3) les mêmes titres à leur heure, le « kiosque » (F4) source par source. « / » va dans le champ de recherche, en haut.
 
-Chaque source a sa couleur, sa ligne éditoriale, de la gauche (rouge) à la droite (bleu), en gris sans classement. Celle que Marianne donne est son classement par défaut, et vous pouvez la changer. Les couleurs ne trient ni ne cachent rien. Vos sources se choisissent dans Réglages › Identité › sources d’information : accepter ou écarter un journal, et ses rubriques avec ⚙. La liste est celle de Marianne, la même pour tous.
+Chaque source a sa couleur, sa ligne éditoriale, de la gauche (rouge) à la droite (bleu), en blanc grisé au centre, pour une source sans orientation marquée. Celle que Marianne donne est son classement par défaut, et vous pouvez la changer. Les couleurs ne trient ni ne cachent rien. Vos sources se choisissent dans Réglages › Identité › sources d’information : accepter ou écarter un journal, et ses rubriques avec ⚙. La liste est celle de Marianne, la même pour tous.
 
 ## Les vidéos du Parlement
 

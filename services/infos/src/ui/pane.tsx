@@ -16,7 +16,7 @@ const QUESTIONS = ['Qu’ont ces titres en commun, qu’est-ce qui les sépare ?
 /** « les mots »: the most frequent. */
 const WORDS_SHOWN = 9
 /** The side's rule in « par bord »: the colour of its middle position. */
-const SIDE_COLOR = { left: 'gauche', centre: 'centre', right: 'droite', none: 'aucune' } as const
+const SIDE_COLOR = { left: 'gauche', centre: 'centre', right: 'droite' } as const
 
 const oldestFirst = (a: NewsHeadline, b: NewsHeadline) => Date.parse(a.published) - Date.parse(b.published)
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { readManifest, ServiceHostProvider, type NewsHeadline, type ServiceHost } from '@marianne/sdk/view'
+import { readManifest, ServiceHostProvider, sideOf, type NewsHeadline, type ServiceHost } from '@marianne/sdk/view'
 import { describe, expect, it } from 'vitest'
 import pkg from '../package.json'
 import { rank } from '../src/model'
@@ -94,9 +94,9 @@ describe('« à la une »', () => {
   it('leaves out of « qui en parle » a side none of the sources shown belongs to', () => {
     const sides = (html: string) => [...html.matchAll(/<div class="sd(?: none)?"><span class="l">([^<]+)<\/span>/g)].map((m) => m[1])
     const r = readingFor()
-    expect(sides(front(r))).toEqual(['à gauche', 'au centre', 'à droite', 'sans classement'])
-    const placed = { ...r, sources: r.sources.map((s) => (s.lean === 'aucune' ? { ...s, lean: 'centre' as const } : s)) }
-    expect(sides(front(placed))).toEqual(['à gauche', 'au centre', 'à droite'])
+    expect(sides(front(r))).toEqual(['à gauche', 'au centre', 'à droite'])
+    const placed = { ...r, sources: r.sources.map((s) => (sideOf(s.lean) === 'right' ? { ...s, lean: 'centre' as const } : s)) }
+    expect(sides(front(placed))).toEqual(['à gauche', 'au centre'])
   })
 
   it('keeps the numbers when the theme filter hides rows', () => {

@@ -80,18 +80,18 @@ describe('the sources of Réglages › Identité', () => {
     expect(giveLean(changed, figaro, null).leanings).toEqual({})
     // Choosing Marianne's again is no change of the user's.
     expect(giveLean(changed, figaro, 'droite').leanings).toEqual({})
-    // Without a line of Marianne's, a source is « sans classement ».
-    expect(leanOf(byId('franceinfo'), defaults)).toBe('aucune')
+    // Without a line of Marianne's, a source is at the centre.
+    expect(leanOf(byId('franceinfo'), defaults)).toBe('centre')
   })
 
   it('sums the accepted sources up by side, and lines them up from the left to the right', () => {
-    expect(sidesOf(catalog, defaults)).toEqual({ left: 2, centre: 2, right: 1, none: 1 })
+    expect(sidesOf(catalog, defaults)).toEqual({ left: 2, centre: 3, right: 1 })
     const moved = giveLean(acceptSources(defaults, ['liberation'], false), byId('la-croix'), 'droite')
-    expect(sidesOf(catalog, moved)).toEqual({ left: 1, centre: 1, right: 2, none: 1 })
+    expect(sidesOf(catalog, moved)).toEqual({ left: 1, centre: 2, right: 2 })
     // A side no source belongs to is left out; one whose sources are all set aside stays, at 0.
-    expect(sidesOf(catalog, giveLean(defaults, byId('franceinfo'), 'centre'))).toEqual({ left: 2, centre: 3, right: 1 })
-    expect(sidesOf(catalog, acceptSources(defaults, ['le-figaro'], false))).toEqual({ left: 2, centre: 2, right: 0, none: 1 })
-    expect(byLean(catalog, defaults).map((s) => s.id)).toEqual(['liberation', 'le-monde', 'la-croix', 'ouest-france', 'sud-ouest', 'le-figaro', 'franceinfo'])
+    expect(sidesOf(catalog, giveLean(defaults, byId('le-figaro'), 'centre'))).toEqual({ left: 2, centre: 4 })
+    expect(sidesOf(catalog, acceptSources(defaults, ['le-figaro'], false))).toEqual({ left: 2, centre: 3, right: 0 })
+    expect(byLean(catalog, defaults).map((s) => s.id)).toEqual(['liberation', 'le-monde', 'franceinfo', 'la-croix', 'ouest-france', 'sud-ouest', 'le-figaro'])
   })
 })
 

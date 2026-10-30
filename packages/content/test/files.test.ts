@@ -1,7 +1,7 @@
 import { createPublicKey } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { files, signingKey } from '../src/files'
-import { readContent } from '../src/index'
+import { NEWS_LEANS, readContent } from '../src/index'
 
 describe('the shipped content', () => {
   const content = readContent(files)
@@ -19,9 +19,9 @@ describe('the shipped content', () => {
 
   it('gives every news source a default editorial line, and every regional one its regions', () => {
     for (const s of content.newsSources) {
-      // The fact-checkers take no side; every other source has one, which the user may change.
-      expect(s.lean, s.id).toBeDefined()
-      expect(s.lean === 'aucune', s.id).toBe(s.group === 'factcheck')
+      // Every source has one of the five positions, which the user may change; the fact-checkers take no side: the centre.
+      expect(NEWS_LEANS, s.id).toContain(s.lean)
+      if (s.group === 'factcheck') expect(s.lean, s.id).toBe('centre')
       expect(!!s.regions, s.id).toBe(s.group === 'regional')
     }
   })

@@ -8,10 +8,10 @@
  */
 
 /**
- * A source's editorial line, from the left to the right, or « sans classement ». Marianne gives a
- * default for each source; the user may give their own.
+ * A source's editorial line, from the left to the right; « centre » is the middle, a source with no
+ * clear lean. Marianne gives a default for each source; the user may give their own.
  */
-export const LEANS = ['gauche', 'centre-gauche', 'centre', 'centre-droit', 'droite', 'aucune'] as const
+export const LEANS = ['gauche', 'centre-gauche', 'centre', 'centre-droit', 'droite'] as const
 export type Lean = (typeof LEANS)[number]
 
 export const LEAN_LABELS: Record<Lean, string> = {
@@ -19,18 +19,16 @@ export const LEAN_LABELS: Record<Lean, string> = {
   'centre-gauche': 'centre gauche',
   centre: 'centre',
   'centre-droit': 'centre droit',
-  droite: 'droite',
-  aucune: 'sans classement'
+  droite: 'droite'
 }
 
-/** The four sides a subject is told from: the six positions folded. */
-export const SIDES = ['left', 'centre', 'right', 'none'] as const
+/** The three sides a subject is told from: the five positions folded. */
+export const SIDES = ['left', 'centre', 'right'] as const
 export type Side = (typeof SIDES)[number]
 
-export const SIDE_LABELS: Record<Side, string> = { left: 'à gauche', centre: 'au centre', right: 'à droite', none: 'sans classement' }
+export const SIDE_LABELS: Record<Side, string> = { left: 'à gauche', centre: 'au centre', right: 'à droite' }
 
-export const sideOf = (lean: Lean): Side =>
-  lean === 'gauche' || lean === 'centre-gauche' ? 'left' : lean === 'centre' ? 'centre' : lean === 'aucune' ? 'none' : 'right'
+export const sideOf = (lean: Lean): Side => (lean === 'gauche' || lean === 'centre-gauche' ? 'left' : lean === 'centre' ? 'centre' : 'right')
 
 export type NewsGroup = 'national' | 'regional' | 'broadcast' | 'factcheck'
 
@@ -204,7 +202,8 @@ export function ownWords(title: string, words: SubjectWords, max = 2): string[] 
     const plain = fold(t.surface)
     if ((words.count.get(t.key) ?? 0) !== 1) continue
     if (SMALL_TALK.has(plain) || SMALL_TALK.has(t.key)) continue
-    if (!/^\d+$/.test(plain) && plain.length < 5) continue
+    // A number of two digits at least (« 2027 », « 95 »); a lone digit (« 5,6 milliards ») says nothing.
+    if (/^\d+$/.test(plain) ? plain.length < 2 : plain.length < 5) continue
     out.push(t.surface)
   }
   return out.sort((a, b) => b.length - a.length).slice(0, max)

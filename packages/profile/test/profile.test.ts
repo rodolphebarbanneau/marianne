@@ -231,12 +231,13 @@ describe('news sources', () => {
         // An id the catalogue doesn't have (any more) is kept: the list may have it again.
         refused: ['cnews', 'une-source-partie', 'cnews', 42, 'Pas Un Id'],
         sections: { 'le-monde': ['une', 'politique', 7], 'la-croix': 'une', '../x': ['une'] },
-        leanings: { 'le-monde': 'gauche', 'le-figaro': 'extrême', rfi: 'aucune' }
+        // « aucune », the « sans classement » of older versions, is no position any more.
+        leanings: { 'le-monde': 'gauche', 'le-figaro': 'extrême', rfi: 'centre', 'les-decodeurs': 'aucune' }
       })
     ).toEqual({
       refused: ['cnews', 'une-source-partie'],
       sections: { 'le-monde': ['une', 'politique'] },
-      leanings: { 'le-monde': 'gauche', rfi: 'aucune' }
+      leanings: { 'le-monde': 'gauche', rfi: 'centre' }
     })
   })
 })

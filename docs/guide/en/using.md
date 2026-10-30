@@ -23,7 +23,7 @@ Marianne opens the sites it needs in the folder's browser, on the right (the « 
 
 3615 INFOS, among your services, shows the headlines of your sources over the last 24 hours, grouped into subjects: a subject is the headlines of different newspapers that say the same thing, ranked by how many sources cover it. « à la une » (front page, F2) shows the list and the chosen subject, the « fil » (wire, F3) the same headlines by time, the « kiosque » (newsstand, F4) source by source. « / » goes to the search field, at the top.
 
-Each source has its colour, its editorial line, from the left (red) to the right (blue), grey without a classification. The one Marianne gives is its default classification, and you can change it. The colours don't sort or hide anything. You choose your sources in Réglages › Identité › sources d’information (news sources): accept or set aside (« accepter · écarter ») a newspaper, and its sections with ⚙. The list is Marianne's, the same for everyone.
+Each source has its colour, its editorial line, from the left (red) to the right (blue), a greyish white at the centre, for a source with no clear lean. The one Marianne gives is its default classification, and you can change it. The colours don't sort or hide anything. You choose your sources in Réglages › Identité › sources d’information (news sources): accept or set aside (« accepter · écarter ») a newspaper, and its sections with ⚙. The list is Marianne's, the same for everyone.
 
 ## The Parliament's videos
 

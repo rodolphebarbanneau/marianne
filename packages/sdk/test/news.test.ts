@@ -46,6 +46,11 @@ describe('words', () => {
     expect(ownWords(titles[2], words)).toEqual([])
   })
 
+  it('marks a number of two digits, never a lone digit', () => {
+    const titles = ['Binance : un vol de 5,6 milliards en 95 minutes', 'Binance : le vol des milliards', 'Binance : un vol, des milliards']
+    expect(ownWords(titles[0], subjectWords(titles), 5)).toEqual(['minutes', '95'])
+  })
+
   it('knows live coverage', () => {
     expect(isLive('DIRECT. Budget 2027')).toBe(true)
     expect(isLive('EN DIRECT - Grève')).toBe(true)
@@ -54,7 +59,8 @@ describe('words', () => {
     expect(isLive('DIRECTION du Trésor')).toBe(false)
     expect(withoutLive('EN DIRECT – Grève SNCF')).toBe('Grève SNCF')
     expect(sideOf('centre-gauche')).toBe('left')
-    expect(sideOf('aucune')).toBe('none')
+    expect(sideOf('centre')).toBe('centre')
+    expect(sideOf('centre-droit')).toBe('right')
   })
 })
 

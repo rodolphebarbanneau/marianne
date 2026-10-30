@@ -24,7 +24,7 @@ export interface Infos {
   source(id: string): InfosSource | undefined
   /** The source's name, by id (the id itself for one Marianne no longer lists). */
   name(id: string): string
-  /** The source's editorial line ('aucune' for one Marianne no longer lists). */
+  /** The source's editorial line (the centre for one Marianne no longer lists). */
   lean(id: string): Lean
   /** Open a subject over the tab, by id. */
   openSubject(id: string): void
@@ -59,7 +59,7 @@ export function infosOf(
     reading,
     source: (id) => byId.get(id),
     name: (id) => names.get(id) ?? id,
-    lean: (id) => byId.get(id)?.lean ?? 'aucune',
+    lean: (id) => byId.get(id)?.lean ?? 'centre',
     openArticle: (h) => host.openUrl(h.url),
     ask: (question, items) => host.ask(askText(question, items, names)),
     openSources: () => host.openRoute('settings/identity#sources')
@@ -90,9 +90,6 @@ export function SourceTag({ id, plain }: { id: string; plain?: boolean }) {
   )
 }
 
-/** The six positions on a source's track: five from the left to the right, a gap, then « sans classement ». */
-const SLOTS: Array<Lean | null> = ['gauche', 'centre-gauche', 'centre', 'centre-droit', 'droite', null, 'aucune']
-
 /** Where a source stands, on one line: a square in its colour at its position. */
 export function Track({ id }: { id: string }) {
   const { source, name, lean } = useInfos()
@@ -100,22 +97,19 @@ export function Track({ id }: { id: string }) {
   const off = !!source(id)?.setAside
   return (
     <span className="infos-trk" title={placeOf(name(id), at, off)}>
-      {SLOTS.map((l, i) =>
-        l === null ? <span key={i} className="gap" /> : <span key={i}>{l === at && <i className={off ? 'off' : ''} style={off ? undefined : fill(l)} />}</span>
-      )}
+      {LEANS.map((l) => (
+        <span key={l}>{l === at && <i className={off ? 'off' : ''} style={off ? undefined : fill(l)} />}</span>
+      ))}
     </span>
   )
 }
 
-/** The track's head: « gauche » to « droite », then « s. c. ». */
+/** The track's head: « gauche » to « droite ». */
 export function TrackAxis() {
   return (
     <span className="infos-trk axis">
       <span className="l">gauche</span>
       <span className="r">droite</span>
-      <span className="n" title="sans classement">
-        s.&nbsp;c.
-      </span>
     </span>
   )
 }

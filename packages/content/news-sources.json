@@ -1,6 +1,6 @@
 {
   "updated": "2026-10-30",
-  "note": "French news sources and their public RSS or Atom feeds, checked in October 2026; the section feeds checked to answer with articles on 2026-10-30. Les Échos has no front-page feed: its economy section is the paper's core. TF1 Info is the news site of TF1 and LCI: one feed for both. lean is Marianne's default editorial line, on a scale that stops at gauche and droite; the fact-checkers are aucune, as they take no side; the user may change it for any source in their settings. paywall is a CSS selector found on paid pages only, checked against free ones; the other sources rely on their pages' isAccessibleForFree. Not listed: RTL (no news feed, only podcasts).",
+  "note": "French news sources and their public RSS or Atom feeds, checked in October 2026; the section feeds checked to answer with articles on 2026-10-30. Les Échos has no front-page feed: its economy section is the paper's core. TF1 Info is the news site of TF1 and LCI: one feed for both. lean is Marianne's default editorial line, on five positions that stop at gauche and droite, centre the middle for a source with no clear lean; the fact-checkers are centre, as they take no side; the user may change it for any source in their settings. paywall is a CSS selector found on paid pages only, checked against free ones; the other sources rely on their pages' isAccessibleForFree. Not listed: RTL (no news feed, only podcasts).",
   "sources": [
     {
       "id": "le-monde",
@@ -455,7 +455,7 @@
       "group": "factcheck",
       "feed": "https://www.lemonde.fr/les-decodeurs/rss_full.xml",
       "homepage": "https://www.lemonde.fr/les-decodeurs",
-      "lean": "aucune"
+      "lean": "centre"
     },
     {
       "id": "vrai-ou-faux",
@@ -463,7 +463,7 @@
       "group": "factcheck",
       "feed": "https://www.franceinfo.fr/vrai-ou-fake.rss",
       "homepage": "https://www.franceinfo.fr/vrai-ou-fake",
-      "lean": "aucune"
+      "lean": "centre"
     }
   ]
 }
