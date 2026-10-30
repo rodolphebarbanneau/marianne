@@ -26,6 +26,8 @@ npm run check   # Prettier, package boundaries, type checks and tests: what CI r
 
 The repository is an npm workspace: the app in `apps/desktop`, its packages in `packages/` (the SDK, the archive, the profile, the content) and the services in `services/`. See the [README](README.md) and [docs/design.md](docs/design.md) for how it fits together.
 
+Working with an AI agent? [AGENTS.md](AGENTS.md) gives it the map of the repository, the checks and these rules, and [services/AGENTS.md](services/AGENTS.md) how to build a service.
+
 ## The rules of the code
 
 - **English for code, French for the interface.** Identifiers, comments, commit messages, tool names and anything an engine reads are in English. Everything the user reads in the app is in French.
@@ -38,7 +40,7 @@ The repository is an npm workspace: the app in `apps/desktop`, its packages in `
 
 1. Branch from `main`, and keep a pull request to one subject.
 2. Run `npm run check` before pushing.
-3. Open the pull request with its template: what changes and why, how you tested it, screenshots for anything visible.
+3. Open the pull request with the template that fits: the default one for code (what changes and why, how you tested it, screenshots for anything visible), or one of [`.github/PULL_REQUEST_TEMPLATE/`](.github/PULL_REQUEST_TEMPLATE) for a new service (`new-service.md`), content (`content.md`), or the user guide and the docs (`guide.md`). GitHub fills in the default one; for another, add `&template=new-service.md` to the address of the page that opens the pull request, or run `gh pr create --template new-service.md`.
 4. CI must pass: the checks, then a package build on Windows, macOS and Linux.
 5. Pull requests are merged by rebase, so `main` stays a straight line of commits. Write commit messages as short, plain sentences ("Give the profile's archive tests 30 seconds"), with details in the body when they help.
 

@@ -99,3 +99,4 @@ node packages/sdk/scripts/pack.mjs <its folder> [--out <folder>]   # or: npx mar
 
 - `npm run check` (formatting, boundaries, types, tests).
 - The screen at 1440, 800 and 520 pixels wide, with the sidebar open and folded; each tab with its key; the guide (F1); a wait (`Loading`) and a failure (offline).
+- A new service's pull request has its own template, `.github/PULL_REQUEST_TEMPLATE/new-service.md`: `gh pr create --template new-service.md`, or `&template=new-service.md` added to the address of the page that opens it.
