@@ -216,6 +216,10 @@ export class ScreenRelay extends EventEmitter {
         this.emit('window', { ...m, item: { ...item, ...(poster && allowedUrl(manifest, poster) ? { poster } : {}) } })
         return
       }
+      // Its video plays: the window's mini-player closes (one video at a time), and nothing of it comes back.
+      case 'playing':
+        this.emit('window', { type: 'playing' } satisfies FromFrame)
+        return
       case 'ask': {
         // A page it hands with a question is its own: labelled so, its address kept only on its declared hosts.
         const page = m.page && {

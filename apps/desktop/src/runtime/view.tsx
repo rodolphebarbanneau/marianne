@@ -178,7 +178,9 @@ function hostOf(h: FrameHost): ServiceHost {
               if (auto) leftAt = { src: item.src, at: item.at, when: Date.now() }
               post({ type: 'pin', item: { ...item }, auto })
             },
-            take
+            take,
+            // The window closes the mini-player; which video plays here stays here.
+            playing: () => post({ type: 'playing' })
           }
         }
       : {})

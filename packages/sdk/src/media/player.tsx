@@ -3,6 +3,7 @@ import { Spinner } from '../ui'
 import { useHostOptional } from '../view'
 import { clipTitleAt, saidAt, spanAt } from './chapters'
 import { ClipStrip } from './clip'
+import { startedPlaying } from './handover'
 import { useFullscreen, useMediaPrefs, useMediaStyles, usePlayback, useVolume } from './hooks'
 import { Icon, SkipIcon } from './icons'
 import { keyAction, ownsKeys, SKIP_MS, type MediaAction } from './keys'
@@ -463,12 +464,11 @@ export function Player(props: PlayerProps) {
             onPlay={() => {
               playingRef.current = true
               setStarted(true)
-              // Played again here while it went on in the mini-player (its card, Space): taken back
-              // from it, on from where it was there, never twice at once.
-              if (away) {
-                const at = host?.media?.take(src) ?? null
-                if (at !== null) seekTo(at)
-              }
+              // The same video in the mini-player (played again here from its card, Space; or pinned
+              // by this page's player that just remounted): taken back, on from where it was there,
+              // never twice at once. Another video there stops.
+              const at = startedPlaying(host?.media, src)
+              if (at !== null) seekTo(at)
               setAway(false)
             }}
             onPause={() => (playingRef.current = false)}

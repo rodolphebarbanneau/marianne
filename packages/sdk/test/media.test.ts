@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { chapterEnd, chapterIndexAt, clipTitleAt, parentIndex, saidAt, spanAt } from '../src/media/chapters'
+import { startedPlaying } from '../src/media/handover'
 import { keyAction, ownsKeys, SKIP_MS } from '../src/media/keys'
 import { DEFAULT_PREFS, parsePrefs } from '../src/media/prefs'
 import { clockTime, delay, duration, nextSpeed, readTime, speedLabel, timeWriter, videoTime } from '../src/media/time'
@@ -238,5 +239,42 @@ describe('the preferences', () => {
     expect(parsePrefs('{"time":"clock","volume":3,"muted":"yes","corner":"middle"}')).toEqual({ ...DEFAULT_PREFS, volume: 1 })
     expect(parsePrefs('{"volume":-1}').volume).toBe(0)
     expect(parsePrefs('{"volume":null,"speed":2}')).toEqual(DEFAULT_PREFS)
+  })
+})
+
+describe('a player that starts playing', () => {
+  /** The app's mini-player, faked: the video it shows and where, and what it was asked. */
+  function corner(shown: { src: string; at: number } | null) {
+    const asked: string[] = []
+    const media = {
+      pin: () => undefined,
+      take: (src: string) => {
+        asked.push(`take ${src}`)
+        if (shown?.src !== src) return null
+        const at = shown.at
+        shown = null
+        return at
+      },
+      playing: (src: string) => {
+        asked.push(`playing ${src}`)
+        if (shown && shown.src !== src) shown = null
+      }
+    }
+    return { media, asked, shown: () => shown }
+  }
+
+  it('takes its own video back from the mini-player, and goes on from where it was there', () => {
+    const c = corner({ src: 'https://v.example.fr/a.m3u8', at: 754_000 })
+    expect(startedPlaying(c.media, 'https://v.example.fr/a.m3u8')).toBe(754_000)
+    expect(c.shown()).toBeNull()
+    // Taken first: a pin made by the same page's player just before (it remounted) is this one's.
+    expect(c.asked).toEqual(['take https://v.example.fr/a.m3u8', 'playing https://v.example.fr/a.m3u8'])
+  })
+
+  it('stops another video in the mini-player, and plays from here', () => {
+    const c = corner({ src: 'https://v.example.fr/a.m3u8', at: 754_000 })
+    expect(startedPlaying(c.media, 'https://v.example.fr/b.m3u8')).toBeNull()
+    expect(c.shown()).toBeNull()
+    expect(startedPlaying(undefined, 'https://v.example.fr/b.m3u8')).toBeNull()
   })
 })

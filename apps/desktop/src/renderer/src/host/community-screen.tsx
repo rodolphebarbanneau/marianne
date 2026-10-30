@@ -43,7 +43,7 @@ function useFullscreenOn(): boolean {
  * Marianne, another screen, a tab, a toast, a key, its keys for the bottom bar, the search field
  * filled, and a link, which opens only once the user agrees. Its calls and data never come here:
  * the main process answers them. The app's mini-player is drawn in the window, so the box stops
- * short of it, and the screen hears what it shows (its pins and takes go to app/media.tsx).
+ * short of it, and the screen hears what it shows (its pins, takes and plays go to app/media.tsx).
  */
 export function CommunityScreen({ host, frame, barred }: { host: ServiceHost; frame: ServiceFrame; barred: boolean }) {
   const app = useApp()

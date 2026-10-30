@@ -816,6 +816,15 @@ describe('a community screen’s relay', () => {
     expect(toWindow.at(-1)).toEqual({ type: 'take', src: item.src })
   })
 
+  it('tells the window its video plays, and nothing more: the mini-player closes; going, it no longer does', () => {
+    const { relay, toWindow } = relayOf()
+    relay.fromScreen({ type: 'playing', src: 'https://api.example.fr/v.m3u8', at: 5 })
+    expect(toWindow).toEqual([{ type: 'playing' }])
+    relay.leave()
+    relay.fromScreen({ type: 'playing' })
+    expect(toWindow).toHaveLength(1)
+  })
+
   it('pins a video only when the user hands it over, or as the screen goes with it playing', () => {
     const { relay, toWindow, later } = relayOf()
     const none = { ctrlKey: false, altKey: false, metaKey: false, shiftKey: false }
@@ -910,6 +919,8 @@ describe('a community screen’s messages', () => {
     expect(readFromFrame({ type: 'pin', item })).toBeNull()
     expect(readFromFrame({ type: 'take', src: 'https://a.fr/v.m3u8' })).toEqual({ type: 'take', src: 'https://a.fr/v.m3u8' })
     expect(readFromFrame({ type: 'take', src: 42 })).toBeNull()
+    // That its video plays, without a word of which.
+    expect(readFromFrame({ type: 'playing', src: 'https://a.fr/v.m3u8' })).toEqual({ type: 'playing' })
     expect(readToFrame({ type: 'media', media: { can: true, pinned: null } })).toEqual({ type: 'media', media: { can: true, pinned: null } })
     expect(readToFrame({ type: 'media', media: { can: true, pinned: { src: 'x' } } })).toBeNull()
     expect(readToFrame({ type: 'leave' })).toEqual({ type: 'leave' })

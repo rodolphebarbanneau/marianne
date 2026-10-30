@@ -96,6 +96,30 @@ describe('the mini-player', () => {
     expect(desk.item).toBeNull()
   })
 
+  it('gives way to another video that starts playing on a page: one at a time, the same one left to take', () => {
+    const { desk, seen, run, waiting } = deskOf()
+    desk.pin(video('https://videos.example.fr/a.m3u8'))
+    // The same video playing on its page: the page took it back first; nothing else to stop.
+    desk.playing('https://videos.example.fr/a.m3u8')
+    expect(desk.item?.src).toBe('https://videos.example.fr/a.m3u8')
+    desk.playing('https://videos.example.fr/b.m3u8')
+    expect(desk.item).toBeNull()
+    expect(seen.at(-1)).toBeNull()
+    // A page left as another one starts playing: its video never shows.
+    desk.pin(video('https://videos.example.fr/a.m3u8'), { auto: true })
+    desk.playing('https://videos.example.fr/b.m3u8')
+    expect(waiting()).toBe(0)
+    run()
+    expect(desk.item).toBeNull()
+    // A player that remounts in one commit: its new self took nothing as it rendered (the old one
+    // pinned after), and takes it back as it plays.
+    desk.pin(video('https://videos.example.fr/a.m3u8', 61_000), { auto: true })
+    expect(desk.take('https://videos.example.fr/a.m3u8')).toBe(61_000)
+    desk.playing('https://videos.example.fr/a.m3u8')
+    run()
+    expect(desk.item).toBeNull()
+  })
+
   it('goes back to the video’s page with its params and where it was', () => {
     expect(backTo(video(), 90_123.6)).toEqual({ route: 'service:parlement', params: { video: 'a', t: 90_124 } })
     expect(backTo({ ...video(), params: undefined }, -4)).toEqual({ route: 'service:parlement', params: { t: 0 } })
