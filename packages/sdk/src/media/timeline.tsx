@@ -154,10 +154,29 @@ export function Track({ range, at: pos, buffered, total, live, chapters, gaps, k
 }
 
 /** The mini-player's track: one row of cells, played and to come, the live edge in red. */
-export function MiniTrack({ at: pos, total, live }: { at: number; total: number; live?: boolean }) {
+export function MiniTrack({ at: pos, total, live, onSeek }: { at: number; total: number; live?: boolean; onSeek?: (ms: number) => void }) {
   const range = { lo: 0, hi: Math.max(1, total) }
+  const pressed = useRef(false)
+  // A click on the track goes there, and a drag along it follows the pointer.
+  const go = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    if (r.width > 0) onSeek?.(msAt(range, (e.clientX - r.left) / r.width))
+  }
   return (
-    <div className="mp-mini-track">
+    <div
+      className={`mp-mini-track${onSeek ? ' mp-seekable' : ''}`}
+      title={onSeek ? 'aller à ce moment' : undefined}
+      onPointerDown={(e) => {
+        if (!onSeek || e.button !== 0) return
+        e.stopPropagation()
+        pressed.current = true
+        e.currentTarget.setPointerCapture(e.pointerId)
+        go(e)
+      }}
+      onPointerMove={(e) => pressed.current && go(e)}
+      onPointerUp={() => (pressed.current = false)}
+      onPointerCancel={() => (pressed.current = false)}
+    >
       <span className="mp-cells">
         <i className="mp-cell-base" />
         <Fill range={range} from={0} to={pos} kind="mp-cell-played" />

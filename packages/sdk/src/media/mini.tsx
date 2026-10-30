@@ -27,8 +27,9 @@ const DRAG_PX = 4
 
 /**
  * The mini-player: the video goes on in a corner of the window, over any page. Hovered, its keys
- * (back to the page, fullscreen, close; −10 s, play/pause, +10 s); always, a row of cells at its
- * foot and a caption under it (a click on it goes back to the page). Dragged, it snaps to the
+ * (back to the page, fullscreen, close; −10 s, play/pause, +10 s); always, its track at its foot,
+ * which a click or a drag along it moves through the video, and a caption under it (a click on it
+ * goes back to the page). Dragged by its grip, top left, and by nothing else, it snaps to the
  * nearest of the four corners. Place it in the area it floats over (position: relative).
  */
 export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, onTime, bottom }: MiniPlayerProps) {
@@ -74,6 +75,10 @@ export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, onTime,
     const v = video.current
     if (v) v.currentTime = Math.max(0, Math.min(total / 1000 || Infinity, v.currentTime + ms / 1000))
   }
+  const seek = (ms: number) => {
+    const v = video.current
+    if (v && total > 0) v.currentTime = Math.max(0, Math.min(total, ms)) / 1000
+  }
 
   // Dragging: it follows the pointer, the corner nearest its middle lit; let go, it goes there.
   const nearest = (dx: number, dy: number): MiniCorner => {
@@ -85,17 +90,19 @@ export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, onTime,
     const y = r.top + r.height / 2 + dy - (drag?.dy ?? 0)
     return `${y < area.top + area.height / 2 ? 't' : 'b'}${x < area.left + area.width / 2 ? 'l' : 'r'}` as MiniCorner
   }
-  const down = (e: ReactPointerEvent) => {
-    if (e.button !== 0 || full || (e.target as Element).closest('button, .mp-mini-cap')) return
+  // Only the grip takes the card: the rest of it is the video's (its keys, its track, its caption).
+  const down = (e: ReactPointerEvent<HTMLElement>) => {
+    if (e.button !== 0 || full) return
+    e.preventDefault()
     press.current = { x: e.clientX, y: e.clientY, id: e.pointerId }
+    e.currentTarget.setPointerCapture(e.pointerId)
   }
-  const move = (e: ReactPointerEvent) => {
+  const move = (e: ReactPointerEvent<HTMLElement>) => {
     const p = press.current
     if (!p) return
     const dx = e.clientX - p.x
     const dy = e.clientY - p.y
     if (!drag && Math.hypot(dx, dy) < DRAG_PX) return
-    if (!drag) root.current?.setPointerCapture(p.id)
     setDrag({ dx, dy, target: nearest(dx, dy), height: root.current?.offsetHeight ?? 0 })
   }
   const up = () => {
@@ -122,10 +129,6 @@ export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, onTime,
         aria-label={`mini-lecteur : ${media.title}`}
         onPointerEnter={() => setHover(true)}
         onPointerLeave={() => setHover(false)}
-        onPointerDown={down}
-        onPointerMove={move}
-        onPointerUp={up}
-        onPointerCancel={up}
       >
         <div className="mp-stage">
           <div className="mp-screen">
@@ -133,7 +136,15 @@ export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, onTime,
           </div>
           <div className="mp-mini-over">
             <div className="mp-mini-row">
-              <span className="mp-mini-grip" title="glisser vers un coin">
+              <span
+                className="mp-mini-grip"
+                title="glisser vers un coin"
+                aria-label="déplacer le mini-lecteur"
+                onPointerDown={down}
+                onPointerMove={move}
+                onPointerUp={up}
+                onPointerCancel={up}
+              >
                 <Icon name="grip" size={16} />
               </span>
               <span className="mp-mini-keys">
@@ -168,7 +179,7 @@ export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, onTime,
             </div>
             <span className="mp-mini-foot" />
           </div>
-          <MiniTrack at={pb.time} total={total} live={live} />
+          <MiniTrack at={pb.time} total={total} live={live} onSeek={seek} />
           {stream.error && <p className="mp-note bad">✗ {stream.error}</p>}
         </div>
         <button className="mp-mini-cap" onClick={() => onExpand(at())} title="revenir à la page de la vidéo">
