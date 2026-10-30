@@ -4,7 +4,7 @@
 
 Un dossier, c’est une conversation avec Marianne sur un sujet : une démarche, une question, un courrier à comprendre. Écrivez sur la page d’accueil pour en commencer un (ctrl+entrée en ouvre un nouveau de n’importe où). « + pièce » joint un document, et le menu à côté du bouton « envoyer » choisit le moteur du dossier.
 
-Les dossiers en cours sont dans la colonne de gauche, avec « chercher » en haut pour en retrouver un. Ceux que vous mettez en veille reviennent à la date choisie, et ceux que vous classez restent à portée, dans « Classés ».
+Les dossiers en cours sont dans la colonne de gauche, avec « chercher » en haut pour en retrouver un. Ceux que vous mettez en veille reviennent à la date choisie, et ceux que vous classez restent à portée, dans « Classés ». Un dossier se classe aussi de lui-même quand sa démarche guidée est finie, ou après 7 jours sans activité s’il n’en suit aucune ; un dossier épinglé ou qui porte une tâche planifiée, jamais. Un nouveau message le ressort.
 
 ## Votre accord
 
@@ -12,7 +12,7 @@ Tout ce qui change votre profil, remplit un formulaire, signe, paie ou envoie pa
 
 ## Le navigateur intégré
 
-Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à droite (le bouton « navigateur »). Elle vous demande votre accord avant d’aller en ligne, et toujours avant de signer, payer ou envoyer. Vous pouvez « prendre la main » à tout moment. Quand elle a besoin de vous (FranceConnect, un code reçu par SMS), elle ouvre le navigateur du dossier ; si vous êtes sur un autre écran, il s’ouvre quand vous revenez au dossier. Ce navigateur oublie tout quand l’archive se verrouille.
+Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à droite (le bouton « navigateur »). Elle vous demande votre accord avant d’aller en ligne, et toujours avant de signer, payer ou envoyer. Vous pouvez « prendre la main » à tout moment. Quand elle a besoin de vous (FranceConnect, un code reçu par SMS), elle ouvre le navigateur du dossier ; si vous êtes sur un autre écran, un message vous le dit, et le navigateur s’ouvre quand vous revenez au dossier. Le reste du temps, Réglages › Navigateur › « afficher le navigateur » décide : « quand Marianne le propose », « toujours », ou « jamais, il travaille hors de vue ». Ce navigateur oublie tout quand l’archive se verrouille.
 
 ## Les pages
 
@@ -23,15 +23,16 @@ Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à dr
 
 3615 INFOS, parmi vos services, montre les titres de vos sources des dernières 24 heures, regroupés en sujets : un sujet, ce sont les titres de journaux différents qui disent la même chose, rangés par nombre de sources qui en parlent. « à la une » (F2) montre la liste et le sujet choisi, le « fil » (F3) les mêmes titres à leur heure, le « kiosque » (F4) source par source. « / » va dans le champ de recherche, en haut.
 
-Chaque source a sa couleur, sa ligne éditoriale, de la gauche (rouge) à la droite (bleu), en blanc grisé au centre, pour une source sans orientation marquée. Celle que Marianne donne est son classement par défaut, et vous pouvez la changer. Les couleurs ne trient ni ne cachent rien. Vos sources se choisissent dans Réglages › Identité › sources d’information : accepter ou écarter un journal, et ses rubriques avec ⚙. La liste est celle de Marianne, la même pour tous.
+Chaque source a sa couleur, sa ligne éditoriale, de la gauche (rouge) à la droite (bleu), en blanc grisé au centre, pour une source sans orientation marquée. Celle que Marianne donne est son classement par défaut, et vous pouvez la changer. Les couleurs ne trient ni ne cachent rien. Vos sources se choisissent dans Réglages › Identité › sources d’information : « accepter » ou « écarter » un journal, et choisir ses rubriques avec ⚙. La liste est celle de Marianne, la même pour tous.
 
 ## Les vidéos du Parlement
 
 Dans 3615 PARLEMENT, l’onglet vidéos ouvre les séances et les commissions de l’Assemblée nationale et du Sénat dans le lecteur de Marianne, l’ordre du jour à côté.
 
 - **Le lecteur** : les commandes sont sur l’image et s’effacent pendant la lecture. La frise montre les grands points de l’ordre du jour et, en noir, les suspensions de séance ; au survol, l’instant, le sujet et l’orateur. Après la position, le sujet en cours : un clic le montre dans l’ordre du jour, qui suit la lecture. Un clic sur une ligne de l’ordre du jour y va.
-- **Les options** (l’engrenage) : la qualité, la vitesse, et le temps, celui de la vidéo ou l’heure de l’hémicycle (l’ordre du jour suit ce choix).
-- **Garder un extrait** (dans les options, ou X) : la frise se resserre autour du passage ; réglez le début et la fin (I et O à la position), « caler sur l’intervention » prend celle de l’orateur, puis « garder ». Vos extraits sont dans vidéos › extraits, privés, dans votre archive : pour les revoir, les partager ou en parler avec Marianne.
+- **Le plein écran** (F, le bouton à droite, ou un double clic au milieu de l’image) : la vidéo prend tout l’écran, et échap en sort. O montre l’ordre du jour, en sortant du plein écran. Au clavier aussi : espace lit ou met en pause, ← et → reculent ou avancent de 10 secondes, ↑ et ↓ règlent le son, M le coupe.
+- **Les options** (l’engrenage) : la qualité, la vitesse, le temps, celui de la vidéo ou l’heure de l’hémicycle (l’ordre du jour suit ce choix), et l’image dans l’image.
+- **Garder un extrait** (dans les options, ou X) : la frise se resserre autour du passage ; réglez le début et la fin (I et O à la position), « caler sur l’intervention » prend celle de l’orateur, puis « garder l’extrait » (entrée) ; « annuler » ou échap y renonce. Vos extraits sont dans vidéos › extraits, privés, dans votre archive : pour les revoir, les partager ou en parler avec Marianne.
 - **Partager le lien** : un lien vers la page officielle de la vidéo, que tout le monde peut ouvrir, au début, à l’instant choisi ou au début de l’extrait. « copier avec le titre » ajoute le sujet, l’orateur, la chambre, le jour et l’heure.
 - **Le direct** : une séance en cours s’ouvre au direct, et la frise remonte jusqu’à son ouverture ; l’ordre du jour se remplit pendant la séance (« ● en cours » marque le dernier point). DIRECT, ou la touche Fin, revient au direct. La séance finie, la page passe à la vidéo enregistrée dès que le portail la propose, au même endroit. Tant que le portail ne propose pas la vidéo d’un direct, on n’en voit que les dernières secondes.
 - **Le mini-lecteur** (P) : la vidéo continue dans un coin de la fenêtre pendant que vous faites autre chose dans Marianne ; il s’ouvre aussi quand vous quittez la page d’une vidéo en lecture. Glissez-le vers un coin ; un clic sur son bandeau ramène à la page de la vidéo, là où elle en est. Une autre vidéo qui démarre prend sa place (ouvrir la page d’une vidéo sans la lancer, non), et il se ferme si vous désactivez ou retirez son service.
@@ -48,7 +49,7 @@ Sous la barre, trois onglets :
 
 ## La page d’un domaine
 
-La page d’un domaine a la même tête, avec le numéro de son guichet : Mobilité, c’est GUICHET 8. La flèche ← ou échap revient à Démarches, et la barre prend une question : Marianne y répond dans un nouveau dossier, rangé dans ce domaine. Quatre onglets, sur F2 à F5 :
+La page d’un domaine a la même tête, avec le numéro de son guichet : Mobilité, c’est GUICHET 8. La flèche ← en haut, ou échap, revient à Démarches, et la barre prend une question : Marianne y répond dans un nouveau dossier, rangé dans ce domaine. Quatre onglets, sur F2 à F5 :
 
 - **aperçu** : des questions pour commencer, ce qu’il y a à faire ici, vos véhicules ou vos logements, les semaines à venir, les services qui peuvent aider, vos dossiers et vos tâches.
 - **tâches planifiées** : chaque tâche en détail, puis celles que vos services proposent.
@@ -91,4 +92,6 @@ Comme sur un Minitel, la barre du bas montre les touches de l’écran :
 | SOMMAIRE   | le menu de l’application          | ctrl+espace |
 | GUIDE      | l’aide, les liens, vos raccourcis | F1          |
 
-Et aussi : ctrl+K pour les commandes, ctrl+alt+espace pour chercher partout, ctrl+, pour les réglages, ctrl+maj+R pour recharger la fenêtre. Dans un service, F2, F3… ouvrent ses onglets, et F1 son guide ; sur la page d’un domaine, F2 à F5 ouvrent ses onglets. Sur macOS, cmd remplace ctrl, sauf pour le menu et la recherche. Tous se changent dans Réglages › Raccourcis clavier.
+La barre suit l’écran : sur l’écran d’un service ou la page d’un domaine, RETOUR (échap) revient en arrière, et dans les réglages, ENVOI (ctrl+S) enregistre.
+
+Et aussi : ctrl+K pour les commandes, ctrl+alt+espace pour chercher partout, ctrl+2 et ctrl+3 pour Démarches et Services, ctrl+, pour les réglages, ctrl+B pour replier la colonne de gauche, F11 pour le plein écran, ctrl+maj+R pour recharger la fenêtre. Dans un service, F2, F3… ouvrent ses onglets, F1 son guide, et « / » sa recherche ; sur la page d’un domaine, F2 à F5 ouvrent ses onglets. Sur macOS, cmd remplace ctrl, sauf pour le menu et la recherche, et le plein écran est ctrl+cmd+F. Tous se changent dans Réglages › Raccourcis clavier.

@@ -22,7 +22,7 @@ Node 24 and npm. From the repository's root:
 ```sh
 npm install     # installs and links the workspace packages
 npm run dev     # the app; the window reloads live, the main process restarts on change
-npm run check   # Prettier, package boundaries, type checks and tests: what CI runs first
+npm run check   # Prettier, no stray .gitkeep, package boundaries, type checks and tests
 ```
 
 The repository is an npm workspace: the app in `apps/desktop`, its packages in `packages/` (the SDK, the archive, the profile, the content) and the services in `services/`. See the [README](README.md) and [docs/design.md](docs/design.md) for how it fits together.
@@ -42,14 +42,14 @@ Working with an AI agent? [AGENTS.md](AGENTS.md) gives it the map of the reposit
 1. Branch from `main`, and keep a pull request to one subject.
 2. Run `npm run check` before pushing.
 3. Open the pull request with the template that fits: the default one for code (what changes and why, how you tested it, screenshots for anything visible), or one of [`.github/PULL_REQUEST_TEMPLATE/`](.github/PULL_REQUEST_TEMPLATE) for a new service (`new-service.md`), content (`content.md`), or the user guide and the docs (`guide.md`). GitHub fills in the default one; for another, add `&template=new-service.md` to the address of the page that opens the pull request, or run `gh pr create --template new-service.md`.
-4. CI must pass: the checks, then a package build on Windows, macOS and Linux.
+4. CI must pass: the checks, the site's check and build, and a package build on Windows, macOS and Linux.
 5. Pull requests are merged by rebase, so `main` stays a straight line of commits. Write commit messages as short, plain sentences ("Give the profile's archive tests 30 seconds"), with details in the body when they help.
 
 Content changes are reviewed with extra care: skills go into the engines' instructions, and démarches are legal guidance people will act on. Cite an official source (Légifrance, service-public.fr, the administration concerned) for anything you add or change; for a news source, its feed.
 
 ## Releases
 
-Releases are tagged `v*` from `main` by the maintainer. Their notes are written in English, with a link to the [user guide](docs/guide/README.md), in English and in French. GitHub groups the generated notes by label (`.github/release.yml`). Publishing a release rebuilds the website ([`site/`](site/README.md#publishing)).
+Releases are tagged `v*` from `main` by the maintainer: the tag builds the installers into a draft release, which the maintainer then publishes. Their notes are written in English, with a link to the [user guide](docs/guide/README.md), in English and in French. GitHub groups the generated notes by label (`.github/release.yml`). Publishing a release rebuilds the website ([`site/`](site/README.md#publishing)).
 
 ## License
 
