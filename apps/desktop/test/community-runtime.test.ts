@@ -7,7 +7,9 @@ import type { ServiceContext } from '@marianne/sdk/main'
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
 import * as z from 'zod'
 import { BridgeRefused, fromOwn, MAX_STORED_BYTES, sandboxBridge } from '../src/main/community/runtime/bridge'
+import { askConsent, consentCard, type AskUser } from '../src/main/community/runtime/consent'
 import { cleanSchema, DescriptionRefused, MAX_SCHEMA_BYTES, readDescription, shapeFromJsonSchema } from '../src/main/community/runtime/description'
+import { MAX_TOOL_ARGUMENTS_BYTES } from '../src/main/community/runtime/limits'
 import { SandboxRpc } from '../src/main/community/runtime/rpc'
 import { answerServiceRequest, contentPolicy, listRuntime, pictureUrl, workerImports, type SchemeSource } from '../src/main/community/runtime/scheme'
 import { ScreenRelay, type ScreenHost } from '../src/main/community/runtime/screen'
@@ -460,10 +462,14 @@ function fakeSandboxes(answers: (m: SandboxInvoke) => unknown | Promise<unknown>
 
 const quiet = { info: () => {}, warn: () => {}, error: () => {} }
 
-function runService(answers: (m: SandboxInvoke) => unknown, manifest = manifestOf()) {
+function runService(
+  answers: (m: SandboxInvoke) => unknown,
+  manifest = manifestOf(),
+  beforeTool?: ConstructorParameters<typeof CommunityService>[0]['beforeTool']
+) {
   const sandboxes = fakeSandboxes(answers)
   const bridge = sandboxBridge(manifest, contextOf(manifest, memoryStore()).ctx)
-  const service = new CommunityService({ manifest, bridge, factory: sandboxes.factory, log: quiet, restartMs: 10, everyMs: 60_000 })
+  const service = new CommunityService({ manifest, bridge, factory: sandboxes.factory, log: quiet, restartMs: 10, everyMs: 60_000, beforeTool })
   return { service, ...sandboxes }
 }
 
@@ -514,6 +520,65 @@ describe('a community service, run', () => {
     await settle()
     await expect(service.runtime.tools![0].run({ name: '' }, {})).rejects.toMatchObject({ name: 'ToolError' })
     expect(made[0].sent.some((m) => m.kind === 'tool')).toBe(false)
+  })
+
+  describe('what a tool is sent', () => {
+    /** A tool whose schema lets a long text through, so that only the size stops it. */
+    const anyText = (m: SandboxInvoke): unknown =>
+      m.kind === 'activate'
+        ? described({ tools: [{ name: 'greet', label: 'saluer', description: 'A greeting.', readOnly: true, input: schemaOf({ name: z.string() }) }] })
+        : answering(m)
+    const started = async (beforeTool?: ConstructorParameters<typeof CommunityService>[0]['beforeTool']) => {
+      const run = runService(anyText, manifestOf(), beforeTool)
+      run.service.start()
+      run.made[0].events.loaded()
+      await settle()
+      return run
+    }
+    const toolsSent = (box: { sent: SandboxInvoke[] }) => box.sent.filter((m) => m.kind === 'tool')
+    /** A name that makes the arguments, as JSON, exactly so many bytes. */
+    const sized = (bytes: number) => ({ name: 'x'.repeat(bytes - JSON.stringify({ name: '' }).length) })
+
+    it('stops more than 1 KB before it crosses, and says so to the model', async () => {
+      const { service, made } = await started()
+      await expect(service.runtime.tools![0].run(sized(MAX_TOOL_ARGUMENTS_BYTES + 1), {})).rejects.toMatchObject({
+        name: 'ToolError',
+        message: expect.stringContaining('Nothing was sent')
+      })
+      expect(toolsSent(made[0])).toEqual([])
+      expect(await service.runtime.tools![0].run(sized(MAX_TOOL_ARGUMENTS_BYTES), {})).toContain('greeted')
+    })
+
+    it('counts bytes, not characters', async () => {
+      const { service, made } = await started()
+      await expect(service.runtime.tools![0].run({ name: 'é'.repeat(MAX_TOOL_ARGUMENTS_BYTES - 20) }, {})).rejects.toMatchObject({ name: 'ToolError' })
+      expect(toolsSent(made[0])).toEqual([])
+    })
+
+    it('asks the host first, the folder going no further', async () => {
+      const asked = vi.fn(async () => {})
+      const { service, made } = await started(asked)
+      expect(await service.runtime.tools![0].run({ name: 'Camille' }, { folderId: 'folder-1' })).toBe('greeted Camille')
+      expect(asked).toHaveBeenCalledWith(expect.objectContaining({ label: 'saluer' }), { name: 'Camille' }, { folderId: 'folder-1' })
+      expect(toolsSent(made[0])).toHaveLength(1)
+      expect(JSON.stringify(made[0].sent)).not.toContain('folder-1')
+    })
+
+    it('sends nothing when the host says no', async () => {
+      const { service, made } = await started(async () => {
+        throw Object.assign(new Error('The user refused'), { name: 'ToolError' })
+      })
+      await expect(service.runtime.tools![0].run({ name: 'Camille' }, {})).rejects.toThrow('The user refused')
+      expect(toolsSent(made[0])).toEqual([])
+    })
+
+    it('never asks the user about what would be refused anyway', async () => {
+      const asked = vi.fn(async () => {})
+      const { service } = await started(asked)
+      await expect(service.runtime.tools![0].run({ name: 3 } as never, {})).rejects.toMatchObject({ name: 'ToolError' })
+      await expect(service.runtime.tools![0].run(sized(MAX_TOOL_ARGUMENTS_BYTES + 1), {})).rejects.toMatchObject({ name: 'ToolError' })
+      expect(asked).not.toHaveBeenCalled()
+    })
   })
 
   it('is refused when it lends a tool it didn’t declare', async () => {
@@ -732,5 +797,54 @@ describe('a community screen’s messages', () => {
     expect(frameMayOpen(m, 'http://api.example.fr/a')).toBe(false)
     expect(frameMayOpen(m, 'https://evil.example.com/')).toBe(false)
     expect(frameMayOpen(m, 'file:///etc/passwd')).toBe(false)
+  })
+})
+
+describe('the user’s yes, before a service nobody reviewed receives anything', () => {
+  const manifest = manifestOf()
+  const tool = { label: 'saluer' }
+  const answering = (decision: 'accepted' | 'refused' | 'expired') => vi.fn<AskUser>(async () => decision)
+
+  it('shows the service, why, and every argument as it would be sent', () => {
+    const card = consentCard(manifest, tool, 'outside', { name: 'Zoé', times: 2, tags: ['a', 'b'] })
+    expect(card).toMatchObject({ kind: 'service', title: 'Envoyer à 3615 BONJOUR ?' })
+    expect(card.reason).toContain('hors catalogue')
+    expect(card.fields).toEqual([
+      { label: 'outil', value: 'saluer' },
+      { label: 'name', value: 'Zoé' },
+      { label: 'times', value: '2' },
+      { label: 'tags', value: '["a","b"]' }
+    ])
+    expect(consentCard(manifest, tool, 'unvalidated', {}).reason).toContain('non validé')
+    expect(consentCard(manifest, tool, 'withdrawn', {}).reason).toContain('retiré du catalogue')
+  })
+
+  it.each(['unvalidated', 'outside', 'withdrawn'] as const)('asks, in the folder of the call, for a service %s', async (trust) => {
+    const ask = answering('accepted')
+    await expect(askConsent(ask, 'folder-1', manifest, tool, trust, { name: 'Zoé' })).resolves.toBeUndefined()
+    expect(ask).toHaveBeenCalledWith('folder-1', expect.objectContaining({ kind: 'service' }))
+  })
+
+  it('doesn’t ask for a validated service', async () => {
+    const ask = answering('refused')
+    await expect(askConsent(ask, 'folder-1', manifest, tool, 'validated', { name: 'Zoé' })).resolves.toBeUndefined()
+    expect(ask).not.toHaveBeenCalled()
+  })
+
+  it('doesn’t ask when there is nothing to send', async () => {
+    const ask = answering('refused')
+    await expect(askConsent(ask, 'folder-1', manifest, tool, 'outside', {})).resolves.toBeUndefined()
+    expect(ask).not.toHaveBeenCalled()
+  })
+
+  it('takes a refusal, or no answer, as a no the model can read', async () => {
+    await expect(askConsent(answering('refused'), 'folder-1', manifest, tool, 'outside', { name: 'Zoé' })).rejects.toMatchObject({
+      name: 'ToolError',
+      message: expect.stringContaining('nothing was sent to 3615 BONJOUR')
+    })
+    await expect(askConsent(answering('expired'), undefined, manifest, tool, 'outside', { name: 'Zoé' })).rejects.toMatchObject({
+      name: 'ToolError',
+      message: expect.stringContaining('No answer from the user')
+    })
   })
 })

@@ -28,6 +28,9 @@ export class RateLimit {
 /** The largest answer, as JSON, a sandbox may give for each kind of request. */
 export const MAX_REPLY_BYTES = { tool: 256 * 1024, tile: 64 * 1024, other: 1024 * 1024 } as const
 
+/** The most a community service's tool may be sent, as JSON: a request's few words, never a document or a conversation. */
+export const MAX_TOOL_ARGUMENTS_BYTES = 1024
+
 /** What a community service may keep for the user: its records, and their total size as JSON. */
 export const STORAGE_QUOTA = { records: 1000, bytes: 16 * 1024 * 1024 } as const
 

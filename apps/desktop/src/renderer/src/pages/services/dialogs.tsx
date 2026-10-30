@@ -470,7 +470,12 @@ export function ReviewDialog({ subject, onAdded, onClose }: { subject: ReviewSub
                   {facts.tools.length ? (
                     <>
                       {facts.tools.map((t) => `« ${t} »`).join(', ')}{' '}
-                      <span className="small dim">: Marianne peut s’en servir dans vos dossiers, et leur envoie alors ce qu’il faut</span>
+                      <span className="small dim">
+                        : Marianne peut s’en servir dans vos dossiers,{' '}
+                        {facts.verdict === 'official' || facts.verdict === 'validated'
+                          ? 'et leur envoie alors ce qu’il faut'
+                          : 'et vous demande votre accord avant chaque envoi'}
+                      </span>
                     </>
                   ) : (
                     <span className="dim">aucun</span>

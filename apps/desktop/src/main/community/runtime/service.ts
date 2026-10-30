@@ -1,11 +1,11 @@
 import { EventEmitter } from 'node:events'
 import { DOMAIN_IDS, serviceCode, type DomainId, type ServiceDeadline, type ServiceManifest, type ServiceSummary, type TodayItem } from '@marianne/sdk'
-import type { ServiceImpl, ServiceMethods, ServiceModule, ServiceRuntime, ServiceTool } from '@marianne/sdk/main'
+import type { ServiceImpl, ServiceMethods, ServiceModule, ServiceRuntime, ServiceTool, ToolCall } from '@marianne/sdk/main'
 import * as z from 'zod'
 import type { BridgeReply, SandboxInvoke, SandboxKind } from '../../../shared/community'
 import type { SandboxBridgeMain } from './bridge'
 import { DescriptionRefused, readDescription, type ServiceDescription } from './description'
-import { logLine, RateLimit } from './limits'
+import { logLine, MAX_TOOL_ARGUMENTS_BYTES, RateLimit } from './limits'
 import { RpcTimeout, SandboxRpc } from './rpc'
 
 /**
@@ -53,6 +53,8 @@ export interface CommunityServiceOptions {
   restartMs?: number
   /** How often it is looked at (alive?) and its deadlines read again. */
   everyMs?: number
+  /** Asked before a tool's arguments, checked, cross; what it throws stops them. */
+  beforeTool?: (tool: { label: string }, args: Record<string, unknown>, call: ToolCall) => Promise<void>
 }
 
 const MAX_LOG = 2000
@@ -60,6 +62,8 @@ const MAX_TODAY = 50
 const MAX_DEADLINES = 100
 const URGENCIES = new Set(['none', 'soon', 'urgent'])
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+/** What the model should read rather than a crash. */
+const toolError = (message: string) => Object.assign(new Error(message), { name: 'ToolError' })
 const str = (v: unknown, max: number) => typeof v === 'string' && v.length > 0 && v.length <= max
 const optStr = (v: unknown, max: number) => v === undefined || (typeof v === 'string' && v.length <= max)
 
@@ -432,7 +436,7 @@ export class CommunityService extends EventEmitter {
     }
   }
 
-  /** A tool as the host lends it: its arguments checked against the schema it declared, run in the sandbox. */
+  /** A tool as the host lends it: its arguments checked against the schema it declared and their size, then the host's say, run in the sandbox. */
   private toolOf(t: ServiceDescription['tools'][number]): ServiceTool {
     return {
       name: t.name,
@@ -442,13 +446,14 @@ export class CommunityService extends EventEmitter {
       readOnly: t.readOnly,
       run: async (args, call) => {
         const parsed = t.schema.safeParse(args ?? {})
-        if (!parsed.success) {
-          const e = new Error(`Invalid arguments for ${t.name}: ${z.prettifyError(parsed.error)}`)
-          e.name = 'ToolError'
-          throw e
-        }
+        if (!parsed.success) throw toolError(`Invalid arguments for ${t.name}: ${z.prettifyError(parsed.error)}`)
+        const size = Buffer.byteLength(JSON.stringify(parsed.data))
+        if (size > MAX_TOOL_ARGUMENTS_BYTES)
+          throw toolError(
+            `Too much for a community service's tool: ${size} bytes, ${MAX_TOOL_ARGUMENTS_BYTES} at most. Nothing was sent. Send only what the request needs.`
+          )
+        await this.opts.beforeTool?.(t, parsed.data as Record<string, unknown>, call)
         // Never the folder it is called from: a community service doesn't know the user's folders.
-        void call
         const out = await this.request('tool', t.name, [parsed.data, {}])
         if (typeof out !== 'string') throw new Error(`${this.label} · ${t.label}: no text came back`)
         return out
