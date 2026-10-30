@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { errorText, Failure, Field, Loading, Notice, useCall, useHost, useNow } from '@marianne/sdk/view'
 import { hostOf } from './networks'
-import { dueOf, leftText, paid, unpaid } from './schedule'
+import { dueOf, leftText, paid, unpaid, URGENT_MS } from './schedule'
 import { fromParisInput, parisInput, when } from './time'
 import type { PeageMethods, TollNetwork, Trip, Vehicle } from './types'
 import './view.css'
@@ -14,7 +14,6 @@ import './view.css'
  */
 
 const PAID_SHOWN = 10
-const URGENT_MS = 24 * 3600_000
 
 const plateOf = (vehicles: Vehicle[], id: string) => vehicles.find((v) => v.id === id)?.plate || ''
 

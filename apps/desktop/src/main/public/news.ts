@@ -529,6 +529,8 @@ export class NewsReader {
    * a picture that didn't answer) is kept five minutes, then asked again.
    */
   private articles = new Map<string, { article: NewsArticle | null; until: number }>()
+  /** Counts the locks: a read that started before one keeps nothing of what it brings back. */
+  private forgotten = 0
 
   constructor(dir: () => string = () => paths.news) {
     this.history = new NewsHistory(dir)
@@ -628,22 +630,30 @@ export class NewsReader {
     let job = this.inFlight.get(id)
     if (!job) {
       const source = content.get().newsSources.find((s) => s.id === item.source)
-      job = readArticle(item, source)
+      const since = this.forgotten
+      const reading: Promise<NewsArticle | null> = readArticle(item, source)
         .then(({ article, settled }) => {
+          // Locked meanwhile: whoever asked gets it, and nothing of it stays.
+          if (this.forgotten !== since) return article
           this.articles.delete(id)
           while (this.articles.size >= ARTICLES_KEPT) this.articles.delete(this.articles.keys().next().value!)
           this.articles.set(id, { article, until: settled ? Infinity : Date.now() + FEED_TTL })
           return article
         })
-        .finally(() => this.inFlight.delete(id))
+        .finally(() => {
+          if (this.inFlight.get(id) === reading) this.inFlight.delete(id)
+        })
+      job = reading
       this.inFlight.set(id, job)
     }
     return job.then((a) => structuredClone(a))
   }
 
-  /** The articles read let go (the account locked: what the user opened isn't kept past it). */
+  /** The articles read let go (the account locked: what the user opened isn't kept past it), those still being read too. */
   forgetArticles(): void {
+    this.forgotten++
     this.articles.clear()
+    this.inFlight.clear()
   }
 
   /** What the history says of each source, for Réglages: from what was read, without reading. */

@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { archivesIn, defaultArchiveFolder } from '@marianne/archive'
 import { app, powerMonitor, protocol, session as electronSession } from 'electron'
@@ -10,6 +10,7 @@ import { catalogue, communityPackages, protectedHosts } from './community'
 import { configStore } from './config'
 import { content } from './content'
 import { wipeScratch } from './engines'
+import { emptyDir } from './files'
 import { registerIpc } from './ipc'
 import { keychain } from './keychain'
 import { log } from './log'
@@ -29,16 +30,12 @@ import { APP_ID, showMain, whenWindow } from './windows'
 
 const SYNC_CHECK_MS = 3600_000
 
-/** Decrypted copies opened in a viewer, MCP files of earlier runs: nothing in clear outlives a session. */
-function cleanTmp(): void {
-  for (const name of readdirSync(paths.tmp)) {
-    try {
-      rmSync(join(paths.tmp, name), { recursive: true, force: true })
-    } catch {
-      // still open in its viewer: removed next time
-    }
-  }
-}
+/**
+ * Decrypted copies opened in a viewer: nothing in clear outlives a session. At start and at quit the
+ * whole temporary folder goes, downloads left half-done included; on lock only the copies, so that a
+ * sync under way goes on (paths.ts).
+ */
+const cleanTmp = () => emptyDir(paths.tmp)
 
 // French dates in forms (jj/mm/aaaa) and French defaults, whatever the system language.
 app.commandLine.appendSwitch('lang', 'fr')
@@ -110,7 +107,7 @@ if (!app.requestSingleInstanceLock()) {
     session.on('locked', (reason) => {
       log.info(`Locked (${reason})`)
       void browser.forget()
-      cleanTmp()
+      emptyDir(paths.opened)
     })
     const lockOnSleep = () => {
       if (configStore.get().lockOnSleep) accounts.lock('system')

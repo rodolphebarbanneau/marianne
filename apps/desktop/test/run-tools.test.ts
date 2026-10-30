@@ -49,6 +49,7 @@ vi.mock('../src/main/browser', () => {
       canGoForward: false
     }),
     currentUrl: () => page.url,
+    inRun: vi.fn(() => true),
     open: vi.fn((url: string, folderId: string) => {
       page.url = page.redirects[url] ?? url
       page.folderId = folderId
@@ -269,6 +270,19 @@ describe('open_site in a run', () => {
     expect(await pending).toMatch(/^refused:.*run is over/)
     await call(folderId, 'open_site', { url: 'https://evil.example/', ...OPEN })
     expect(request).toHaveBeenCalledTimes(1)
+  })
+
+  it('a call made once the run’s browser is gone (the user typed an address) stops: the page is theirs', async () => {
+    vi.mocked(browser.readPage).mockClear()
+    const { result } = await during(async (f) => {
+      await call(f, 'open_site', { url: 'https://www.sanef.com/passages', ...OPEN })
+      vi.mocked(browser.inRun).mockReturnValue(false)
+      return [await call(f, 'read_page'), await call(f, 'open_site', { url: 'https://www.sanef.com/passages', ...OPEN })]
+    })
+    vi.mocked(browser.inRun).mockReturnValue(true)
+    expect(result.every((r) => /^refused:.*run is over/.test(r))).toBe(true)
+    expect(browser.open).toHaveBeenCalledTimes(1)
+    expect(browser.readPage).not.toHaveBeenCalled()
   })
 
   it('stops reading a page that went elsewhere', async () => {

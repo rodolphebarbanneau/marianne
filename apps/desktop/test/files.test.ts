@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -17,7 +17,7 @@ vi.mock('node:fs', async (original) => {
   }
 })
 
-const { samePath, writeFileAtomic } = await import('../src/main/files')
+const { emptyDir, samePath, writeFileAtomic } = await import('../src/main/files')
 
 const dir = mkdtempSync(join(tmpdir(), 'marianne-files-'))
 afterAll(() => rmSync(dir, { recursive: true, force: true }))
@@ -53,5 +53,21 @@ describe('samePath', () => {
     expect(samePath(join(dir, 'a', '..', 'b.marianne'), join(dir, 'b.marianne'))).toBe(true)
     expect(samePath(join(dir, 'a.marianne'), join(dir, 'b.marianne'))).toBe(false)
     if (process.platform === 'win32') expect(samePath('C:/Users/Camille/A.marianne', 'c:\\users\\camille\\a.MARIANNE')).toBe(true)
+  })
+})
+
+describe('emptyDir', () => {
+  it('empties a folder and keeps it, and what is beside it; a missing one is fine', () => {
+    // The temporary folder as the app keeps it: the copies opened in a viewer, and a sync's download beside them.
+    const tmp = join(dir, 'tmp')
+    mkdirSync(join(tmp, 'opened', 'nested'), { recursive: true })
+    writeFileSync(join(tmp, 'opened', 'avis.pdf'), 'en clair')
+    writeFileSync(join(tmp, 'opened', 'nested', 'copie.txt'), 'en clair')
+    mkdirSync(join(tmp, 'sync-meteo'))
+    writeFileSync(join(tmp, 'sync-meteo', 'dump.zip'), 'à moitié')
+    emptyDir(join(tmp, 'opened'))
+    expect(readdirSync(join(tmp, 'opened'))).toEqual([])
+    expect(readFileSync(join(tmp, 'sync-meteo', 'dump.zip'), 'utf8')).toBe('à moitié')
+    expect(() => emptyDir(join(dir, 'missing'))).not.toThrow()
   })
 })

@@ -26,7 +26,7 @@ import { catalogue, communityPackages, SERVICE_FILE_EXT } from './community'
 import { configStore } from './config'
 import { deadlines } from './deadlines'
 import { content } from './content'
-import { engineEvents, engineLights, engineStatus, forgetTranscripts, listModels, listSkills, openLogin } from './engines'
+import { engineEvents, engineLights, engineStatus, listModels, listSkills, openLogin } from './engines'
 import { exportAll } from './export'
 import { folders } from './folders'
 import { everyLabel } from '../shared/tasks'
@@ -205,12 +205,7 @@ export function registerIpc(): void {
   handle('pinFolder', (id: string, pinned: boolean) => folders.pin(id, pinned))
   handle('snoozeFolder', (id: string, until: string) => folders.snooze(id, until))
   handle('settleFolder', (id: string, settled: boolean) => folders.settle(id, settled))
-  handle('deleteFolder', (id: string) => {
-    tasks.forgetFolder(id)
-    chat.cancel(id)
-    folders.remove(id)
-    forgetTranscripts(id)
-  })
+  handle('deleteFolder', (id: string) => chat.deleteFolder(id))
   handle('setFolderEngine', (id: string, engine: EngineId) => void folders.update(id, { engine }))
   handle('setFolderStep', (id: string, step: number, done: boolean) => void folders.setStep(id, step, done))
   handle('send', (req: SendRequest) => chat.send(req))
@@ -315,8 +310,9 @@ export function registerIpc(): void {
   // ---------- built-in browser ----------
   handle('browserState', () => browser.state())
   on('browserBounds', (rect: Rect | null) => browser.setBounds(rect))
-  on('browserOpen', (url: string, folderId?: string) => browser.open(url, folderId))
-  on('browserNavigate', (input: string) => browser.navigate(input))
+  // The user's own addresses: a planned task's run gives way before they load (browser/index.ts).
+  on('browserOpen', (url: string, folderId?: string) => void browser.openForUser(url, folderId))
+  on('browserNavigate', (input: string) => void browser.navigate(input))
   on('browserBack', () => browser.back())
   on('browserForward', () => browser.forward())
   on('browserReload', () => browser.reload())

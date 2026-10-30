@@ -115,7 +115,6 @@ class Tasks extends EventEmitter {
   private report: TaskTurnEnd | null = null
   private ticking = false
   private started = false
-  /** Runs started today by this account, recorded or not: a run the lock cut short still spent the engine. */
 
   get(id: string): PlannedTask | null {
     return session.unlocked ? session.archive.get<PlannedTask>(KIND, id) : null
@@ -230,15 +229,6 @@ class Tasks extends EventEmitter {
     return folderId && this.current?.folderId === folderId ? this.current : null
   }
 
-  /**
-   * Whether the run under way in a folder may reach an address: a listed host and what is under it.
-   * Not by registrable domain: the sheet says mairie.github.io, not all of github.io.
-   */
-  allows(folderId: string, url: string): boolean {
-    const task = this.runningIn(folderId)
-    return !!task && siteAllowed(task, url)
-  }
-
   /** Whether a tool may be called in a folder: anything outside a run; in one, what reads or moves through a page, and its own service's tools. */
   mayUse(folderId: string | undefined, tool: { name: string; readOnly?: boolean }, own: boolean): boolean {
     const task = this.runningIn(folderId)
@@ -318,6 +308,7 @@ class Tasks extends EventEmitter {
     return Math.max(recorded, this.triesToday(today))
   }
 
+  /** Runs started today, recorded or not, counted in the archive: a restart doesn't give the day new ones. */
   private triesToday(today: string): number {
     const tries = session.unlocked ? session.archive.get<{ day: string; count: number }>(TRIES, 'day') : null
     return tries?.day === today ? tries.count : 0

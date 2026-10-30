@@ -1,19 +1,24 @@
 import type { TodayEvent } from '../../shared/public'
-import { fetchJson, query } from '../http'
+import { fetchAsBrowser, fetchJson, query } from '../http'
 import { log } from '../log'
 import { serviceToday } from '../host'
-import { franceDigest } from './france'
 import { isEnabled, sourceUrl } from './sources'
-import { frenchDay, nextDay, parisDay } from './time'
+import { frenchDay, nextDay, parisDay, parseFrenchDate } from './time'
 
 /**
  * "Aujourd'hui": what happens today in public life. Public holidays (calendrier.api.gouv.fr),
  * school holidays (Éducation nationale open data), the clock change, the changes Service-Public
  * announces for today, and what the services that are on add (the Assemblée's sittings…). Each
  * part may fail alone.
+ *
+ * Nothing calls it yet: the Actualités page that showed it is gone, and it is kept for the day's
+ * agenda to come (3615 CALENDRIER), with the host's today() that brings the services' lines.
  */
 
 const SCHOOL_CALENDAR = 'https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-calendrier-scolaire/records'
+/** Service-Public's news; its agenda of changes and deadlines is under it. */
+const SP = 'https://www.service-public.gouv.fr/particuliers/actualites'
+const AGENDA_TTL = 30 * 60_000
 
 async function holidayEvents(day: string, tomorrow: string): Promise<TodayEvent[]> {
   if (!isEnabled('calendar')) return []
@@ -113,9 +118,75 @@ export function clockEvents(day: string, tomorrow: string): TodayEvent[] {
     }))
 }
 
-async function changeEvents(day: string): Promise<TodayEvent[]> {
-  const { changes } = await franceDigest()
-  return changes
+/** A card of Service-Public's agenda: a change or a deadline, and the dates its badge speaks of. */
+export interface SpCard {
+  id: string
+  title: string
+  url: string
+  /** YYYY-MM-DD. */
+  published?: string
+  category?: string
+  /** As Service-Public words it: "À partir du 1 nov. 2026", "Jusqu'au 31 déc. 2026". */
+  when?: string
+  /** The dates of the change or of the deadline, YYYY-MM-DD. */
+  from?: string
+  until?: string
+}
+
+const clean = (html: string) =>
+  html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&#39;|&apos;/g, '’')
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+/** The dates a Service-Public badge speaks of: "Du 10 oct. au 3 nov. 2026", "Jusqu'au 31 déc. 2026"… */
+export function parsePeriod(when: string): { from?: string; until?: string } {
+  const matches = [...when.matchAll(/(\d{1,2})(?:er)?\s+(\p{L}+)\.?(?:\s+(\d{4}))?/gu)]
+  if (!matches.length) return {}
+  // "Du 10 oct. au 3 nov. 2026": the year is only given once, at the end.
+  const year = Number(matches.findLast((m) => m[3])?.[3]) || new Date().getFullYear()
+  const dates = matches.map((m) => parseFrenchDate(m[0], year)).filter(Boolean)
+  if (dates.length > 1 && dates[0] > dates[1]) dates[0] = `${Number(dates[0].slice(0, 4)) - 1}${dates[0].slice(4)}`
+  const [first, second] = dates
+  if (!first) return {}
+  if (/^du\b/i.test(when) && second) return { from: first, until: second }
+  if (/^(jusqu|avant)/i.test(when)) return { until: first }
+  if (/^le\b/i.test(when)) return { from: first, until: first }
+  return { from: first }
+}
+
+/** The cards of a Service-Public page: it has no feed for its news, but its markup carries data-test hooks. */
+export function parseSpCards(html: string): SpCard[] {
+  return html
+    .split(/data-test="carte"/)
+    .slice(1)
+    .flatMap((card) => {
+      const link = card.match(/data-test="carte-titre"[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/)
+      if (!link) return []
+      const url = new URL(link[1], SP).toString()
+      const published = parseFrenchDate(clean(card.match(/data-test="carte-description"[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? ''))
+      const when = clean(card.match(/class="fr-badge[^"]*"[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? '')
+      const category = clean(card.match(/data-test="carte-badge"[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? '')
+      return [
+        {
+          id: url.match(/\/(A\d+)/)?.[1] ?? url,
+          title: clean(link[2]),
+          url,
+          ...(published ? { published } : {}),
+          ...(category ? { category } : {}),
+          ...(when ? { when, ...parsePeriod(when) } : {})
+        }
+      ]
+    })
+}
+
+/** Of the agenda's cards, the changes that start on `day`. */
+export function changesOn(cards: SpCard[], day: string): TodayEvent[] {
+  return cards
     .filter((c) => c.from === day)
     .map((c) => ({
       id: `change-${c.id}`,
@@ -126,6 +197,13 @@ async function changeEvents(day: string): Promise<TodayEvent[]> {
       url: c.url,
       source: 'Service public'
     }))
+}
+
+let agenda: { at: number; text: string } | null = null
+
+async function changeEvents(day: string): Promise<TodayEvent[]> {
+  if (!agenda || Date.now() - agenda.at > AGENDA_TTL) agenda = { at: Date.now(), text: await fetchAsBrowser(`${SP}/agenda`) }
+  return changesOn(parseSpCards(agenda.text), day)
 }
 
 /** Today's events: whole days first (holidays, clock, changes), then the agenda by time. */

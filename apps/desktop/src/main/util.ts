@@ -31,9 +31,14 @@ function start(cmd: string, args: string[], opts: RunOptions): ChildProcess {
   return viaShell ? spawn(`"${cmd}"`, args.map(quoteCmdArg), { ...spawnOpts, shell: true }) : spawn(cmd, args, spawnOpts)
 }
 
+/** How long a stopped process may take to go before its caller is told anyway. */
+const STOP_WAIT_MS = 5_000
+
 /**
  * Run a command to completion; never throws for non-zero exit (check `code`). With `onLine`,
- * stdout is delivered line by line as it arrives instead of being collected.
+ * stdout is delivered line by line as it arrives instead of being collected. Stopped (cancelled,
+ * timed out), it rejects once the process is gone, or STOP_WAIT_MS after: until then it may still
+ * be writing (an engine its transcript, in clear), and what the caller cleans up must stay clean.
  */
 export function run(cmd: string, args: string[], opts: RunOptions & { onLine?: (line: string) => void } = {}): Promise<RunResult> {
   return new Promise((resolve, reject) => {
@@ -42,6 +47,7 @@ export function run(cmd: string, args: string[], opts: RunOptions & { onLine?: (
     let stderr = ''
     let pending = ''
     let settled = false
+    let stopped: Error | null = null
     let granted = 0
     const arm = (ms: number): NodeJS.Timeout =>
       setTimeout(() => {
@@ -53,25 +59,32 @@ export function run(cmd: string, args: string[], opts: RunOptions & { onLine?: (
           timer = arm(Math.max(more, 5_000))
           return
         }
-        kill(child)
-        finish(new Error(`${cmd} timed out after ${Math.round(opts.timeoutMs! / 1000)}s`))
+        stop(new Error(`${cmd} timed out after ${Math.round(opts.timeoutMs! / 1000)}s`))
       }, ms)
     let timer = opts.timeoutMs ? arm(opts.timeoutMs) : null
-    const onAbort = () => {
+    let cap: NodeJS.Timeout | null = null
+    const onAbort = () => stop(new Error('Cancelled'))
+    function stop(err: Error): void {
+      if (settled || stopped) return
+      stopped = err
+      if (timer) clearTimeout(timer)
       kill(child)
-      finish(new Error('Cancelled'))
+      cap = setTimeout(() => finish(err), STOP_WAIT_MS)
     }
-    if (opts.signal?.aborted) return onAbort()
-    opts.signal?.addEventListener('abort', onAbort, { once: true })
+    if (opts.signal?.aborted) onAbort()
+    else opts.signal?.addEventListener('abort', onAbort, { once: true })
     function finish(err: Error | null, result?: RunResult) {
       if (settled) return
       settled = true
       if (timer) clearTimeout(timer)
+      if (cap) clearTimeout(cap)
       opts.signal?.removeEventListener('abort', onAbort)
       if (err) reject(err)
       else resolve(result!)
     }
     child.stdout?.setEncoding('utf8').on('data', (d: string) => {
+      // Stopped: what it still says is nobody's to read.
+      if (stopped) return
       if (!opts.onLine) return void (stdout += d)
       pending += d
       let nl: number
@@ -82,8 +95,9 @@ export function run(cmd: string, args: string[], opts: RunOptions & { onLine?: (
       }
     })
     child.stderr?.setEncoding('utf8').on('data', (d: string) => (stderr = (stderr + d).slice(-20_000)))
-    child.on('error', (err) => finish(err))
+    child.on('error', (err) => finish(stopped ?? err))
     child.on('close', (code) => {
+      if (stopped) return finish(stopped)
       if (opts.onLine && pending.trim()) opts.onLine(pending)
       finish(null, { code, stdout, stderr })
     })
@@ -148,13 +162,4 @@ export function which(name: string): string | null {
     }
   }
   return null
-}
-
-const pad = (n: number) => String(n).padStart(2, '0')
-
-/** Sortable, readable ids: 20261027-214233-a1b2. */
-export function newId(date = new Date()): string {
-  const d = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`
-  const t = `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`
-  return `${d}-${t}-${Math.random().toString(16).slice(2, 6)}`
 }

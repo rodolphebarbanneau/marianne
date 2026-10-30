@@ -18,7 +18,7 @@ import { approvals } from './approvals'
 import { browser } from './browser'
 import { configStore } from './config'
 import { content } from './content'
-import { listSkills, runsSince, runTurn, systemPrompt, taskMessage, userMessage, type EngineEvent } from './engines'
+import { forgetTranscripts, listSkills, runsSince, runTurn, systemPrompt, taskMessage, userMessage, type EngineEvent } from './engines'
 import { folders, redoFrom, titleFrom } from './folders'
 import { log } from './log'
 import { profile } from './profile/store'
@@ -94,12 +94,22 @@ interface Writing {
   answer: ChatMessage
 }
 
+/** A planned task's run under way. */
+interface Run {
+  folderId: string
+  /** Resolves once the run is over and has written what it writes, if anything. */
+  done: Promise<void>
+  interrupted: boolean
+}
+
 class Chat extends EventEmitter {
   private active = new Map<string, AbortController>()
   /** The answer being written, per folder: cards from tool calls go there. */
   private writing = new Map<string, Writing>()
+  /** Each turn under way, per folder: resolves once it has saved what it saves. */
+  private ending = new Map<string, Promise<void>>()
   /** The planned task's run under way: the user's turn comes first. */
-  private run: { folderId: string; done: Promise<unknown>; interrupted: boolean } | null = null
+  private run: Run | null = null
 
   constructor() {
     super()
@@ -210,6 +220,21 @@ class Chat extends EventEmitter {
     this.active.get(id)?.abort()
   }
 
+  /**
+   * The folder goes, with its task and its transcripts. A turn in it is stopped and over first: what
+   * it saves at its end (the messages, the engine's transcript) would otherwise outlive the folder.
+   */
+  async deleteFolder(id: string): Promise<void> {
+    tasks.forgetFolder(id)
+    if (this.run?.folderId === id) await this.interruptRun()
+    else {
+      this.cancel(id)
+      await this.ending.get(id)
+    }
+    folders.remove(id)
+    forgetTranscripts(id)
+  }
+
   /** The user comes first: a run under way gives way to their turn, leaves no trace, and stays due. */
   private async interruptRun(): Promise<void> {
     const run = this.run
@@ -234,33 +259,53 @@ class Chat extends EventEmitter {
     const folder = folders.get(task.folderId)
     if (!folder) throw new Error('Dossier introuvable.')
     if (this.active.has(folder.id)) throw new Error('Marianne répond déjà dans ce dossier.')
-    // Nothing is written before it ends: a lock leaves no trace of it, and it comes back whole.
-    const messages = folders.messages(folder.id)
-    const opening = this.taskLine(line)
-    messages.push(opening)
-    // Its page goes to its own sites only, held there before any request leaves, in a browser session
-    // of its own that never has the user's sign-ins (browser/index.ts, run-guard.ts).
-    await browser.beginRun((url) => siteAllowed(task, url))
-    const running = this.turn(folder, messages, opening, { text: taskMessage(task), timeoutMs: TASK_MINUTES * 60_000 })
-    const run = { folderId: folder.id, done: running.catch(() => undefined), interrupted: false }
+    // Known before anything is awaited: a message sent while the browser gets ready interrupts the run,
+    // rather than start a turn beside it, or land its browser tools in the run's session.
+    let over!: () => void
+    const run: Run = { folderId: folder.id, done: new Promise<void>((resolve) => (over = resolve)), interrupted: false }
     this.run = run
-    const answer = await running.finally(() => browser.endRun())
-    this.run = null
-    const reported = tasks.takeReport()
-    if (run.interrupted) {
-      messages.splice(messages.indexOf(opening))
+    try {
+      // Its page goes to its own sites only, held there before any request leaves, in a browser session
+      // of its own that never has the user's sign-ins (browser/index.ts, run-guard.ts).
+      await browser.beginRun((url) => siteAllowed(task, url))
+      if (run.interrupted) throw new RunInterrupted()
+      // Nothing is written before it ends, and then only here: interrupted or locked, it leaves no
+      // trace, and it comes back whole.
+      const messages = folders.messages(folder.id)
+      const opening = this.taskLine(line)
+      messages.push(opening)
+      const answer = await this.turn(folder, messages, opening, { text: taskMessage(task), timeoutMs: TASK_MINUTES * 60_000 })
+      const reported = tasks.takeReport()
+      if (run.interrupted) {
+        this.showStored(folder.id)
+        throw new RunInterrupted()
+      }
+      const end: TaskTurnEnd =
+        answer.status === 'error'
+          ? { outcome: 'failed', text: answer.error }
+          : answer.status === 'cancelled'
+            ? { outcome: 'failed', text: 'vérification interrompue' }
+            : (reported ?? { outcome: 'found', text: 'la vérification n’a pas conclu : à relire' })
+      opening.outcome = end.outcome
       this.save(folder.id, messages)
-      throw new RunInterrupted()
+      return end
+    } finally {
+      try {
+        await browser.endRun()
+      } catch (err) {
+        log.warn('Could not close the run’s browser:', (err as Error).message)
+      }
+      if (this.run === run) this.run = null
+      // Only now does the user's turn go on (interruptRun): it reads the conversation as the run left it.
+      over()
     }
-    const end: TaskTurnEnd =
-      answer.status === 'error'
-        ? { outcome: 'failed', text: answer.error }
-        : answer.status === 'cancelled'
-          ? { outcome: 'failed', text: 'vérification interrompue' }
-          : (reported ?? { outcome: 'found', text: 'la vérification n’a pas conclu : à relire' })
-    opening.outcome = end.outcome
-    this.save(folder.id, messages)
-    return end
+  }
+
+  /** The window showed a run that leaves nothing: the folder as the archive still holds it. */
+  private showStored(folderId: string): void {
+    const view = session.unlocked ? this.view(folderId) : null
+    if (view) this.emit('folder', view)
+    folders.emit('list')
   }
 
   /** Locked meanwhile, the run is lost with the session: never written in clear. */
@@ -294,6 +339,8 @@ class Chat extends EventEmitter {
     messages.push(answer)
     const controller = new AbortController()
     const w: Writing = { folder, messages, answer }
+    let ended!: () => void
+    this.ending.set(folder.id, new Promise<void>((resolve) => (ended = resolve)))
     this.active.set(folder.id, controller)
     this.writing.set(folder.id, w)
     this.push(w)
@@ -371,13 +418,18 @@ class Chat extends EventEmitter {
       this.active.delete(folder.id)
       this.writing.delete(folder.id)
       try {
-        folders.saveMessages(folder.id, messages)
-        // A run's folder wakes only when it found something (tasks.ts): a quiet run leaves it as it was.
-        if (!run) folders.update(folder.id, { updatedAt: new Date().toISOString(), seen: false })
+        // A run's messages are its own to write, once it is over (runTask), and its folder wakes only
+        // when it found something (tasks.ts). A folder deleted meanwhile gets nothing back.
+        if (!run && folders.get(folder.id)) {
+          folders.saveMessages(folder.id, messages)
+          folders.update(folder.id, { updatedAt: new Date().toISOString(), seen: false })
+        }
       } catch (err) {
         // Locked meanwhile: the answer is lost with the session, never written in clear.
         log.warn('Could not save the answer of', folder.id, (err as Error).message)
       }
+      this.ending.delete(folder.id)
+      ended()
       // Read again: what the turn did to its folder (a task planned) is the window's to show.
       this.emit('folder', { folder: (session.unlocked && folders.get(folder.id)) || w.folder, messages, running: false })
       log.info(`Turn ${folder.id} ${answer.status} in ${answer.ms}ms (${engine}/${answer.model})`)

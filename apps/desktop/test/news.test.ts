@@ -530,6 +530,20 @@ describe('the article', () => {
     expect(state.fetched).toContain('https://site.fr/g')
   })
 
+  it('keeps nothing of an article still being read when the account locks', async () => {
+    serve({ 'https://la-croix.fr/rss.xml': [{ guid: 'g', title: 'Collision de trains en Espagne', ago: 5 }] })
+    const r = reader()
+    const { items } = await r.whole()
+    state.pages.set('https://site.fr/g', { body: page(para(12)), type: 'text/html; charset=utf-8' })
+    const reading = r.article(items[0].id)
+    r.forgetArticles()
+    // Whoever asked before the lock gets it; nothing of it is kept past the lock.
+    expect((await reading)?.start).toMatch(/^Phrase numéro 1/)
+    state.fetched = []
+    await r.article(items[0].id)
+    expect(state.fetched).toContain('https://site.fr/g')
+  })
+
   it('keeps only the last articles asked', async () => {
     const r = reader()
     serve({

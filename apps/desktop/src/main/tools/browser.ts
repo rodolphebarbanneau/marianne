@@ -57,11 +57,13 @@ const beyondRun = (what: string) =>
 /**
  * The run a call started in (ToolContext.run), while it still runs; null for a conversation's call.
  * A call that outlives its run (the user's message stopped it while a page loaded) stops here: it
- * never goes on as a conversation's, so nothing it reached becomes the folder's consent.
+ * never goes on as a conversation's, so nothing it reached becomes the folder's consent. So does one
+ * made once the run's browser is gone (the user typed an address) while its engine is being stopped:
+ * the page is the user's again.
  */
 function runOf(ctx: ToolContext): PlannedTask | null {
   if (!ctx.run) return null
-  if (tasks.runningIn(ctx.run.folderId) !== ctx.run) throw new ToolError('The planned task’s run is over: stop here.')
+  if (tasks.runningIn(ctx.run.folderId) !== ctx.run || !browser.inRun()) throw new ToolError('The planned task’s run is over: stop here.')
   return ctx.run
 }
 

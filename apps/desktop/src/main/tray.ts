@@ -36,6 +36,19 @@ function when(days: number): string {
   return days === 0 ? 'aujourd’hui' : days === 1 ? 'demain' : `dans ${days} jours`
 }
 
+/**
+ * What deadlines' notifications say: when, never what. A notification stays on the screen of whoever
+ * is there, and a deadline's title may carry an identifier (a vehicle's plate, when it has no model).
+ * A few at a time; more (a first run, a long absence) in a single summary.
+ */
+export function deadlineNotices(due: Deadline[], now = new Date()): Array<{ title: string; body: string; silent: boolean }> {
+  const days = (d: Deadline) => daysUntil(d.date, now)
+  if (due.length <= 3)
+    return due.map((d) => ({ title: `Échéance ${when(days(d))} · ${frDate(d.date)}`, body: 'Ouvrez Marianne pour la voir.', silent: days(d) > 7 }))
+  const first = [...due].sort((a, b) => a.date.localeCompare(b.date))[0]
+  return [{ title: `${due.length} échéances à venir`, body: `La prochaine ${when(days(first))} : ouvrez Marianne pour les voir.`, silent: days(first) > 7 }]
+}
+
 function refresh(): void {
   if (!tray) return
   const next = upcoming()
@@ -87,16 +100,10 @@ function remind(): void {
     shown[key] = new Date().toISOString()
   }
   if (!due.length) return
-  const notify = (title: string, body: string, silent: boolean) => {
-    const n = new Notification({ title, body, silent })
+  for (const notice of deadlineNotices(due)) {
+    const n = new Notification(notice)
     n.on('click', () => navigate('procedures'))
     n.show()
-  }
-  // A few at a time; more (first run, a long absence) in a single summary.
-  if (due.length <= 3) for (const d of due) notify(`Échéance ${when(daysUntil(d.date))} · ${frDate(d.date)}`, d.title, daysUntil(d.date) > 7)
-  else {
-    const first = due.sort((a, b) => a.date.localeCompare(b.date))[0]
-    notify(`${due.length} échéances à venir`, `La prochaine ${when(daysUntil(first.date))} : ${first.title}`, daysUntil(first.date) > 7)
   }
   // Forget reminders older than a year.
   const cutoff = new Date(Date.now() - 365 * 86_400_000).toISOString()

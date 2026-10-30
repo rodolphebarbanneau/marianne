@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events'
 import { session as electronSession, shell, WebContentsView, type BrowserWindow } from 'electron'
 import type { BrowserState, PagePart } from '../../shared/types'
-import { keychain, siteOf } from '../keychain'
+import { keychain, loginFits, siteOf } from '../keychain'
 import { log } from '../log'
 import { session } from '../session'
 import { holdToRun, mayOpen, type RunGuard } from './run-guard'
@@ -34,6 +34,12 @@ const PARTITION = 'marianne-web'
 const RUN_PARTITION = 'marianne-run'
 const MAX_PAGE_CHARS = 40_000
 
+/** A view's address; none for the blank page a lock leaves, which is nobody's page. */
+function addressOf(wc: Electron.WebContents | undefined): string {
+  const url = wc?.getURL() ?? ''
+  return url === 'about:blank' ? '' : url
+}
+
 export interface PageElement {
   id: string
   role: string
@@ -65,6 +71,8 @@ class Browser extends EventEmitter {
   private usedAt = 0
   /** While a planned task runs, the sites its page may go to (run-guard.ts). */
   private runGuard: RunGuard = null
+  /** A run is getting its view ready: reaching for the browser meanwhile interrupts it too. */
+  private starting = false
   /** The user's page and folder, set aside while a run has its own view. */
   private aside: { view: WebContentsView | null; folderId: string; usedAt: number } | null = null
   private prepared = new Set<string>()
@@ -75,13 +83,23 @@ class Browser extends EventEmitter {
    * while the browser isn't the user's (tasks.ts).
    */
   async beginRun(guard: (url: string) => boolean): Promise<void> {
-    if (this.runGuard) await this.endRun()
-    await electronSession.fromPartition(RUN_PARTITION).clearStorageData()
+    this.starting = true
+    try {
+      if (this.runGuard) await this.endRun()
+      await electronSession.fromPartition(RUN_PARTITION).clearStorageData()
+    } finally {
+      this.starting = false
+    }
     this.aside = { view: this.view, folderId: this.folderId, usedAt: this.usedAt }
     this.view?.setVisible(false)
     this.view = null
     this.runGuard = guard
     this.changed()
+  }
+
+  /** Whether a run has the browser: a run's call made once it no longer has it stops (tools/browser.ts). */
+  inRun(): boolean {
+    return !!this.runGuard
   }
 
   /** The run is over: its view and everything it reached go, the user's page comes back. */
@@ -109,7 +127,17 @@ class Browser extends EventEmitter {
 
   /** The user reached for the browser during a run: the run gives way (chat.ts), as it does to their message. */
   private reachedFor(): void {
-    if (this.runGuard) this.emit('taken')
+    if (this.runGuard || this.starting) this.emit('taken')
+  }
+
+  /**
+   * The user's page is about to load: a run under way gives way first, and its view and session go
+   * before anything loads, so that the user's page never opens in the run's guarded session, nor the
+   * run's view closes on it.
+   */
+  private async giveWay(): Promise<void> {
+    this.reachedFor()
+    await this.endRun()
   }
 
   /** The window the panel lives in. */
@@ -180,7 +208,7 @@ class Browser extends EventEmitter {
     } else this.view.setVisible(false)
   }
 
-  /** Open `url` for a folder (http and https only). */
+  /** Open `url` for a folder (http and https only): Marianne's tools, or the user's once a run gave way. */
   open(url: string, folderId = this.folderId): void {
     if (!/^https?:\/\//i.test(url)) throw new Error(`Adresse non prise en charge : ${url}`)
     this.folderId = folderId
@@ -189,16 +217,28 @@ class Browser extends EventEmitter {
     this.changed()
   }
 
-  navigate(input: string): void {
+  /** An address the user opens (a step's site, a link of the window): a run under way gives way first. */
+  async openForUser(url: string, folderId?: string): Promise<void> {
+    try {
+      await this.giveWay()
+      // After the run: its folder was the run's, the user's page is back with its own.
+      this.open(url, folderId ?? this.folderId)
+    } catch {
+      // The host only: an address may carry the user's values.
+      log.warn('Browser: could not open a page on', siteOf(url) || 'an address that is not a web page')
+    }
+  }
+
+  /** What the user typed in the address bar: an address, or a search of Service-Public. */
+  navigate(input: string): Promise<void> {
     const text = input.trim()
-    if (!text) return
-    this.reachedFor()
+    if (!text) return Promise.resolve()
     const url = /^https?:\/\//i.test(text)
       ? text
       : /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(text)
         ? `https://${text}`
         : `https://www.service-public.gouv.fr/particuliers/recherche?keyword=${encodeURIComponent(text)}`
-    this.open(url)
+    return this.openForUser(url)
   }
 
   back(): void {
@@ -221,7 +261,7 @@ class Browser extends EventEmitter {
   state(): BrowserState {
     const wc = this.view?.webContents
     return {
-      url: wc?.getURL() ?? '',
+      url: addressOf(wc),
       title: wc?.getTitle() ?? '',
       loading: wc?.isLoading() ?? false,
       canGoBack: wc?.navigationHistory.canGoBack() ?? false,
@@ -262,7 +302,7 @@ class Browser extends EventEmitter {
     this.usedAt = Date.now()
     if (this.controller === 'human') throw new HumanControlError()
     const wc = this.view?.webContents
-    if (!wc || !wc.getURL()) throw new Error('Aucune page ouverte dans le navigateur de Marianne.')
+    if (!wc || !addressOf(wc)) throw new Error('Aucune page ouverte dans le navigateur de Marianne.')
     return wc
   }
 
@@ -322,16 +362,18 @@ class Browser extends EventEmitter {
     return (await this.agentPage().executeJavaScript(FORM_FILL_SCRIPT(values))) as { filled: string[]; missing: string[] }
   }
 
-  /** Fill the login form with a keychain entry, in the frames that belong to the entry's site only. */
+  /**
+   * Fill the login form with a keychain entry, in the frames on the entry's own host or under it only:
+   * not anywhere on its registrable domain, which other owners may share (x.asso.fr and evil.asso.fr).
+   */
   async fillLogin(entryId: string): Promise<string[]> {
     const wc = this.view?.webContents
     const entry = keychain.list().find((e) => e.id === entryId)
     const secret = entry && keychain.secret(entryId)
     if (!wc || !entry || !secret) return []
-    const site = siteOf(entry.url)
-    if (siteOf(wc.getURL()) !== site) throw new Error('Cet identifiant n’est pas pour ce site.')
+    if (!loginFits(entry.url, wc.getURL())) throw new Error('Cet identifiant n’est pas pour ce site.')
     for (const frame of wc.mainFrame.framesInSubtree) {
-      if (siteOf(frame.url) !== site) continue
+      if (!loginFits(entry.url, frame.url)) continue
       try {
         const filled = (await frame.executeJavaScript(FILL_SCRIPT(secret.username, secret.password))) as string[]
         if (filled.length) return filled
@@ -345,7 +387,7 @@ class Browser extends EventEmitter {
   /** The visible text of the page, to give to the conversation. */
   async capture(): Promise<PagePart | null> {
     const wc = this.view?.webContents
-    if (!wc || !wc.getURL()) return null
+    if (!wc || !addressOf(wc)) return null
     const page = (await wc.executeJavaScript(READ_SCRIPT)) as { title: string; url: string; text: string }
     const text = page.text
       .replace(/[ \t]+\n/g, '\n')
@@ -355,14 +397,15 @@ class Browser extends EventEmitter {
   }
 
   currentUrl(): string {
-    return this.view?.webContents.getURL() ?? ''
+    return addressOf(this.view?.webContents)
   }
 
+  /** The passwords to mask on a page: those of its whole site, wider than where they fill. */
   private storedPasswords(url: string): Set<string> {
     if (!session.maybe) return new Set()
     return new Set(
       keychain
-        .forUrl(url)
+        .ofSite(url)
         .map((e) => keychain.secret(e.id)?.password ?? '')
         .filter(Boolean)
     )
@@ -370,10 +413,13 @@ class Browser extends EventEmitter {
 
   /** The account locked: forget every page, cookie and login. */
   async forget(): Promise<void> {
+    await this.endRun()
+    // After the run, which puts the user's folder and its time back: the lock leaves no page, nobody's,
+    // and none left lately, so the planned tasks of the next opening aren't held for it (tasks.isBusy).
     this.folderId = ''
     this.waiting = ''
     this.controller = 'agent'
-    await this.endRun()
+    this.usedAt = 0
     if (this.view) void this.view.webContents.loadURL('about:blank')
     await electronSession.fromPartition(PARTITION).clearStorageData()
     this.changed()

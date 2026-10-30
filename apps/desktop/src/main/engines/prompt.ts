@@ -38,10 +38,9 @@ const SETTINGS_PAGES =
  * Marianne's system prompt. It stays the same across the turns of a folder (engines record it
  * once per session); what changes (date, screen, attachments) goes in each user message.
  */
-export function systemPrompt(opts: { skills: SkillInfo[]; services?: string; notes?: string; custom?: string; web: WebAccess; legifrance: boolean }): string {
+export function systemPrompt(opts: { skills: SkillInfo[]; services?: string; notes?: string; web: WebAccess; legifrance: boolean }): string {
   const skills = opts.skills.map((s) => `- ${s.name}: ${s.description}`).join('\n')
   const notes = opts.notes?.trim()
-  const custom = opts.custom?.trim()
   const web =
     opts.web === 'off'
       ? 'You have no web access: rely on your tools.'
@@ -116,7 +115,7 @@ The services that are on (3615 codes) lend you their tools (named <code>_<tool>)
 
 ${opts.services.trim()}`
       : ''
-  }${notes ? `\n\n# What the user says about themselves\n\n${notes}` : ''}${custom ? `\n\n# The user's instructions\n\n${custom}` : ''}`
+  }${notes ? `\n\n# What the user says about themselves\n\n${notes}` : ''}`
 }
 
 const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
@@ -181,7 +180,9 @@ export function recap(messages: ChatMessage[], since = false): string {
  * watching, what a run may do, and how it ends. The task's own words stay inside the frame.
  */
 export function taskMessage(task: PlannedTask): string {
-  const entity = task.entity ? `\nIt is about: ${task.entity.id}.` : ''
+  // The identifier the user agreed to, the one type_text accepts: the chat scrubs it into its token
+  // before the engine reads it, and the run can't ask the profile for it.
+  const entity = task.entity ? `\nIt is about: ${task.entity.label}.` : ''
   const sites = task.sites.length
     ? `You may open ${task.sites.join(', ')}, for this run only, and no other site.`
     : 'It has no site of its own: it can open none.'

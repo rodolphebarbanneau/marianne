@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
-import { readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
 import { redact, today, type DocumentMeta, type DocumentType } from '@marianne/profile'
 import type { DomainId } from '../../shared/types'
@@ -129,13 +129,14 @@ class DocumentStore extends EventEmitter {
     return session.archive.readFile(id)
   }
 
-  /** A decrypted copy in the temporary folder (emptied at each start), to open with the system. */
+  /** A decrypted copy in the opened copies' folder (emptied on lock, at quit and at start), to open with the system. */
   async decryptedCopy(id: string): Promise<string> {
     const meta = this.get(id)
     if (!meta) throw new Error('Document inconnu')
-    const out = join(paths.tmp, `${id.slice(0, 8)}-${meta.fileName.replace(/[^\w.\- ()àâäéèêëîïôöùûüç]/gi, '_')}`)
+    await mkdir(paths.opened, { recursive: true })
+    const out = join(paths.opened, `${id.slice(0, 8)}-${meta.fileName.replace(/[^\w.\- ()àâäéèêëîïôöùûüç]/gi, '_')}`)
     await writeFile(out, this.bytes(id), { mode: 0o600 })
-    // Long enough for the viewer to open it; the rest of tmp is emptied at quit and at launch.
+    // Long enough for the viewer to open it; whatever is left goes on lock, at quit and at launch.
     setTimeout(() => void rm(out, { force: true }).catch(() => undefined), 10 * 60_000).unref()
     return out
   }
