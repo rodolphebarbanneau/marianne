@@ -4,7 +4,7 @@ import { api } from '../../lib/api'
 import { useCatalogue, useServices, useServiceTiles } from '../../host'
 import { CATALOGUE_PAGE, CatalogueNote, CatalogueTable, catalogueRows, RecommendedCards, recommended, TRUST_FILTERS, type TrustFilter } from './discover'
 import { FileDialog, PinsDialog, ReviewDialog, type ReviewSubject } from './dialogs'
-import { KioskHead } from './kiosk'
+import { ServicesHead } from './kiosk'
 import { byOrigin, MineTable, ORIGIN_FILTERS, type OriginFilter } from './mine'
 import { listings, nextSort, search, searchTerms, type CatalogueKey, type Listing, type MineKey, type Sort } from './model'
 import { onFileReview, takeFileReview } from './pending'
@@ -144,7 +144,7 @@ export function ServicesPage() {
   return (
     <div className="page services-page">
       <div className="section kiosk-top">
-        <KioskHead ref={input} query={query} onQuery={typed} onEnvoi={envoi} onKey={onKey} />
+        <ServicesHead ref={input} query={query} onQuery={typed} onEnvoi={envoi} onKey={onKey} />
         {searching ? (
           <SearchHead query={query.trim()} groups={groups} onClear={clear} />
         ) : (

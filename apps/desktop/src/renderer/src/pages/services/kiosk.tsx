@@ -1,10 +1,11 @@
 import { forwardRef, type KeyboardEvent } from 'react'
 import { usePixelRatio } from '@marianne/sdk/view'
+import { KioskHead } from '../../components/kiosk-head'
 
 /**
- * The kiosk's head: QUEL SERVICE ?, the 3615 bar (a code or words: the one search of the page),
- * ENVOI, and a Minitel waiting beside them. While one types, 3615 and the bar's frame light up
- * together, and the Minitel's screen follows the letters.
+ * The Services page's head (components/kiosk-head.tsx): QUEL SERVICE ?, the 3615 bar (a code or
+ * words: the one search of the page), ENVOI, and a Minitel waiting beside them, its screen following
+ * the letters.
  */
 
 /**
@@ -97,44 +98,28 @@ function MinitelArt({ typed }: { typed: number }) {
   )
 }
 
-export const KioskHead = forwardRef<
+/** The Services page's head: its question, the 3615 bar, the Minitel. */
+export const ServicesHead = forwardRef<
   HTMLInputElement,
   { query: string; onQuery: (query: string) => void; onEnvoi: () => void; onKey: (e: KeyboardEvent<HTMLInputElement>) => void }
->(function KioskHead({ query, onQuery, onEnvoi, onKey }, ref) {
+>(function ServicesHead({ query, onQuery, onEnvoi, onKey }, ref) {
   return (
-    <div className="kiosk-head">
-      <div>
+    <KioskHead
+      ref={ref}
+      line={
         <span className="ask" id="kiosk-ask">
           QUEL SERVICE ?
         </span>
-        <div className="codebar">
-          <span className="pre" aria-hidden>
-            3615
-          </span>
-          <label className="cfield">
-            <input
-              ref={ref}
-              value={query}
-              maxLength={40}
-              spellCheck={false}
-              autoComplete="off"
-              placeholder="un code ou un mot"
-              aria-labelledby="kiosk-ask"
-              aria-describedby="kiosk-3615"
-              onChange={(e) => onQuery(e.target.value)}
-              onKeyDown={onKey}
-            />
-            <span className="cursor" aria-hidden />
-          </label>
-          <span id="kiosk-3615" hidden>
-            3615 : tapez un code (METEO) ou des mots (pharmacie, vote)
-          </span>
-          <button className="envoi" onClick={onEnvoi}>
-            ENVOI ↵
-          </button>
-        </div>
-      </div>
-      <MinitelArt typed={query.length} />
-    </div>
+      }
+      block="3615"
+      placeholder="un code ou un mot"
+      query={query}
+      onQuery={onQuery}
+      onEnvoi={onEnvoi}
+      onKey={onKey}
+      art={<MinitelArt typed={query.length} />}
+      labelledBy="kiosk-ask"
+      hint="3615 : tapez un code (METEO) ou des mots (pharmacie, vote)"
+    />
   )
 })

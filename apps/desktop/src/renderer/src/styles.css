@@ -4035,3 +4035,825 @@ button.choice:hover {
 .mini-area > .mini {
   pointer-events: auto;
 }
+
+/* ---------- Démarches and the domains: the Services page's parts first (kiosk-head, codebar, ktabs, sec-h, stable, srow,
+   switch, folder-head, msg, composer); dm-… only for what they lack ---------- */
+
+/* The head: the Services page's, for every page. The line above the bar is the page's title and what it is about. */
+.kiosk-head .ask .d {
+  margin-left: 12px;
+  font-family: var(--sharp);
+  font-size: 12.5px;
+  letter-spacing: 0;
+  color: var(--dim);
+}
+/* A domain's line: a plain way back, its frame on hover only, then the name and what it is about. */
+.kiosk-head .ask.dm-line {
+  display: flex;
+  align-items: center;
+}
+.kiosk-head .ask .back {
+  flex: none;
+  width: 26px;
+  height: 22px;
+  margin: -2px 6px -2px -5px;
+}
+/* The bar as a question: the same bar, but a sentence stays a sentence. */
+.dm-modal .codebar {
+  max-width: none;
+}
+.codebar.q .cfield input {
+  flex: 1;
+  field-sizing: fixed;
+  font-family: var(--sharp);
+  font-size: 13.5px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--hi);
+}
+.codebar.q .cfield input:placeholder-shown {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1.35);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.codebar.q input {
+  caret-color: var(--accent);
+}
+.codebar.q .cfield:not(:has(input:placeholder-shown)) .cursor {
+  display: none;
+}
+.codebar .pre {
+  white-space: nowrap;
+}
+/* A domain's page: the head, its tabs, then what scrolls. */
+.dm-dom.service-page {
+  padding-top: 0;
+}
+.dm-dom .kiosk-top {
+  padding-bottom: 0;
+}
+.dm-dom .service-tabs {
+  margin-top: var(--s2);
+}
+.dm-starters {
+  display: flex;
+  gap: var(--s2);
+  overflow: hidden;
+  white-space: nowrap;
+  margin-bottom: var(--s4);
+}
+.dm-starters .chip {
+  font-size: 0.86em;
+  padding: 1px 8px;
+  flex: none;
+}
+.dm-two {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: var(--s5);
+  align-items: start;
+}
+.dm-two > div > .sec-h:first-child {
+  margin-top: 0;
+}
+/* A domain's block: its two letters, as a service's 3615. */
+.dm-badge {
+  display: inline-block;
+  min-width: 26px;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  line-height: 16px;
+  padding: 0 4px;
+  border: 1px solid var(--fg);
+  color: var(--fg);
+  flex: none;
+}
+.dm-num {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 3px;
+  text-align: center;
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 0.92);
+  line-height: 18px;
+  background: var(--fg);
+  color: var(--noir);
+  vertical-align: middle;
+}
+/* What it comes from: a service, a rule, the calendar, you, Marianne, a planned task. */
+.dm-src {
+  font-size: 0.78em;
+  color: var(--dim);
+  border: 1px solid var(--rule);
+  padding: 0 var(--s1);
+  white-space: nowrap;
+}
+.dm-src .inv {
+  font-size: 0.9em;
+  margin-right: 3px;
+}
+.dm-src.task {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+/* When: the same chip everywhere, its colour by how near. */
+.dm-when {
+  font-size: 0.86em;
+  white-space: nowrap;
+  color: var(--dim);
+}
+.dm-when.late {
+  color: var(--rouge);
+}
+.dm-when.soon {
+  color: var(--accent);
+}
+.dm-when.you {
+  color: var(--hi);
+}
+/* « à faire »: a search row, its when and its block in front. */
+.srow.dm-t {
+  grid-template-columns: 128px auto minmax(0, 1fr) 150px 92px;
+  gap: 10px;
+  padding: 4px 8px;
+}
+.srow.dm-t.here {
+  grid-template-columns: 136px minmax(0, 1fr) auto;
+}
+.srow.dm-t > .dm-src {
+  justify-self: start;
+}
+.srow.dm-t.first {
+  box-shadow: inset 2px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.dm-2 {
+  gap: 1px;
+}
+/* The sommaire: the Services page's table, a domain a line. */
+.dm-som td {
+  height: 35px;
+  padding: 0 10px 0 4px;
+  font-size: 1em;
+}
+.dm-som .dm-badge {
+  vertical-align: middle;
+}
+.dm-som th {
+  padding-top: 0;
+  padding-bottom: 6px;
+}
+.dm-som td.cat {
+  width: 112px;
+  padding-top: 11px;
+  vertical-align: top;
+  white-space: normal;
+  font-size: 0.7em;
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--rule);
+}
+.dm-som tbody tr.end td {
+  border-bottom: 1px solid var(--rule);
+}
+.dm-som td.dom {
+  white-space: nowrap;
+  width: 1%;
+}
+.dm-som .dn {
+  color: var(--hi);
+  margin-left: 4px;
+}
+.dm-som tr.idle .dn {
+  color: var(--dim);
+}
+.dm-som tbody tr:hover .dn {
+  color: var(--accent);
+}
+.dm-som td.st {
+  width: 100%;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.84em;
+  color: var(--dim);
+}
+.dm-som td.st b {
+  font-weight: 400;
+  color: var(--accent);
+}
+.dm-som tr.idle td.st {
+  color: var(--muted);
+}
+.dm-som th.wk,
+.dm-som td.wk {
+  min-width: 42px;
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+}
+.dm-som th.wk {
+  letter-spacing: 0;
+  text-transform: none;
+}
+.dm-som th.wk.now {
+  color: var(--accent);
+}
+.dm-som td.wk {
+  border-left: 1px dotted var(--rule);
+}
+.dm-som td.wk.now,
+.dm-dtl td.now {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.dm-som th.nb,
+.dm-som td.nb {
+  text-align: right;
+  padding-right: 8px;
+  padding-left: 8px;
+}
+.dm-som td.nb {
+  color: var(--muted);
+}
+.dm-som td.nb b {
+  font-family: var(--retro);
+  font-weight: 400;
+  font-size: var(--pixel-size);
+  line-height: 1;
+  color: var(--hi);
+}
+.dm-som td.sv {
+  padding-right: 0;
+}
+.dm-som td.sv .mosaic-box {
+  vertical-align: middle;
+  margin-right: 2px;
+}
+.dm-som tbody tr.sel td {
+  background: var(--sel);
+}
+.dm-som tbody tr.sel td.dom {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+/* A week's marks: an échéance, a square, red when late or within 3 days; its date and title on hover. */
+.dm-mk {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  min-height: 9px;
+  vertical-align: middle;
+}
+.dm-mk .e {
+  width: 9px;
+  height: 9px;
+  background: var(--fg);
+}
+.dm-mk .e.late {
+  background: var(--rouge);
+}
+/* The domain's weeks: one thin line per thing the user has. */
+.dm-dtl {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.dm-dtl th:first-child {
+  width: 150px;
+}
+.dm-dtl th {
+  font-weight: 400;
+  font-size: 0.72em;
+  color: var(--dim);
+  padding: 0 0 2px;
+  text-align: center;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--rule);
+}
+.dm-dtl th.now {
+  color: var(--accent);
+}
+.dm-dtl td {
+  padding: 2px 0;
+  text-align: center;
+  border-bottom: 1px dashed var(--rule);
+  border-left: 1px dotted var(--rule);
+  line-height: 1;
+}
+.dm-dtl td:first-child {
+  padding-right: var(--s3);
+  text-align: left;
+  white-space: nowrap;
+  font-size: 0.84em;
+  color: var(--dim);
+  border-left: 0;
+}
+.dm-runner {
+  font-size: 0.78em;
+  padding: 0 var(--s1);
+  white-space: nowrap;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+}
+.dm-runner.remind {
+  border-color: var(--dim);
+  color: var(--dim);
+}
+/* A task's runs, oldest to latest: nothing found, found, waits for you, failed, missed (run at the next opening). */
+.dm-runs {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+}
+.dm-runs i {
+  width: 12px;
+  height: 16px;
+  background: color-mix(in srgb, var(--fg) 45%, transparent);
+}
+.dm-runs i.found {
+  background: var(--accent);
+}
+.dm-runs i.you {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.dm-runs i.failed {
+  background: var(--rouge);
+}
+.dm-runs i.late {
+  background: color-mix(in srgb, var(--fg) 45%, transparent);
+  box-shadow: inset 0 -4px 0 var(--muted);
+}
+.dm-runs i.done {
+  background: var(--vert);
+}
+.dm-runs .lst {
+  font-size: 0.84em;
+  color: var(--dim);
+  margin-left: var(--s2);
+  white-space: nowrap;
+}
+/* The Démarches page's tasks: the table of « mes services ». */
+.dm-tks td {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.dm-tks .t {
+  color: var(--hi);
+  display: block;
+}
+.dm-tks .c {
+  display: block;
+  font-size: 0.86em;
+  color: var(--dim);
+}
+/* An entity: a vehicle, a home; what is tied to it. */
+.dm-ents {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
+}
+.dm-ents.one {
+  grid-template-columns: minmax(0, 1fr);
+}
+.dm-ent {
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  padding: var(--s3) var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+}
+.dm-ent .top {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+.dm-ent .md {
+  color: var(--hi);
+}
+.dm-ent .facts {
+  font-size: 0.86em;
+  color: var(--dim);
+}
+.dm-ent .tied {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px dashed var(--rule);
+}
+.dm-ent .tied .r {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s2);
+  align-items: center;
+  padding: var(--s1) 0;
+  border-bottom: 1px dashed var(--rule);
+  font-size: 0.88em;
+}
+.dm-ent .tied .r:last-child {
+  border-bottom: 0;
+}
+/* A French registration plate: its own colours, as data's are. */
+.dm-plate {
+  display: inline-flex;
+  align-items: stretch;
+  height: 24px;
+  border: 1px solid #9aa0b4;
+  background: #f7f8fb;
+  color: #111;
+  font-family: var(--sharp, monospace);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  flex: none;
+}
+.dm-plate .eu,
+.dm-plate .dep {
+  width: 14px;
+  background: #1f3fbf;
+  color: #fff;
+  font-size: 8px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2px;
+  letter-spacing: 0;
+}
+.dm-plate .dep {
+  align-items: center;
+  font-size: 7px;
+}
+.dm-plate .n {
+  padding: 0 var(--s2);
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+}
+.dm-critair {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  flex: none;
+}
+.dm-plate.mini {
+  height: 16px;
+  vertical-align: middle;
+}
+.dm-plate.mini .eu,
+.dm-plate.mini .dep {
+  width: 9px;
+  font-size: 6px;
+  padding-bottom: 1px;
+}
+.dm-plate.mini .n {
+  padding: 0 4px;
+  font-size: 10.5px;
+}
+.dm-ent .top {
+  gap: var(--s2);
+}
+.dm-ent .md {
+  flex: 1;
+  color: var(--hi);
+  min-width: 0;
+}
+.dm-ent {
+  padding: var(--s2) var(--s3);
+  gap: var(--s1);
+}
+/* Services of the domain: tiles (the Services page's), then what could help. */
+.dm-svcs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.dm-sline {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--s3);
+  align-items: center;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--rule);
+}
+.dm-sline.sug {
+  border-style: dashed;
+}
+.dm-sline .stack .t {
+  color: var(--hi);
+}
+.dm-sline .sum {
+  font-size: 0.86em;
+  color: var(--dim);
+}
+.dm-rows {
+  display: flex;
+  flex-direction: column;
+}
+.dm-fr {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: var(--s3);
+  align-items: center;
+  padding: var(--s2) 0;
+  border-bottom: 1px dashed var(--rule);
+  cursor: pointer;
+}
+.dm-fr:hover {
+  background: var(--hover);
+}
+.dm-fr .t {
+  color: var(--hi);
+}
+.dm-fr .s {
+  display: block;
+  font-size: 0.84em;
+  color: var(--dim);
+  margin-top: 2px;
+}
+.dm-stat {
+  font-size: 0.8em;
+  white-space: nowrap;
+}
+.dm-stat.approval {
+  color: var(--accent);
+  border: 1px dashed var(--accent);
+  padding: 0 var(--s1);
+}
+.dm-stat.question {
+  color: var(--accent);
+}
+.dm-stat.working {
+  color: var(--dim);
+}
+.dm-stat.done {
+  color: var(--vert);
+}
+.dm-stat.woke {
+  color: var(--cyan);
+}
+.dm-stat.veille,
+.dm-stat.classe {
+  color: var(--muted);
+}
+.dm-fr.here {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.dm-sline .t,
+.dm-sline .sum {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* A planned task, at full size. */
+.dm-tcard {
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  padding: var(--s3) var(--s4);
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  gap: var(--s5);
+  align-items: start;
+  margin-bottom: var(--s3);
+}
+.dm-tcard.off {
+  background: transparent;
+  opacity: 0.6;
+}
+.dm-tcard .hd {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+}
+.dm-tcard .hd .t {
+  font-size: 1.1em;
+  color: var(--hi);
+}
+.dm-tcard .hd .s {
+  display: flex;
+  gap: var(--s2);
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.86em;
+  color: var(--dim);
+}
+.dm-tcard .does {
+  font-size: 0.88em;
+  color: var(--fg);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dm-tcard .does .no {
+  color: var(--dim);
+}
+.dm-tcard .log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+}
+.dm-tcard .log .last {
+  font-size: 0.88em;
+  color: var(--fg);
+}
+.dm-tcard .log .last .when {
+  color: var(--dim);
+}
+.dm-tcard .cmd {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s2);
+  white-space: nowrap;
+}
+.dm-tcard .cmd .nx {
+  font-size: 0.86em;
+  color: var(--dim);
+  text-align: right;
+}
+.dm-tcard .cmd .nx b {
+  font-family: var(--retro);
+  font-weight: 400;
+  font-size: calc(var(--pixel-size) * 1);
+  color: var(--hi);
+  display: block;
+}
+.dm-tcard.prop {
+  border-style: dashed;
+  background: transparent;
+}
+.dm-proc {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: var(--s3);
+  align-items: center;
+  padding: var(--s2) 0;
+  border-bottom: 1px dashed var(--rule);
+}
+.dm-proc .steps {
+  display: flex;
+  gap: 2px;
+}
+.dm-proc .steps i {
+  width: 8px;
+  height: 12px;
+  background: var(--rule);
+}
+.dm-proc .t {
+  color: var(--hi);
+}
+.dm-proc .s {
+  display: block;
+  font-size: 0.84em;
+  color: var(--dim);
+  margin-top: 2px;
+}
+.dm-link {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  gap: var(--s3);
+  align-items: center;
+  padding: var(--s2) 0;
+  border-bottom: 1px dashed var(--rule);
+  width: 100%;
+  text-align: left;
+  white-space: normal;
+}
+.dm-link:hover {
+  color: var(--hi);
+}
+.dm-link .k {
+  font-size: 0.84em;
+  color: var(--dim);
+}
+/* The new task, from a service's template. */
+.modal.dm-modal {
+  width: min(720px, 100%);
+}
+.dm-modal .mh {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--rule);
+}
+.dm-modal .mh .t {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1);
+  letter-spacing: 0.08em;
+  color: var(--hi);
+}
+.dm-modal .mh .btn {
+  margin-left: auto;
+}
+.dm-modal .in {
+  padding: var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+.dm-modal .fr {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: var(--s3);
+  align-items: start;
+}
+.dm-modal .fr > .k {
+  font-size: 0.78em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding-top: 4px;
+}
+.dm-modal .opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+}
+.dm-modal .opt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 2px var(--s2);
+  border: 1px solid var(--rule);
+}
+.dm-modal .opt.on {
+  border-color: var(--hi);
+  color: var(--hi);
+}
+.dm-modal .can {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  font-size: 0.92em;
+}
+.dm-modal .can .host {
+  font-size: 0.86em;
+  border: 1px solid var(--rule);
+  padding: 0 var(--s1);
+  margin-right: var(--s1);
+  color: var(--fg);
+}
+.dm-modal .never {
+  border: 1px solid var(--rouge);
+  padding: var(--s2) var(--s3);
+  font-size: 0.9em;
+}
+.dm-modal .foot {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid var(--rule);
+}
+.dm-modal .foot .btn.primary {
+  margin-left: auto;
+}
+/* Choosing how a task starts: said in words, or a service's template. */
+.dm-modal .pick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.dm-modal .pick .sec-h {
+  margin-top: var(--s3);
+}
+.dm-modal .pick .dm-sline.plain {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.dm-modal .pick .dm-sline {
+  text-align: left;
+  width: 100%;
+  white-space: normal;
+}
+/* Every conversation has a line under its head. */
+.folder-head::after {
+  content: '';
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter-end);
+  bottom: 0;
+  border-bottom: 1px solid var(--rule);
+}
+.msg p {
+  margin: 4px 0;
+}
+.dm-older {
+  cursor: pointer;
+}
+.dm-older:hover {
+  color: var(--dim);
+}
