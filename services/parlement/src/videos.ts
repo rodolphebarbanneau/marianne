@@ -231,9 +231,10 @@ const RECORDINGS_MAX = 1000
 
 const recordingsOf = (http: Http) => recordings.get(http) ?? recordings.set(http, new Set()).get(http)!
 
-/** Notes a video whose smil is a recording's. */
+/** Notes a video whose smil is a recording's; one found live after all is forgotten. */
 function noteRecording(http: Http, id: string, stream: StreamInfo): void {
   const known = recordingsOf(http)
+  if (stream.live) known.delete(id)
   if (stream.live || !stream.hls || known.has(id)) return
   known.add(id)
   if (known.size > RECORDINGS_MAX) known.delete(known.values().next().value!)
@@ -416,9 +417,9 @@ export async function portalLives(http: Http, now = Date.now()): Promise<PortalL
   // Not those announced for much later (the portal lists a video a little before its live starts).
   const started = items.filter((v) => !v.date || Date.parse(v.date) <= now + 30 * 60_000)
   if (main && !started.some((v) => v.id === main)) started.push(liveItem(main))
-  // A recording doesn't go live again: its smil, asked once, isn't asked again.
+  // A recording doesn't go live again: its smil, asked once, isn't asked again. The live page's video is, whatever was known of it.
   const recorded = recordingsOf(http)
-  const unknown = started.filter((v) => !recorded.has(v.id))
+  const unknown = started.filter((v) => v.id === main || !recorded.has(v.id))
   const found = await Promise.all(
     unknown.map(async (item): Promise<PortalLive[]> => {
       const root = `${PORTAL}/Datas/an/${item.id}`

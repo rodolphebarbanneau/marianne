@@ -537,6 +537,16 @@ describe('a live at the Assemblée', () => {
     await videoDetail(opened, ID)
     await liveStreams(opened, false, ON_AIR)
     expect(opened.asked.filter((u) => u === `${ROOT}/meta-files/vodalys.smil`)).toHaveLength(1)
+    // Unless the portal's live page leads to it: that one is asked whatever was known of it.
+    const led = fakeHttp({
+      'https://www.assemblee-nationale.fr/dyn/api/live/streams': '{"diffusions":[]}',
+      'https://videos.assemblee-nationale.fr/php/eventsearch.php': '[]',
+      'https://videos.assemblee-nationale.fr/direct.php': `<a href="/video.${ID}">`,
+      [`${ROOT}/meta-files/vodalys.smil`]: SMIL
+    })
+    await liveStreams(led, false, ON_AIR)
+    await liveStreams(led, false, ON_AIR)
+    expect(led.asked.filter((u) => u === `${ROOT}/meta-files/vodalys.smil`)).toHaveLength(2)
   })
 
   it('asks the portal’s live page along with its search, not once the search has answered', async () => {
