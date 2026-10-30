@@ -6,7 +6,9 @@ import { api, useLive } from '../lib/api'
 import { SERVICE_HELP } from './registry'
 
 /** The services and what the user made of them (added, on, pinned), kept up to date. */
-export const useServices = (): ServiceState[] => useLive(api.listServices, api.onServices) ?? []
+/** The services, or null until their list comes: a service not there yet is not a service gone. */
+export const useServiceList = (): ServiceState[] | null => useLive(api.listServices, api.onServices) ?? null
+export const useServices = (): ServiceState[] => useServiceList() ?? []
 
 /** How often the page looks at its tiles while it shows: the stale ones are asked again, the ages move on. */
 const TILES_LOOK_MS = 60_000

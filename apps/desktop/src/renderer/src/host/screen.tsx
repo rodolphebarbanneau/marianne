@@ -21,7 +21,7 @@ import { Boundary } from '../components/ui'
 import { api, errorText, isMac } from '../lib/api'
 import { useProfile } from '../lib/profile'
 import { ReviewDialog } from '../pages/services/dialogs'
-import { useServices } from '.'
+import { useServiceList } from '.'
 import { CommunityScreen } from './community-screen'
 import { opensSearch, SEARCH_PAUSE_MS, searchOf, viewShows } from './frame'
 import { SERVICE_VIEWS } from './registry'
@@ -30,14 +30,16 @@ import { SERVICE_VIEWS } from './registry'
 const firstTab = (tabs: ServiceTab[], params: Record<string, string | number>) => tabs.find((t) => t.id === params.tab)?.id ?? tabs[0]?.id ?? ''
 
 /** A service's own page: the one place with the 3615 nod. Échap goes back to the Services. */
-export function ServiceScreen({ id, params }: { id: string; params: Record<string, string | number> }) {
-  // Another service, or the same opened with other params: a fresh screen, on its first tab.
-  return <FramedScreen key={`${id}:${JSON.stringify(params)}`} id={id} params={params} />
+export function ServiceScreen({ id, params, opened = 0 }: { id: string; params: Record<string, string | number>; opened?: number }) {
+  // Each opening is a fresh screen (app/context.tsx counts them): the same service opened again, with the
+  // same params or none, starts on its first tab rather than where it was left.
+  return <FramedScreen key={`${id}:${opened}:${JSON.stringify(params)}`} id={id} params={params} />
 }
 
 function FramedScreen({ id, params }: { id: string; params: Record<string, string | number> }) {
   const app = useApp()
-  const state = useServices().find((s) => s.manifest.id === id)
+  const list = useServiceList()
+  const state = list?.find((s) => s.manifest.id === id)
   const profile = useProfile()
   const address = profile?.address
   // A built-in service's screen is bundled; a community service's runs in a view of its own, over its body.
@@ -203,10 +205,20 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
   }, [setServiceBar, viewing, searching, tabs.length, code, focused, focusField, keysKey])
   useEffect(() => () => setServiceBar(null), [setServiceBar])
 
+  // Removed while on screen (Réglages › Services), or never added: said, with the way back.
   if (!state)
     return (
       <div className="page service-page">
-        <Loading />
+        {list ? (
+          <div className="box-note">
+            Ce service n’est plus installé.{' '}
+            <button className="link" onClick={() => goPage('services')}>
+              retour aux services
+            </button>
+          </div>
+        ) : (
+          <Loading />
+        )}
       </div>
     )
   const m = state.manifest
@@ -316,7 +328,7 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
             <div className="box-note">Ce service n’a pas pu démarrer : {state.error}</div>
           ) : !state.available ? (
             <div className="box-note">
-              Ce service s’appuie sur {m.connections.map((c) => publicSource(c as PublicSourceId)?.label ?? c).join(', ')}, désactivé dans les connexions.{' '}
+              Une connexion dont ce service a besoin est coupée ({m.connections.map((c) => publicSource(c as PublicSourceId)?.label ?? c).join(', ')}).{' '}
               <button className="link" onClick={() => app.openSettings('data')}>
                 l’activer
               </button>
