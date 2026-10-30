@@ -18,7 +18,7 @@ import { regionOf, refusedSources } from '../src/shared/news'
 const state = vi.hoisted(() => ({
   root: '',
   catalogue: [] as NewsSource[],
-  feeds: new Map<string, () => string>(),
+  feeds: new Map<string, () => string | Promise<string>>(),
   pages: new Map<string, { body: string | Buffer; type: string } | 'timeout'>(),
   fetched: [] as string[],
   resized: [] as number[]
@@ -395,6 +395,28 @@ describe('the reading', () => {
     serve({ 'https://la-croix.fr/rss.xml': [{ guid: 'new', title: 'Un titre nouveau dans le flux', ago: 1 }] })
     await r.whole()
     expect(r.stats()).not.toBe(stats)
+  })
+
+  it('answers with the last reading when the feeds are slow to be read again, and has the new titles the next time', async () => {
+    morning()
+    const r = reader()
+    const first = await r.whole()
+    vi.setSystemTime((clock += 6 * 60_000))
+    let answer: (feed: string) => void = () => undefined
+    const slow = new Promise<string>((done) => (answer = done))
+    serve({ 'https://le-monde.fr/une.xml': [] })
+    state.feeds.set('https://la-croix.fr/rss.xml', () => slow)
+    const started = performance.now()
+    const second = await r.whole()
+    // The page doesn't wait for the slowest feed: a moment, then what the last reading had.
+    expect(performance.now() - started).toBeLessThan(3000)
+    expect(second.items.map((i) => i.id).sort()).toEqual(first.items.map((i) => i.id).sort())
+    expect(second.readAt).toBe(first.readAt)
+    expect(second.offline).toBeUndefined()
+
+    answer(rss([{ guid: 'late', title: 'Un titre venu d’un flux lent', ago: 1 }]))
+    await r.refresh()
+    expect((await r.whole()).items.map((i) => i.title)).toContain('Un titre venu d’un flux lent')
   })
 
   it('reads a day of the history, and the history alone when no feed answers', async () => {

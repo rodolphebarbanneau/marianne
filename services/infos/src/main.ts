@@ -1,4 +1,4 @@
-import { defineService, type ServiceContext, type ServiceNews } from '@marianne/sdk/main'
+import { cached, defineService, type ServiceContext, type ServiceNews } from '@marianne/sdk/main'
 import { rank, sameSubject, wordsOf } from './model'
 import { infosTile } from './tile'
 import { addDays, parisDay } from './time'
@@ -57,12 +57,19 @@ export const service = defineService<InfosMethods>({
   activate(base) {
     if (!base.news) throw new Error('3615 INFOS lit les titres par Marianne : son manifeste déclare "news"')
     const ctx: Context = { profile: base.profile, storage: base.storage, news: base.news }
+    // A subject's days before are six days of titles grouped again: kept a minute, then given at once
+    // for ten more while they are read again (a pane opened again, the same subject on another tab).
+    const days = cached((id: string, all: boolean) => daysBefore(ctx, id, all), {
+      ttlMs: 60_000,
+      staleMs: 10 * 60_000,
+      key: (id, all) => `${parisDay()} ${id} ${all}`
+    })
     return {
       methods: {
         reading: ({ all }) => readingOf(ctx, all),
         search: (words, { all }) => ctx.news.search(words, { all: all && ctx.news.filtered() }),
         article: (id) => ctx.news.article(id),
-        days: (id, { all }) => daysBefore(ctx, id, all),
+        days: (id, { all }) => days(id, all),
         // Read when INFOS opens, kept when the user leaves: what came during the visit stays new until then.
         visit: () => ctx.storage.get<string>('lastVisit'),
         leave() {
