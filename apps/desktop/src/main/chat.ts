@@ -15,10 +15,11 @@ import type {
   ToolPart
 } from '../shared/types'
 import { approvals } from './approvals'
+import { browser } from './browser'
 import { configStore } from './config'
 import { content } from './content'
 import { listSkills, runTurn, systemPrompt, taskMessage, userMessage, type EngineEvent } from './engines'
-import { folders, titleFrom } from './folders'
+import { folders, redoFrom, titleFrom } from './folders'
 import { log } from './log'
 import { profile } from './profile/store'
 import { services } from './host'
@@ -98,7 +99,11 @@ class Chat extends EventEmitter {
   constructor() {
     super()
     folders.isRunning = (id) => this.active.has(id)
-    tasks.isBusy = () => this.active.size > 0
+    // Not during a turn, and not while the user has the browser in front of them: a run would take it from under them.
+    tasks.isBusy = () => {
+      const page = browser.state()
+      return this.active.size > 0 || page.visible || page.controller === 'human'
+    }
     tasks.runTurn = (task, line) => this.runTask(task, line)
     tasks.addLine = (folderId, text, outcome) => void this.addTaskLine(folderId, text, outcome)
     approvals.canShow = (id) => this.writing.has(id)
@@ -177,7 +182,7 @@ class Chat extends EventEmitter {
     const folder = folders.get(id)
     if (!folder || this.active.has(id)) return
     const messages = folders.messages(id)
-    const lastUser = messages.map((m) => m.role).lastIndexOf('user')
+    const lastUser = redoFrom(messages)
     if (lastUser < 0) return
     const kept = messages.slice(0, lastUser + 1)
     // The engine's session still holds the dropped answer: start a fresh one with a recap.

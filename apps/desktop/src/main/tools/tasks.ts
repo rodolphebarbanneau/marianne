@@ -20,6 +20,8 @@ export const taskTools = [
   tool({
     name: 'task_propose',
     title: 'Plan a task',
+    // A task's title goes in the system's notifications, and its words stay in the archive: no identifier in them.
+    tokens: false,
     description:
       'Proposes a planned task to the user, on a card: something that comes back in this folder on a rhythm. "marianne": on its day you redo the work here, alone, with the sites listed; "remind": the folder only comes back with a reminder. Use it when the user wants something checked or remembered regularly. A task has a day and no time of day: it runs at the first opening of Marianne on or after its day, so say so if timing matters. Never plan paying, signing or sending: a task can only look and report. The user may refuse.',
     input: {

@@ -173,7 +173,8 @@ export const browserTools = [
       await online(folderId, url, reason)
       await act(() => browser.open(url, folderId))
       const setting = accounts.settings().browser.show
-      const visible = setting === 'always' || (setting === 'ask' && show)
+      // A planned task's run happens out of sight: it doesn't take the user's screen.
+      const visible = !tasks.runningIn(folderId) && (setting === 'always' || (setting === 'ask' && show))
       if (visible) browser.reveal()
       await browser.settled()
       const { url: landed, title } = browser.state()

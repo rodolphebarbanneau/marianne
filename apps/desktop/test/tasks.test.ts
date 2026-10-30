@@ -1,12 +1,12 @@
 import { rmSync } from 'node:fs'
 import { Archive } from '@marianne/archive'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { folders } from '../src/main/folders'
+import { folders, redoFrom } from '../src/main/folders'
 import { session } from '../src/main/session'
 import { tasks, type NewTask, type TaskTurnEnd } from '../src/main/tasks'
 import { taskMessage } from '../src/main/engines/prompt'
 import { addEvery, dayOf, dayStart, everyLabel, nextDay } from '../src/shared/tasks'
-import type { PlannedTask } from '../src/shared/types'
+import type { ChatMessage, PlannedTask } from '../src/shared/types'
 
 // ~/.marianne points at a temporary folder, before paths.ts reads it.
 const root = vi.hoisted(() => {
@@ -302,6 +302,22 @@ describe('what a run may reach', () => {
     const task = tasks.create(TOLLS)
     tasks.isBusy = () => true
     await expect(tasks.runNow(task.id)).rejects.toThrow(/au travail/)
+  })
+})
+
+describe('redoing an answer', () => {
+  const message = (role: ChatMessage['role'], note?: ChatMessage['note']): ChatMessage => ({ id: role, role, at: '', parts: [], note })
+
+  it('starts from the user’s last message', () => {
+    expect(redoFrom([message('user'), message('assistant')])).toBe(0)
+  })
+
+  it('refuses when a run came after it: redoing would wipe the run', () => {
+    expect(redoFrom([message('user'), message('assistant'), message('system', 'task'), message('assistant')])).toBe(-1)
+  })
+
+  it('is not stopped by a summary line', () => {
+    expect(redoFrom([message('user'), message('system', 'compacted'), message('assistant')])).toBe(0)
   })
 })
 
