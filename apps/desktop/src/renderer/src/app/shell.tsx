@@ -15,8 +15,10 @@ import { HomePage } from '../pages/home'
 import { NewsPage } from '../pages/news'
 import { ProceduresPage } from '../pages/procedures'
 import { ServicesPage } from '../pages/services'
+import { offerFileReview } from '../pages/services/pending'
 import { ServiceScreen } from '../host/screen'
 import { SettingsDialog } from '../settings/dialog'
+import { api } from '../lib/api'
 
 /** The open account: title bar, sidebar of folders, the screen, the browser when shown, the bottom bar. */
 export function Shell() {
@@ -30,6 +32,20 @@ export function Shell() {
   useEffect(() => {
     if (!folded && window.matchMedia('(max-width: 900px)').matches) void app.setConfig({ ui: { sidebarOpen: false } })
   }, [viewKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  // A .3615 file opened from the system: the Services page, with its review over it. Those opened
+  // before the shell was there (with the app, before unlocking) wait to be taken.
+  const { goPage } = app
+  useEffect(() => {
+    const take = () =>
+      void api.takeServiceFiles().then((reviews) => {
+        const last = reviews[reviews.length - 1]
+        if (!last) return
+        offerFileReview(last)
+        goPage('services')
+      })
+    take()
+    return api.onServiceFile(take)
+  }, [goPage])
 
   return (
     <div className={`app${folded ? ' folded' : ''}`}>

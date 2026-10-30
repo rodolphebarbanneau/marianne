@@ -27,15 +27,18 @@ const NO_SHELF: Shelf = { pinned: [], starred: [], progress: {} }
 const NO_VIDEOS: { items: Record<string, VideoItem> } = { items: {} }
 const DEFAULT_PREFS: Prefs = { lens: true }
 
-/** What the screen opens on: a portal link (a video cited in an answer), a video at a passage, a meeting of "Aujourd'hui". */
-function opening(params: Record<string, string | number>): { tab: Tab; stack: Target[] } {
+/**
+ * What the screen opens on: a portal link (a video cited in an answer), a video at a passage, a
+ * meeting of "Aujourd'hui"; else the tab Marianne opened (`params.tab`, the tile's, or the first).
+ */
+function opening(params: Record<string, string | number>): { tab: Tab | null; stack: Target[] } {
   if (typeof params.url === 'string' && parseVideoRef(params.url)) return { tab: 'videos', stack: [{ kind: 'video', ref: params.url }] }
   if (params.video) {
     const start = Number(params.start)
     return { tab: 'videos', stack: [{ kind: 'video', ref: String(params.video), ...(start > 0 ? { start } : {}) }] }
   }
   if (params.meeting) return { tab: 'agenda', stack: [{ kind: 'meeting', id: String(params.meeting) }] }
-  return { tab: 'home', stack: [] }
+  return { tab: null, stack: [] }
 }
 
 export function View() {
@@ -62,7 +65,7 @@ function Screen() {
   const tab = (shown || 'home') as Tab
   // Opened on a tab of its own (a video, a meeting of "Aujourd'hui"): that one, before the first paint.
   useLayoutEffect(() => {
-    if (first.tab !== shown) open(first.tab)
+    if (first.tab && first.tab !== shown) open(first.tab)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [chambers, setChambers] = useState<Chambers>('both')
   const [videoSearch, setVideoSearch] = useState<VideoSearch>(DEFAULT_SEARCH)

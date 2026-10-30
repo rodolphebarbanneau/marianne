@@ -5,6 +5,7 @@ import { app, powerMonitor, session as electronSession } from 'electron'
 import type { DeviceConfig } from '../shared/types'
 import { accounts, checkKeystore } from './account'
 import { browser } from './browser'
+import { catalogue, communityPackages } from './community'
 import { configStore } from './config'
 import { content } from './content'
 import { wipeScratch } from './engines'
@@ -13,6 +14,7 @@ import { keychain } from './keychain'
 import { log } from './log'
 import { mcp } from './mcp'
 import { openedArchives } from './opened-archives'
+import { isServiceFile, openedServiceFiles, serviceFilesIn } from './opened-service-files'
 import { ensureDirs, paths } from './paths'
 import { sync } from './public/sync'
 import { services } from './host'
@@ -47,15 +49,17 @@ if (!app.requestSingleInstanceLock()) {
   console.error(`Marianne is already running (${app.getPath('userData')}): its window was brought to the front.`)
   app.quit()
 } else {
-  // A .marianne file opened from the system: a second launch hands over its arguments (Windows,
-  // Linux), macOS sends an event, possibly before the app is ready. The first launch's come below.
+  // A .marianne or .3615 file opened from the system: a second launch hands over its arguments
+  // (Windows, Linux), macOS sends an event, possibly before the app is ready. The first launch's come below.
   app.on('second-instance', (_e, argv, cwd) => {
     showMain()
     for (const file of archivesIn(argv, cwd)) openedArchives.open(file)
+    for (const file of serviceFilesIn(argv, cwd)) openedServiceFiles.open(file)
   })
   app.on('open-file', (e, file) => {
     e.preventDefault()
-    openedArchives.open(file)
+    if (isServiceFile(file)) openedServiceFiles.open(file)
+    else openedArchives.open(file)
   })
   // Started at login: stay in the tray until the user opens the window.
   const hidden = process.argv.includes('--hidden')
@@ -74,6 +78,8 @@ if (!app.requestSingleInstanceLock()) {
     }
     await checkKeystore()
     content.start()
+    catalogue.start()
+    communityPackages.start()
     wipeScratch()
     session.setIdleMinutes(configStore.get().lockAfterMinutes)
     sync.hasKey = (id) => (id === 'legifrance' ? session.unlocked && keychain.hasApi('piste') : true)
@@ -101,6 +107,8 @@ if (!app.requestSingleInstanceLock()) {
     showMain(!hidden)
     for (const file of archivesIn(process.argv.slice(1), process.cwd())) openedArchives.open(file)
     openedArchives.ready()
+    for (const file of serviceFilesIn(process.argv.slice(1), process.cwd())) openedServiceFiles.open(file)
+    openedServiceFiles.ready()
     startBackground()
 
     configStore.on('change', (next: DeviceConfig, prev: DeviceConfig) => {

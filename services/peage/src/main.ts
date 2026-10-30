@@ -3,6 +3,7 @@ import { NETWORKS } from './networks'
 import { tripDeadlines, tripSummary } from './schedule'
 import guide from './skills/free-flow-tolls.md?raw'
 import { checkTrip, TripStore, type TripProblem } from './store'
+import { tripTile } from './tile'
 import { createTools } from './tools'
 import type { PeageMethods, Vehicles } from './types'
 
@@ -51,7 +52,10 @@ export const service = defineService<PeageMethods>({
       skills: [guide],
       instructions: INSTRUCTIONS,
       summary: async (domain) => (domain === 'mobility' ? tripSummary(store.list(), new Date()) : null),
-      deadlines: () => tripDeadlines(store.list())
+      deadlines: () => tripDeadlines(store.list()),
+      tile: async () => tripTile(store.list(), vehicles().granted, new Date())
     }
-  }
+  },
+  // From the storage alone: what changes is the time left, by the hour.
+  tile: { everyMinutes: 15 }
 })

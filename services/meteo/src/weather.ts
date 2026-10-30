@@ -1,5 +1,5 @@
 import { query, table, type Commune, type ServiceGeo, type ServiceHttp } from '@marianne/sdk/main'
-import type { Forecast, Place, Weather, WeatherDay, WeatherNow } from './types'
+import type { Forecast, Place, Weather, WeatherDay, WeatherHour, WeatherNow } from './types'
 
 /**
  * Météo: the Open-Meteo forecast API (free, no key). Météo-France's models (AROME, ARPEGE,
@@ -43,6 +43,9 @@ const DAILY = [
   'sunrise',
   'sunset'
 ]
+const HOURLY = ['weather_code']
+/** The hours kept after the current one. */
+const NEXT_HOURS = 24
 
 /** WMO weather codes, in French. */
 export const WMO_LABELS: Record<number, string> = {
@@ -94,6 +97,7 @@ export interface RawForecast {
   elevation: number
   current?: Record<string, Value>
   daily?: Record<string, Value[]>
+  hourly?: Record<string, Value[]>
 }
 
 const num = (v: Value | undefined) => (typeof v === 'number' ? v : Number(v) || 0)
@@ -149,16 +153,26 @@ export function mapWeather(raw: RawForecast): Weather {
       }
     ]
   })
-  return { latitude: raw.latitude, longitude: raw.longitude, elevation: raw.elevation, now, days, credit: CREDIT }
+  const hourly = raw.hourly ?? {}
+  // Local times of the same form: the current hour, which holds `now.time` ("17:00" before "17:45"), is left out.
+  const after = now?.time ?? ''
+  const hours = ((hourly.time ?? []) as string[])
+    .flatMap((time, i): WeatherHour[] => {
+      const code = series(hourly, 'weather_code', FRANCE)?.[i] ?? series(hourly, 'weather_code', EUROPE)?.[i]
+      return time > after && has(code) ? [{ time, code: num(code) }] : []
+    })
+    .slice(0, NEXT_HOURS)
+  return { latitude: raw.latitude, longitude: raw.longitude, elevation: raw.elevation, now, days, hours, credit: CREDIT }
 }
 
-/** The Open-Meteo request for the current conditions and the next seven days at a place. */
+/** The Open-Meteo request for the current conditions, the hours to come and the next seven days at a place. */
 export const forecastUrl = (latitude: number, longitude: number) =>
   `${API}${query({
     latitude: latitude.toFixed(3),
     longitude: longitude.toFixed(3),
     current: CURRENT.join(','),
     daily: DAILY.join(','),
+    hourly: HOURLY.join(','),
     models: `${FRANCE},${EUROPE}`,
     // Local time of the place (overseas too).
     timezone: 'auto',

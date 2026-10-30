@@ -158,6 +158,70 @@ function renderDocument(size) {
   return png(size, rgba)
 }
 
+// A service file's icon, for .3615 files: the floppy of the Services page (its blue case, white
+// shutter and yellow label) in the same mosaic blocks as the "M", on the tile's navy, which shows
+// in the gaps between blocks and inside the case. Its cut corner is the only part left clear.
+const FILE_GLYPH = ['bbbbbbbb.', 'b.wwww.bb', 'b.wwww..b', 'b.......b', 'b.jjjjj.b', 'b.j...j.b', 'b.jjjjj.b', 'bbbbbbbbb']
+/** A narrower floppy for 16px, where the full one would get 1px blocks. */
+const SMALL_FILE_GLYPH = ['bbbbbb.', 'b.ww.bb', 'b.ww..b', 'b.....b', 'b.jjj.b', 'b.jjj.b', 'bbbbbbb']
+// Marianne's yellow (the UI's --jaune).
+const YELLOW = hex('#ffd23f')
+const FILE_COLORS = { b: BLUE, w: WHITE, j: YELLOW }
+
+function renderServiceFile(size) {
+  const glyph = 2 * FILE_GLYPH[0].length <= size * 0.94 ? FILE_GLYPH : SMALL_FILE_GLYPH
+  const cols = glyph[0].length
+  const rows = glyph.length
+  const block = Math.max(2, Math.floor((size * 0.94) / cols))
+  const gap = block >= 6 ? Math.max(1, Math.round(block * 0.1)) : 0
+  const w = block * cols - gap
+  const h = block * rows - gap
+  const ox = Math.floor((size - w) / 2)
+  const oy = Math.floor((size - h) / 2)
+  // The clear cells: those the outside reaches through clear cells (the cut corner), not the ones the case holds.
+  const clear = new Set()
+  const reach = (x, y) => {
+    if (x < 0 || y < 0 || x >= cols || y >= rows || clear.has(y * cols + x) || glyph[y][x] !== '.') return
+    clear.add(y * cols + x)
+    for (const [dx, dy] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1]
+    ])
+      reach(x + dx, y + dy)
+  }
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) if (!x || !y || x === cols - 1 || y === rows - 1) reach(x, y)
+  // A pixel of the gap between two cells is the case's when both are.
+  const inCase = (px, py) => {
+    const cx = Math.floor(px / block)
+    const cy = Math.floor(py / block)
+    const xs = px % block >= block - gap ? [cx, cx + 1] : [cx]
+    const ys = py % block >= block - gap ? [cy, cy + 1] : [cy]
+    return xs.every((x) => ys.every((y) => x < cols && y < rows && !clear.has(y * cols + x)))
+  }
+  const pitch = Math.max(4, Math.round(size / 64))
+  const rgba = Buffer.alloc(size * size * 4)
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!inCase(x, y)) continue
+      const X = ox + x
+      const Y = oy + y
+      const dot = size >= 96 && X % pitch === pitch >> 1 && Y % pitch === pitch >> 1
+      rgba.set([...(dot ? DOT : TILE), 255], (Y * size + X) * 4)
+    }
+  }
+  glyph.forEach((row, y) =>
+    [...row].forEach((c, x) => {
+      const color = FILE_COLORS[c]
+      if (!color) return
+      for (let yy = 0; yy < block - gap; yy++)
+        for (let xx = 0; xx < block - gap; xx++) rgba.set([...color, 255], ((oy + y * block + yy) * size + ox + x * block + xx) * 4)
+    })
+  )
+  return png(size, rgba)
+}
+
 // ---------------------------------------------------------------- file formats
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
@@ -263,6 +327,10 @@ out('build/icon.icns', icns(ICNS_SIZES.map(([type, size]) => [type, render(size)
 out('build/archive.ico', ico([16, 20, 24, 32, 40, 48, 64, 96, 128, 256].map((size) => ({ size, data: renderDocument(size) }))))
 out('build/archive.icns', icns(ICNS_SIZES.map(([type, size]) => [type, renderDocument(size)])))
 for (const size of [16, 24, 32, 48, 64, 128, 256, 512]) out(`build/mime/${size}.png`, renderDocument(size))
+// The service file's icon, for .3615 files: the same places, the same sizes.
+out('build/service.ico', ico([16, 20, 24, 32, 40, 48, 64, 96, 128, 256].map((size) => ({ size, data: renderServiceFile(size) }))))
+out('build/service.icns', icns(ICNS_SIZES.map(([type, size]) => [type, renderServiceFile(size)])))
+for (const size of [16, 24, 32, 48, 64, 128, 256, 512]) out(`build/mime/service-${size}.png`, renderServiceFile(size))
 out('resources/icon.png', render(256))
 out('resources/icon.ico', appIco)
 

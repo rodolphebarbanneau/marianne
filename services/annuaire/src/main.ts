@@ -2,6 +2,7 @@ import { clip, defineService, defineTool, ToolError, type ServiceTool } from '@m
 import * as z from 'zod'
 import { communesOf, officesNear, searchOffices, type DirectoryContext } from './directory'
 import { describeResults } from './report'
+import { annuaireTile } from './tile'
 import { OFFICE_KINDS, type AnnuaireMethods } from './types'
 
 /** 3615 ANNUAIRE: the public offices near the user, and any other, from the official directory. */
@@ -58,7 +59,10 @@ export const service = defineService<AnnuaireMethods>({
           return officesNear(ctx.http, commune)
         }
       },
-      tools: [findOfficeTool(ctx)]
+      tools: [findOfficeTool(ctx)],
+      tile: () => annuaireTile(ctx)
     }
-  }
+  },
+  // Rather than 15: the time left before closing goes stale fast, and the directory's answers are cached an hour, so asking again costs no request.
+  tile: { everyMinutes: 5 }
 })

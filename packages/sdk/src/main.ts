@@ -8,6 +8,7 @@ import type {
   ServiceManifest,
   ServiceMethods,
   ServiceSummary,
+  ServiceTile,
   SyncStatus,
   TodayItem
 } from './index'
@@ -17,7 +18,7 @@ import type {
  * `defineService`; Marianne calls `activate` once, with a context that is all the service gets
  * of the app: the network (its declared hosts only), the user's data for it (encrypted, in the
  * archive), a folder for public data, the communes. It gives back what its view may call, the
- * tools it lends the engines, its guides for them and its lines of "Aujourd'hui".
+ * tools it lends the engines, its guides for them, its lines of "Aujourd'hui" and its tile.
  */
 
 export * from './index'
@@ -155,6 +156,13 @@ export interface ServiceRuntime<M extends ServiceMethods = ServiceMethods> {
   summary?(domain: DomainId): Promise<ServiceSummary | null>
   /** The deadlines it knows of, from what it keeps (ctx.storage): read often, so no network. */
   deadlines?(): ServiceDeadline[]
+  /**
+   * Its tile on the Services page, once the user pins it: data that Marianne lays out (see
+   * ServiceTile). Called when the page shows and every `tile.everyMinutes` while it does; it reads
+   * what the service keeps and may reach its declared hosts. Marianne shows the last tile at once,
+   * with its age, until a new one comes. Null: the default tile (its name and description).
+   */
+  tile?(): Promise<ServiceTile | null>
   /** Its sync job has just written new data. */
   synced?(): void
 }
@@ -164,6 +172,8 @@ export interface ServiceModule<M extends ServiceMethods = ServiceMethods> {
   activate(ctx: ServiceContext): ServiceRuntime<M>
   /** The service has a sync job (its package exports "./sync"): run it this often. */
   sync?: { everyHours: number }
+  /** How often its tile is worth asking again while the Services page shows (default 15, at least 5). */
+  tile?: { everyMinutes: number }
 }
 
 /** A service's main side, its methods checked against the ones it declares. */

@@ -1,18 +1,27 @@
-import { readManifest, serviceCode } from './index'
-import type { Commune, Leaning, ProfileField, ServiceContext, Vehicle } from './main'
+import { readManifest, readTile, serviceCode, type ServiceTile, type SyncStatus } from './index'
+import type { Commune, HomeCommune, Leaning, ProfileField, ServiceContext, Vehicle } from './main'
 
 /**
  * @marianne/sdk/testing: Marianne's part in a service's tests. `fakeContext` builds the context
  * `activate` receives from the service's package.json: a network that answers what the test says
  * and records the URLs asked, a storage in memory, and the communes and profile fields the test
- * gives. No host is reached, nothing is written to disk.
+ * gives. No host is reached, nothing is written to disk. `checkTile` says what Marianne would cut
+ * of a tile.
  */
 
 export interface FakeContextOptions {
   /** The answer to each `http.json` request, from its URL. Without it, the service reaches no host. */
   answer?: (url: URL) => unknown
+  /** The answer to each `http.text` and `http.page` request (a page, a feed), from its URL. */
+  answerText?: (url: URL) => string
+  /** The service's data folder (a temporary folder its test made, with what its sync job would have written). */
+  dataDir?: string
+  /** What `ctx.sync.status()` says (its last run, a run in progress). */
+  sync?: SyncStatus
   /** The communes Marianne's geo connection knows. */
   communes?: Commune[]
+  /** The commune of the user's address (none by default). */
+  home?: HomeCommune | null
   /** The profile fields the user granted, their vehicles, leaning and themes (given only when granted, as Marianne does). */
   profile?: { granted?: ProfileField[]; vehicles?: Vehicle[]; leaning?: Leaning; themes?: string[] }
 }
@@ -27,7 +36,7 @@ export interface FakeContext {
 
 export function fakeContext(pkg: unknown, options: FakeContextOptions = {}): FakeContext {
   const manifest = readManifest(pkg)
-  const { answer, communes = [], profile = {} } = options
+  const { answer, answerText, communes = [], home = null, profile = {}, dataDir = '', sync = {} } = options
   const urls: URL[] = []
   const stored = new Map<string, unknown>()
   const offline = async (): Promise<never> => {
@@ -43,8 +52,8 @@ export function fakeContext(pkg: unknown, options: FakeContextOptions = {}): Fak
             return answer(u) as T
           }
         : offline,
-      text: offline,
-      page: offline
+      text: answerText ? async (url: string) => (urls.push(new URL(url)), answerText(new URL(url))) : offline,
+      page: answerText ? async (url: string) => (urls.push(new URL(url)), answerText(new URL(url))) : offline
     },
     log: { info: () => {}, warn: () => {}, error: () => {} },
     storage: {
@@ -53,20 +62,31 @@ export function fakeContext(pkg: unknown, options: FakeContextOptions = {}): Fak
       set: (key, value) => void stored.set(key, structuredClone(value)),
       remove: (key) => void stored.delete(key)
     },
-    dataDir: '',
+    dataDir,
     geo: {
       findCommunes: async (text, limit = 5) =>
         communes.filter((c) => c.code === text || c.postalCodes.includes(text) || c.name.toLowerCase().startsWith(text.toLowerCase())).slice(0, limit),
       getCommune: async (code) => communes.find((c) => c.code === code) ?? null
     },
-    home: () => null,
+    home: () => home,
     profile: {
       granted: () => profile.granted ?? [],
       vehicles: () => profile.vehicles ?? [],
       leaning: () => ((profile.granted ?? []).includes('opinions.leaning') ? (profile.leaning ?? null) : null),
       themes: () => ((profile.granted ?? []).includes('opinions.themes') ? (profile.themes ?? []) : [])
     },
-    sync: { status: () => ({}), run: async () => {} }
+    sync: { status: () => sync, run: async () => {} }
   }
   return { ctx, urls, stored }
+}
+
+/**
+ * A tile as Marianne would show it, checked: throws, listing them, when Marianne would cut a text
+ * or leave a part out. In a service's tests, `expect(checkTile(await runtime.tile())).toEqual(…)`
+ * keeps its tile within its limits. Null: the default tile.
+ */
+export function checkTile(tile: unknown): ServiceTile | null {
+  const read = readTile(tile)
+  if (read.problems.length) throw new Error(`Marianne would change this tile:\n- ${read.problems.join('\n- ')}`)
+  return read.tile
 }

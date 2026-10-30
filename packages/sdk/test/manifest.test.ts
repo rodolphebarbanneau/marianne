@@ -98,6 +98,54 @@ describe('a screen’s tabs', () => {
   })
 })
 
+describe('the tools it declares', () => {
+  it('reads them, labels trimmed, and none by default', () => {
+    expect(readManifest(pkg({ tools: [{ name: 'forecast', label: ' prévisions ' }] })).tools).toEqual([{ name: 'forecast', label: 'prévisions' }])
+    expect(readManifest(pkg({})).tools).toEqual([])
+  })
+
+  it('refuses names engines couldn’t call, a tool without a label, the same name twice', () => {
+    expect(() => readManifest(pkg({ tools: [{ name: 'Forecast', label: 'x' }] }))).toThrow(/lowercase letters, digits and underscores/)
+    expect(() => readManifest(pkg({ tools: [{ name: 'forecast', label: '' }] }))).toThrow(/no label/)
+    expect(() =>
+      readManifest(
+        pkg({
+          tools: [
+            { name: 'forecast', label: 'a' },
+            { name: 'forecast', label: 'b' }
+          ]
+        })
+      )
+    ).toThrow(/same name/)
+  })
+})
+
+describe('the icon', () => {
+  const icon = {
+    palette: { j: 'jaune', J: 'jaune-sombre', w: 'blanc', C: 'cyan-clair' },
+    pixels: ['j.j.....', '.jjj....', 'jjjJjww.', '.jJwwwww', '..wwwwww', '...wwww.', '..C.C.C.', '.C.C.C..']
+  }
+
+  it('reads an 8 × 8 grid of palette colours, and none as null', () => {
+    expect(readManifest(pkg({ icon })).icon).toEqual(icon)
+    expect(readManifest(pkg({})).icon).toBeNull()
+  })
+
+  it('refuses another size, unknown colours or characters, unused keys, more than 8 colours, an empty picture', () => {
+    expect(() => readManifest(pkg({ icon: { ...icon, pixels: icon.pixels.slice(1) } }))).toThrow(/7 rows: the picture is 8 × 8/)
+    expect(() => readManifest(pkg({ icon: { ...icon, pixels: icon.pixels.map((r) => `${r}..`) } }))).toThrow(/rows of 10 pixels/)
+    expect(() => readManifest(pkg({ icon: { ...icon, pixels: ['j.j.....', ...icon.pixels.slice(1, 7), '.C.C.C.'] } }))).toThrow(/same length/)
+    expect(() => readManifest(pkg({ icon: { ...icon, palette: { ...icon.palette, j: 'yellow' } } }))).toThrow(/"yellow" is not a colour of the palette/)
+    expect(() => readManifest(pkg({ icon: { ...icon, pixels: ['x.j.....', ...icon.pixels.slice(1)] } }))).toThrow(/"x" in "pixels" is not a key/)
+    expect(() => readManifest(pkg({ icon: { ...icon, palette: { ...icon.palette, r: 'rouge' } } }))).toThrow(/key "r" is never used/)
+    expect(() => readManifest(pkg({ icon: { palette: { '.': 'noir' }, pixels: Array(8).fill('........') } }))).toThrow(/one character, other than "."/)
+    expect(() => readManifest(pkg({ icon: { palette: { g: 'gris' }, pixels: Array(8).fill('........') } }))).toThrow(/empty/)
+    const nine = Object.fromEntries('abcdefghi'.split('').map((k) => [k, 'bleu']))
+    expect(() => readManifest(pkg({ icon: { palette: nine, pixels: ['abcdefgh', 'i.......', ...Array(6).fill('........')] } }))).toThrow(/9 colours: 8 at most/)
+    expect(() => readManifest(pkg({ icon: 'meteo.png' }))).toThrow(/"marianne.icon": must be an object/)
+  })
+})
+
 describe('departmentOf', () => {
   it('reads the département of an INSEE code, overseas and Corsica included', () => {
     expect(['33063', '2A004', '97411', '01001'].map(departmentOf)).toEqual(['33', '2A', '974', '01'])
@@ -130,7 +178,9 @@ describe('search and order', () => {
     links: [],
     domains: [],
     permissions: { profile: [], purpose: '' },
-    tabs: []
+    tabs: [],
+    icon: null,
+    tools: []
   })
   const meteo = manifest('meteo', 'Météo', 'daily', ['pluie'])
   const carte = manifest('carte', 'Carte de France', 'territory')
@@ -144,11 +194,11 @@ describe('search and order', () => {
     expect(serviceMatches(meteo, '  ')).toBe(true)
   })
 
-  it('puts starred services first, then follows the categories', () => {
+  it('puts pinned services first, then follows the categories', () => {
     const list = [
-      { manifest: carte, starred: false },
-      { manifest: meteo, starred: false },
-      { manifest: annuaire, starred: true }
+      { manifest: carte, pinned: false },
+      { manifest: meteo, pinned: false },
+      { manifest: annuaire, pinned: true }
     ]
     expect(sortServices(list).map((s) => s.manifest.id)).toEqual(['annuaire', 'meteo', 'carte'])
   })

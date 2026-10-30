@@ -29,8 +29,19 @@ describe('config merge', () => {
     const saved = accountSettings({}, { services: { access: { peage: ['vehicles.plate'], meteo: [] } } })
     const read = accountSettings(JSON.parse(JSON.stringify(saved)))
     expect(read.services.access).toEqual({ peage: ['vehicles.plate'], meteo: [] })
-    expect(read.services.starred).toEqual([])
+    expect(read.services.pinned).toEqual([])
     // A patch carries the whole record.
     expect(accountSettings(read, { services: { access: { peage: [] } } }).services.access).toEqual({ peage: [] })
+  })
+
+  it('reads the services an older Marianne starred as the pinned ones, in their order, once', () => {
+    const older = { services: { starred: ['peage', 'meteo'], disabled: ['carte'], access: {} } }
+    const read = accountSettings(older)
+    expect(read.services.pinned).toEqual(['peage', 'meteo'])
+    expect(read.services.disabled).toEqual(['carte'])
+    expect((read.services as Record<string, unknown>).starred).toBeUndefined()
+    // Once pinned in this Marianne, what was starred is left aside.
+    expect(accountSettings({ services: { starred: ['peage'], pinned: ['meteo'] } }).services.pinned).toEqual(['meteo'])
+    expect(accountSettings({ services: { opened: { meteo: '2026-10-30T08:00:00.000Z' } } }).services.opened).toEqual({ meteo: '2026-10-30T08:00:00.000Z' })
   })
 })

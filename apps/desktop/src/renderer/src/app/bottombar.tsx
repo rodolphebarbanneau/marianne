@@ -5,11 +5,11 @@ import { api } from '../lib/api'
 import { useShortcutLabel, type Actions } from './commands'
 import { PAGES, PAGE_LABELS, useApp } from './context'
 
-type Key = [string, string, string, keyof Actions | null]
+type Key = [string, string, string, keyof Actions | (() => void) | null]
 
 /** The Minitel keys of the screen: [key, shortcut, what it does, command when clicked]. */
 function useKeys(): Key[] {
-  const { view, settingsPage } = useApp()
+  const { view, settingsPage, screenKeys } = useApp()
   const menu: Key[] = [
     ['SOMMAIRE', 'menu', 'menu', 'menu'],
     ['GUIDE', 'guide', 'aide', 'guide']
@@ -20,6 +20,8 @@ function useKeys(): Key[] {
       ['ANNULATION', 'Escape', 'fermer', null],
       ['GUIDE', 'guide', 'aide', 'guide']
     ]
+  // A screen with keys of its own for now: a search, one of its dialogs.
+  if (screenKeys) return screenKeys.map((k) => [k.key, k.shortcut, k.what, k.run ?? null])
   if (view.kind === 'folder')
     return [
       ['ENVOI', 'send', 'envoyer', null],
@@ -33,6 +35,8 @@ function useKeys(): Key[] {
   const i = PAGES.indexOf(view.page)
   const keys: Key[] = []
   if (view.page === 'home') keys.push(['ENVOI', 'send', 'envoyer', null])
+  // The 3615 bar: a code typed, ENVOI opens it.
+  if (view.page === 'services') keys.push(['ENVOI', 'Enter', 'ouvrir le code', null])
   if (i > 0) keys.push(['RETOUR', 'prev', PAGE_LABELS[PAGES[i - 1]], 'prev'])
   if (i < PAGES.length - 1) keys.push(['SUITE', 'next', PAGE_LABELS[PAGES[i + 1]], 'next'])
   return [...keys, ...menu]
@@ -81,7 +85,11 @@ export function BottomBar({ actions }: { actions: Actions }) {
       </div>
       <div className="keys" ref={ref}>
         {keys.map(([key, shortcut, what, command]) => (
-          <span key={key} className={command ? 'clickable' : ''} onClick={command ? () => actions[command]?.() : undefined}>
+          <span
+            key={key}
+            className={command ? 'clickable' : ''}
+            onClick={command ? () => (typeof command === 'function' ? command() : actions[command]?.()) : undefined}
+          >
             <span className="key">{key}</span>
             <span className="what">{what}</span>
             <span className="sc">{label(shortcut)}</span>

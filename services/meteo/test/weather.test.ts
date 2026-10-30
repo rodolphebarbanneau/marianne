@@ -48,6 +48,15 @@ describe('weather', () => {
     expect(days[2]).toMatchObject({ code: 80, label: 'Averses', min: 6.1, max: 15.8, precipitationChance: 60, windFrom: 'NO' })
   })
 
+  it('keeps the hours after the current one, from Météo-France while it has them', () => {
+    expect(mapWeather(FIXTURE).hours).toEqual([
+      { time: '2026-10-28T18:00', code: 0 },
+      { time: '2026-10-28T19:00', code: 3 },
+      { time: '2026-10-28T20:00', code: 80 },
+      { time: '2026-10-28T21:00', code: 61 }
+    ])
+  })
+
   it('reads a single model answer too, and has no current conditions when they are missing', () => {
     const single = mapWeather({
       latitude: 0,
@@ -56,6 +65,7 @@ describe('weather', () => {
       daily: { time: ['2026-10-28'], weather_code: [45], temperature_2m_max: [12], temperature_2m_min: [5], sunrise: ['2026-10-28T07:00'] }
     })
     expect(single.now).toBeNull()
+    expect(single.hours).toEqual([])
     expect(single.days[0]).toMatchObject({ label: 'Brouillard', max: 12, min: 5, precipitationChance: null, sunrise: '07:00' })
   })
 

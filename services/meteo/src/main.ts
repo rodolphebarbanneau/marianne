@@ -1,5 +1,6 @@
 import { defineService, defineTool, ToolError, type ServiceContext, type ServiceTool } from '@marianne/sdk/main'
 import * as z from 'zod'
+import { meteoTile } from './tile'
 import type { MeteoMethods } from './types'
 import { communeForecast, communeWeather, describeForecast, placeOf } from './weather'
 
@@ -42,7 +43,10 @@ export const service = defineService<MeteoMethods>({
           return term.length < 2 ? [] : (await ctx.geo.findCommunes(term, SEARCH_LIMIT)).map(placeOf)
         }
       },
-      tools: [forecastTool(ctx)]
+      tools: [forecastTool(ctx)],
+      tile: () => meteoTile(ctx)
     }
-  }
+  },
+  // The weather of the next hours moves slowly; the forecast is cached 15 minutes anyway.
+  tile: { everyMinutes: 30 }
 })

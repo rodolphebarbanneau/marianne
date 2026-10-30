@@ -11,14 +11,26 @@ import peage from '@marianne/service-peage/package.json'
 import { service as peageMain } from '@marianne/service-peage/main'
 
 /**
+ * A service built into Marianne. `starter`: among the user's services from the start; false: a
+ * newer Marianne's service, offered in « découvrir » for the user to add. Either way, a service the
+ * account has never been offered arrives once: a new starter among its services, the others in
+ * « découvrir ».
+ */
+export interface BuiltInService {
+  pkg: unknown
+  module: ServiceModule
+  starter: boolean
+}
+
+/**
  * The services built into Marianne: workspace packages of services/ (see docs/services.md).
  * A new built-in service is a package there, a dependency of the app (its package.json), and a
  * line here and in the window's registry.
  */
-export const BUILTIN_SERVICES: Array<{ pkg: unknown; module: ServiceModule }> = [
-  { pkg: meteo, module: meteoMain },
-  { pkg: annuaire, module: annuaireMain },
-  { pkg: parlement, module: parlementMain },
-  { pkg: carte, module: carteMain },
-  { pkg: peage, module: peageMain }
+export const BUILTIN_SERVICES: BuiltInService[] = [
+  { pkg: meteo, module: meteoMain, starter: true },
+  { pkg: annuaire, module: annuaireMain, starter: true },
+  { pkg: parlement, module: parlementMain, starter: true },
+  { pkg: carte, module: carteMain, starter: true },
+  { pkg: peage, module: peageMain, starter: true }
 ]

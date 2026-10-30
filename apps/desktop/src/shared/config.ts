@@ -36,7 +36,7 @@ export const DEFAULT_CONFIG: DeviceConfig = {
 export const DEFAULT_ACCOUNT_SETTINGS: AccountSettings = {
   display: 'initials',
   news: { sources: ['le-monde', 'le-figaro', 'liberation', 'les-echos', 'franceinfo', 'bfmtv', 'cnews'], perSource: 5, group: true, custom: [] },
-  services: { starred: [], disabled: [], access: {}, reads: {} },
+  services: { pinned: [], added: [], offered: [], disabled: [], access: {}, reads: {}, opened: {} },
   browser: { askOnline: 'folder', show: 'ask' }
 }
 

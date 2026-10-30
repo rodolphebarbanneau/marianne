@@ -7,7 +7,8 @@ A guide for whoever builds a service: a person or an agent. The contract (the ma
 The same for every service, decided by the package and its manifest rather than by code:
 
 - **The package**: `services/<code>/`, named `@marianne/service-<code>`, with `src/main.ts`, `src/view.tsx`, `src/help.md`, optionally `src/sync.ts`, and `test/`.
-- **The manifest** (the `marianne` field of `package.json`): code, name, description, category, hosts, and the **tabs** of the screen. `readManifest` checks it; a wrong one leaves the service out.
+- **The manifest** (the `marianne` field of `package.json`): code, name, description, category, hosts, the **tabs** of the screen, the **tools** it lends the engines, its **icon**. `readManifest` checks it; a wrong one leaves the service out.
+- **The tile** on the Services page: its head (your icon, code and name) and its foot; you give its body as data (`tile()`).
 - **The frame**: the 3615 header (the way back, the name, the star), the **tab bar** drawn from `tabs` (each tab with its key, F2 to F9, fixed while the content scrolls under it; none for a screen of one page), the margins, the scroll bar, and the centred column (`--content-width`).
 - **The guide** (F1 on the screen): its header, the keys, the service's facts (version, author, the sites it reaches), and your `help.md` in the middle.
 
@@ -30,6 +31,7 @@ What a tab shows is yours, from `@marianne/sdk/view` and Marianne's classes:
 | the tab shown, another one                       | `useTab(onPick)`: `{ tab, tabs, open(id) }`                                              |
 | the main side, stored data, the app              | `useCall`, `useStored`, `useHost` (`ask`, `openRoute`, `openUrl`, `copy`, `toast`)       |
 | typing and time                                  | `useDebounced(value)`, `useNow(everyMs)`                                                 |
+| a mosaic in the palette, an icon                 | `<Pixels art={{ palette, pixels }} cell={4} />`, `<ServiceIcon icon={…} />`              |
 
 Marianne's classes, styled by her stylesheet: `.card`, `.grid`, `.rows` and `.row`, `.btn` (`small`, `primary`, `danger`), `.chip` (`on`), `.link`, `.label` (a section's heading), `.box-note`, `.dim`, `.small`, `.hi`, `.bad`, `.inv` (an inverse block: a code).
 
@@ -58,6 +60,27 @@ Marianne's classes, styled by her stylesheet: `.card`, `.grid`, `.rows` and `.ro
 ## Help
 
 `src/help.md`, exported as `"./help"` in `package.json`: a few lines of Markdown, in French, under 900 characters. What the screen shows, where its data comes from, two or three things worth knowing. No heading and no keys: the guide gives the service's name, its keys and its facts around it.
+
+## Your icon
+
+Eight by eight pixels in the palette (`marianne.icon`), the same grid as every other service's, so that none is finer or coarser than its neighbours. A few rules make it read at 24 pixels in a table:
+
+- One shape, recognisable from afar (a sun and a cloud, a cross, a hemicycle): no text, no letters.
+- Few colours, contrasted (two to four are often enough; a hemicycle in its groups' colours needs more): a light colour (`blanc`, `<hue>-clair`) next to a strong one; avoid `noir` and `gris-sombre` alone, they vanish on the dark ground.
+- The palette's names only: they follow the theme, « Minitel 1 » included. Draw it, then look at it in the tile, the table and « avant d’ajouter ».
+
+## Your tile
+
+What a pinned service shows on the Services page: data, laid out by Marianne (see `ServiceTile` in docs/services.md). Think of it as the answer to "what's new for me here?", read in a second.
+
+- **One figure or one title.** A figure when there is a number worth seeing ("12°", "1", "20"), with what it is in `unit` ("trajet à payer"); a title otherwise ("Mairie de Rennes"). Six characters at most for a figure: shorten ("223 k").
+- **One picture, when it says more than words**: the week's temperatures as bars, the collection days as blocks, how much of the day is left as a gauge, a hemicycle in pixels. None is better than a decorative one.
+- **Two lines at most**, the most useful first; `dim` for what is secondary, `accent` for a deadline, `ok`/`bad` for a state, `live` only for what is happening now.
+- **Urgent only when it is**: `urgency: 'urgent'` frames the tile in yellow; keep it for something to do today.
+- **One action, if any**: the one thing the user would do from there ("payer"), with the `params` that open it.
+- **Honest when it can't**: no address, nothing synced yet, nothing to pay: say it in the tile rather than return an empty one; a failure can throw (Marianne keeps the last tile).
+- **Fast and frugal**: read what the service keeps, reach the network only when needed; choose `tile.everyMinutes` for how fast the figure changes (weather 30, a live sitting 5).
+- Test it with `checkTile`: a tile Marianne would cut fails the test.
 
 ## Before a pull request
 

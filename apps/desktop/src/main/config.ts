@@ -34,12 +34,20 @@ export function merge<T>(base: T, patch: unknown, open: string[] = []): T {
 
 const OPEN_KEYS = ['shortcuts']
 
-/** In an account's settings, the services' access is keyed by service id: a record taken whole. */
-const ACCOUNT_OPEN_KEYS = ['access', 'reads']
+/** In an account's settings, these records are keyed by service id: each is taken whole. */
+const ACCOUNT_OPEN_KEYS = ['access', 'reads', 'opened']
+
+/** What an older Marianne kept under another name: the starred services are the pinned ones, in their order. */
+function upgraded(stored: unknown): unknown {
+  if (!isObject(stored) || !isObject(stored.services)) return stored
+  const { starred, ...services } = stored.services
+  if (!Array.isArray(starred)) return stored
+  return { ...stored, services: Array.isArray(services.pinned) ? services : { ...services, pinned: starred } }
+}
 
 /** An account's settings: what its archive keeps, over the defaults, and `patch` on top. */
 export function accountSettings(stored: unknown, patch?: DeepPartial<AccountSettings>): AccountSettings {
-  const current = merge(structuredClone(DEFAULT_ACCOUNT_SETTINGS), stored ?? {}, ACCOUNT_OPEN_KEYS)
+  const current = merge(structuredClone(DEFAULT_ACCOUNT_SETTINGS), upgraded(stored) ?? {}, ACCOUNT_OPEN_KEYS)
   return patch ? merge(current, patch, ACCOUNT_OPEN_KEYS) : current
 }
 

@@ -4,6 +4,7 @@ import type { Deadline, DocumentMeta, Profile, ProfileOp } from '@marianne/profi
 import type { ProfileField, ServiceState, ServiceSummary } from '@marianne/sdk'
 import type { NewsSource } from './news'
 import type { FranceDigest, NewsDigest, PublicSourceStatus, TodayEvent } from './public'
+import type { CatalogueState, ServiceFileReview } from './catalogue'
 import type { Site } from './sites'
 import type {
   AccountInfo,
@@ -27,6 +28,7 @@ import type {
   SendRequest,
   SessionState,
   SkillInfo,
+  TileState,
   UpdateState,
   Usage
 } from './types'
@@ -244,6 +246,32 @@ export interface MarianneApi {
   serviceSummaries(domain: DomainId): Promise<Array<{ service: string; summary: ServiceSummary }>>
   /** The user's answer to what a service asks to read of the profile: the fields granted (none: refused). */
   setServiceAccess(id: string, granted: ProfileField[]): Promise<void>
+  /** A service among the user's services (from « découvrir »). */
+  addService(id: string): Promise<void>
+  /** A service out of the user's services, back in « découvrir » (unpinned, its access taken back). */
+  removeService(id: string): Promise<void>
+  /** The user opened a service's screen. */
+  serviceOpened(id: string): Promise<void>
+  /** The tiles of the pinned services, as they are; the stale ones are asked again (onServiceTiles tells what comes). */
+  serviceTiles(): Promise<Record<string, TileState>>
+  onServiceTiles(cb: (tiles: Record<string, TileState>) => void): () => void
+  /** The community catalogue, as last read (it is read again when old: onCatalogue tells). */
+  catalogue(): Promise<CatalogueState>
+  onCatalogue(cb: (state: CatalogueState) => void): () => void
+  /** A .3615 file chosen on this computer, read and checked (nothing of it runs); null: none chosen. */
+  chooseServiceFile(): Promise<ServiceFileReview | null>
+  /** A .3615 file dropped on the window (its path: pathOfFile), read and checked. */
+  readServiceFile(path: string): Promise<ServiceFileReview>
+  /** The service of a file reviewed (its ticket) among the user's services, the user having agreed. */
+  installServiceFile(ticket: string): Promise<void>
+  /** A service of the catalogue, downloaded, checked against the signed index, and added. */
+  addCatalogueService(code: string): Promise<void>
+  /** .3615 files opened from the system (a double click, "open with"), read and checked: their reviews, each given once. */
+  takeServiceFiles(): Promise<ServiceFileReview[]>
+  /** One is waiting: take it. */
+  onServiceFile(cb: () => void): () => void
+  /** Where a file dropped on the window is on this computer. */
+  pathOfFile(file: File): string
 
   // ---------- skills ----------
   listSkills(): Promise<SkillInfo[]>

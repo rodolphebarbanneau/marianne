@@ -75,7 +75,8 @@ function themes(m: ServiceManifest): string[] {
   return [...chosen]
 }
 
-export function serviceContext(m: ServiceManifest, sync: ServiceSync): ServiceContext {
+/** `stored`: the service wrote the user's data for it (what its tile shows may have changed). */
+export function serviceContext(m: ServiceManifest, sync: ServiceSync, stored: () => void = () => {}): ServiceContext {
   const dataDir = join(paths.services, m.id)
   mkdirSync(dataDir, { recursive: true })
   const prefix = `[3615 ${m.id.toUpperCase()}]`
@@ -90,8 +91,14 @@ export function serviceContext(m: ServiceManifest, sync: ServiceSync): ServiceCo
     },
     storage: {
       get: <T>(key: string) => session.archive.get<T>(kind, key),
-      set: (key, value) => session.archive.put(kind, key, value),
-      remove: (key) => session.archive.remove(kind, key)
+      set: (key, value) => {
+        session.archive.put(kind, key, value)
+        stored()
+      },
+      remove: (key) => {
+        session.archive.remove(kind, key)
+        stored()
+      }
     },
     dataDir,
     geo: { findCommunes, getCommune },

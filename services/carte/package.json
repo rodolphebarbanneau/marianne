@@ -27,6 +27,29 @@
     ],
     "hosts": [
       "geo.api.gouv.fr"
+    ],
+    "icon": {
+      "palette": {
+        "b": "bleu",
+        "B": "bleu-clair",
+        "r": "rouge"
+      },
+      "pixels": [
+        "...bb...",
+        ".bbbbb..",
+        ".bBbbbb.",
+        "bbbbbbb.",
+        ".bbbrbb.",
+        "..bbbbb.",
+        "..bbbb.b",
+        "...bb..b"
+      ]
+    },
+    "tools": [
+      {
+        "name": "figures",
+        "label": "chiffres"
+      }
     ]
   },
   "scripts": {

@@ -39,7 +39,39 @@
         "vehicles.plate"
       ],
       "purpose": "vous rappeler les péages en flux libre à payer et ouvrir le paiement officiel"
-    }
+    },
+    "icon": {
+      "palette": {
+        "j": "jaune",
+        "r": "rouge",
+        "w": "blanc",
+        "c": "cyan"
+      },
+      "pixels": [
+        "jj......",
+        "jjrwrwrw",
+        "jj......",
+        "jj......",
+        "jj..ccc.",
+        "jj.ccccc",
+        "jjcccccc",
+        "jj.w..w."
+      ]
+    },
+    "tools": [
+      {
+        "name": "networks",
+        "label": "autoroutes en flux libre"
+      },
+      {
+        "name": "trips",
+        "label": "trajets à payer"
+      },
+      {
+        "name": "add_trip",
+        "label": "ajouter un trajet"
+      }
+    ]
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p .",

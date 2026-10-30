@@ -40,6 +40,12 @@ export interface WeatherDay {
   model: 'meteofrance' | 'ecmwf'
 }
 
+/** An hour to come: its local time ("2026-10-28T18:00") and its WMO code. */
+export interface WeatherHour {
+  time: string
+  code: number
+}
+
 export interface Weather {
   latitude: number
   longitude: number
@@ -47,6 +53,8 @@ export interface Weather {
   elevation: number
   now: WeatherNow | null
   days: WeatherDay[]
+  /** The 24 hours after the current one: what is coming (« averses à 16 h »). */
+  hours: WeatherHour[]
   /** French credit line to show. */
   credit: string
 }

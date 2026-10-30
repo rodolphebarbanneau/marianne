@@ -10,9 +10,14 @@
  *
  * Its tests get the context Marianne would give its main side from @marianne/sdk/testing.
  *
- * This entry point is what both sides share: the manifest, its categories, and plain helpers.
- * See docs/services.md.
+ * This entry point is what both sides share: the manifest, its categories, the palette its icon
+ * and its tile's pictures are drawn with, the tile, and plain helpers. See docs/services.md.
  */
+
+import { ICON_SIZE, pictureProblems, type PixelArt } from './palette'
+
+export * from './palette'
+export * from './tile'
 
 export type ServiceCategory = 'daily' | 'administration' | 'democracy' | 'territory' | 'health' | 'economy' | 'environment' | 'culture'
 
@@ -49,6 +54,17 @@ export const PROFILE_FIELDS = {
   'opinions.themes': 'les thèmes qui comptent pour vous'
 } as const
 export type ProfileField = keyof typeof PROFILE_FIELDS
+
+/** The same fields in a few words, for a list of what a service reads (« lit : vos plaques, thèmes »). */
+export const PROFILE_FIELD_SHORT: Record<ProfileField, string> = {
+  'vehicles.plate': 'vos plaques',
+  'vehicles.model': 'vos modèles de véhicule',
+  'vehicles.firstRegistration': 'vos dates d’immatriculation',
+  'vehicles.lastInspection': 'vos contrôles techniques',
+  'vehicles.critair': 'vos vignettes Crit’Air',
+  'opinions.leaning': 'sensibilité',
+  'opinions.themes': 'thèmes'
+}
 
 /**
  * The political groups the user said they feel close to, by the acronym each chamber gives them
@@ -139,6 +155,13 @@ export interface ServiceDeclaration {
   permissions?: { profile: ProfileField[]; purpose: string }
   /** The tabs of its screen, in their order; none (or one) for a screen of one page. */
   tabs?: ServiceTab[]
+  /** Its icon: 8 × 8 pixels in the palette (see palette.ts). Without one, Marianne draws a neutral frame. */
+  icon?: PixelArt
+  /**
+   * The tools it lends the engines, as its main side defines them ({ name, label }): Marianne
+   * shows them before the user adds it. A community service may lend no other.
+   */
+  tools?: Array<{ name: string; label: string }>
 }
 
 /** The fields of a service's package.json that Marianne reads. */
@@ -166,6 +189,10 @@ export interface ServiceManifest {
   domains: DomainId[]
   permissions: { profile: ProfileField[]; purpose: string }
   tabs: ServiceTab[]
+  /** Its icon, checked; null: none. */
+  icon: PixelArt | null
+  /** The tools it declares (see ServiceDeclaration.tools). */
+  tools: Array<{ name: string; label: string }>
 }
 
 export class ManifestError extends Error {
@@ -174,6 +201,8 @@ export class ManifestError extends Error {
 
 const HOST = /^(?:[a-z0-9-]+\.)+[a-z]{2,}$/
 const TAB_ID = /^[a-z][a-z0-9-]*$/
+/** A tool's name within its service: engines see it as "<code>_<name>". */
+export const TOOL_NAME = /^[a-z][a-z0-9_]*$/
 const isStrings = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string')
 
 /** The manifest of a service package; throws a ManifestError saying what is wrong. */
@@ -205,6 +234,17 @@ export function readManifest(pkg: unknown): ServiceManifest {
     if (typeof t.label !== 'string' || !t.label.trim()) fail(`tab "${t.id}" has no label`)
   }
   if (new Set(tabs.map((t) => t.id)).size !== tabs.length) fail('two tabs have the same id')
+  if (m.icon !== undefined) {
+    const wrong = pictureProblems(m.icon, { width: ICON_SIZE, height: ICON_SIZE, exact: true })
+    if (wrong.length) fail(`"marianne.icon": ${wrong.join('; ')}`)
+  }
+  const tools = m.tools ?? []
+  if (!Array.isArray(tools)) fail('"marianne.tools" must list { name, label }')
+  for (const t of tools) {
+    if (typeof t?.name !== 'string' || !TOOL_NAME.test(t.name)) fail(`tool "${String(t?.name)}": its name must be lowercase letters, digits and underscores`)
+    if (typeof t.label !== 'string' || !t.label.trim()) fail(`tool "${t.name}" has no label`)
+  }
+  if (new Set(tools.map((t) => t.name)).size !== tools.length) fail('two tools have the same name')
   const author = typeof p.author === 'string' ? p.author : (p.author?.name ?? '')
   return {
     id: code,
@@ -220,7 +260,9 @@ export function readManifest(pkg: unknown): ServiceManifest {
     links: m.links ?? [],
     domains: m.domains ?? [],
     permissions: { profile: permissions.profile ?? [], purpose: permissions.purpose ?? '' },
-    tabs: tabs.map((t) => ({ id: t.id, label: t.label.trim() }))
+    tabs: tabs.map((t) => ({ id: t.id, label: t.label.trim() })),
+    icon: m.icon ? { palette: { ...m.icon.palette }, pixels: [...m.icon.pixels] } : null,
+    tools: tools.map((t) => ({ name: t.name, label: t.label.trim() }))
   }
 }
 
@@ -268,6 +310,14 @@ export interface SyncStatus {
   error?: string
 }
 
+/**
+ * A community service's standing, by the community catalogue: validated (this exact version was
+ * reviewed, and the project signed it), unvalidated (published, its author known, not reviewed),
+ * outside (a file the catalogue doesn't list: one's own service, a test), withdrawn (the project
+ * took back the validation of this version: it is switched off).
+ */
+export type ServiceTrust = 'validated' | 'unvalidated' | 'outside' | 'withdrawn'
+
 /** A service as the user has it. */
 export interface ServiceState {
   manifest: ServiceManifest
@@ -275,7 +325,12 @@ export interface ServiceState {
   available: boolean
   /** Available, and not switched off by the user. */
   on: boolean
-  starred: boolean
+  /** Among the user's services (« mes services »); false: offered in « découvrir », not added yet. */
+  added: boolean
+  /** Pinned as a tile on the Services page (the order is the settings' `services.pinned`). */
+  pinned: boolean
+  /** When the user last opened its screen (ISO); absent: never. */
+  openedAt?: string
   /** Its engine tools, as the conversation names them. */
   tools: Array<{ name: string; label: string }>
   /** Services with offline data. */
@@ -284,6 +339,8 @@ export interface ServiceState {
   error?: string
   /** Built into Marianne; false: published by the community. */
   builtIn: boolean
+  /** A community service's standing, by the catalogue (see ServiceTrust); none for a built-in service. */
+  trust?: ServiceTrust
   /** The profile fields it asks for, and the ones the user granted (null: not asked yet); the day it last read the user's opinions. */
   access: { asked: ProfileField[]; granted: ProfileField[] | null; readAt?: string }
 }
@@ -344,12 +401,12 @@ export function serviceMatches(m: ServiceManifest, query: string): boolean {
   return [m.id, m.name, m.description, ...m.keywords].some((s) => foldText(s).includes(q))
 }
 
-/** Starred first, then by category in page order, then by name. */
-export function sortServices<T extends Pick<ServiceState, 'manifest' | 'starred'>>(list: T[]): T[] {
+/** Pinned first, then by category in page order, then by name. */
+export function sortServices<T extends Pick<ServiceState, 'manifest' | 'pinned'>>(list: T[]): T[] {
   const rank = (c: ServiceCategory) => SERVICE_CATEGORIES.findIndex((x) => x.id === c)
   return [...list].sort(
     (a, b) =>
-      Number(b.starred) - Number(a.starred) || rank(a.manifest.category) - rank(b.manifest.category) || a.manifest.name.localeCompare(b.manifest.name, 'fr')
+      Number(b.pinned) - Number(a.pinned) || rank(a.manifest.category) - rank(b.manifest.category) || a.manifest.name.localeCompare(b.manifest.name, 'fr')
   )
 }
 

@@ -1,4 +1,4 @@
-import type { DomainId } from '@marianne/sdk'
+import type { DomainId, ServiceTile } from '@marianne/sdk'
 
 /**
  * Types shared by the main process and the screens. Identifiers are in English; everything the
@@ -130,12 +130,36 @@ export interface AccountSettings {
   display: DisplayChoice
   news: { sources: string[]; perSource: number; group: boolean; custom: Array<{ id: string; name: string; url: string }> }
   /**
-   * Services by id: starred ones come first on the Services page; disabled ones are hidden,
-   * with their tools; `access`: the profile fields each was granted (absent: not asked yet);
-   * `reads`: the day each last read the user's opinions (leaning, themes), YYYY-MM-DD.
+   * Services by id. `pinned`: the tiles of the Services page, in their order. `added`: the user's
+   * services (« mes services »); `offered`: the built-in services this account was offered, added
+   * or not (a newer Marianne's new service shows in « découvrir »). `disabled`: switched off, with
+   * their tools. `access`: the profile fields each was granted (absent: not asked yet). `reads`:
+   * the day each last read the user's opinions (leaning, themes), YYYY-MM-DD. `opened`: when the
+   * user last opened each one's screen (ISO).
    */
-  services: { starred: string[]; disabled: string[]; access: Record<string, string[]>; reads: Record<string, string> }
+  services: {
+    pinned: string[]
+    added: string[]
+    offered: string[]
+    disabled: string[]
+    access: Record<string, string[]>
+    reads: Record<string, string>
+    opened: Record<string, string>
+  }
   browser: { askOnline: 'folder' | 'site'; show: 'ask' | 'always' | 'never' }
+}
+
+/**
+ * A pinned service's tile, as the Services page shows it: the last one its service returned
+ * (null: none yet, or its default tile), when it did, and whether a newer one is being asked for.
+ */
+export interface TileState {
+  tile: ServiceTile | null
+  /** When the service returned it (ISO); null: never yet. */
+  at: string | null
+  loading: boolean
+  /** The last ask failed (the tile shown is older). */
+  error?: string
 }
 
 // ---------------------------------------------------------------- folders and their conversation
