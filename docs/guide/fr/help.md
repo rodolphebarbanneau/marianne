@@ -12,7 +12,7 @@ Dans l’application, F1 ouvre le guide, avec les liens vers le projet.
 
 ## Nous écrire
 
-Ouvrez un ticket sur [GitHub](https://github.com/rodolphebarbanneau/marianne/issues/new/choose) : « Bug report » pour un problème, « Idea » pour une idée, « Content correction » pour une information fausse ou dépassée dans une démarche, « Feedback » pour un avis. Les formulaires sont en anglais, pour que chacun puisse suivre le projet : écrivez en anglais si vous le pouvez. N’y écrivez **aucune donnée personnelle** : les tickets sont publics.
+Ouvrez un ticket sur [GitHub](https://github.com/rodolphebarbanneau/marianne/issues/new/choose) : « Bug report » pour un problème, « Idea » pour une idée, « Content correction » pour une information fausse ou dépassée dans une démarche ou pour proposer une source d’information, « Feedback » pour un avis. Les formulaires sont en anglais, pour que chacun puisse suivre le projet : écrivez en anglais si vous le pouvez. N’y écrivez **aucune donnée personnelle** : les tickets sont publics.
 
 Une faille de sécurité se signale en privé, jamais dans un ticket : voir la [politique de sécurité](https://github.com/rodolphebarbanneau/marianne/blob/main/SECURITY.md).
 
@@ -30,4 +30,4 @@ Ce qu’on aimerait que vous essayiez :
 3. Renseigner un peu de votre profil (Réglages › Moi), si vous le souhaitez : rien ne quitte votre ordinateur, et le moteur ne voit jamais vos numéros, seulement des jetons.
 4. Poser une vraie question à Marianne, sur une démarche que vous avez en cours.
 5. Suivre une démarche guidée (Démarches › un domaine).
-6. Parcourir les Actualités et les Services : 3615 METEO, CARTE, PARLEMENT, ANNUAIRE, PEAGE.
+6. Parcourir les Services : 3615 INFOS, METEO, CARTE, PARLEMENT, ANNUAIRE, PEAGE.

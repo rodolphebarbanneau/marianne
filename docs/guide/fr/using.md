@@ -16,9 +16,14 @@ Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à dr
 
 ## Les pages
 
-- **Actualités** : les nouvelles de plusieurs journaux, les rendez-vous du jour, quelques chiffres de la France.
 - **Démarches** : les domaines de votre vie administrative (impôts, santé, logement, famille…), chacun avec son tableau de bord et ses démarches guidées, étape par étape.
-- **Services** : les codes 3615, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. Tapez un code ou des mots dans la barre 3615 pour en trouver un. L’étoile épingle un service en tuile, en haut de « mes services », avec ce qu’il a de neuf pour vous : la météo du jour, un péage à payer. « + découvrir » propose les services officiels que vous n’avez pas encore ajoutés, puis ceux de la communauté. Avant d’ajouter un service, Marianne vous montre ce qu’il pourra faire. Un service qui a besoin d’une partie de votre profil, comme votre plaque d’immatriculation pour le péage, vous le demande d’abord.
+- **Services** : les codes 3615, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. Tapez un code ou des mots dans la barre 3615 pour en trouver un. L’étoile épingle un service en tuile, en haut de « mes services », avec ce qu’il a de neuf pour vous : la météo du jour, un péage à payer. « + découvrir » propose les services officiels que vous n’avez pas encore ajoutés, puis ceux de la communauté. Avant d’ajouter un service, Marianne vous montre ce qu’il pourra faire. Un service qui a besoin d’une partie de votre profil, comme votre plaque d’immatriculation pour le péage, vous le demande d’abord.
+
+## Les infos
+
+3615 INFOS, parmi vos services, montre les titres de vos sources des dernières 24 heures, regroupés en sujets : un sujet, ce sont les titres de journaux différents qui disent la même chose, rangés par nombre de sources qui en parlent. « à la une » (F2) montre la liste et le sujet choisi, le « fil » (F3) les mêmes titres à leur heure, le « kiosque » (F4) source par source. « / » va dans le champ de recherche, en haut.
+
+Chaque source a sa couleur, sa ligne éditoriale, de la gauche (rouge) à la droite (bleu), en gris sans classement. Celle que Marianne donne est indicative : sa référence est écrite dans la liste, et vous pouvez la changer. Les couleurs ne trient ni ne cachent rien. Vos sources se choisissent dans Réglages › Identité › sources d’information : accepter ou écarter un journal, et ses rubriques avec ⚙. La liste est celle de Marianne, la même pour tous.
 
 ## Les vidéos du Parlement
 
@@ -35,7 +40,7 @@ Dans 3615 PARLEMENT, l’onglet vidéos ouvre les séances et les commissions de
 
 Dans Réglages › Moi, vous pouvez renseigner votre identité, votre foyer et vos pièces. C’est facultatif : cela aide Marianne à préparer vos démarches. Voir [Vos données](privacy.md) pour ce que le moteur en voit.
 
-Dans Réglages › Identité, vous pouvez aussi indiquer, si vous le souhaitez, les groupes politiques dont vous vous sentez proche, et les thèmes qui comptent pour vous. Votre sensibilité sert seulement à comparer : 3615 PARLEMENT vous dit si vos élus votent comme vos idées, sans rien trier ni cacher. Vos thèmes font remonter les actualités et les scrutins qui en parlent. Vous choisissez quels services peuvent les lire, et voyez quand ils l’ont fait.
+Dans Réglages › Identité, vous pouvez aussi indiquer, si vous le souhaitez, les groupes politiques dont vous vous sentez proche, les thèmes qui comptent pour vous, et vos sources d’information. Votre sensibilité sert seulement à comparer : 3615 PARLEMENT vous dit si vos élus votent comme vos idées, sans rien trier ni cacher. Vos thèmes font remonter les titres et les scrutins qui en parlent. Vous choisissez quels services peuvent les lire, et voyez quand ils l’ont fait.
 
 ## Les touches
 

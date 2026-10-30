@@ -1,153 +1,258 @@
 {
-  "updated": "2026-10-28",
-  "note": "French news sources and their public RSS or Atom feeds, checked in October 2026. Les Échos has no front-page feed: its economy section is the paper's core. Not listed: RTL (no news feed, only podcasts), AFP Factuel (its feed carries no articles), LCI (its feed is TF1 Info's).",
+  "updated": "2026-10-30",
+  "note": "French news sources and their public RSS or Atom feeds, checked in October 2026; the section feeds checked to answer with articles on 2026-10-30. Les Échos has no front-page feed: its economy section is the paper's core. lean is Marianne's default editorial line, given only where a published reference states it (leanBasis quotes it, with the day it was read); the scale stops at gauche and droite, so a reference that goes further (CNews, Europe 1) is classed at the end. Without such a statement a source is aucune: Le Parisien (its stated line is political neutrality), La Croix (it follows the Church, not a party), Les Échos and L'Opinion (liberal and pro-business, no left-right claim), the regional dailies but Ouest-France, the broadcasters, the fact-checkers. paywall is a CSS selector found on paid pages only, checked against free ones; the other sources rely on their pages' isAccessibleForFree. Not listed: RTL (no news feed, only podcasts), AFP Factuel (its feed carries no articles), LCI (its feed is TF1 Info's).",
   "sources": [
     {
       "id": "le-monde",
       "name": "Le Monde",
       "group": "national",
       "feed": "https://www.lemonde.fr/rss/une.xml",
-      "homepage": "https://www.lemonde.fr"
+      "homepage": "https://www.lemonde.fr",
+      "sections": [
+        { "id": "une", "label": "à la une", "feed": "https://www.lemonde.fr/rss/une.xml" },
+        { "id": "politique", "label": "politique", "feed": "https://www.lemonde.fr/politique/rss_full.xml" },
+        { "id": "international", "label": "international", "feed": "https://www.lemonde.fr/international/rss_full.xml" },
+        { "id": "economie", "label": "économie", "feed": "https://www.lemonde.fr/economie/rss_full.xml" },
+        { "id": "societe", "label": "société", "feed": "https://www.lemonde.fr/societe/rss_full.xml" },
+        { "id": "culture", "label": "culture", "feed": "https://www.lemonde.fr/culture/rss_full.xml" },
+        { "id": "planete", "label": "planète", "feed": "https://www.lemonde.fr/planete/rss_full.xml" }
+      ],
+      "lean": "centre-gauche",
+      "leanBasis": "Wikipédia, article « Le Monde » : « Il est classé politiquement au centre gauche » (consulté le 30 octobre 2026)",
+      "paywall": ".article__wrapper--premium"
     },
     {
       "id": "le-figaro",
       "name": "Le Figaro",
       "group": "national",
       "feed": "https://www.lefigaro.fr/rss/figaro_actualites.xml",
-      "homepage": "https://www.lefigaro.fr"
+      "homepage": "https://www.lefigaro.fr",
+      "sections": [
+        { "id": "une", "label": "à la une", "feed": "https://www.lefigaro.fr/rss/figaro_actualites.xml" },
+        { "id": "politique", "label": "politique", "feed": "https://www.lefigaro.fr/rss/figaro_politique.xml" },
+        { "id": "international", "label": "international", "feed": "https://www.lefigaro.fr/rss/figaro_international.xml" },
+        { "id": "economie", "label": "économie", "feed": "https://www.lefigaro.fr/rss/figaro_economie.xml" },
+        { "id": "societe", "label": "société", "feed": "https://www.lefigaro.fr/rss/figaro_societe.xml" },
+        { "id": "culture", "label": "culture", "feed": "https://www.lefigaro.fr/rss/figaro_culture.xml" },
+        { "id": "sport", "label": "sport", "feed": "https://www.lefigaro.fr/rss/figaro_sport.xml" }
+      ],
+      "lean": "droite",
+      "leanBasis": "Wikipédia, article « Le Figaro » : « sa ligne éditoriale est issue des trois grandes familles de la droite » (consulté le 30 octobre 2026)",
+      "paywall": ".fig-premium-paywall"
     },
     {
       "id": "liberation",
       "name": "Libération",
       "group": "national",
       "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/collection/accueil-une/?outputType=xml",
-      "homepage": "https://www.liberation.fr"
+      "homepage": "https://www.liberation.fr",
+      "sections": [
+        { "id": "une", "label": "à la une", "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/collection/accueil-une/?outputType=xml" },
+        { "id": "politique", "label": "politique", "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/politique/?outputType=xml" },
+        {
+          "id": "international",
+          "label": "international",
+          "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/international/?outputType=xml"
+        },
+        { "id": "economie", "label": "économie", "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/economie/?outputType=xml" },
+        { "id": "societe", "label": "société", "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/societe/?outputType=xml" },
+        { "id": "culture", "label": "culture", "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/culture/?outputType=xml" },
+        { "id": "planete", "label": "planète", "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/environnement/?outputType=xml" }
+      ],
+      "lean": "gauche",
+      "leanBasis": "Wikipédia, article « Libération (journal) » : « le journal de toutes les gauches » (consulté le 30 octobre 2026)"
     },
     {
       "id": "les-echos",
       "name": "Les Échos",
       "group": "national",
       "feed": "https://services.lesechos.fr/rss/les-echos-economie.xml",
-      "homepage": "https://www.lesechos.fr"
+      "homepage": "https://www.lesechos.fr",
+      "lean": "aucune"
     },
     {
       "id": "le-parisien",
       "name": "Le Parisien",
       "group": "national",
       "feed": "https://feeds.leparisien.fr/leparisien/rss",
-      "homepage": "https://www.leparisien.fr"
+      "homepage": "https://www.leparisien.fr",
+      "sections": [
+        { "id": "une", "label": "à la une", "feed": "https://feeds.leparisien.fr/leparisien/rss" },
+        { "id": "politique", "label": "politique", "feed": "https://feeds.leparisien.fr/leparisien/rss/politique" },
+        { "id": "international", "label": "international", "feed": "https://feeds.leparisien.fr/leparisien/rss/international" },
+        { "id": "economie", "label": "économie", "feed": "https://feeds.leparisien.fr/leparisien/rss/economie" },
+        { "id": "societe", "label": "société", "feed": "https://feeds.leparisien.fr/leparisien/rss/societe" },
+        { "id": "faits-divers", "label": "faits divers", "feed": "https://feeds.leparisien.fr/leparisien/rss/faits-divers" },
+        { "id": "sport", "label": "sport", "feed": "https://feeds.leparisien.fr/leparisien/rss/sports" }
+      ],
+      "lean": "aucune",
+      "paywall": ".paywall-article-section"
     },
     {
       "id": "la-croix",
       "name": "La Croix",
       "group": "national",
       "feed": "https://www.la-croix.com/feeds/rss/site.xml",
-      "homepage": "https://www.la-croix.com"
+      "homepage": "https://www.la-croix.com",
+      "sections": [
+        { "id": "une", "label": "à la une", "feed": "https://www.la-croix.com/feeds/rss/site.xml" },
+        { "id": "politique", "label": "politique", "feed": "https://www.la-croix.com/feeds/rss/politique.xml" },
+        { "id": "international", "label": "international", "feed": "https://www.la-croix.com/feeds/rss/international.xml" },
+        { "id": "economie", "label": "économie", "feed": "https://www.la-croix.com/feeds/rss/economie.xml" },
+        { "id": "societe", "label": "société", "feed": "https://www.la-croix.com/feeds/rss/societe.xml" },
+        { "id": "culture", "label": "culture", "feed": "https://www.la-croix.com/feeds/rss/culture.xml" },
+        { "id": "religion", "label": "religion", "feed": "https://www.la-croix.com/feeds/rss/religion.xml" }
+      ],
+      "lean": "aucune",
+      "paywall": ".article-premium"
     },
     {
       "id": "l-humanite",
       "name": "L’Humanité",
       "group": "national",
       "feed": "https://www.humanite.fr/feed",
-      "homepage": "https://www.humanite.fr"
+      "homepage": "https://www.humanite.fr",
+      "sections": [
+        { "id": "une", "label": "à la une", "feed": "https://www.humanite.fr/feed" },
+        { "id": "politique", "label": "politique", "feed": "https://www.humanite.fr/sections/politique/feed" },
+        { "id": "international", "label": "international", "feed": "https://www.humanite.fr/sections/monde/feed" },
+        { "id": "economie", "label": "économie", "feed": "https://www.humanite.fr/sections/social-et-economie/feed" },
+        { "id": "societe", "label": "société", "feed": "https://www.humanite.fr/sections/societe/feed" },
+        { "id": "culture", "label": "culture", "feed": "https://www.humanite.fr/sections/culture-et-savoir/feed" },
+        { "id": "planete", "label": "planète", "feed": "https://www.humanite.fr/sections/environnement/feed" }
+      ],
+      "lean": "gauche",
+      "leanBasis": "Wikipédia, article « L’Humanité » : « Sa ligne éditoriale est liée dès ses débuts à la gauche » (consulté le 30 octobre 2026)",
+      "paywall": ".cv-paywall-unlocker"
     },
     {
       "id": "l-opinion",
       "name": "L’Opinion",
       "group": "national",
       "feed": "https://www.lopinion.fr/index.rss",
-      "homepage": "https://www.lopinion.fr"
+      "homepage": "https://www.lopinion.fr",
+      "sections": [
+        { "id": "une", "label": "à la une", "feed": "https://www.lopinion.fr/index.rss" },
+        { "id": "politique", "label": "politique", "feed": "https://www.lopinion.fr/politique.rss" },
+        { "id": "international", "label": "international", "feed": "https://www.lopinion.fr/international.rss" },
+        { "id": "economie", "label": "économie", "feed": "https://www.lopinion.fr/economie.rss" }
+      ],
+      "lean": "aucune",
+      "paywall": ".paywall-premium"
     },
     {
       "id": "ouest-france",
       "name": "Ouest-France",
       "group": "regional",
       "feed": "https://www.ouest-france.fr/rss/une",
-      "homepage": "https://www.ouest-france.fr"
+      "homepage": "https://www.ouest-france.fr",
+      "regions": ["53", "52", "28"],
+      "lean": "centre-droit",
+      "leanBasis": "Wikipédia, article « Ouest-France » : « orientation politique : centre-droit, démocratie chrétienne » (consulté le 30 octobre 2026)"
     },
     {
       "id": "sud-ouest",
       "name": "Sud Ouest",
       "group": "regional",
       "feed": "https://www.sudouest.fr/rss.xml",
-      "homepage": "https://www.sudouest.fr"
+      "homepage": "https://www.sudouest.fr",
+      "regions": ["75"],
+      "lean": "aucune",
+      "paywall": "html.article-premium"
     },
     {
       "id": "la-voix-du-nord",
       "name": "La Voix du Nord",
       "group": "regional",
       "feed": "https://www.lavoixdunord.fr/rss.xml",
-      "homepage": "https://www.lavoixdunord.fr"
+      "homepage": "https://www.lavoixdunord.fr",
+      "regions": ["32"],
+      "lean": "aucune",
+      "paywall": ".r-article--payant"
     },
     {
       "id": "le-progres",
       "name": "Le Progrès",
       "group": "regional",
       "feed": "https://www.leprogres.fr/rss",
-      "homepage": "https://www.leprogres.fr"
+      "homepage": "https://www.leprogres.fr",
+      "regions": ["84", "27"],
+      "lean": "aucune",
+      "paywall": ".paywall-content"
     },
     {
       "id": "franceinfo",
       "name": "Franceinfo",
       "group": "broadcast",
       "feed": "https://www.franceinfo.fr/titres.rss",
-      "homepage": "https://www.franceinfo.fr"
+      "homepage": "https://www.franceinfo.fr",
+      "lean": "aucune"
     },
     {
       "id": "bfmtv",
       "name": "BFMTV",
       "group": "broadcast",
       "feed": "https://www.bfmtv.com/rss/news-24-7/",
-      "homepage": "https://www.bfmtv.com"
+      "homepage": "https://www.bfmtv.com",
+      "lean": "aucune"
     },
     {
       "id": "cnews",
       "name": "CNews",
       "group": "broadcast",
       "feed": "https://www.cnews.fr/rss.xml",
-      "homepage": "https://www.cnews.fr"
+      "homepage": "https://www.cnews.fr",
+      "lean": "droite",
+      "leanBasis": "Wikipédia, article « CNews » : « Sa ligne éditoriale est décrite comme très ancrée à droite et conservatrice, avec une orientation marquée de plus en plus à l’extrême droite » (consulté le 30 octobre 2026)"
     },
     {
       "id": "tf1-info",
       "name": "TF1 Info",
       "group": "broadcast",
       "feed": "https://www.tf1info.fr/feeds/rss-une.xml",
-      "homepage": "https://www.tf1info.fr"
+      "homepage": "https://www.tf1info.fr",
+      "lean": "aucune"
     },
     {
       "id": "france-24",
       "name": "France 24",
       "group": "broadcast",
       "feed": "https://www.france24.com/fr/rss",
-      "homepage": "https://www.france24.com/fr"
+      "homepage": "https://www.france24.com/fr",
+      "lean": "aucune"
     },
     {
       "id": "rfi",
       "name": "RFI",
       "group": "broadcast",
       "feed": "https://www.rfi.fr/fr/rss",
-      "homepage": "https://www.rfi.fr/fr"
+      "homepage": "https://www.rfi.fr/fr",
+      "lean": "aucune"
     },
     {
       "id": "europe-1",
       "name": "Europe 1",
       "group": "broadcast",
       "feed": "https://www.europe1.fr/rss.xml",
-      "homepage": "https://www.europe1.fr"
+      "homepage": "https://www.europe1.fr",
+      "lean": "droite",
+      "leanBasis": "Wikipédia, article « Europe 1 » : « orientation éditoriale plus à droite, voire à l’extrême droite » (consulté le 30 octobre 2026)"
     },
     {
       "id": "les-decodeurs",
       "name": "Les Décodeurs (Le Monde)",
       "group": "factcheck",
       "feed": "https://www.lemonde.fr/les-decodeurs/rss_full.xml",
-      "homepage": "https://www.lemonde.fr/les-decodeurs"
+      "homepage": "https://www.lemonde.fr/les-decodeurs",
+      "lean": "aucune"
     },
     {
       "id": "vrai-ou-faux",
       "name": "Vrai ou faux (Franceinfo)",
       "group": "factcheck",
       "feed": "https://www.franceinfo.fr/vrai-ou-fake.rss",
-      "homepage": "https://www.franceinfo.fr/vrai-ou-fake"
+      "homepage": "https://www.franceinfo.fr/vrai-ou-fake",
+      "lean": "aucune"
     }
   ]
 }

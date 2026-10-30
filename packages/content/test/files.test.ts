@@ -17,6 +17,17 @@ describe('the shipped content', () => {
     expect(content.parliament.filter((g) => g.chamber === 'se').length).toBeGreaterThanOrEqual(8)
   })
 
+  it('gives every news source an editorial line, and every regional one its regions', () => {
+    for (const s of content.newsSources) {
+      expect(s.lean, s.id).toBeDefined()
+      if (s.lean !== 'aucune') expect(s.leanBasis, s.id).toMatch(/consulté le \d{1,2} \w+ \d{4}/)
+      expect(!!s.regions, s.id).toBe(s.group === 'regional')
+    }
+    // Public broadcasters and fact-checkers declare no line.
+    for (const id of ['franceinfo', 'france-24', 'rfi', 'les-decodeurs', 'vrai-ou-faux'])
+      expect(content.newsSources.find((s) => s.id === id)?.lean, id).toBe('aucune')
+  })
+
   it('files each démarche in its domain’s folder, under its id', () => {
     for (const p of content.procedures) expect(files[`procedures/${p.domain}/${p.id}.md`], p.id).toBeDefined()
   })

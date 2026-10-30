@@ -82,9 +82,9 @@ const fr = {
         text: 'Marianne ouvre les sites des démarches dans son navigateur. Vous pouvez reprendre la main à tout moment, et il oublie tout au verrouillage.'
       },
       {
-        code: 'ACTUALITÉS',
-        title: 'L’actualité utile',
-        text: 'Les titres de vos journaux, les rendez-vous du jour, et ce qui change en France : nouvelles règles, aides revalorisées, dates à retenir.'
+        code: 'INFOS',
+        title: 'Qui en parle, comment ils titrent',
+        text: '3615 INFOS rassemble les titres de vos journaux en sujets, chaque source à la couleur de sa ligne éditoriale. L’article se lit chez le journal, et le choix de vos sources reste sur votre ordinateur.'
       },
       {
         code: 'ÉCHÉANCES',
@@ -270,9 +270,9 @@ const en: typeof fr = {
         text: 'Marianne opens the formalities’ websites in its own browser. You can take over at any time, and it forgets everything when the archive locks.'
       },
       {
-        code: 'ACTUALITÉS',
-        title: 'News that matters',
-        text: 'Your newspapers’ headlines, the day’s events, and what changes in France: new rules, raised benefits, dates to remember.'
+        code: 'INFOS',
+        title: 'Who covers it, how they headline it',
+        text: '3615 INFOS gathers your newspapers’ headlines into subjects, each source in the colour of its editorial line. The article is read at the newspaper, and your choice of sources stays on your computer.'
       },
       {
         code: 'ÉCHÉANCES',

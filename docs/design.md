@@ -15,7 +15,7 @@ Marianne is a desktop citizen assistant for people living in France: their right
 ## The window
 
 ```
-[◧] MARIANNE  Actualités  Démarches  Services                         ⌕  ⚙  ─ □ ✕
+[◧] MARIANNE  Démarches  Services                                     ⌕  ⚙  ─ □ ✕
 ┌────────────────┬───────────────────────────────────────────┬────────────────────┐
 │ ⌕ filtre  ＋    │                                           │                    │
 │ ● pinned       │     the page, or the open folder          │  built-in browser  │
@@ -31,9 +31,9 @@ Marianne is a desktop citizen assistant for people living in France: their right
 - **Title bar**: the sidebar toggle; MARIANNE (a new folder, on the composer); the pages, the current one as an inverse block; search and settings; the system's window buttons. Full screen is F11, without a button.
 - **Sidebar** (after T3 Code): search, filter by domain (shift+click for several), new folder; rows with domain badge, pin, status or time, title, a meta line and the engine badge; on hover, snooze and settle. "En veille" and "Classés" fold at the bottom. The account selector sits in the footer; its menu shows the archive gauge under the name, then Réglages, Archive, Changer de compte, Verrouiller.
 - **Bottom bar**: the lock, then each enabled engine with its light (● ready, ◐ working, greyed ✕ enabled but not found); on the right, the Minitel keys of the screen.
-- **Pages**, in this order, each separate (scrolling never switches): Marianne (the composer), Actualités, Démarches, Services. ▼ at the bottom, SUITE pg↓ / RETOUR pg↑ and ctrl+↓/↑ go to the next or previous one, at once (a Minitel had no transitions).
-- **Settings**: a dialog over the app, grouped MOI (identity, household, documents), ARCHIVE (space, security, accounts), CONNEXIONS (sites, engines, browser, privacy, public data), PAGES (services, Actualités sources), APPLICATION (display, shortcuts, skills, about).
-- **Keyboard**: ctrl+k commands, ctrl+space the menu (the Minitel's SOMMAIRE), ctrl+alt+space search, ctrl+enter Marianne, ctrl+1/2/3 Actualités / Démarches / Services. CommandOrControl everywhere (cmd on macOS); every shortcut can be changed.
+- **Pages**, in this order, each separate (scrolling never switches): Marianne (the composer), Démarches, Services. The news is a service, 3615 INFOS, one of a new account's services. ▼ at the bottom, SUITE pg↓ / RETOUR pg↑ and ctrl+↓/↑ go to the next or previous one, at once (a Minitel had no transitions).
+- **Settings**: a dialog over the app, grouped MOI (identity, household, documents), ARCHIVE (space, security, accounts), CONNEXIONS (sites, engines, browser, privacy, public data), PAGES (services), APPLICATION (display, shortcuts, skills, about).
+- **Keyboard**: ctrl+k commands, ctrl+space the menu (the Minitel's SOMMAIRE), ctrl+alt+space search, ctrl+enter Marianne, ctrl+2/3 Démarches / Services (ctrl+1 was the Actualités page's: the others kept their keys). CommandOrControl everywhere (cmd on macOS); every shortcut can be changed.
 - **Look**: Minitel touches on a clean monospace screen: inverse blocks, codes, function keys; the pixel font for titles and codes only; the old screen's lines and glow are an option.
 
 ## Folders
@@ -73,7 +73,7 @@ The built-in browser is a folder's: shown in the right column or kept out of sig
 ## Public information
 
 - **Connexions**: the public sources Marianne uses (Service-Public, indexed offline; Légifrance with the user's API key; data.gouv.fr; the companies directory; communes and addresses; the official calendar; OpenFisca). Each can be turned off or pointed elsewhere.
-- **Actualités**: headlines of the sources the user picks (title, time, link; never the article), "Aujourd'hui" (holidays, school holidays, clock changes, changes in force today, and what services add, such as the Assemblée's sittings) and "En France" (what changes, public services' news). Copy a link, or ask Marianne.
+- **3615 INFOS**: the news, as a service (`services/infos`). Marianne reads every source of the content's list, whatever the user chose, so that no outlet can tell which ones they read; keeps 7 days of titles; groups the titles of different sources that say the same thing into subjects; and hands them to the services that declare `news` (`ctx.news`, see [services.md](services.md#news)). INFOS reaches no site itself. It shows the title, the time, the link and the feed's summary and, for the one title a subject shows, the start of the article (600 characters at most, read on demand, never past a paywall); the article opens at the source. The sources a user reads are a profile field (`opinions.sources`, Réglages › Identité › sources d'information), sensitive like the leaning: never ticked in advance, never given to the engines, shared service by service. Each source's colour is its editorial line, Marianne's by default (with its published basis in the content) or the user's own: colours show, they never sort or pick.
 - **Services**: apps with a code, starred ones first, grouped by category; not tied to folders. Each is an add-on package (see [services.md](services.md)) in the same frame: the 3615 header and the tabs its manifest declares (F2, F3…), fixed above its screen, and its guide on F1; what a page waits for, a box in its middle.
 - **Content**: the public sites, the news sources and the yearly dates of the official calendar come from the content ([content.md](content.md)), built in and replaced by a newer bundle when the project publishes one it signed.
 
@@ -86,7 +86,7 @@ apps/desktop/             the app (Electron): its package, build and packaging
     profile/              the profile's store and documents, in the archive
     content/              the content in use: built in, or a newer signed bundle
     tools/                the MCP tools
-    public/               the connections and Actualités
+    public/               the connections and the news reader (ctx.news)
     browser/              the built-in browser
     host/                 the services' host
   src/preload/            window.marianne, from the channel lists

@@ -570,19 +570,80 @@ function readSites(file: string, report: Report): { updated: string; sites: Site
   return { updated: data.updated, sites }
 }
 
-const NEWS_KEYS = ['id', 'name', 'group', 'feed', 'homepage'] as const
+const NEWS_KEYS = ['id', 'name', 'group', 'feed', 'homepage', 'sections', 'regions', 'lean', 'leanBasis', 'paywall', 'start'] as const
+const NEWS_SECTION_KEYS = ['id', 'label', 'feed'] as const
+/** The INSEE codes of the regions (since 2016), as a commune's `region` gives them. */
+const REGION_CODES = ['01', '02', '03', '04', '06', '11', '24', '27', '28', '32', '44', '52', '53', '75', '76', '84', '93', '94'] as const
+
+/** A source's section feeds: https, each id and feed once, the front page's first. */
+function readSections(o: Json, feed: string, where: string, report: Report): NewsSource['sections'] {
+  if (o.sections === undefined) return undefined
+  if (!Array.isArray(o.sections) || !o.sections.length) {
+    report(`${where}.sections`, 'must be a list of sections, the front page first')
+    return undefined
+  }
+  const sections = [...entries(o.sections, `${where}.sections`, NEWS_SECTION_KEYS, report)].map(({ o: s, where: at }) => ({
+    id: field(s, 'id', at, report, like(SLUG, 'lowercase words joined by hyphens')),
+    label: field(s, 'label', at, report),
+    feed: field(s, 'feed', at, report, (v) => urlProblem(v, true))
+  }))
+  idsOnce(sections, `${where}.sections`, report)
+  for (const url of twice(sections.map((s) => s.feed).filter(Boolean))) report(`${where}.sections`, `feed "${url}" is listed twice`)
+  // Older versions read `feed` alone: it stays the front page, and the list starts with it.
+  if (sections[0] && feed && sections[0].feed !== feed)
+    report(`${where}.sections[0].feed`, `the front page comes first: its feed is the source's feed (${feed})`)
+  return sections
+}
+
+/** A regional source's area: INSEE region codes, each once. */
+function readRegions(o: Json, group: string, where: string, report: Report): string[] | undefined {
+  if (o.regions === undefined) {
+    if (group === 'regional') report(`${where}.regions`, 'required for a regional source: the INSEE codes of its regions')
+    return undefined
+  }
+  if (group !== 'regional') report(`${where}.regions`, 'only a regional source has regions')
+  if (!Array.isArray(o.regions) || !o.regions.length || o.regions.some((r) => typeof r !== 'string')) {
+    report(`${where}.regions`, 'must be a list of INSEE region codes ("53")')
+    return undefined
+  }
+  const regions = o.regions as string[]
+  for (const r of regions)
+    if (!(REGION_CODES as readonly string[]).includes(r)) report(`${where}.regions`, `"${r}" is not an INSEE region code (${REGION_CODES.join(', ')})`)
+  for (const r of twice(regions)) report(`${where}.regions`, `"${r}" is listed twice`)
+  return regions
+}
 
 /** The press is not an official site: its addresses need only be https. */
 function readNewsSources(file: string, report: Report): { updated: string; sources: NewsSource[] } | null {
   const data = readJson(file, 'sources', report)
   if (!data) return null
-  const sources = [...entries(data.entries, 'sources', NEWS_KEYS, report)].map(({ o, where }): NewsSource => ({
-    id: field(o, 'id', where, report, like(SLUG, 'lowercase words joined by hyphens')),
-    name: field(o, 'name', where, report),
-    group: field(o, 'group', where, report, oneOf(NEWS_GROUPS)) as NewsGroup,
-    feed: field(o, 'feed', where, report, (v) => urlProblem(v, true)),
-    homepage: field(o, 'homepage', where, report, (v) => urlProblem(v, true))
-  }))
+  const sources = [...entries(data.entries, 'sources', NEWS_KEYS, report)].map(({ o, where }): NewsSource => {
+    const source: NewsSource = {
+      id: field(o, 'id', where, report, like(SLUG, 'lowercase words joined by hyphens')),
+      name: field(o, 'name', where, report),
+      group: field(o, 'group', where, report, oneOf(NEWS_GROUPS)) as NewsGroup,
+      feed: field(o, 'feed', where, report, (v) => urlProblem(v, true)),
+      homepage: field(o, 'homepage', where, report, (v) => urlProblem(v, true))
+    }
+    const sections = readSections(o, source.feed, where, report)
+    const regions = readRegions(o, source.group, where, report)
+    const lean = optionalField(o, 'lean', where, report, oneOf(NEWS_LEANS)) as NewsLean | undefined
+    const leanBasis = optionalField(o, 'leanBasis', where, report)
+    // A position is a claim about a newsroom: it says where it comes from.
+    if (lean && lean !== 'aucune' && leanBasis === undefined)
+      report(`${where}.leanBasis`, `required with "lean": "${lean}": the published reference it comes from, with its date`)
+    const paywall = optionalField(o, 'paywall', where, report)
+    if (o.start !== undefined && o.start !== false) report(`${where}.start`, 'only false: the source asked that no start of its articles be shown')
+    return {
+      ...source,
+      ...(sections ? { sections } : {}),
+      ...(regions ? { regions } : {}),
+      ...(lean !== undefined ? { lean } : {}),
+      ...(leanBasis !== undefined ? { leanBasis } : {}),
+      ...(paywall !== undefined ? { paywall } : {}),
+      ...(o.start === false ? { start: false as const } : {})
+    }
+  })
   idsOnce(sources, 'sources', report)
   return { updated: data.updated, sources }
 }
