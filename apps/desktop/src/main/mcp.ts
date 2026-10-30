@@ -65,34 +65,46 @@ function buildServer(ctx: ToolContext): McpServer {
   return server
 }
 
-/** One tool on the server: [[tokens]] resolved in its arguments (refused for a service's), its result scrubbed of them. */
+/**
+ * One call of a tool, as an engine makes it: the planned task's run gate, [[tokens]] resolved in
+ * its arguments (refused for a service's), its result scrubbed of them.
+ */
+export async function callTool(t: Tool, args: unknown, ctx: ToolContext): Promise<{ content: { type: 'text'; text: string }[]; isError?: boolean }> {
+  const started = Date.now()
+  const tokens = profile.tokens()
+  try {
+    // Nobody watches a run: this is what holds it to reading and reporting, whatever a page told the engine.
+    // Read once: the call keeps to the run it started in, even if the run ends meanwhile (tools/browser.ts).
+    const run = tasks.runningIn(ctx.folderId)
+    if (!tasks.mayUse(ctx.folderId, t, ALL_TOOLS.includes(t)))
+      throw new ToolError(`A planned task's run cannot use ${t.name}. Stop here and report "waiting" with task_report, saying what the user should do.`)
+    const raw = JSON.stringify(args ?? {})
+    if (t.tokens === false && /\[\[[a-z0-9_.]+\]\]/i.test(raw))
+      throw new ToolError('Tokens [[…]] are not accepted here: the user’s identifiers never leave the app through an address.')
+    const resolved = resolveDeep(args, tokens)
+    const replaced = JSON.stringify(resolved ?? {}) !== raw
+    // A run's one identifier goes into the field its sheet says (type_text checks which), nowhere else.
+    if (run && replaced && t.name !== 'type_text')
+      throw new ToolError(`A planned task's run cannot send the user's identifiers through ${t.name}. Stop here and report "waiting" with task_report.`)
+    const text = await t.run(resolved as never, { ...ctx, run, resolved: replaced })
+    log.info(`tool ${t.name} ok in ${Date.now() - started}ms`)
+    return { content: [{ type: 'text' as const, text: redact(text, profile.tokens()) }] }
+  } catch (err) {
+    // Messages may quote the resolved arguments: scrubbed for the log as for the engine.
+    const message = redact((err as Error).message ?? String(err), tokens)
+    // By name: a service's ToolError may come from its own copy of the SDK.
+    if ((err as Error).name === 'ToolError') log.info(`tool ${t.name}: ${message.slice(0, 120)}`)
+    else log.warn(`tool ${t.name} failed: ${message}`)
+    return { content: [{ type: 'text' as const, text: message }], isError: true }
+  }
+}
+
+/** One tool on the server. */
 function register(server: McpServer, t: Tool, ctx: ToolContext): void {
   server.registerTool(
     t.name,
     { title: t.title, description: t.description, inputSchema: t.input, annotations: { readOnlyHint: t.readOnly ?? false, openWorldHint: true } },
-    async (args: unknown) => {
-      const started = Date.now()
-      const tokens = profile.tokens()
-      try {
-        // Nobody watches a run: this is what holds it to reading and reporting, whatever a page told the engine.
-        if (!tasks.mayUse(ctx.folderId, t, ALL_TOOLS.includes(t)))
-          throw new ToolError(`A planned task's run cannot use ${t.name}. Stop here and report "waiting" with task_report, saying what the user should do.`)
-        const raw = JSON.stringify(args ?? {})
-        if (t.tokens === false && /\[\[[a-z0-9_.]+\]\]/i.test(raw))
-          throw new ToolError('Tokens [[…]] are not accepted here: the user’s identifiers never leave the app through an address.')
-        const resolved = resolveDeep(args, tokens)
-        const text = await t.run(resolved as never, { ...ctx, resolved: JSON.stringify(resolved ?? {}) !== raw })
-        log.info(`tool ${t.name} ok in ${Date.now() - started}ms`)
-        return { content: [{ type: 'text' as const, text: redact(text, profile.tokens()) }] }
-      } catch (err) {
-        // Messages may quote the resolved arguments: scrubbed for the log as for the engine.
-        const message = redact((err as Error).message ?? String(err), tokens)
-        // By name: a service's ToolError may come from its own copy of the SDK.
-        if ((err as Error).name === 'ToolError') log.info(`tool ${t.name}: ${message.slice(0, 120)}`)
-        else log.warn(`tool ${t.name} failed: ${message}`)
-        return { content: [{ type: 'text' as const, text: message }], isError: true }
-      }
-    }
+    (args: unknown) => callTool(t, args, ctx)
   )
 }
 

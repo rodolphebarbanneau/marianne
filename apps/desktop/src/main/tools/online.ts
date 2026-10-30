@@ -51,8 +51,11 @@ const MOVES =
  */
 const READS =
   /\b(recherch|cherch|search|filtr|filter|trier|sort|afficher|voir|show|masquer|hide|fermer|close|menu|suivant|next|precedent|previous|retour|back|accueil|home|langue|language)/
-/** Saying no to a cookie banner, which stands in front of most pages; « sans accepter » isn't accepting. */
-const DECLINES = /\b(tout refuser|continuer sans accepter)/
+/**
+ * Saying no to a cookie banner, which stands in front of most pages; « sans accepter » isn't
+ * accepting. The whole label: « tout refuser et payer » is paying.
+ */
+const DECLINES = /^\W*(tout refuser|continuer sans accepter)\W*$/
 
 export interface Clickable {
   role: string

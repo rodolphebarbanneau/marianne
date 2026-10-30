@@ -72,6 +72,25 @@ export interface NewTask {
   engine?: EngineId
 }
 
+/**
+ * Whether a task's sites include an address: https, on a listed host or under it. Not by
+ * registrable domain: the sheet says mairie.github.io, not all of github.io.
+ */
+export function siteAllowed(task: Pick<PlannedTask, 'sites'>, url: string): boolean {
+  let u: URL
+  try {
+    u = new URL(/^[a-z]+:\/\//i.test(url) ? url : `https://${url}`)
+  } catch {
+    return false
+  }
+  if (u.protocol !== 'https:') return false
+  const host = u.hostname.toLowerCase()
+  return task.sites.some((site) => {
+    const listed = site.toLowerCase().replace(/^www\./, '')
+    return host === listed || host.endsWith(`.${listed}`)
+  })
+}
+
 class Tasks extends EventEmitter {
   /** Runs a task's engine turn, set by the chat runner. */
   runTurn: (task: PlannedTask, line: string) => Promise<TaskTurnEnd> = () => Promise.reject(new Error('Aucun moteur.'))
@@ -210,17 +229,7 @@ class Tasks extends EventEmitter {
    */
   allows(folderId: string, url: string): boolean {
     const task = this.runningIn(folderId)
-    if (!task) return false
-    let host: string
-    try {
-      host = new URL(/^[a-z]+:\/\//i.test(url) ? url : `https://${url}`).hostname.toLowerCase()
-    } catch {
-      return false
-    }
-    return task.sites.some((site) => {
-      const listed = site.toLowerCase().replace(/^www\./, '')
-      return host === listed || host.endsWith(`.${listed}`)
-    })
+    return !!task && siteAllowed(task, url)
   }
 
   /** Whether a tool may be called in a folder: anything outside a run; in one, what reads or moves through a page, and its own service's tools. */

@@ -24,7 +24,7 @@ import { log } from './log'
 import { profile } from './profile/store'
 import { services } from './host'
 import { session } from './session'
-import { RunInterrupted, tasks, type TaskTurnEnd } from './tasks'
+import { RunInterrupted, siteAllowed, tasks, type TaskTurnEnd } from './tasks'
 import { legifranceReady } from './tools'
 
 /**
@@ -236,10 +236,12 @@ class Chat extends EventEmitter {
     const messages = folders.messages(folder.id)
     const opening = this.taskLine(line)
     messages.push(opening)
+    // Its page goes to its own sites only, held there before any request leaves (browser/run-guard.ts).
+    browser.setRunGuard((url) => siteAllowed(task, url))
     const running = this.turn(folder, messages, opening, { text: taskMessage(task), timeoutMs: TASK_MINUTES * 60_000 })
     const run = { folderId: folder.id, done: running.catch(() => undefined), interrupted: false }
     this.run = run
-    const answer = await running
+    const answer = await running.finally(() => browser.setRunGuard(null))
     this.run = null
     const reported = tasks.takeReport()
     if (run.interrupted) {
