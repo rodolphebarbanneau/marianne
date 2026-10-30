@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { AccountSettings, Attachment, DeepPartial, DeviceConfig, DomainId, EngineLight, FolderSummary, SessionState } from '@shared/types'
+import { BrowserReveals } from '../browser/reveal'
 import type { ServiceBar } from '../host/frame'
 import { api, useLive } from '../lib/api'
 import { PAGES, routeTarget, type PageId, type View } from './routes'
@@ -165,6 +166,24 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
     [go]
   )
   useEffect(() => api.onNavigate(openRoute), [openRoute])
+
+  // Marianne asks to show a folder's browser: its panel opens now on its screen, or when the user
+  // goes there (browser/reveal.ts says why the window never leaves the screen they are on).
+  const latest = useRef({ view, folders })
+  latest.current = { view, folders }
+  const [reveals] = useState(
+    () =>
+      new BrowserReveals({
+        view: () => latest.current.view,
+        open: () => setBrowserOpen(true),
+        away: (id) => {
+          const title = latest.current.folders.find((f) => f.id === id)?.title
+          toast(`Marianne veut vous montrer le navigateur, dans ${title ? `« ${title} »` : 'un autre dossier'}`)
+        }
+      })
+  )
+  useEffect(() => reveals.listen(api), [reveals])
+  useEffect(() => reveals.visit(view), [reveals, view])
 
   // A deleted folder can't stay on screen.
   useEffect(() => {
