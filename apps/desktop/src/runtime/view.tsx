@@ -4,10 +4,10 @@ import '@fontsource-variable/jetbrains-mono'
 import '../renderer/src/styles.css'
 import './runtime.css'
 import { Component, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, type Root } from 'react-dom/client'
 import type { ServiceTab } from '@marianne/sdk'
 import { Failure, Loading, LoadingGate, ServiceFrameProvider, ServiceHostProvider, type ServiceFrame, type ServiceHost } from '@marianne/sdk/view'
-import { readToFrame, type FrameHost, type FrameLook, type FromFrame, type ScreenBridge } from '../shared/community'
+import { readToFrame, type FrameHost, type FrameLook, type FrameMedia, type FromFrame, type ScreenBridge } from '../shared/community'
 import { removeConnections } from './isolate'
 
 /**
@@ -54,6 +54,26 @@ interface FrameState {
 }
 
 let state: FrameState = { host: null, tabs: [], tab: '', barred: false }
+
+/**
+ * The app's mini-player, as the window last said, and a video this screen pinned as its view left
+ * it (the window shows it a moment later): `take` answers from these at once, without waiting for
+ * the window, and tells it.
+ */
+let media: FrameMedia = { can: false, pinned: null }
+let leftAt: { src: string; at: number; when: number } | null = null
+/** As the window waits before showing a pin from a page that leaves (renderer/src/app/pinned.ts). */
+const LEFT_MS = 300
+
+function take(src: string): number | null {
+  const left = leftAt?.src === src && Date.now() - leftAt.when < LEFT_MS ? leftAt : null
+  const at = left?.at ?? (media.pinned?.src === src ? media.pinned.at : null)
+  leftAt = null
+  if (at === null) return null
+  media = { ...media, pinned: null }
+  post({ type: 'take', src })
+  return at
+}
 const subscribers = new Set<() => void>()
 const picks = new Set<(id: string) => void>()
 const update = (patch: Partial<FrameState>) => {
@@ -88,7 +108,17 @@ bridge?.onMessage((data) => {
     }
     case 'init':
       applyLook(m.look)
+      if (m.media) media = m.media
       return update({ host: m.host, tabs: m.tabs, tab: m.tab, barred: m.barred })
+    case 'media': {
+      const can = media.can
+      media = m.media
+      // A host with the mini-player, or without: the view gets a new one.
+      return can !== m.media.can && state.host ? update({ host: { ...state.host } }) : undefined
+    }
+    case 'leave':
+      // The screen goes: its view unmounts (a video playing pins itself on the way).
+      return root?.unmount()
     case 'host':
       return update({ host: m.host })
     case 'look':
@@ -121,7 +151,20 @@ function hostOf(h: FrameHost): ServiceHost {
     copy: (text, done) => post({ type: 'copy', text, ...(done ? { done } : {}) }),
     toast: (text) => post({ type: 'toast', text }),
     load: (key) => request({ type: 'load', key }),
-    save: (key, value) => request({ type: 'save', key, value }).then(() => undefined)
+    save: (key, value) => request({ type: 'save', key, value }).then(() => undefined),
+    // The app's mini-player, when its videos are of a host the window plays from.
+    ...(media.can
+      ? {
+          media: {
+            pin: (item, opts) => {
+              const auto = !!opts?.auto
+              if (auto) leftAt = { src: item.src, at: item.at, when: Date.now() }
+              post({ type: 'pin', item: { ...item }, auto })
+            },
+            take
+          }
+        }
+      : {})
   }
 }
 
@@ -178,8 +221,11 @@ function Screen({ View }: { View: ComponentType }) {
   )
 }
 
+let root: Root | null = null
+
 async function boot(): Promise<void> {
-  const root = createRoot(document.getElementById('root')!)
+  const view = createRoot(document.getElementById('root')!)
+  root = view
   post({ type: 'hello' })
   // The service's own styles, after Marianne's.
   const css = document.createElement('link')
@@ -189,9 +235,9 @@ async function boot(): Promise<void> {
   try {
     const loaded = (await import(/* @vite-ignore */ new URL('../view.js', location.href).href)) as { View?: unknown }
     if (typeof loaded.View !== 'function') throw new Error('view.js n’exporte pas d’écran (export function View).')
-    root.render(<Screen View={loaded.View as ComponentType} />)
+    view.render(<Screen View={loaded.View as ComponentType} />)
   } catch (err) {
-    root.render(<Failure title="Écran indisponible" error={err instanceof Error ? err.message : String(err)} />)
+    view.render(<Failure title="Écran indisponible" error={err instanceof Error ? err.message : String(err)} />)
   }
 }
 

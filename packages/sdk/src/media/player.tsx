@@ -112,7 +112,11 @@ export function Player(props: PlayerProps) {
   const host = useHostOptional()
   const root = useRef<HTMLDivElement>(null)
   const video = useRef<HTMLVideoElement>(null)
-  const stream = useStream(video, src, { start, autoPlay, live: props.live })
+  // The same video in the app's mini-player: taken back from it, and on from where it was.
+  const taken = useRef<{ src: string; at: number | null } | null>(null)
+  if (taken.current?.src !== src) taken.current = { src, at: host?.media?.take(src) ?? null }
+  const resumed = taken.current.at
+  const stream = useStream(video, src, resumed === null ? { start, autoPlay, live: props.live } : { start: resumed, autoPlay: true, live: props.live })
   const pb = usePlayback(video)
   const [prefs, setPrefs] = useMediaPrefs()
   useVolume(video, prefs)
@@ -228,14 +232,14 @@ export function Player(props: PlayerProps) {
     setMenu(null)
     if (document.fullscreenElement === root.current) void document.exitFullscreen().catch(() => undefined)
   }
-  // Leaving the page of a video that plays: it goes on in the corner.
+  // Leaving the page of a video that plays: it goes on in the corner (auto: unless it comes back at once).
   const latest = useRef({ pin, host, src, poster, live, away })
   latest.current = { pin, host, src, poster, live, away }
   useEffect(
     () => () => {
       const l = latest.current
       if (l.pin && l.host?.media && playingRef.current && !l.away)
-        l.host.media.pin({ ...l.pin, src: l.src, poster: l.poster, at: timeRef.current, live: l.live })
+        l.host.media.pin({ ...l.pin, src: l.src, poster: l.poster, at: timeRef.current, live: l.live }, { auto: true })
     },
     []
   )

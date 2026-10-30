@@ -47,6 +47,8 @@ export function useShortcuts(actions: Actions, recording: boolean): void {
     const onKey = (e: KeyboardEvent) => {
       if (recording) return
       api.activity()
+      // A key the page took already (the video player's space, arrows, letters): not a shortcut too.
+      if (e.defaultPrevented) return
       const field = (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')
       const typing = !!field
       // A dialog over the page (the palette, the settings, the guide, a page's or a service's own) keeps échap and the page keys.

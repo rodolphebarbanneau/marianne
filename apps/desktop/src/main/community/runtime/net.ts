@@ -381,3 +381,33 @@ export async function servicePicture(m: Pick<ServiceManifest, 'id' | 'hosts'>, u
   if (answer.status !== 200 || !PICTURES[type]) return null
   return { type: PICTURES[type], body: answer.body }
 }
+
+/** What a screen's video may be made of, from its declared hosts: playlists, segments, keys. */
+const MEDIA_TYPE =
+  /^(?:video\/[\w.+-]+|audio\/[\w.+-]+|application\/(?:vnd\.apple\.mpegurl|x-mpegurl|dash\+xml|mp4|octet-stream)|binary\/octet-stream|text\/plain)$/
+/** A byte range a video asks for: one, plain. */
+const RANGE = /^bytes=\d{0,15}-\d{0,15}$/
+
+/**
+ * A piece of a video of a declared host, for its screen (through the scheme): a playlist, a segment
+ * or a range of a file, of a video's or a playlist's type only, within the answers' limit; null
+ * otherwise. As its pictures, in the same line as its main side's requests.
+ */
+export async function serviceMedia(
+  m: Pick<ServiceManifest, 'id' | 'hosts'>,
+  url: string,
+  range: string | null,
+  userAgent: () => string,
+  transport: Transport = httpsTransport
+): Promise<{ status: number; type: string; body: Buffer; range?: string } | null> {
+  const headers: Record<string, string> = { 'User-Agent': userAgent(), Accept: '*/*', 'Accept-Encoding': 'gzip, deflate, br' }
+  if (range && RANGE.test(range)) headers.Range = range
+  const answer = await slotsOf(m.id).run(`3615 ${serviceCode(m)}`, () => serviceFetch(m, url, { method: 'GET', headers }, transport))
+  const type = String(answer.headers['content-type'] ?? '')
+    .split(';')[0]
+    .trim()
+    .toLowerCase()
+  if ((answer.status !== 200 && answer.status !== 206) || !MEDIA_TYPE.test(type)) return null
+  const got = answer.headers['content-range']
+  return { status: answer.status, type, body: answer.body, ...(answer.status === 206 && typeof got === 'string' ? { range: got } : {}) }
+}

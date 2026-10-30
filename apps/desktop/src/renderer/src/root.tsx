@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import type { AccountInfo, DeviceConfig } from '@shared/types'
 import { AppProvider } from './app/context'
+import { MediaProvider } from './app/media'
 import { Shell } from './app/shell'
 import { ArchivePath } from './components/archive-path'
 import { Identicon, Modal } from './components/ui'
@@ -59,7 +60,9 @@ export function Root() {
     <>
       {/* A new account remounts everything: nothing of the previous one stays on screen. */}
       <AppProvider key={current.id} config={config} session={session}>
-        <Shell />
+        <MediaProvider>
+          <Shell />
+        </MediaProvider>
       </AppProvider>
       {opened && opened !== current.id && <SwitchArchive id={opened} current={current} onClose={done} />}
     </>

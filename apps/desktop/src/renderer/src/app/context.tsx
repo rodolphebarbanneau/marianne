@@ -49,7 +49,8 @@ interface AppValue {
   view: View
   go: (view: View) => void
   goPage: (page: PageId) => void
-  openRoute: (route: string) => void
+  /** `params`: what a service's screen opens with (its `host.params`). */
+  openRoute: (route: string, params?: Record<string, string | number>) => void
   step: (direction: 'next' | 'prev') => void
   palette: PaletteMode | null
   openPalette: (mode: PaletteMode | null) => void
@@ -161,11 +162,11 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
   // A route names a screen: "folder:<id>", "settings:<page>", "service:<code>", "news"… The
   // main process sends them (a notification, the tray), and Marianne links to them (marianne:news).
   const openRoute = useCallback(
-    (route: string) => {
+    (route: string, params?: Record<string, string | number>) => {
       const [kind, arg] = route.split(/[:/]/)
       if (kind === 'folder' && arg) go({ kind: 'folder', id: arg })
       else if (kind === 'settings') setSettingsPage(arg || 'identity')
-      else if (kind === 'service' && arg) go({ kind: 'service', id: arg })
+      else if (kind === 'service' && arg) go({ kind: 'service', id: arg, ...(params ? { params } : {}) })
       else if (kind === 'domain' && (DOMAIN_IDS as readonly string[]).includes(arg)) go({ kind: 'domain', id: arg as DomainId })
       else if ((PAGES as readonly string[]).includes(kind)) go({ kind: 'page', page: kind as PageId })
     },

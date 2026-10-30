@@ -3930,3 +3930,15 @@ button.choice:hover {
   text-align: center;
   user-select: text;
 }
+
+/* ---------- the mini-player: over the screen's area, under the dialogs and the menus ---------- */
+
+.mini-area {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+.mini-area > .mini {
+  pointer-events: auto;
+}

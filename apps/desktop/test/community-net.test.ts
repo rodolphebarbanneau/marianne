@@ -8,6 +8,7 @@ import {
   IN_FLIGHT,
   serviceFetch,
   serviceHeaders,
+  serviceMedia,
   WAITING,
   type Exchange,
   type Transport
@@ -149,6 +150,22 @@ describe('a community service’s requests', () => {
     // Another service's request is its own, not the first one's cached answer.
     await communityHttp(other, ua, t).json('https://api.example.fr/data')
     expect(asked).toHaveLength(2)
+  })
+
+  it('fetches a screen’s video pieces of a video’s types only, a plain range passed on', async () => {
+    const ua = () => 'Marianne'
+    const { t, asked } = transport({
+      'https://cdn.example.fr/v.m3u8': { headers: { 'content-type': 'application/vnd.apple.mpegurl' }, body: Buffer.from('#EXTM3U') },
+      'https://cdn.example.fr/s.ts': { status: 206, headers: { 'content-type': 'video/mp2t', 'content-range': 'bytes 0-9/100' }, body: Buffer.alloc(10) },
+      'https://cdn.example.fr/page': { headers: { 'content-type': 'text/html' }, body: Buffer.from('<script>') }
+    })
+    expect(await serviceMedia(manifest, 'https://cdn.example.fr/v.m3u8', null, ua, t)).toMatchObject({ status: 200, type: 'application/vnd.apple.mpegurl' })
+    expect(await serviceMedia(manifest, 'https://cdn.example.fr/s.ts', 'bytes=0-9', ua, t)).toMatchObject({ status: 206, range: 'bytes 0-9/100' })
+    expect(asked[1].headers.Range).toBe('bytes=0-9')
+    await serviceMedia(manifest, 'https://cdn.example.fr/s.ts', 'bytes=0-9, 20-29', ua, t)
+    expect(asked[2].headers.Range).toBeUndefined()
+    expect(await serviceMedia(manifest, 'https://cdn.example.fr/page', null, ua, t)).toBeNull()
+    await expect(serviceMedia(manifest, 'https://evil.example.com/v.m3u8', null, ua, t)).rejects.toThrow(/déclaré/)
   })
 })
 

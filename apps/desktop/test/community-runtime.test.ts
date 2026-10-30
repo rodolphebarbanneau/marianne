@@ -11,11 +11,11 @@ import { askConsent, consentCard, type AskUser } from '../src/main/community/run
 import { cleanSchema, DescriptionRefused, MAX_SCHEMA_BYTES, readDescription, shapeFromJsonSchema } from '../src/main/community/runtime/description'
 import { MAX_TOOL_ARGUMENTS_BYTES } from '../src/main/community/runtime/limits'
 import { SandboxRpc } from '../src/main/community/runtime/rpc'
-import { answerServiceRequest, contentPolicy, listRuntime, pictureUrl, workerImports, type SchemeSource } from '../src/main/community/runtime/scheme'
+import { answerServiceRequest, contentPolicy, listRuntime, mediaUrl, pictureUrl, workerImports, type SchemeSource } from '../src/main/community/runtime/scheme'
 import { ScreenRelay, type ScreenHost } from '../src/main/community/runtime/screen'
 import { CommunityService, type SandboxEvents, type SandboxFactory } from '../src/main/community/runtime/service'
 import { serviceStorage, type RecordStore } from '../src/main/host/storage'
-import { frameMayOpen, readFromFrame, type SandboxDescription, type SandboxInvoke } from '../src/shared/community'
+import { frameMayOpen, ownRoute, readFromFrame, readToFrame, type SandboxDescription, type SandboxInvoke } from '../src/shared/community'
 
 const root = mkdtempSync(join(tmpdir(), 'marianne-runtime-'))
 afterAll(() => rmSync(root, { recursive: true, force: true }))
@@ -72,7 +72,13 @@ function schemeSource(active: string[] = ['bonjour']): SchemeSource & { dir: str
     runtimeDir: runtime,
     runtimeFiles: () => files,
     packageOf: (code) => (active.includes(code) ? { dir: pkg, manifest: { id: code, hosts: ['api.example.fr'] } } : null),
-    picture: async (_m, url) => (url.endsWith('.png') ? { type: 'image/png', body: new Uint8Array([137, 80, 78, 71]) } : null)
+    picture: async (_m, url) => (url.endsWith('.png') ? { type: 'image/png', body: new Uint8Array([137, 80, 78, 71]) } : null),
+    media: async (_m, url, range) =>
+      url.includes('.m3u8') || url.endsWith('.ts')
+        ? range
+          ? { status: 206, type: 'video/mp2t', body: new Uint8Array([71]), range: 'bytes 0-0/10' }
+          : { status: 200, type: url.endsWith('.ts') ? 'video/mp2t' : 'application/vnd.apple.mpegurl', body: new TextEncoder().encode(url) }
+        : null
   }
 }
 
@@ -89,6 +95,24 @@ describe('the marianne-service: scheme', () => {
     expect((await get(pictureUrl('bonjour', 'https://api.example.fr/page.html'), source)).status).toBe(404)
     // A sandbox's session has no pictures to serve.
     expect((await get(pictureUrl('bonjour', 'https://api.example.fr/photo.png'), { ...source, picture: undefined })).status).toBe(404)
+  })
+
+  it('serves a screen the pieces of its declared hosts’ videos, their paths kept (a playlist’s lines lead back), and no other', async () => {
+    const source = schemeSource()
+    const playlist = mediaUrl('bonjour', 'https://api.example.fr/live/index.m3u8?token=1')
+    expect(playlist).toBe('marianne-service://bonjour/~media/api.example.fr/live/index.m3u8?token=1')
+    const got = await get(playlist, source)
+    expect(got).toMatchObject({ status: 200, headers: { 'Content-Type': 'application/vnd.apple.mpegurl', 'X-Content-Type-Options': 'nosniff' } })
+    expect(new TextDecoder().decode(got.body as Uint8Array)).toBe('https://api.example.fr/live/index.m3u8?token=1')
+    // A segment named relative to its playlist resolves under the same path.
+    const segment = new URL('seg-1.ts', playlist).href
+    expect((await get(segment, source)).status).toBe(200)
+    const part = await answerServiceRequest({ url: segment, method: 'GET', headers: new Headers({ Range: 'bytes=0-0' }) }, source)
+    expect(part).toMatchObject({ status: 206, headers: { 'Content-Range': 'bytes 0-0/10' } })
+    expect((await get('marianne-service://bonjour/~media/evil.example.com/index.m3u8', source)).status).toBe(404)
+    expect((await get('marianne-service://bonjour/~media/api.example.fr/page.html', source)).status).toBe(502)
+    // A sandbox's session has no videos to serve.
+    expect((await get(playlist, { ...source, media: undefined })).status).toBe(404)
   })
 
   it('points a main side’s imports of Marianne at the runtime’s files (its worker has no import map)', () => {
@@ -176,7 +200,9 @@ describe('the marianne-service: scheme', () => {
     expect(policy).toContain(`script-src marianne-service://bonjour '${hash}'`)
     for (const part of [
       "default-src 'none'",
-      "connect-src 'none'",
+      // Its videos: from its own address (its session turns its declared hosts' into it) and a stream's buffer.
+      'connect-src marianne-service://bonjour https://api.example.fr',
+      'media-src marianne-service://bonjour blob: https://api.example.fr',
       "frame-src 'none'",
       "worker-src 'none'",
       "form-action 'none'",
@@ -191,6 +217,7 @@ describe('the marianne-service: scheme', () => {
       expect(policy).toContain(part)
     const mainPage = await get('marianne-service://bonjour/~runtime/main.html', source)
     const main = mainPage.headers['Content-Security-Policy']
+    expect(main).toContain("connect-src 'none'")
     expect(main).toContain("img-src 'none'")
     expect(main).toContain("style-src 'none'")
     expect(main).toContain(`script-src marianne-service://bonjour '${hash}'`)
@@ -767,6 +794,41 @@ describe('a community screen’s relay', () => {
     expect(relay.input('key', 'F3', { ...none, shiftKey: true })).toBeNull()
   })
 
+  it('hands the window a video to pin from its declared hosts, back to its own screen only', () => {
+    const { relay, toWindow } = relayOf()
+    const item = {
+      src: 'https://api.example.fr/v.m3u8',
+      poster: 'https://evil.example.com/p.jpg',
+      title: 'Séance',
+      at: 1000,
+      route: 'service:bonjour',
+      params: { id: 'x' }
+    }
+    relay.fromScreen({ type: 'pin', item, auto: false })
+    const { poster: _poster, ...shown } = item
+    expect(toWindow).toEqual([{ type: 'pin', item: shown, auto: false }])
+    relay.fromScreen({ type: 'pin', item: { ...item, src: 'https://evil.example.com/v.m3u8' }, auto: false })
+    relay.fromScreen({ type: 'pin', item: { ...item, route: 'service:parlement' }, auto: true })
+    relay.fromScreen({ type: 'pin', item: { ...item, route: 'settings:identity' }, auto: true })
+    expect(toWindow).toHaveLength(1)
+    relay.fromScreen({ type: 'take', src: item.src })
+    expect(toWindow.at(-1)).toEqual({ type: 'take', src: item.src })
+  })
+
+  it('keeps the mini-player’s state for the screen until it says hello; going, lets only its pins cross', () => {
+    const { relay, toScreen, toWindow } = relayOf()
+    relay.fromWindow(init(null))
+    const media = { can: true, pinned: { src: 'https://api.example.fr/v.m3u8', at: 5000 } }
+    relay.fromWindow({ type: 'media', media })
+    relay.fromScreen({ type: 'hello' })
+    expect(toScreen).toEqual([expect.objectContaining({ type: 'init', media })])
+    relay.leave()
+    expect(toScreen.at(-1)).toEqual({ type: 'leave' })
+    relay.fromScreen({ type: 'toast', text: 'encore là' })
+    relay.fromScreen({ type: 'pin', item: { src: 'https://api.example.fr/v.m3u8', title: 'Séance', at: 6000, route: 'service/bonjour' }, auto: true })
+    expect(toWindow).toEqual([expect.objectContaining({ type: 'pin', auto: true })])
+  })
+
   it('drops what a screen sends past its rate', () => {
     const { relay, asked } = relayOf()
     for (let i = 0; i < 1000; i++) relay.fromScreen({ type: 'call', id: i + 1, method: 'greet', args: [] })
@@ -787,6 +849,32 @@ describe('a community screen’s messages', () => {
     expect(readFromFrame({ type: 'key', key: 'Control' })).toBeNull()
     expect(readFromFrame({ type: 'badges', badges: { a: '1'.repeat(25) } })).toBeNull()
     expect(readFromFrame({ type: 'ask', text: 'Une question', page: { url: 'javascript:alert(1)', title: '', text: '' } })).toBeNull()
+  })
+
+  it('reads a video pinned and the mini-player’s state part by part', () => {
+    const item = { src: 'https://a.fr/v.m3u8', title: 'Séance', at: 0, route: 'service:bonjour', live: true, params: { t: 3, id: 'x' } }
+    expect(readFromFrame({ type: 'pin', item, auto: true })).toEqual({ type: 'pin', item, auto: true })
+    // Nothing else of what it sends is kept.
+    expect(readFromFrame({ type: 'pin', item: { ...item, onload: 'x' }, auto: true })).toEqual({ type: 'pin', item, auto: true })
+    for (const wrong of [
+      { ...item, src: 'javascript:alert(1)' },
+      { ...item, at: -1 },
+      { ...item, at: Infinity },
+      { ...item, route: 'service:bonjour?x' },
+      { ...item, params: { 'a.b': 1 } },
+      { ...item, params: { a: { b: 1 } } },
+      { ...item, poster: 'data:image/png;base64,x' },
+      { ...item, title: 'x'.repeat(301) }
+    ])
+      expect(readFromFrame({ type: 'pin', item: wrong, auto: false })).toBeNull()
+    expect(readFromFrame({ type: 'pin', item })).toBeNull()
+    expect(readFromFrame({ type: 'take', src: 'https://a.fr/v.m3u8' })).toEqual({ type: 'take', src: 'https://a.fr/v.m3u8' })
+    expect(readFromFrame({ type: 'take', src: 42 })).toBeNull()
+    expect(readToFrame({ type: 'media', media: { can: true, pinned: null } })).toEqual({ type: 'media', media: { can: true, pinned: null } })
+    expect(readToFrame({ type: 'media', media: { can: true, pinned: { src: 'x' } } })).toBeNull()
+    expect(readToFrame({ type: 'leave' })).toEqual({ type: 'leave' })
+    expect(ownRoute('bonjour', 'service/bonjour')).toBe(true)
+    expect(ownRoute('bonjour', 'service:bonjours')).toBe(false)
   })
 
   it('opens pages of its declared hosts and links only', () => {
