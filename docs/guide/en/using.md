@@ -12,7 +12,7 @@ Anything that changes your profile, fills in a form, signs, pays or sends goes t
 
 ## The built-in browser
 
-Marianne opens the sites it needs in the folder's browser, on the right (the « navigateur » button). It asks for your approval before going online, and always before signing, paying or sending. You can take over (« prendre la main ») at any time. This browser forgets everything when the archive locks.
+Marianne opens the sites it needs in the folder's browser, on the right (the « navigateur » button). It asks for your approval before going online, and always before signing, paying or sending. You can take over (« prendre la main ») at any time. When it needs you (FranceConnect, a code received by text message), it opens the folder's browser; if you are on another screen, it opens when you come back to the folder. This browser forgets everything when the archive locks.
 
 ## The pages
 
