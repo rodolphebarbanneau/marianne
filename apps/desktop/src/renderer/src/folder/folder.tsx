@@ -13,6 +13,7 @@ import { useServices } from '../host'
 import { api, errorText } from '../lib/api'
 import { useSites } from '../lib/content'
 import { shortDate } from '../lib/format'
+import { plainKey } from '../lib/keys'
 import { useDocuments } from '../lib/profile'
 import { useTasks } from '../lib/tasks'
 import { TaskEditDialog } from '../pages/tasks/dialogs'
@@ -195,7 +196,7 @@ function FolderHead({ view, procedure }: { view: FolderView; procedure: Procedur
         <span className={`badge${domain ? '' : ' none'}`}>{domain?.badge ?? '··'}</span>
         <span className="title" onDoubleClick={() => (setTitle(folder.title), setRenaming(true))}>
           {renaming ? (
-            <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} onBlur={rename} onKeyDown={(e) => e.key === 'Enter' && rename()} />
+            <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} onBlur={rename} onKeyDown={(e) => plainKey(e, 'Enter') && rename()} />
           ) : (
             folder.title
           )}

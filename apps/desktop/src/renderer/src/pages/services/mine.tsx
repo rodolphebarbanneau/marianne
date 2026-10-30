@@ -1,5 +1,6 @@
 import { ServiceIcon } from '@marianne/sdk/view'
 import { lastDay } from '../../lib/format'
+import { plainKey } from '../../lib/keys'
 import { categoryLabel, sortMine, type Listing, type MineKey, type Sort } from './model'
 import { Access, Code, Origin } from './parts'
 
@@ -73,7 +74,7 @@ export function MineTable({
                 tabIndex={0}
                 aria-label={`ouvrir 3615 ${l.code.toUpperCase()}`}
                 onClick={() => onOpen(l)}
-                onKeyDown={(e) => e.target === e.currentTarget && e.key === 'Enter' && onOpen(l)}
+                onKeyDown={(e) => e.target === e.currentTarget && plainKey(e, 'Enter') && onOpen(l)}
               >
                 <td>
                   <button

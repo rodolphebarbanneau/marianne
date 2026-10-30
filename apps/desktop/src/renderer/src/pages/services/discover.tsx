@@ -3,6 +3,7 @@ import { ServiceIcon } from '@marianne/sdk/view'
 import type { CatalogueState } from '@shared/catalogue'
 import { Failure, Loading } from '../../components/ui'
 import { dayMonth, shortDate } from '../../lib/format'
+import { plainKey } from '../../lib/keys'
 import { categoryLabel, sortCatalogue, trustRank, type CatalogueKey, type Listing, type Sort } from './model'
 import { SortHead } from './mine'
 import { Access, Code, Origin, TrustMark } from './parts'
@@ -45,7 +46,7 @@ export function RecommendedCards({ list, onReview }: { list: Listing[]; onReview
           role="button"
           tabIndex={0}
           onClick={() => onReview(l)}
-          onKeyDown={(e) => e.key === 'Enter' && onReview(l)}
+          onKeyDown={(e) => plainKey(e, 'Enter') && onReview(l)}
         >
           <ServiceIcon icon={l.icon} size="medium" />
           <span className="stack">
@@ -124,7 +125,7 @@ export function CatalogueTable({
               tabIndex={0}
               aria-label={`3615 ${l.code.toUpperCase()} : avant d’ajouter`}
               onClick={() => onReview(l)}
-              onKeyDown={(e) => e.target === e.currentTarget && e.key === 'Enter' && onReview(l)}
+              onKeyDown={(e) => e.target === e.currentTarget && plainKey(e, 'Enter') && onReview(l)}
             >
               <td>
                 <span className="tsvc">

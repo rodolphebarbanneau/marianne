@@ -5,17 +5,18 @@ import type { CatalogueEntry, ServiceFileReview } from '@shared/catalogue'
 import { SearchField } from '../../components/ui'
 import { api, errorText } from '../../lib/api'
 import { bytes, dayMonth } from '../../lib/format'
+import { plainKey } from '../../lib/keys'
 import type { Listing } from './model'
 import { Code, Community, Official, TrustMark } from './parts'
 
 /** The Services page's dialogs: choosing the pinned services, a .3615 file, and « avant d’ajouter ». */
 
-/** Enter in a dialog: its main button, unless the focus is on another button. */
+/** Enter in a dialog: its main button, unless the focus is on another button. Ctrl+Enter stays the app's (a new folder). */
 function useEnter(run: (() => void) | null) {
   useEffect(() => {
     if (!run) return
     const key = (e: KeyboardEvent) => {
-      if (e.key !== 'Enter' || (e.target as HTMLElement | null)?.closest?.('button, a, textarea')) return
+      if (!plainKey(e, 'Enter') || (e.target as HTMLElement | null)?.closest?.('button, a, textarea')) return
       e.preventDefault()
       run()
     }
@@ -137,7 +138,7 @@ export function FileDialog({ onReview, onClose }: { onReview: (review: ServiceFi
           role="button"
           tabIndex={0}
           onClick={choose}
-          onKeyDown={(e) => e.key === ' ' && choose()}
+          onKeyDown={(e) => plainKey(e, ' ') && choose()}
           onDragOver={(e) => {
             e.preventDefault()
             setOver(true)

@@ -28,6 +28,7 @@ import { useApp } from '../app/context'
 import { Field } from '../components/ui'
 import { api, errorText } from '../lib/api'
 import { bytes, shortDate } from '../lib/format'
+import { plainKey } from '../lib/keys'
 import { useDocuments, useProfile } from '../lib/profile'
 import { OpinionsSection } from './opinions'
 
@@ -73,7 +74,7 @@ function Text({
       spellCheck={false}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => draft !== format(value) && onSave(draft.trim())}
-      onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+      onKeyDown={(e) => plainKey(e, 'Enter') && (e.target as HTMLInputElement).blur()}
     />
   )
 }
@@ -162,7 +163,7 @@ function AddressField({ value, onPick }: { value: string; onPick: (a: AddressSug
           } else if (e.key === 'ArrowUp' && hits.length) {
             e.preventDefault()
             setActive((active - 1 + hits.length) % hits.length)
-          } else if (e.key === 'Enter' && hits[active]) {
+          } else if (plainKey(e, 'Enter') && hits[active]) {
             e.preventDefault()
             pick(hits[active])
           }
