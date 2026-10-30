@@ -1,0 +1,923 @@
+/* @marianne/sdk/media: the player and the mini-player. On Marianne's stylesheet: its variables
+   (--fg, --accent, --rouge, --retro, --pixel-size…) and its blocks (.menu, .btn, .chip). */
+
+/* ================= the player ================= */
+
+.mp {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--rule);
+  background: #000;
+  container: mp / inline-size;
+  user-select: none;
+  --ink: var(--blanc);
+  --scrim: rgba(5, 7, 26, 0.97);
+}
+.mp-stage {
+  position: relative;
+}
+.mp-screen {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+.mp-screen video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+.mp-popup {
+  display: contents;
+}
+
+/* The icons: vectors in the key's ink. */
+.mp-ic {
+  display: block;
+  flex: none;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mp-ic .f {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* ---- over the picture: a scrim at the foot, the track, the keys ---- */
+.mp-over {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-top: 48px;
+  background: linear-gradient(rgba(5, 7, 26, 0), rgba(5, 7, 26, 0.84) 42%, var(--scrim));
+  transition: opacity 0.25s;
+  /* The scrim lets clicks through to the picture; the track and the keys take them. */
+  pointer-events: none;
+}
+.mp-over > * {
+  pointer-events: auto;
+}
+.mp.idle .mp-over,
+.mp.idle .mp-top {
+  opacity: 0;
+}
+.mp.idle .mp-stage {
+  cursor: none;
+}
+.mp-top {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  padding: 12px 16px 36px;
+  background: linear-gradient(var(--scrim), rgba(5, 7, 26, 0.8) 55%, rgba(5, 7, 26, 0));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--fg);
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+.mp-top .what {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mp-top .what b {
+  font-weight: 400;
+  color: var(--hi);
+}
+/* A short badge before the title (AN): a Videotex code. A service may colour its own: .mp-badge[data-badge='SÉNAT']. */
+.mp-badge {
+  font-family: var(--retro);
+  font-size: 15px;
+  line-height: 1.15;
+  padding: 0 4px;
+  letter-spacing: 0.08em;
+  color: var(--noir);
+  background: var(--cyan);
+  flex: none;
+  white-space: nowrap;
+}
+.mp-onair {
+  color: var(--rouge);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex: none;
+}
+
+/* Paused: the play key, big, in the middle; a click anywhere on the picture plays. */
+.mp-big {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 7, 26, 0.86);
+  border: 1px solid var(--blanc);
+  color: var(--blanc);
+}
+.mp-big:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+/* The ±10 s flash, on the side the double click landed. */
+.mp-flash {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 26%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--blanc);
+  font-family: var(--retro);
+  font-size: 22px;
+  line-height: 1;
+  background: radial-gradient(closest-side, rgba(238, 241, 255, 0.16), transparent);
+  pointer-events: none;
+}
+.mp-flash.back {
+  left: 0;
+}
+.mp-flash.fwd {
+  right: 0;
+}
+/* Waiting for data: the spinner, after a moment (a quick seek shows nothing). */
+.mp-wait {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  font-size: 26px;
+  pointer-events: none;
+  opacity: 0;
+  animation: mp-later 0s 0.5s forwards;
+}
+.mp-wait .spinner {
+  color: var(--blanc);
+}
+@keyframes mp-later {
+  to {
+    opacity: 1;
+  }
+}
+.mp-note {
+  position: absolute;
+  z-index: 3;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 6px 10px;
+  background: var(--bg-raised);
+  border: 1px solid var(--rule);
+  font-size: 12.5px;
+  color: var(--fg);
+  text-align: center;
+}
+/* Playing in the mini-player: a stand-in for the picture; a click plays here again. */
+.mp-away {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px dashed var(--rule);
+  background: rgba(5, 7, 26, 0.9);
+  color: var(--dim);
+  cursor: pointer;
+}
+
+/* ---- the track: Videotex mosaic cells, two rows ---- */
+.mp-track-wrap {
+  position: relative;
+  padding: 12px 16px 6px;
+  cursor: pointer;
+  touch-action: none;
+}
+.mp-track {
+  position: relative;
+  height: 11px;
+}
+.mp-cells {
+  position: absolute;
+  inset: 0;
+  --pitch: 5px;
+  --cell: 4px;
+  --sep: linear-gradient(#000, #000);
+  mask-image:
+    repeating-linear-gradient(90deg, #000 0 var(--cell), transparent var(--cell) var(--pitch)), linear-gradient(#000 0 5px, transparent 5px 6px, #000 6px 11px),
+    var(--sep);
+  mask-composite: intersect, intersect;
+}
+.mp-cells > i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.mp-cells .base {
+  left: 0;
+  right: 0;
+  background: rgba(238, 241, 255, 0.22);
+}
+.mp-cells .buf {
+  background: rgba(238, 241, 255, 0.42);
+}
+.mp-cells .played {
+  background: var(--fg);
+}
+/* A suspension: nothing to see, the cells go dark. */
+.mp-cells .susp {
+  background: #000;
+  opacity: 0.75;
+}
+.mp-cells .hov {
+  background: var(--blanc);
+  opacity: 0.4;
+}
+.mp-cells .clip {
+  background: var(--accent);
+}
+.mp-cells .live {
+  background: var(--rouge);
+}
+.mp-cells .shade {
+  background: #000;
+  opacity: 0.55;
+}
+/* The clips already kept: a yellow line over their passage. */
+.mp-kept {
+  position: absolute;
+  top: -5px;
+  height: 2px;
+  background: var(--accent);
+}
+/* The cursor: the Minitel's block. */
+.mp-head {
+  position: absolute;
+  top: -3px;
+  width: 6px;
+  height: 17px;
+  margin-left: -3px;
+  background: var(--blanc);
+  box-shadow: 0 0 0 1px rgba(5, 7, 26, 0.6);
+  pointer-events: none;
+}
+.mp-hover {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 1px;
+  background: var(--blanc);
+  opacity: 0.6;
+  pointer-events: none;
+}
+.mp-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-family: var(--retro);
+  font-size: 15px;
+  line-height: 1;
+  color: var(--dim);
+}
+.mp-handle {
+  position: absolute;
+  top: -5px;
+  width: 8px;
+  height: 21px;
+  margin-left: -4px;
+  background: var(--accent);
+  cursor: ew-resize;
+  z-index: 1;
+}
+.mp-handle::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 5px;
+  bottom: 5px;
+  width: 1px;
+  background: var(--noir);
+}
+.mp-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+  z-index: 2;
+  width: max-content;
+  max-width: 300px;
+}
+.mp-tip .t {
+  font-family: var(--retro);
+  font-size: var(--pixel-size);
+  line-height: 1.1;
+  background: var(--blanc);
+  color: var(--noir);
+  padding: 0 6px;
+  letter-spacing: 0.06em;
+}
+.mp-tip .c {
+  background: var(--bg-raised);
+  border: 1px solid var(--rule);
+  padding: 2px 7px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--fg);
+  white-space: normal;
+}
+.mp-tip .c b {
+  display: block;
+  font-weight: 400;
+  color: var(--hi);
+}
+
+/* ---- the keys ---- */
+.mp-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 42px;
+  padding: 0 10px 7px;
+}
+.mp-btn {
+  position: relative;
+  height: 32px;
+  min-width: 34px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--ink);
+  font-family: var(--retro);
+  font-size: var(--pixel-size);
+  line-height: 1;
+  flex: none;
+}
+/* Hovered: a small light tint behind the icon; open (the options), the icon in yellow. */
+.mp-btn::before {
+  content: '';
+  position: absolute;
+  inset: 3px 4px;
+  background: rgba(238, 241, 255, 0.14);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.mp-btn:hover:not(:disabled)::before,
+.mp-btn.on::before {
+  opacity: 1;
+}
+.mp-btn.on {
+  color: var(--accent);
+}
+.mp-btn > * {
+  position: relative;
+}
+.mp-btn:disabled {
+  opacity: 0.3;
+}
+/* −10 / +10: the ring, the pixel seconds centred in it. */
+.mp-skip {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.mp-skip > * {
+  grid-area: 1 / 1;
+}
+.mp-skip .mp-digits {
+  display: block;
+  margin: 1px 0 0 0;
+}
+/* What the gear holds, when it isn't the default: HD, 1,5×. */
+.mp-btn .badge-x {
+  position: absolute;
+  top: 2px;
+  right: -2px;
+  font-size: 13px;
+  line-height: 11px;
+  padding: 0 2px;
+  background: var(--accent);
+  color: var(--noir);
+  letter-spacing: 0.02em;
+}
+.mp-vol {
+  display: inline-flex;
+  align-items: center;
+}
+/* The volume: a slim slider, the Minitel's block as its knob. */
+.mp-level {
+  position: relative;
+  width: 58px;
+  height: 3px;
+  margin: 0 12px 0 4px;
+  background: rgba(238, 241, 255, 0.28);
+  cursor: pointer;
+  touch-action: none;
+}
+/* A taller target than the line it draws. */
+.mp-level::before {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
+}
+.mp-level .fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--blanc);
+}
+.mp-level .knob {
+  position: absolute;
+  top: -4px;
+  width: 5px;
+  height: 11px;
+  margin-left: -2px;
+  background: var(--blanc);
+}
+.mp-time {
+  font-family: var(--retro);
+  font-size: 19px;
+  line-height: 1;
+  color: var(--blanc);
+  padding: 0 10px 0 8px;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+  flex: none;
+}
+.mp-time .of {
+  color: var(--dim);
+}
+.mp-time .late {
+  color: var(--dim);
+  margin-left: 6px;
+}
+/* What is said now, after the time (a chapter): opens it in the agenda. */
+.mp-chap {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg);
+  font-size: 12px;
+  padding: 3px 6px;
+}
+.mp-chap::before {
+  content: '· ';
+  color: var(--dim);
+}
+button.mp-chap:hover {
+  color: var(--hi);
+  text-decoration: underline;
+}
+.mp-grow {
+  flex: 1;
+  min-width: 8px;
+}
+.mp-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  margin-left: 4px;
+  font-family: var(--retro);
+  font-size: var(--pixel-size);
+  line-height: 1;
+  letter-spacing: 0.1em;
+  border: 1px solid var(--rouge);
+  color: var(--rouge);
+  flex: none;
+}
+.mp-live:hover {
+  background: color-mix(in srgb, var(--rouge) 22%, transparent);
+}
+.mp-live.edge {
+  background: var(--rouge);
+  color: var(--noir);
+}
+
+/* ---- popups over the picture: Marianne's menu ---- */
+.mp .menu {
+  bottom: 60px;
+  right: 12px;
+  max-height: calc(100% - 72px);
+  overflow-y: auto;
+}
+.mp .menu.mp-opts {
+  width: 300px;
+  max-width: calc(100% - 24px);
+}
+.mp .menu .label {
+  display: block;
+  padding: 8px 10px 4px;
+}
+.mp .menu > button,
+.mp .menu .item {
+  align-items: center;
+}
+.mp .menu .k {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.mp .menu .k .mp-ic {
+  color: var(--dim);
+}
+.mp .menu button.k:hover {
+  color: var(--hi);
+}
+.mp .menu .v {
+  color: var(--dim);
+}
+.mp .menu > button.go .v::after {
+  content: ' ›';
+}
+.mp .menu > button.pick::before {
+  content: ' ';
+  width: 1ch;
+  flex: none;
+}
+.mp .menu > button.pick {
+  justify-content: flex-start;
+}
+.mp .menu > button.pick.sel::before {
+  content: '▸';
+  color: var(--accent);
+}
+.mp .menu > button.pick .v {
+  margin-left: auto;
+}
+.mp .menu > button.back {
+  justify-content: flex-start;
+  color: var(--dim);
+  border-bottom: 1px dashed var(--rule);
+}
+.mp .menu .sc {
+  color: var(--muted);
+  font-size: 0.86em;
+}
+.mp .menu .mp-vol .mp-level {
+  margin: 0 10px 0 0;
+}
+/* The sound and the mini-player: in the bar, unless it is narrow. */
+.mp .menu .mp-narrow {
+  display: none;
+}
+/* The time toggle: two keys, the chosen one inverse. */
+.mp-seg {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+}
+.mp-seg button {
+  padding: 0 8px;
+  color: var(--dim);
+  font-size: 0.92em;
+}
+.mp-seg button:hover {
+  color: var(--hi);
+}
+.mp-seg button.on {
+  background: var(--fg);
+  color: var(--noir);
+}
+.mp-share {
+  width: 470px;
+  max-width: calc(100% - 24px);
+  padding-bottom: 10px;
+}
+.mp-share .in {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 0;
+}
+.mp-share .url {
+  display: flex;
+  gap: 6px;
+}
+.mp-share .url input {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--fg);
+}
+.mp-share .chips {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mp-share .chip {
+  padding: 1px 8px;
+}
+.mp-share .acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ---- cutting a clip: a strip under the picture ---- */
+.mp-clip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 9px 12px 10px;
+  border-top: 1px solid var(--accent);
+  background: var(--bg-raised);
+  user-select: text;
+}
+.mp-clip .b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.mp-clip .b input {
+  width: 9ch;
+  padding: 2px 6px;
+  text-align: center;
+  font-family: var(--retro);
+  font-size: var(--pixel-size);
+  line-height: 1;
+  color: var(--accent);
+}
+.mp-clip .len {
+  color: var(--dim);
+  white-space: nowrap;
+}
+.mp-clip .title {
+  flex: 1 1 100%;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.mp-clip .title input {
+  flex: 1;
+  min-width: 0;
+}
+.mp-clip .acts {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ---- fullscreen: the picture fills the screen, the controls a little roomier ---- */
+.mp.full {
+  border: 0;
+  width: 100%;
+  height: 100%;
+}
+.mp.full .mp-stage {
+  flex: 1;
+  min-height: 0;
+}
+.mp.full .mp-screen {
+  position: absolute;
+  inset: 0;
+  aspect-ratio: auto;
+}
+.mp.full .mp-track-wrap {
+  padding-left: 22px;
+  padding-right: 22px;
+}
+.mp.full .mp-bar {
+  padding: 0 16px 12px;
+  height: 50px;
+}
+.mp.full .menu {
+  bottom: 72px;
+  right: 16px;
+}
+
+/* ---- narrow: the essentials in the bar, the rest in the menu ---- */
+@container mp (max-width: 620px) {
+  .mp-wide {
+    display: none !important;
+  }
+  .mp .menu .mp-narrow {
+    display: flex;
+  }
+  /* A small picture: the menu's lines closer, so that it fits over it. */
+  .mp .menu {
+    bottom: 50px;
+    max-height: calc(100% - 58px);
+  }
+  .mp .menu > button,
+  .mp .menu .item {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .mp .menu .label {
+    padding-top: 6px;
+  }
+  .mp-time {
+    padding: 0 4px;
+  }
+  .mp-btn {
+    padding: 0 5px;
+  }
+  .mp-track-wrap {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+@container mp (max-width: 680px) {
+  .mp-chap {
+    display: none;
+  }
+}
+
+/* ================= the mini-player: in a corner of the window, over any page ================= */
+
+.mini {
+  position: absolute;
+  z-index: 40;
+  width: 360px;
+  border: 1px solid var(--fg);
+  background: #000;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  --ink: var(--blanc);
+}
+.mini.br,
+.mini-ghost.br {
+  right: 14px;
+  bottom: var(--mini-bottom, 14px);
+}
+.mini.bl,
+.mini-ghost.bl {
+  left: 14px;
+  bottom: var(--mini-bottom, 14px);
+}
+.mini.tr,
+.mini-ghost.tr {
+  right: 14px;
+  top: 14px;
+}
+.mini.tl,
+.mini-ghost.tl {
+  left: 14px;
+  top: 14px;
+}
+.mini.dragging {
+  z-index: 41;
+  cursor: grabbing;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.75);
+}
+.mini .mp-stage {
+  aspect-ratio: 16 / 9;
+}
+.mini .mp-screen {
+  position: absolute;
+  inset: 0;
+  aspect-ratio: auto;
+}
+.mini-over {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 7, 26, 0.66);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: opacity 0.2s;
+}
+.mini.idle .mini-over {
+  opacity: 0;
+}
+.mini-over .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px;
+}
+.mini-over .keys {
+  display: flex;
+}
+.mini-over .mid {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+.mini-over .mid .mp-btn {
+  height: 36px;
+  min-width: 40px;
+}
+.mini-over .grip {
+  display: inline-flex;
+  color: var(--blanc);
+  opacity: 0.7;
+  padding: 0 8px;
+}
+.mini-foot {
+  height: 14px;
+}
+/* One row of cells along the foot, always there: where the video is. */
+.mini-track {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 7px;
+  height: 5px;
+  pointer-events: none;
+}
+.mini-track .mp-cells {
+  --pitch: 4px;
+  --cell: 3px;
+  mask-image: repeating-linear-gradient(90deg, #000 0 var(--cell), transparent var(--cell) var(--pitch)), linear-gradient(#000, #000);
+}
+.mini.idle .mini-track {
+  opacity: 0.9;
+}
+.mini .mp-note {
+  top: 8px;
+  font-size: 11.5px;
+}
+.mini-cap {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px 6px;
+  background: var(--bg-raised);
+  border-top: 1px solid var(--rule);
+  font-size: 12px;
+  cursor: pointer;
+}
+.mini-cap .t {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--hi);
+}
+.mini-cap:hover .t {
+  text-decoration: underline;
+}
+.mini-cap .tc {
+  font-family: var(--retro);
+  font-size: var(--pixel-size);
+  line-height: 1;
+  color: var(--fg);
+}
+/* While dragging: the four corners it snaps to. */
+.mini-ghost {
+  position: absolute;
+  z-index: 39;
+  width: 360px;
+  border: 1px dashed var(--muted);
+  pointer-events: none;
+}
+.mini-ghost.target {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+/* Fullscreen: the picture alone, its keys over it. */
+.mini.full {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  cursor: default;
+}
+.mini.full .mp-stage {
+  flex: 1;
+  aspect-ratio: auto;
+}

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { ServiceManifest, ServiceMethods } from './index'
+import type { PinnedMedia } from './media/types'
 import { WaitContext } from './ui'
 
 /**
@@ -43,6 +44,8 @@ export interface ServiceHost<M extends ServiceMethods = ServiceMethods> {
   /** The user's data for this service (the same store as its main side's), in the encrypted archive. */
   load(key: string): Promise<unknown>
   save(key: string, value: unknown): Promise<void>
+  /** The app's mini-player (absent in tests and old hosts): a video keeps playing in a corner of the window. */
+  media?: { pin(item: PinnedMedia): void }
 }
 
 const HostContext = createContext<ServiceHost | null>(null)
@@ -56,6 +59,11 @@ export function useHost<M extends ServiceMethods>(): ServiceHost<M> {
   const host = useContext(HostContext)
   if (!host) throw new Error('useHost outside a service screen')
   return host as unknown as ServiceHost<M>
+}
+
+/** The host, or null outside a service screen: for blocks that also work elsewhere (the media player). */
+export function useHostOptional<M extends ServiceMethods>(): ServiceHost<M> | null {
+  return useContext(HostContext) as unknown as ServiceHost<M> | null
 }
 
 /** The message of an error that came back from the main side. */
