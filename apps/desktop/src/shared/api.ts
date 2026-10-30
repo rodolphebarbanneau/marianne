@@ -133,7 +133,8 @@ export interface MarianneApi {
   changePassword(current: string, next: string): Promise<void>
   /** After unlocking with the recovery key. */
   resetPassword(next: string): Promise<void>
-  renewRecoveryKey(): Promise<string>
+  /** A new rescue key, the passphrase given: an unlocked session (or a PIN) is not enough to mint one. */
+  renewRecoveryKey(password: string): Promise<string>
   setDisplay(choice: DisplayChoice): Promise<void>
   getUsage(): Promise<Usage>
   /** A copy of the archive, still encrypted (a save dialog). */

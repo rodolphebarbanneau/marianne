@@ -48,11 +48,10 @@ export function useShortcutLabel(): (id: string) => string {
  * The application's shortcuts, everywhere: only SUITE, RETOUR and échap give way where the user
  * types (a page's text box still turns the pages), and a key a page or a dialog took is its own.
  */
-export function useShortcuts(actions: Actions, recording: boolean): void {
+export function useShortcuts(actions: Actions): void {
   const app = useApp()
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (recording) return
       api.activity()
       // A key the page took already (the video player's space, arrows, letters): not a shortcut too.
       if (e.defaultPrevented) return
@@ -89,5 +88,5 @@ export function useShortcuts(actions: Actions, recording: boolean): void {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [actions, app, recording])
+  }, [actions, app])
 }

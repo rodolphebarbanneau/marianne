@@ -135,7 +135,10 @@ describe('a community service’s deadlines, for the engines', () => {
 
       catalogue = { ...catalogue, entries: [{ ...entry, status: 'validated' }] } as unknown as CatalogueState
       for (const listener of heard) listener()
-      expect(services.deadlines()).toEqual([{ id: 'fete', domain: 'family', title: 'Fête des voisins', due: '2026-11-02', service: 'bonjour' }])
+      // The host reads the deadlines from the sandbox in its own time: under load, a moment later.
+      await vi.waitFor(() =>
+        expect(services.deadlines()).toEqual([{ id: 'fete', domain: 'family', title: 'Fête des voisins', due: '2026-11-02', service: 'bonjour' }])
+      )
     } finally {
       session.lock()
       vi.restoreAllMocks()

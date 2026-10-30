@@ -24,11 +24,12 @@ const manifest = readManifest({
 })
 
 /** A transport that answers by URL, recording what it was asked. */
-function transport(answers: Record<string, Partial<Exchange>>, wait = 0) {
+/** `took`: how long each exchange takes, on the test's clock (Date faked): the same under any load. */
+function transport(answers: Record<string, Partial<Exchange>>, took = 0) {
   const asked: Array<{ url: string; method: string; body?: string; headers: Record<string, string>; timeoutMs: number }> = []
   const t: Transport = async (url, init) => {
     asked.push({ url: url.href, method: init.method, body: init.body, headers: init.headers, timeoutMs: init.timeoutMs })
-    if (wait) await new Promise((r) => setTimeout(r, wait))
+    if (took) vi.setSystemTime(Date.now() + took)
     const a = answers[url.href]
     if (!a) throw new Error('unexpected request')
     return { status: 200, headers: {}, body: Buffer.alloc(0), ...a }
@@ -120,11 +121,15 @@ describe('a community service’s requests', () => {
   })
 
   it('are done within one deadline, their redirects included', async () => {
-    const { t, asked } = transport({ 'https://api.example.fr/loop': { status: 302, headers: { location: '/loop' } } }, 30)
-    await expect(serviceFetch(manifest, 'https://api.example.fr/loop', { method: 'GET', headers: {}, timeoutMs: 70 }, t)).rejects.toThrow('délai dépassé')
-    // Each hop gets what is left of it, never the whole again; none once it is spent.
-    expect(asked.length).toBeLessThan(4)
-    expect(asked[1].timeoutMs).toBeLessThan(asked[0].timeoutMs)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      const { t, asked } = transport({ 'https://api.example.fr/loop': { status: 302, headers: { location: '/loop' } } }, 30)
+      await expect(serviceFetch(manifest, 'https://api.example.fr/loop', { method: 'GET', headers: {}, timeoutMs: 70 }, t)).rejects.toThrow('délai dépassé')
+      // Each hop gets what is left of it, never the whole again; none once it is spent.
+      expect(asked.map((a) => a.timeoutMs)).toEqual([70, 40, 10])
+    } finally {
+      vi.useRealTimers()
+    }
     // And never more than a minute, whatever it asks.
     const slow = transport({ 'https://api.example.fr/a': { status: 200 } })
     await serviceFetch(manifest, 'https://api.example.fr/a', { method: 'GET', headers: {}, timeoutMs: 3_600_000 }, slow.t)

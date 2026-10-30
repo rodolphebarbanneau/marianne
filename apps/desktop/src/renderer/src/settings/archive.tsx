@@ -147,9 +147,7 @@ export function SecurityPane() {
     if (!renewWith) return setRenewMessage('Indiquez d’abord votre phrase de passe.')
     setRenewing(true)
     try {
-      // Typed here with the passphrase it sends, which `MarianneApi` doesn't declare yet.
-      const renewRecoveryKey: (password: string) => Promise<string> = api.renewRecoveryKey
-      setRecovery(await renewRecoveryKey(renewWith))
+      setRecovery(await api.renewRecoveryKey(renewWith))
       setRenewWith('')
       setRenewMessage('')
     } catch (err) {

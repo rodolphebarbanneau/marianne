@@ -28,6 +28,10 @@ jobs:
       - name: Format
         run: npm run format:check
 
+      # No stray .gitkeep beside real files: what `npm run check` runs, CI runs too (AGENTS.md).
+      - name: Stray .gitkeep
+        run: node scripts/check-gitkeep.mjs
+
       # What each package may import (docs/design.md, "The code").
       - name: Package boundaries
         run: node scripts/check-boundaries.mjs
