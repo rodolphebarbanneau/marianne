@@ -1,7 +1,7 @@
 {
   "name": "@marianne/service-meteo",
   "version": "1.0.0",
-  "description": "3615 METEO · Météo : le temps de votre commune, maintenant et sur 7 jours (Météo-France)",
+  "description": "3615 METEO · Météo : le temps de votre commune, maintenant, heure par heure et sur 15 jours (Météo-France)",
   "license": "MIT",
   "author": "Rodolphe Barbanneau",
   "private": true,
@@ -15,21 +15,48 @@
   "marianne": {
     "code": "meteo",
     "name": "Météo",
-    "description": "le temps de votre commune, maintenant et sur 7 jours (Météo-France)",
+    "description": "le temps de votre commune, maintenant, heure par heure et sur 15 jours (Météo-France)",
     "category": "daily",
+    "tabs": [
+      {
+        "id": "today",
+        "label": "aujourd’hui"
+      },
+      {
+        "id": "hours",
+        "label": "48 heures"
+      },
+      {
+        "id": "week",
+        "label": "7 jours"
+      },
+      {
+        "id": "trend",
+        "label": "15 jours"
+      }
+    ],
+    "search": {
+      "placeholder": "une autre commune : nom ou code postal"
+    },
     "keywords": [
       "temps",
       "prévisions",
       "pluie",
+      "pluie dans l’heure",
       "température",
       "vent",
+      "uv",
+      "pollen",
+      "qualité de l’air",
       "weather"
     ],
     "connections": [
       "geo"
     ],
     "hosts": [
-      "api.open-meteo.com"
+      "api.open-meteo.com",
+      "air-quality-api.open-meteo.com",
+      "ensemble-api.open-meteo.com"
     ],
     "icon": {
       "palette": {
@@ -53,6 +80,10 @@
       {
         "name": "forecast",
         "label": "prévisions"
+      },
+      {
+        "name": "hourly",
+        "label": "heure par heure"
       }
     ]
   },

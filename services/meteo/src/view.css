@@ -1,108 +1,462 @@
 /* 3615 METEO */
 
-.meteo-body {
+.meteo {
   display: flex;
   flex-direction: column;
   gap: var(--s4);
 }
-.meteo-bar {
+
+/* ---------- the place ---------- */
+
+.meteo-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s3);
+  align-items: baseline;
+  gap: var(--s2) var(--s3);
 }
-.meteo-search {
-  position: relative;
-  width: min(340px, 100%);
-}
-.meteo-search input {
-  width: 100%;
-}
-.meteo-found {
-  position: absolute;
-  z-index: 5;
-  top: calc(100% + 2px);
-  left: 0;
-  right: 0;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--rule);
-  background: var(--bg-raised);
-}
-.meteo-found button {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--s2);
-  padding: 5px 8px;
-}
-.meteo-found button:hover {
-  background: var(--hover);
+.meteo-name {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1.3);
+  letter-spacing: 0.06em;
   color: var(--hi);
 }
-.meteo-hint {
-  padding: 5px 8px;
+.meteo-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
 }
 .meteo-places {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-top: calc(-1 * var(--s2));
 }
 .meteo-places .chip.on {
   border-style: solid;
   border-color: var(--accent);
   color: var(--hi);
 }
-.meteo-head {
+
+/* The header's search: the communes it finds, above the tab. */
+.meteo-found {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  max-width: 640px;
+  padding: var(--s2) var(--s3);
+  border: 1px dashed var(--rule);
+  background: var(--bg-raised);
+}
+.meteo-found-list {
+  display: flex;
+  flex-direction: column;
+}
+.meteo-found-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: 4px 6px;
+}
+.meteo-found-row:hover,
+.meteo-found-row:focus-visible {
+  background: var(--hover);
+}
+
+/* ---------- shared parts ---------- */
+
+.meteo-sky {
+  flex: none;
+}
+.meteo-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px var(--s3);
+  align-items: baseline;
+}
+.meteo-swatch {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 2px;
+  vertical-align: -0.05em;
+}
+.meteo-credit {
+  margin-top: var(--s3);
+}
+.meteo-wide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  grid-column: 1 / -1;
+}
+
+/* A day's span on the days' scale; the scenarios' wider band behind it. */
+.meteo-range {
+  position: relative;
+  flex: 1;
+  min-width: 3em;
+  height: 6px;
+  background: var(--bg-sunken);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.meteo-range i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 2px;
+}
+.meteo-range .span {
+  background: linear-gradient(90deg, var(--palette-cyan), var(--palette-jaune));
+}
+.meteo-range .band {
+  top: -2px;
+  bottom: -2px;
+  background: var(--palette-gris);
+}
+
+/* The hours as columns: the temperature over the rain, the hour under. */
+.meteo-chart {
+  display: grid;
+  column-gap: 1px;
+  padding-top: 1.4em;
+  font-size: 0.72em;
+  color: var(--dim);
+  text-align: center;
+}
+.meteo-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.meteo-col.midnight {
+  box-shadow: inset 1px 0 0 var(--muted);
+}
+.meteo-day-mark {
+  position: absolute;
+  top: -1.4em;
+  left: 3px;
+  white-space: nowrap;
+  color: var(--fg);
+}
+.meteo-col-t,
+.meteo-col-h {
+  display: flex;
+  justify-content: center;
+  height: 1.4em;
+  white-space: nowrap;
+  overflow: visible;
+}
+.meteo-col-t {
+  color: var(--fg);
+}
+.meteo-col-temp {
+  display: flex;
+  align-items: flex-end;
+  height: 64px;
+}
+.meteo-col-sky {
+  display: flex;
+  justify-content: center;
+  height: 18px;
+  overflow: visible;
+}
+.meteo-col-temp i,
+.meteo-col-rain i {
+  display: block;
+  width: 100%;
+}
+/* A slim bar, so that the columns read as a curve rather than a wall. */
+.meteo-col-temp i {
+  width: 64%;
+  max-width: 20px;
+  margin: 0 auto;
+  background: var(--palette-jaune-clair);
+}
+.meteo-col.night .meteo-col-temp i {
+  background: var(--palette-bleu-clair);
+}
+/* The rain hangs from a line, as it falls. */
+.meteo-col-rain {
+  display: flex;
+  align-items: flex-start;
+  height: 22px;
+  border-top: 1px solid var(--rule);
+}
+.meteo-col-rain i {
+  width: 64%;
+  max-width: 20px;
+  margin: 0 auto;
+  background: var(--palette-cyan);
+}
+
+/* ---------- aujourd'hui ---------- */
+
+.meteo-today {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s3);
+  align-items: stretch;
+}
+.meteo-today .card {
+  gap: var(--s2);
+  min-width: 0;
+}
+.meteo-now-head,
+.meteo-day-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--s3);
-}
-.meteo-name {
-  font-family: var(--retro);
-  font-size: calc(var(--pixel-size) * 1.3);
-  letter-spacing: 0.06em;
-}
-.meteo-acts {
-  display: flex;
-  gap: 6px;
-  margin-left: auto;
-}
-.meteo-now {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
   align-items: center;
-  gap: var(--s2) var(--s5);
-  min-height: 0;
-  max-width: 680px;
-  padding: var(--s3) var(--s4);
+  gap: var(--s2) var(--s3);
 }
-.meteo-temp {
+.meteo-now-temp {
   font-family: var(--retro);
-  font-size: calc(var(--pixel-size) * 2.6);
+  font-size: calc(var(--pixel-size) * 2.4);
   line-height: 1;
   color: var(--hi);
 }
-.meteo-facts {
+.meteo-quarters {
+  display: grid;
+  gap: 2px;
+  font-size: 0.72em;
+  color: var(--dim);
+}
+.meteo-quarters > span {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  min-width: 0;
+  white-space: nowrap;
 }
-.meteo-glyph {
-  font-size: 1.5em;
-  line-height: 1.2;
-  color: var(--accent);
+.meteo-quarters i {
+  display: block;
+  height: 20px;
 }
-.meteo-glyph.meteo-big {
-  font-size: 2.6em;
+.meteo-quarters i.dry {
+  box-shadow: inset 0 0 0 1px var(--rule);
 }
-.meteo-days {
+.meteo-legend .meteo-swatch {
+  margin-left: 4px;
+}
+
+/* ---------- 48 heures ---------- */
+
+.meteo-hours {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+.meteo-hour-day {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.meteo-hour-rows {
+  border-top: 1px solid var(--rule);
+}
+.meteo-hour {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  grid-template-columns: 4em 28px minmax(0, 1.5fr) 3em minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--s3);
+  align-items: center;
+  padding: 3px 2px;
+  border-bottom: 1px dashed var(--rule);
+}
+.meteo-hour-wind {
+  white-space: nowrap;
+}
+/* A day's name in full, or short where the column is narrow. */
+.meteo-short {
+  display: none;
+}
+.meteo-hour.wet {
+  box-shadow: inset 2px 0 0 var(--palette-cyan);
+}
+
+/* ---------- 7 jours ---------- */
+
+.meteo-days {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.meteo-day-rows {
+  border-top: 1px solid var(--rule);
+}
+.meteo-day-row {
+  display: grid;
+  grid-template-columns: 8.5em 36px minmax(7em, 1.1fr) minmax(10em, 1.6fr) 8.5em minmax(9em, 1fr) 4.5em 9.5em;
+  grid-template-areas: 'name icon sky temps rain wind uv sun';
+  gap: var(--s2) var(--s3);
+  align-items: center;
+  padding: 7px 2px;
+  border-bottom: 1px dashed var(--rule);
+}
+.meteo-day-name {
+  grid-area: name;
+}
+.meteo-day-row .meteo-sky {
+  grid-area: icon;
+}
+.meteo-day-sky {
+  grid-area: sky;
+  display: flex;
+  flex-direction: column;
+}
+.meteo-day-temps {
+  grid-area: temps;
+  display: flex;
+  align-items: center;
   gap: var(--s2);
 }
-.meteo-day {
-  min-height: 0;
+.meteo-day-temps > span:first-child {
+  min-width: 2.4em;
+  text-align: right;
+}
+.meteo-day-temps > span:last-child {
+  min-width: 2.4em;
+}
+/* The rest of a day: a column each on a wide screen, a wrapped line under the day on a narrow one. */
+.meteo-day-more {
+  display: contents;
+}
+.meteo-day-sun {
+  white-space: nowrap;
+}
+
+/* ---------- 15 jours ---------- */
+
+.meteo-trend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.meteo-trend-rows {
+  display: flex;
+  flex-direction: column;
+}
+.meteo-trend-head,
+.meteo-trend-row {
+  display: grid;
+  grid-template-columns: 8.5em 28px 6em minmax(8em, 1fr) 6em 4.5em 8.5em;
+  gap: var(--s3);
   align-items: center;
-  text-align: center;
+  padding: 5px 2px;
+}
+.meteo-trend-head {
+  border-bottom: 1px solid var(--rule);
+}
+.meteo-trend-head > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.meteo-trend-head > span:nth-child(3),
+.meteo-trend-row > span:nth-child(3) {
+  text-align: right;
+}
+.meteo-trend-row {
+  border-bottom: 1px dashed var(--rule);
+}
+.meteo-trend-divider {
+  padding: var(--s3) 2px 4px;
+  color: var(--accent);
+}
+.meteo-confidence {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.meteo-cells {
+  display: inline-flex;
+  gap: 2px;
+}
+.meteo-cells i {
+  width: 8px;
+  height: 8px;
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.meteo-cells.high i.on {
+  background: var(--palette-vert);
+}
+.meteo-cells.medium i.on {
+  background: var(--palette-jaune);
+}
+.meteo-cells.low i.on {
+  background: var(--palette-rouge-clair);
+}
+
+/* ---------- by the room the column gives ---------- */
+
+@container service (max-width: 1000px) {
+  .meteo-today {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .meteo-day-row {
+    grid-template-columns: 8em 36px minmax(6em, 1fr) minmax(9em, 1.6fr) 8em minmax(8em, 1fr) 4.5em;
+    grid-template-areas: 'name icon sky temps rain wind uv';
+  }
+  .meteo-day-sun {
+    display: none;
+  }
+}
+
+@container service (max-width: 760px) {
+  .meteo-hour {
+    grid-template-columns: 3.6em 28px minmax(0, 1.2fr) 2.8em minmax(0, 1fr) minmax(0, 1.3fr);
+  }
+  .meteo-hour-feel,
+  .meteo-hour-hum {
+    display: none;
+  }
+  .meteo-day-row {
+    grid-template-columns: 7.5em 36px minmax(0, 1fr);
+    grid-template-areas:
+      'name icon temps'
+      'sky sky more';
+  }
+  .meteo-day-more {
+    grid-area: more;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px var(--s4);
+  }
+  .meteo-trend-head,
+  .meteo-trend-row {
+    grid-template-columns: 7em 24px 4.8em minmax(4em, 1fr) 4.8em 3.5em 6.5em;
+    gap: var(--s2);
+  }
+}
+
+@container service (max-width: 560px) {
+  .meteo-today {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .meteo-acts {
+    margin-left: 0;
+  }
+  .meteo-hour {
+    grid-template-columns: 3.2em 24px 2.6em minmax(0, 0.8fr) minmax(0, 1.6fr);
+    gap: var(--s2);
+  }
+  .meteo-long {
+    display: none;
+  }
+  .meteo-short {
+    display: inline;
+  }
+  .meteo-hour-sky {
+    display: none;
+  }
+  .meteo-day-row {
+    grid-template-columns: 6.5em 32px minmax(0, 1fr);
+  }
+  .meteo-trend-head,
+  .meteo-trend-row {
+    grid-template-columns: 6.4em 22px 4.8em minmax(2em, 1fr) 4.8em 3em 3.2em;
+  }
+  .meteo-confidence .meteo-word {
+    display: none;
+  }
 }

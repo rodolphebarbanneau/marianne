@@ -1,5 +1,6 @@
-Le temps de votre commune, maintenant et sur 7 jours, d’après les modèles de **Météo-France** (et du CEPMMT au-delà de quelques jours), par Open-Meteo.
+Le temps de votre commune : maintenant, la pluie des deux prochaines heures, 48 heures, 7 et 15 jours. D’après les modèles de **Météo-France** (AROME, ARPEGE) les premiers jours, puis du centre européen (CEPMMT), par Open-Meteo ; l’air, l’UV et les pollens par Copernicus.
 
-- Votre commune vient de votre adresse (Réglages › Identité) ; cherchez-en une autre par son nom ou son code postal.
-- ☆ garde une commune en favori, à un clic.
-- « demander à Marianne » lui pose la question, avec ces prévisions sous les yeux.
+- La pluie au quart d’heure n’est prévue qu’en métropole.
+- Au-delà d’une semaine, « 15 jours » donne des fourchettes, là où tombent huit scénarios européens sur dix, et une confiance.
+- Les vigilances de Météo-France n’y sont pas : voyez vigilance.meteofrance.fr.
+- Une autre commune : tapez son nom en haut (/) ; ☆ la garde en favori.
