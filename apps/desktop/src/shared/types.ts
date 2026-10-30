@@ -322,6 +322,8 @@ export interface PlannedTask {
   notify: 'found' | 'always'
   /** Its next day, YYYY-MM-DD: it runs at the first opening on or after it. */
   next: string
+  /** The day its rhythm counts from: a month's end keeps its day. */
+  anchor?: string
   on: boolean
   runs: TaskRun[]
 }

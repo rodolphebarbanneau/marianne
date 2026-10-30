@@ -4,7 +4,7 @@ import { EMPTY_PROFILE, type Profile } from '@marianne/profile'
 import { describe, expect, it } from 'vitest'
 import { computeDeadline, weekday } from '../src/main/tools/calendar'
 import { articleNumber, findCode } from '../src/main/tools/legifrance'
-import { consequential, Consents } from '../src/main/tools/online'
+import { consequential, Consents, reading } from '../src/main/tools/online'
 import { setupCard } from '../src/main/tools/profile'
 import { normalizeValues, opId, plan } from '../src/main/tools/proposals'
 import { ToolError } from '../src/main/tools/tool'
@@ -17,6 +17,23 @@ const holidays = new Map([
   ['2026-12-25', 'Jour de Noël'],
   ['2027-01-01', '1er janvier']
 ])
+
+describe('what a planned task’s run may click', () => {
+  const el = (label: string, type = 'button', role = 'button') => ({ role, type, label })
+
+  it('what plainly reads', () => {
+    for (const label of ['Rechercher', 'Voir le détail', 'Suivant', 'Page précédente', 'Fermer', 'Tout refuser', 'Continuer sans accepter'])
+      expect(reading(el(label))).toBe(true)
+    expect(reading(el('Rechercher', 'submit'))).toBe(true)
+  })
+
+  it('nothing that could commit, whatever its type or the engine’s reason', () => {
+    for (const label of ['Payer', 'Valider', 'Oui', 'OK', 'Autoriser le prélèvement', 'Continuer', 'Se connecter', 'Envoyer', 'Accepter', '', 'Télécharger'])
+      expect(reading(el(label))).toBe(false)
+    expect(reading(el('Rechercher'), 'payer le passage')).toBe(false)
+    expect(reading(el('Voir et payer'))).toBe(false)
+  })
+})
 
 describe('computeDeadline', () => {
   it('does not count the starting day', () => {

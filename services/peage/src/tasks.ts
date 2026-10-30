@@ -44,7 +44,7 @@ const NEVER = 'Marianne ne paie jamais : elle vous montre le passage, vous valid
 
 const instruction = (vehicle: string) =>
   `Look for unpaid free-flow toll passages of vehicle ${vehicle}, on each operator's official payment page. Read the free-flow-tolls guide first. peage_networks gives the pages, peage_trips what is already recorded. Get the plate's token from the profile tool, type it with type_text, and read what the site shows, without paying and without going further than the list of passages.
-For each passage the site shows that peage_trips doesn't have, record it with peage_add_trip. Report "found" with the motorway and the date, and offer to pay: paying happens only if the user asks, on a card, and they type their card themselves. If no site shows a passage to pay, report "nothing".`
+For each passage the site shows that peage_trips doesn't have, record it with peage_add_trip. Report "found" with the motorway and the date, and say the user can ask you to pay it: paying happens in a conversation, on a card, and they type their card themselves. If no site shows a passage to pay, report "nothing".`
 
 /** One task per vehicle whose plate the service was given: without it, there is nothing to look for. */
 export function tollTasks(vehicles: Vehicle[]): ServiceTaskTemplate[] {

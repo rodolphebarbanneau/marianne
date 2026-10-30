@@ -156,7 +156,8 @@ class Folders extends EventEmitter {
     const out: FolderSummary[] = []
     for (const folder of archive.list<Folder>(KIND)) {
       let f = folder
-      if (f.snoozedUntil && Date.parse(f.snoozedUntil) <= at) {
+      // A task's folder wakes by its run, which may find nothing to wake it for.
+      if (f.snoozedUntil && !f.task && Date.parse(f.snoozedUntil) <= at) {
         f = { ...f, snoozedUntil: '', woke: true, seen: false }
         archive.put(KIND, f.id, f)
       }

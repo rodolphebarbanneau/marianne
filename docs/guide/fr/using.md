@@ -61,14 +61,14 @@ Une tâche planifiée, c’est un dossier qui revient. Marianne peut vérifier q
 
 Une tâche commence avec « + nouvelle tâche », depuis ce que vos services proposent sur la page d’un domaine, ou dans une conversation, quand Marianne vous la propose. Elle ne commence jamais sans votre accord, sur une fiche ou une carte qui dit ce qu’elle fait, à quel rythme, et quels sites elle peut joindre.
 
-- **Un jour, pas une heure.** Une vérification se fait à la première ouverture de son jour, ou à la première qui suit. Elle ne se fait que Marianne ouverte et votre archive déverrouillée, et elle attend que Marianne ait fini ce qu’elle fait pour vous.
+- **Un jour, pas une heure.** Une vérification se fait à la première ouverture de son jour, ou à la première qui suit. Elle ne se fait que Marianne ouverte et votre archive déverrouillée, elle attend que Marianne ait fini ce qu’elle fait pour vous, et elle s’efface dès que vous demandez quelque chose.
 - **Elle ne peut pas vous protéger si vous n’ouvrez pas Marianne.** Un péage se paie dans les 72 heures : quelques jours sans ouvrir Marianne, et un passage peut dépasser son délai.
 - **Elle utilise votre moteur.** Chaque vérification utilise votre moteur, comme le ferait une question, avec au plus 12 vérifications par jour. Un rappel ne coûte rien.
-- **Marianne ne paie jamais.** Une vérification peut seulement regarder et rendre compte : elle ne paie pas, ne signe pas, n’envoie rien. Elle va sur les sites que vous lui avez donnés sans redemander, pour cette vérification seulement, et vous demande votre accord pour tout autre site. Si un site veut un code, elle s’arrête et vous attend.
+- **Marianne ne paie jamais.** Une vérification peut seulement regarder et rendre compte : elle ne paie pas, ne signe pas, n’envoie rien, et rien de ce qu’elle lit sur une page ne peut l’y amener. Elle va sur les sites que vous lui avez donnés, pour cette vérification seulement, et sur aucun autre. Si un site veut un code, ou que quelque chose a besoin de vous, elle s’arrête et vous prévient.
 
 Quand une vérification ne trouve rien, le dossier se rendort, et sa conversation replie ces vérifications en une ligne : cliquez dessus pour les lire. Quand elle trouve quelque chose ou a besoin de vous, le dossier revient et une notification vous prévient ; ce qui vous attend paraît aussi dans « à faire ».
 
-Dans le dossier d’une tâche, « modifier la tâche » l’ouvre sur la page de son domaine, et « mettre en pause » l’arrête jusqu’à ce que vous choisissiez « reprendre ». Pendant la pause, son dossier est dans « Classés ».
+Dans le dossier d’une tâche, « modifier la tâche » change son rythme ou la retire, et « mettre en pause » l’arrête jusqu’à ce que vous choisissiez « reprendre ». Pendant la pause, son dossier est dans « Classés ».
 
 ## Votre profil
 

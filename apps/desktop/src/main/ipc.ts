@@ -55,6 +55,11 @@ type Handler = (...args: any[]) => unknown // eslint-disable-line @typescript-es
 const openDialog = (options: Electron.OpenDialogOptions) => (mainWindow ? dialog.showOpenDialog(mainWindow, options) : dialog.showOpenDialog(options))
 const saveDialog = (options: Electron.SaveDialogOptions) => (mainWindow ? dialog.showSaveDialog(mainWindow, options) : dialog.showSaveDialog(options))
 
+/** A rhythm from the window: a period of zero would never end, and the calendar would loop on it. */
+function checkEvery({ unit, n }: TaskEvery): void {
+  if (!['day', 'week', 'month', 'year'].includes(unit) || !Number.isInteger(n) || n < 1 || n > 366) throw new Error('Ce rythme n’est pas valable.')
+}
+
 const pickFolder = async (title: string, defaultPath?: string) => {
   const r = await openDialog({ title, defaultPath, properties: ['openDirectory', 'createDirectory'] })
   return r.canceled || !r.filePaths[0] ? null : r.filePaths[0]
@@ -242,6 +247,7 @@ export function registerIpc(): void {
     if (request.kind === 'reminder') {
       const title = request.title.trim()
       if (!title) throw new Error('Dites ce qui doit revenir.')
+      checkEvery(request.every)
       return tasks.create({
         title,
         domain: request.domain,
@@ -272,6 +278,7 @@ export function registerIpc(): void {
     })
   })
   handle('updateTask', (id: string, patch: { every?: TaskEvery; notify?: PlannedTask['notify'] }) => {
+    if (patch.every) checkEvery(patch.every)
     const every = patch.every ? { every: patch.every, everyLabel: everyLabel(patch.every) } : {}
     void tasks.update(id, { ...every, ...(patch.notify ? { notify: patch.notify } : {}) })
   })

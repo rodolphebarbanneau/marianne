@@ -54,7 +54,9 @@ export function ProceduresPage() {
   const tasks = useTasks()
   const [deadlines, setDeadlines] = useState<Deadline[]>([])
   const [procedures, setProcedures] = useState<Procedure[]>([])
-  useEffect(() => void api.getDeadlines(120).then(setDeadlines), [])
+  // Asked again when a task has run: it may have found something to pay.
+  const lastRuns = tasks.map((t) => t.runs.at(-1)?.at ?? '').join()
+  useEffect(() => void api.getDeadlines(120).then(setDeadlines), [lastRuns])
   useEffect(() => void api.listProcedures().then(setProcedures), [])
 
   const [tab, setTabState] = useState<Tab>(lastTab)

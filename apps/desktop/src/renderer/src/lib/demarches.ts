@@ -130,6 +130,8 @@ export function todoItems({ folders, deadlines, documents, tasks }: TodoSources,
   for (const t of tasks) {
     const run = lastRun(t)
     if (!t.on || !run || (run.outcome !== 'waiting' && run.outcome !== 'failed')) continue
+    // Once the user has opened its folder, it has been seen to.
+    if (folders.some((f) => f.id === t.folderId && !f.unread)) continue
     const wait = run.outcome === 'waiting' ? 'une tâche vous attend' : 'tâche sans suite'
     items.push({
       key: `task:${t.id}`,
@@ -147,7 +149,9 @@ export function todoItems({ folders, deadlines, documents, tasks }: TodoSources,
   }
   for (const d of deadlines) {
     if (d.status !== 'todo' || daysUntil(d.date, now) > TODO_DAYS) continue
-    const when = whenOf(d.date, now)
+    // The rules date what is late today, and say so in its note: it is still late.
+    const overdue = d.note?.startsWith('en retard')
+    const when = overdue ? { text: 'en retard', tone: 'late' as const } : whenOf(d.date, now)
     const days = daysUntil(d.date, now)
     const found = d.service && foundToday(tasks, d.service, now)
     items.push({
@@ -231,7 +235,8 @@ export function nextTaskDay(tasks: PlannedTask[]): string {
     .filter((t) => t.on)
     .map((t) => t.next)
     .sort()
-  return next ? dayLabel(next) : ''
+  if (!next) return ''
+  return next <= today() ? 'aujourd’hui' : dayLabel(next)
 }
 
 const RUN_CELLS: Record<TaskOutcome, { look: string; word: string }> = {
@@ -289,7 +294,8 @@ export function weekMarks(deadlines: Deadline[], now = new Date()): WeekMark[][]
   for (const d of deadlines) {
     if (d.status !== 'todo') continue
     const i = Math.max(0, weekIndex(d.date, weeks))
-    if (i >= WEEKS) continue
+    // An unreadable date (the model proposes them too) has no week: better no mark than no page.
+    if (!(i < WEEKS)) continue
     out[i].push({ key: d.key, title: `${d.title} · ${shortDate(d.date)}`, pressing: daysUntil(d.date, now) <= PRESSING_DAYS })
   }
   return out
@@ -355,7 +361,8 @@ export function searchDemarches(query: string, { folders, deadlines, documents, 
         key: `folder:${f.id}`,
         domain: f.domain,
         title: f.title,
-        detail: f.meta || (f.settledAt ? `classé le ${shortDate(f.settledAt)}` : 'en cours'),
+        // The local day: `settledAt` is in UTC.
+        detail: f.meta || (f.settledAt ? `classé le ${shortDate(today(new Date(f.settledAt)))}` : 'en cours'),
         kind: 'dossier',
         act: 'ouvrir',
         target: { kind: 'folder' as const, id: f.id }
