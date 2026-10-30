@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clipOf, keptOf, livePage, mediaChapters, shareLine, shareLink, snapAt, streamOf, suspensions } from '../src/ui/media'
+import { CLIP_TITLE_MAX, clipOf, keptOf, livePage, mediaChapters, shareLine, shareLink, snapAt, streamOf, suspensions } from '../src/ui/media'
 import type { Clip, LiveStream, VideoChapter } from '../src/types'
 
 const chapter = (id: string, depth: number, timecode: number | null, title: string, speaker?: string): VideoChapter => ({
@@ -63,6 +63,15 @@ describe('a video in the player', () => {
     const other: Clip = { ...clip, id: 'c2', video: 'V2' }
     const assembly: Clip = { ...clip, id: 'c3', chamber: 'an' }
     expect(keptOf([clip, other, assembly], v)).toEqual([{ from: 60_000, to: 120_000 }])
+  })
+
+  it('keeps a clip’s title as long as it can be renamed, at most', () => {
+    const v = { id: 'V1', chamber: 'an' as const, offsetMs: 0, title: 'Commission des finances', date: '2026-10-28T14:30:00+01:00', thumbnail: '' }
+    const long = `Article 17 · ${'Mme Camille Martin, rapporteure générale, '.repeat(6)}`
+    const kept = clipOf(v, { from: 0, to: 60_000, title: long }, 'c1', new Date('2026-10-30T10:00:00Z')).title
+    expect(kept.length).toBeLessThanOrEqual(CLIP_TITLE_MAX)
+    expect(kept).toMatch(/^Article 17 · Mme Camille Martin, .{100,}\S…$/)
+    expect(clipOf(v, { from: 0, to: 60_000, title: 'Article 17 · Mme Camille Martin' }, 'c2', new Date()).title).toBe('Article 17 · Mme Camille Martin')
   })
 
   it('links to the portal’s page, at a moment or where a clip starts', () => {
