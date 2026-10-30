@@ -3,95 +3,107 @@ import { checkTile, fakeContext } from '@marianne/sdk/testing'
 import { describe, expect, it } from 'vitest'
 import pkg from '../package.json'
 import { service } from '../src/main'
-import { coming, dayColor, NO_HOME_TILE, shortDegrees, unitOf, weatherTile, weekday } from '../src/tile'
-import type { WeatherNow } from '../src/types'
+import { barLabel, dayTileLine, NO_HOME_TILE, rainTileLine, unitOf, weatherTile } from '../src/tile'
+import type { Weather, WeatherHour } from '../src/types'
 import { mapWeather } from '../src/weather'
-import { BORDEAUX, FIXTURE } from './fixtures'
+import { answer, BORDEAUX, FIXTURE } from './fixtures'
 
 const HOME = { code: BORDEAUX.code, name: BORDEAUX.name, postcode: '33000' }
+const W = mapWeather(FIXTURE)
 
-/** The conditions at 17:45, with a WMO code. */
-const now = (code: number, label = 'Ciel dégagé'): WeatherNow => ({ ...mapWeather(FIXTURE).now!, code, label })
-/** The hours from 18:00 on, with these codes. */
-const hours = (...codes: number[]) => codes.map((code, i) => ({ time: `2026-10-28T${18 + i}:00`, code }))
+/** The forecast at another time of the same day. */
+const at = (time: string): Weather => ({ ...W, now: { ...W.now!, time: `2026-10-28T${time}` } })
+/** The next hours, with one of them changed. */
+const withHour = (i: number, change: Partial<WeatherHour>): Weather => ({ ...W, hours: W.hours.map((h, j) => (j === i ? { ...h, ...change } : h)) })
 
-describe('what the tile says of the weather', () => {
-  it('names the days, writes the degrees, colours the days by their weather', () => {
-    expect(['2026-10-28', '2026-10-29', '2026-11-01'].map(weekday)).toEqual(['mer', 'jeu', 'dim'])
-    expect([16.6, 15.4, -0.3, -2.6].map(shortDegrees)).toEqual(['17°', '15°', '0°', '-3°'])
-    expect([0, 2, 3, 45, 51, 61, 71, 80, 86, 95].map(dayColor)).toEqual([
-      'jaune',
-      'jaune',
-      'gris-clair',
-      'gris-clair',
-      'cyan',
-      'cyan',
-      'blanc',
-      'cyan',
-      'blanc',
-      'cyan'
-    ])
+describe('what the tile says', () => {
+  it('labels today, then the weekdays', () => {
+    expect(['2026-10-28', '2026-10-29', '2026-11-01'].map(barLabel)).toEqual(['auj.', 'jeu', 'dim'])
   })
 
-  it('tells what starts, or stops, in the next hours, else the weather now', () => {
-    expect(coming(now(0), hours(0, 3, 80))).toBe('averses à 20 h')
-    expect(coming(now(61, 'Pluie faible'), hours(61, 63, 2))).toBe('pluie jusqu’à 20 h')
-    expect(coming(now(61, 'Pluie faible'), hours(61, 63, 63))).toBe('pluie faible')
-    expect(coming(now(3, 'Couvert'), hours(3, 3))).toBe('couvert')
-    expect(coming(now(1), [{ time: '2026-10-29T07:00', code: 73 }])).toBe('neige demain à 7 h')
-    expect(coming(now(45, 'Brouillard'), [{ time: '2026-10-29T10:00', code: 1 }])).toBe('brouillard jusqu’à demain 10 h')
-  })
-
-  it('cuts a long commune’s name rather than what is coming', () => {
-    expect(unitOf('Bordeaux', 'averses à 16 h')).toBe('Bordeaux · averses à 16 h')
-    const unit = unitOf('Saint-Rémy-en-Bouzemont-Saint-Genest-et-Isson', 'averses à 16 h')
-    expect(unit).toBe('Saint-Rémy-en-Bouzemon… · averses à 16 h')
+  it('cuts a long commune’s name rather than the sky', () => {
+    expect(unitOf('Bordeaux', 'averses')).toBe('Bordeaux · averses')
+    const unit = unitOf('Saint-Rémy-en-Bouzemont-Saint-Genest-et-Isson', 'partiellement nuageux')
+    expect(unit).toBe('Saint-Rémy-en-B… · partiellement nuageux')
     expect([...unit]).toHaveLength(40)
+  })
+
+  it('tells the rain to come, in yellow when it is within two hours', () => {
+    expect(rainTileLine(W)).toEqual({ text: 'pluie dans 30 min', tone: 'accent' })
+    const dry = { ...W, quarters: W.quarters.map((q) => ({ ...q, precipitation: 0 })) }
+    expect(rainTileLine(dry)).toEqual({ text: 'pluie vers 20 h (85 %)' })
+    expect(rainTileLine({ ...W, now: null })).toBeNull()
+  })
+
+  it('gives the day’s low and high, tomorrow’s after sunset, with notable gusts', () => {
+    expect(dayTileLine(W)).toEqual({ text: 'aujourd’hui 9° / 18°', tone: 'dim' })
+    expect(dayTileLine(at('18:30'))).toEqual({ text: 'demain 8° / 16° · rafales 52 km/h', tone: 'dim' })
+  })
+
+  it('warns of strong gusts, frost and heat in the next 24 hours instead', () => {
+    expect(dayTileLine(withHour(2, { windGusts: 84.6 }))).toEqual({ text: 'rafales jusqu’à 85 km/h vers 20 h', tone: 'accent' })
+    expect(dayTileLine(withHour(4, { time: '2026-10-29T06:00', temperature: -2.4 }))).toEqual({ text: 'gelée : -2° demain vers 6 h', tone: 'accent' })
+    expect(dayTileLine(withHour(0, { temperature: 36.2 }))).toEqual({ text: 'forte chaleur : 36° vers 18 h', tone: 'accent' })
   })
 })
 
 describe('the tile', () => {
-  it('shows the temperature, what is coming, the next days and the wind', () => {
-    expect(checkTile(weatherTile('Bordeaux', mapWeather(FIXTURE)))).toEqual({
-      value: { text: '17°', unit: 'Bordeaux · averses à 20 h' },
+  it('shows the temperature and the sky, the week from its coldest low, the rain to come and the day', () => {
+    expect(checkTile(weatherTile('Bordeaux', W))).toEqual({
+      value: { text: '17°', unit: 'Bordeaux · ciel dégagé' },
       visual: {
         kind: 'bars',
         bars: [
-          { value: 17.7, label: 'mer', text: '18°', color: 'gris-clair' },
+          { value: 17.7, label: 'auj.', text: '18°', color: 'gris-clair' },
           { value: 16.1, label: 'jeu', text: '16°', color: 'cyan' },
           { value: 15.8, label: 'ven', text: '16°', color: 'cyan' }
-        ]
+        ],
+        range: [6, 18]
       },
-      lines: [{ text: 'vent 10 km/h, rafales 19', tone: 'dim' }]
+      lines: [
+        { text: 'pluie dans 30 min', tone: 'accent' },
+        { text: 'aujourd’hui 9° / 18°', tone: 'dim' }
+      ]
     })
   })
 
-  it('keeps five days at most, and names the commune without current conditions', () => {
-    const w = mapWeather(FIXTURE)
-    const week = { ...w, now: null, days: Array.from({ length: 7 }, (_, i) => ({ ...w.days[0], date: `2026-11-0${i + 1}` })) }
+  it('keeps seven days at most, names the commune without current conditions, and draws no range of nothing', () => {
+    const week = { ...W, now: null, days: Array.from({ length: 9 }, (_, i) => ({ ...W.days[0], date: `2026-11-0${i + 1}`, min: 10, max: 10 })) }
     const tile = checkTile(weatherTile('Bordeaux', week))
     expect(tile?.title).toBe('Bordeaux')
-    expect(tile?.visual?.kind === 'bars' && tile.visual.bars.map((b) => b.label)).toEqual(['dim', 'lun', 'mar', 'mer', 'jeu'])
-    expect(tile?.lines).toEqual([{ text: 'vent 11 km/h, rafales 21', tone: 'dim' }])
-    expect(weatherTile('Bordeaux', { ...w, now: null, days: [] })).toBeNull()
+    expect(tile?.visual?.kind === 'bars' && tile.visual.bars.map((b) => b.label)).toEqual(['auj.', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam'])
+    expect(tile?.visual?.kind === 'bars' && tile.visual.range).toBeUndefined()
+    expect(tile?.lines).toEqual([{ text: 'aujourd’hui 10° / 10°', tone: 'dim' }])
+    expect(weatherTile('Bordeaux', { ...W, now: null, days: [] })).toBeNull()
   })
 
-  it('is the user’s commune’s, asked as the screen asks it', async () => {
-    const { ctx, urls } = fakeContext(pkg, { answer: () => FIXTURE, communes: [BORDEAUX], home: HOME })
+  it('stays within Marianne’s limits whatever the weather says', () => {
+    const long = { ...W, now: { ...W.now!, code: 99, label: 'Orage avec forte grêle', temperature: -12.4 } }
+    expect(() =>
+      checkTile(weatherTile('Saint-Rémy-en-Bouzemont-Saint-Genest-et-Isson', withHour(1, { windGusts: 112, time: '2026-10-29T15:00' })))
+    ).not.toThrow()
+    expect(checkTile(weatherTile('Saint-Rémy-en-Bouzemont-Saint-Genest-et-Isson', long))?.value).toEqual({
+      text: '-12°',
+      unit: 'Saint-Rémy-en-… · orage avec forte grêle'
+    })
+  })
+
+  it('is the user’s commune’s, asked as the screen asks it, and nothing else', async () => {
+    const { ctx, urls } = fakeContext(pkg, { answer, communes: [BORDEAUX], home: HOME })
     const tile = checkTile(await service.activate(ctx).tile!())
-    expect(tile?.value).toEqual({ text: '17°', unit: 'Bordeaux · averses à 20 h' })
-    expect(urls).toHaveLength(1)
-    expect(Object.fromEntries(urls[0].searchParams)).toMatchObject({ latitude: '44.862', longitude: '-0.585', hourly: 'weather_code' })
+    expect(tile?.value).toEqual({ text: '17°', unit: 'Bordeaux · ciel dégagé' })
+    expect(urls.map((u) => u.hostname)).toEqual(['api.open-meteo.com'])
+    expect(Object.fromEntries(urls[0].searchParams)).toMatchObject({ latitude: '44.862', longitude: '-0.585', forecast_days: '15' })
   })
 
   it('asks for an address without one, and reaches no host', async () => {
-    const { ctx, urls } = fakeContext(pkg, { answer: () => FIXTURE, communes: [BORDEAUX] })
+    const { ctx, urls } = fakeContext(pkg, { answer, communes: [BORDEAUX] })
     expect(checkTile(await service.activate(ctx).tile!())).toEqual(NO_HOME_TILE)
     expect(urls).toHaveLength(0)
   })
 
   it('is the default tile for a commune Marianne doesn’t know, and fails when the forecast does', async () => {
-    const unknown = fakeContext(pkg, { answer: () => FIXTURE, communes: [], home: HOME })
+    const unknown = fakeContext(pkg, { answer, communes: [], home: HOME })
     expect(await service.activate(unknown.ctx).tile!()).toBeNull()
     const offline = fakeContext(pkg, {
       answer: () => {
@@ -110,9 +122,12 @@ describe('the tile', () => {
 })
 
 describe('the manifest', () => {
-  it('has its icon and declares the tools its main side lends', () => {
+  it('has its icon, its four tabs, its search, and declares the tools its main side lends', () => {
     const manifest = readManifest(pkg)
     expect(manifest.icon).toEqual(pkg.marianne.icon)
+    expect(manifest.tabs.map((t) => t.id)).toEqual(['today', 'hours', 'week', 'trend'])
+    expect(manifest.search?.placeholder).toBeTruthy()
+    expect(manifest.hosts).toEqual(['api.open-meteo.com', 'air-quality-api.open-meteo.com', 'ensemble-api.open-meteo.com'])
     const { ctx } = fakeContext(pkg)
     expect(manifest.tools).toEqual(service.activate(ctx).tools?.map((t) => ({ name: t.name, label: t.label })))
   })

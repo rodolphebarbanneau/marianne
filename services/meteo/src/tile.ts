@@ -1,17 +1,29 @@
-import { cutText, TILE_LIMITS, type HomeCommune, type PaletteColor, type ServiceTile, type TileBar } from '@marianne/sdk/main'
-import type { Weather, WeatherHour, WeatherNow } from './types'
-import { weather, type WeatherContext } from './weather'
+import { cutText, TILE_LIMITS, type HomeCommune, type ServiceTile, type TileBar, type TileLine } from '@marianne/sdk/main'
+import { around, rainLine, shortDegrees, weekday } from './format'
+import { dayAhead, rainOutlook } from './outlook'
+import { skyColor } from './sky'
+import type { Weather } from './types'
+import { communeWeather, type WeatherContext } from './weather'
 
 /**
- * 3615 METEO's tile on the Services page: the temperature now in the user's commune and what is
- * coming (« averses à 16 h »), the highs of the next days coloured by their weather, the wind.
- * Pure but for `meteoTile`, which asks the forecast.
+ * 3615 METEO's tile on the Services page, read in a second: the temperature now and the sky in
+ * words; the week as bars, each day's high rising from the week's coldest low so that a colder day
+ * shows lower, coloured by its sky (yellow sun, grey cloud, cyan rain, white snow, magenta storm);
+ * then the rain to come (« pluie dans 30 min ») and the day's low and high, or what to watch out
+ * for in the next 24 hours (strong gusts, frost, heat). Pure but for `meteoTile`, which asks the
+ * forecast.
  */
 
-/** Today and the four days after. */
-const DAYS_SHOWN = 5
+/** Today and the six days after: the bars a tile holds. */
+const DAYS_SHOWN = TILE_LIMITS.bars
 /** Under this many characters left for the commune's name, the unit is the name alone. */
 const MIN_NAME = 10
+/** km/h: gusts that bring down branches, worth a line. */
+const STRONG_GUSTS = 70
+/** km/h: gusts worth adding to the day's line. */
+const NOTABLE_GUSTS = 50
+/** °C: a heat worth a line. */
+const HEAT = 35
 
 /** The tile while the profile has no address: where to give it. */
 export const NO_HOME_TILE: ServiceTile = {
@@ -19,76 +31,57 @@ export const NO_HOME_TILE: ServiceTile = {
   lines: [{ text: 'renseignez votre adresse dans Réglages › Identité', tone: 'dim' }]
 }
 
-const WEEKDAYS = ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam']
+/** "auj." for today, then "sam", "dim": the bars' labels. */
+export const barLabel = (date: string, index: number) => (index === 0 ? 'auj.' : weekday(date))
 
-/** "jeu": the weekday of a calendar date, whatever the computer's time zone. */
-export const weekday = (date: string) => WEEKDAYS[new Date(`${date}T12:00:00Z`).getUTCDay()]
-
-/** "14°", never "-0°". */
-export const shortDegrees = (n: number) => `${Math.round(n) || 0}°`
-
-const isSnow = (code: number) => (code >= 71 && code <= 77) || code === 85 || code === 86
-
-/**
- * A day's colour, from its WMO code: yellow when the sun shows (clear to partly cloudy), white for
- * snow, cyan for rain of any kind (drizzle, showers, storms), light grey for the rest (overcast, fog).
- */
-export function dayColor(code: number): PaletteColor {
-  if (code <= 2) return 'jaune'
-  if (isSnow(code)) return 'blanc'
-  if (code >= 51) return 'cyan'
-  return 'gris-clair'
-}
-
-/** The weather worth telling, in a word (« averses »); null for a dry hour, sunny or cloudy. */
-export function weatherWord(code: number): string | null {
-  if (code === 45 || code === 48) return 'brouillard'
-  if (isSnow(code)) return 'neige'
-  if (code >= 51 && code <= 57) return 'bruine'
-  if (code >= 61 && code <= 67) return 'pluie'
-  if (code >= 80 && code <= 82) return 'averses'
-  if (code >= 95) return 'orage'
-  return null
-}
-
-/** "16 h", from a local time of the place. */
-const hourOf = (time: string) => `${Number(time.slice(11, 13))} h`
-
-/**
- * What is coming in the next hours, in a few words: the weather that starts (« averses à 16 h »,
- * « neige demain à 7 h ») or stops (« pluie jusqu’à 18 h »); else the weather now (« ciel dégagé »).
- */
-export function coming(now: WeatherNow, hours: WeatherHour[]): string {
-  // The hours go up to the same time tomorrow.
-  const tomorrow = (h: WeatherHour) => (h.time.slice(0, 10) === now.time.slice(0, 10) ? '' : 'demain ')
-  const word = weatherWord(now.code)
-  if (word) {
-    const stop = hours.find((h) => !weatherWord(h.code))
-    if (stop) return `${word} jusqu’à ${tomorrow(stop)}${hourOf(stop.time)}`
-  } else {
-    const start = hours.find((h) => weatherWord(h.code))
-    if (start) return `${weatherWord(start.code)} ${tomorrow(start)}à ${hourOf(start.time)}`
-  }
-  return now.label.charAt(0).toLowerCase() + now.label.slice(1)
-}
-
-/** "Rennes · averses à 16 h": a long name is cut rather than what is coming. */
-export function unitOf(name: string, event: string): string {
-  const tail = ` · ${event}`
+/** "Rennes · averses": a long name is cut rather than the sky. */
+export function unitOf(name: string, sky: string): string {
+  const tail = ` · ${sky}`
   const room = TILE_LIMITS.unit - [...tail].length
   return room >= MIN_NAME ? `${cutText(name, room)}${tail}` : cutText(name, TILE_LIMITS.unit)
 }
 
+/** The rain to come; urgent-looking only when it falls now or within the next two hours. */
+export function rainTileLine(w: Weather): TileLine | null {
+  if (!w.now) return null
+  const o = rainOutlook(w.now, w.quarters, w.hours)
+  return { text: rainLine(o, w.now.time), ...(o.state === 'now' || o.state === 'soon' ? { tone: 'accent' as const } : {}) }
+}
+
+/** What to watch out for in the next 24 hours (strong gusts, frost, heat), else the day's low and high: today's until sunset, then tomorrow's. */
+export function dayTileLine(w: Weather): TileLine | null {
+  const now = w.now?.time ?? w.hours[0]?.time ?? ''
+  const ahead = w.hours.slice(0, 24)
+  if (now && ahead.length) {
+    const gusty = ahead.reduce((a, b) => (b.windGusts > a.windGusts ? b : a))
+    if (gusty.windGusts >= STRONG_GUSTS) return { text: `rafales jusqu’à ${Math.round(gusty.windGusts)} km/h ${around(gusty.time, now)}`, tone: 'accent' }
+    const cold = ahead.reduce((a, b) => (b.temperature < a.temperature ? b : a))
+    if (cold.temperature <= 0) return { text: `gelée : ${shortDegrees(cold.temperature)} ${around(cold.time, now)}`, tone: 'accent' }
+    const hot = ahead.reduce((a, b) => (b.temperature > a.temperature ? b : a))
+    if (hot.temperature >= HEAT) return { text: `forte chaleur : ${shortDegrees(hot.temperature)} ${around(hot.time, now)}`, tone: 'accent' }
+  }
+  const told = dayAhead(now, w.days)
+  if (!told) return null
+  const { day, tomorrow } = told
+  const gusts = day.windGusts >= NOTABLE_GUSTS ? ` · rafales ${Math.round(day.windGusts)} km/h` : ''
+  return { text: `${tomorrow ? 'demain' : 'aujourd’hui'} ${shortDegrees(day.min)} / ${shortDegrees(day.max)}${gusts}`, tone: 'dim' }
+}
+
 /** The tile of a commune's weather; null without anything to show. */
 export function weatherTile(name: string, w: Weather): ServiceTile | null {
-  const bars = w.days.slice(0, DAYS_SHOWN).map((d): TileBar => ({ value: d.max, label: weekday(d.date), text: shortDegrees(d.max), color: dayColor(d.code) }))
-  if (!w.now && !bars.length) return null
-  // The wind now, else the day's strongest.
-  const wind = w.now ?? w.days[0]
+  const week = w.days.slice(0, DAYS_SHOWN)
+  if (!w.now && !week.length) return null
+  const bars = week.map((d, i): TileBar => ({ value: d.max, label: barLabel(d.date, i), text: shortDegrees(d.max), color: skyColor(d.code) }))
+  // From the week's coldest low to its warmest high: from 0, a week of 15 to 18° would draw seven equal bars.
+  const low = Math.floor(Math.min(...week.map((d) => d.min)))
+  const high = Math.ceil(Math.max(...week.map((d) => d.max)))
+  const lines = [rainTileLine(w), dayTileLine(w)].filter((l): l is TileLine => !!l)
   return {
-    ...(w.now ? { value: { text: shortDegrees(w.now.temperature), unit: unitOf(name, coming(w.now, w.hours)) } } : { title: cutText(name, TILE_LIMITS.title) }),
-    ...(bars.length ? { visual: { kind: 'bars' as const, bars } } : {}),
-    lines: [{ text: `vent ${Math.round(wind.windSpeed)} km/h, rafales ${Math.round(wind.windGusts)}`, tone: 'dim' }]
+    ...(w.now
+      ? { value: { text: shortDegrees(w.now.temperature), unit: unitOf(name, w.now.label.toLowerCase()) } }
+      : { title: cutText(name, TILE_LIMITS.title) }),
+    ...(bars.length ? { visual: { kind: 'bars' as const, bars, ...(low < high ? { range: [low, high] as [number, number] } : {}) } } : {}),
+    ...(lines.length ? { lines } : {})
   }
 }
 
@@ -100,5 +93,5 @@ export async function meteoTile(ctx: WeatherContext & { home(): HomeCommune | nu
   const home = ctx.home()
   if (!home) return NO_HOME_TILE
   const commune = await ctx.geo.getCommune(home.code)
-  return commune ? weatherTile(commune.name, await weather(ctx.http, commune.latitude, commune.longitude)) : null
+  return commune ? weatherTile(commune.name, await communeWeather(ctx, commune)) : null
 }
