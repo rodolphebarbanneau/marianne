@@ -154,8 +154,17 @@ function Screen({ since }: { since: string | null }) {
   const close = useCallback(() => setStack((s) => s.slice(0, -1)), [])
   const choose = useCallback((id: string) => {
     setChosen(id)
-    // A row chosen by its keys stays in view; a click leaves the page where it is.
-    requestAnimationFrame(() => root.current?.querySelector(`[data-subject="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' }))
+    // A row chosen by its keys stays in view: within the rows' box when the list has one (the page stays where it
+    // is), else in the page.
+    requestAnimationFrame(() => {
+      const row = root.current?.querySelector<HTMLElement>(`[data-subject="${CSS.escape(id)}"]`)
+      const box = row?.closest<HTMLElement>('.infos-rows')
+      if (!row) return
+      if (!box) return row.scrollIntoView({ block: 'nearest' })
+      const [r, b] = [row.getBoundingClientRect(), box.getBoundingClientRect()]
+      if (r.top < b.top) box.scrollTop -= b.top - r.top
+      else if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom
+    })
   }, [])
 
   const fresh = shown ? newSince(shown.items, since).length : 0

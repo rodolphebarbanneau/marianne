@@ -1,4 +1,4 @@
-import { Fragment, useLayoutEffect, useMemo, useState } from 'react'
+import { Fragment, useMemo } from 'react'
 import { isLive, sideOf, Spinner, subjectWords, useCall, withoutLive, type NewsArticle, type NewsHeadline } from '@marianne/sdk/view'
 import { byLean, shownSources, themeLabel } from '../model'
 import { clock, hour, longDay, parisDay, shortDay } from '../time'
@@ -6,8 +6,8 @@ import type { InfosMethods, Subject } from '../types'
 import { Badges, fill, LeanKey, Marked, NoneFound, Num, placeOf, QueryMarked, sidesOf, SourceTag, Spectrum, Track, TrackAxis, useInfos, Words } from './common'
 
 /**
- * F2 · à la une: the list of subjects and the subject a row points to. On the left, narrow, every
- * subject, a row each, its sources as one flat bar from the left to the right; on the right, sticky,
+ * F2 · à la une: the list of subjects and the subject a row points to. On the left, narrow, in a box
+ * that scrolls on its own, every subject, a row each, its sources as one flat bar; on the right,
  * the chosen subject: its latest title and article, who tells it side by side, its own fil. Choosing
  * another row changes the right column; the list never moves. Above both, the band: what is live,
  * the hour of the reading and the page's counts. Under both, the titles no other source tells.
@@ -138,8 +138,6 @@ export interface FrontProps {
 export function FrontTab(props: FrontProps) {
   const { reading, openSubject, openTab } = useInfos()
   const single = reading.single.slice(0, SINGLE_SHOWN)
-  const [cur, setCur] = useState<HTMLDivElement | null>(null)
-  const sticky = useFits(cur)
   return (
     <>
       {reading.subjects.length ? (
@@ -147,11 +145,7 @@ export function FrontTab(props: FrontProps) {
           <div className="infos-side">
             <SubjectList {...props} />
           </div>
-          {props.wide && (
-            <div ref={setCur} className={`infos-cur${sticky ? ' sticky' : ''}`}>
-              {props.chosen && <Chosen subject={props.chosen} onOpen={() => openSubject(props.chosen!.id)} />}
-            </div>
-          )}
+          {props.wide && <div className="infos-cur">{props.chosen && <Chosen subject={props.chosen} onOpen={() => openSubject(props.chosen!.id)} />}</div>}
         </div>
       ) : (
         <p className="infos-empty">Aucun titre de vos sources ce matin.</p>
@@ -176,33 +170,6 @@ export function FrontTab(props: FrontProps) {
   )
 }
 
-/** Room kept above and below the sticky column, in the page that scrolls. */
-const STICKY_ROOM = 24
-
-/**
- * Whether the right column fits in the page that scrolls it: it sticks only then. Taller, it would
- * stay pinned with its end out of reach; it scrolls with the list instead.
- */
-function useFits(el: HTMLElement | null): boolean {
-  const [fits, setFits] = useState(false)
-  useLayoutEffect(() => {
-    if (!el) return
-    let page: HTMLElement | null = el.parentElement
-    while (page && !/(auto|scroll)/.test(getComputedStyle(page).overflowY)) page = page.parentElement
-    const measure = () => setFits(el.offsetHeight + STICKY_ROOM <= (page?.clientHeight ?? window.innerHeight))
-    measure()
-    const observer = new ResizeObserver(measure)
-    observer.observe(el)
-    if (page) observer.observe(page)
-    window.addEventListener('resize', measure)
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', measure)
-    }
-  }, [el])
-  return fits
-}
-
 /** The list, in the left column: a row a subject; a click chooses it, and the right column shows it. */
 function SubjectList({ listed, chosen, choose, mine, setMine, wide }: FrontProps) {
   const { reading, openSubject, openSources, name } = useInfos()
@@ -224,58 +191,62 @@ function SubjectList({ listed, chosen, choose, mine, setMine, wide }: FrontProps
         </span>
       </div>
       {listed.length ? (
-        <table className="infos-mos infos-list">
-          <tbody>
-            {listed.map((s) => {
-              const by = new Map(s.items.map((h) => [h.source, h]))
-              const sel = chosen?.id === s.id
-              return (
-                <Fragment key={s.id}>
-                  <tr className={`row${sel ? ' sel' : ''}`} data-subject={s.id} onClick={() => choose(s.id)}>
-                    <td className="num">
-                      <Num n={s.number} />
-                    </td>
-                    <td className="lbl">
-                      <span className="w">
-                        <span className="ws">{s.words.join(' · ')}</span>
-                      </span>
-                      <span className="t">
-                        <Badges live={s.live} fresh={s.fresh} checked={s.checks.length > 0} themes={s.themes.map(themeLabel)} />
-                        <span className="lst">{s.items[0].title}</span>
-                      </span>
-                      <span className="bar">
-                        {cols.map((c, j) => {
-                          const h = by.get(c.id)
-                          const gs = j > 0 && sideOf(cols[j - 1].lean) !== sideOf(c.lean) ? ' gs' : ''
-                          if (!h) return <span key={c.id} className={`cell${gs}`} title={`${placeOf(c.name, c.lean, c.setAside)} · n’en parle pas`} />
-                          return (
-                            <span
-                              key={c.id}
-                              className={`cell on${gs}${c.setAside ? ' offon' : ''}`}
-                              style={c.setAside ? undefined : fill(c.lean)}
-                              title={`${name(c.id)} · ${hour(h.published)} · ${h.title}`}
-                            />
-                          )
-                        })}
-                      </span>
-                    </td>
-                    <td className="n" title="le rang : le nombre de sources qui en parlent">
-                      {s.told}
-                      {s.aside > 0 && <span className="small muted">+{s.aside}</span>}
-                    </td>
-                  </tr>
-                  {!wide && sel && (
-                    <tr className="open">
-                      <td colSpan={3}>
-                        <Chosen subject={s} onOpen={() => openSubject(s.id)} />
+        // Wide, the rows scroll in a box of their own, about a screen tall: a hundred subjects don't push the
+        // rest of the page (« une seule source ») out of reach. Narrow, a row opens its subject under itself.
+        <div className={wide ? 'infos-rows' : undefined}>
+          <table className="infos-mos infos-list">
+            <tbody>
+              {listed.map((s) => {
+                const by = new Map(s.items.map((h) => [h.source, h]))
+                const sel = chosen?.id === s.id
+                return (
+                  <Fragment key={s.id}>
+                    <tr className={`row${sel ? ' sel' : ''}`} data-subject={s.id} onClick={() => choose(s.id)}>
+                      <td className="num">
+                        <Num n={s.number} />
+                      </td>
+                      <td className="lbl">
+                        <span className="w">
+                          <span className="ws">{s.words.join(' · ')}</span>
+                        </span>
+                        <span className="t">
+                          <Badges live={s.live} fresh={s.fresh} checked={s.checks.length > 0} themes={s.themes.map(themeLabel)} />
+                          <span className="lst">{s.items[0].title}</span>
+                        </span>
+                        <span className="bar">
+                          {cols.map((c, j) => {
+                            const h = by.get(c.id)
+                            const gs = j > 0 && sideOf(cols[j - 1].lean) !== sideOf(c.lean) ? ' gs' : ''
+                            if (!h) return <span key={c.id} className={`cell${gs}`} title={`${placeOf(c.name, c.lean, c.setAside)} · n’en parle pas`} />
+                            return (
+                              <span
+                                key={c.id}
+                                className={`cell on${gs}${c.setAside ? ' offon' : ''}`}
+                                style={c.setAside ? undefined : fill(c.lean)}
+                                title={`${name(c.id)} · ${hour(h.published)} · ${h.title}`}
+                              />
+                            )
+                          })}
+                        </span>
+                      </td>
+                      <td className="n" title="le rang : le nombre de sources qui en parlent">
+                        {s.told}
+                        {s.aside > 0 && <span className="small muted">+{s.aside}</span>}
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              )
-            })}
-          </tbody>
-        </table>
+                    {!wide && sel && (
+                      <tr className="open">
+                        <td colSpan={3}>
+                          <Chosen subject={s} onOpen={() => openSubject(s.id)} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <p className="infos-empty">Aucun sujet de vos thèmes pour le moment.</p>
       )}

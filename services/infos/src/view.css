@@ -411,7 +411,7 @@ mark.infos-q {
   align-self: center;
 }
 
-/* Two columns: the list on the left, narrow; the chosen subject on the right, sticky when it fits. */
+/* Two columns: the list on the left, narrow, its rows in a box of their own; the chosen subject on the right. */
 .infos-dash {
   display: grid;
   grid-template-columns: minmax(300px, 1fr) minmax(0, 1.9fr);
@@ -424,10 +424,12 @@ mark.infos-q {
 .infos-cur {
   min-width: 0;
 }
-/* Sticky only when it fits in the page (useFits): taller, it scrolls with the list, its end in reach. */
-.infos-cur.sticky {
-  position: sticky;
-  top: var(--s3);
+/* About a screen of rows, whatever the window: the list's head and key stay above and below it. */
+.infos-rows {
+  max-height: clamp(420px, calc(100vh - 340px), 820px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-bottom: 1px solid var(--rule);
 }
 .infos-side .seg button {
   padding: 0 var(--s2);
