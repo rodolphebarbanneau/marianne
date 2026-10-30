@@ -12,6 +12,10 @@ The engine, Claude Code, Codex or Mistral Vibe, works with your account at its m
 
 Marianne fetches public information (the news, the services' data) from its public sources, opens the formalities' websites in its browser, and downloads its updates from GitHub. These requests carry nothing personal, except what you agreed to: the part of your profile a service asked you for, like your license plate for the tolls, and what Marianne fills in for you on a website, with your approval.
 
+## Community services
+
+A community service (a .3615 file, or the community catalogue once it opens) runs apart: it sees neither your folders, nor your documents, nor your identifiers, connects only to the sites it declares, and knows only the commune of your address. « ✓ validé » (validated) means the project reviewed this version; « non validé » (not validated) and « hors catalogue » (outside the catalogue), that no one did: add only what you know. When Marianne uses its tools in a folder, it sends them what they need to answer you.
+
 ## Backing up
 
 In Réglages › Place et emplacement (Settings › Space and location):

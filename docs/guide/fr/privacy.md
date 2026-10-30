@@ -12,6 +12,10 @@ Le moteur, Claude Code, Codex ou Mistral Vibe, travaille avec votre compte chez 
 
 Marianne va chercher l’information publique (les actualités, les données des services) à ses sources publiques, ouvre les sites des démarches dans son navigateur, et télécharge ses mises à jour sur GitHub. Ces demandes ne portent rien de personnel, sauf ce que vous avez accepté : la partie de votre profil qu’un service vous a demandée, comme votre plaque pour le péage, et ce que Marianne remplit pour vous sur un site, avec votre accord.
 
+## Les services de la communauté
+
+Un service de la communauté (un fichier .3615, ou le catalogue de la communauté quand il ouvrira) tourne à part : il ne voit ni vos dossiers, ni vos documents, ni vos identifiants, ne se connecte qu’aux sites qu’il annonce, et ne connaît que la commune de votre adresse. « ✓ validé » veut dire que le projet a relu cette version ; « non validé » et « hors catalogue », que personne ne l’a fait : n’ajoutez que ce que vous connaissez. Quand Marianne se sert de ses outils dans un dossier, elle leur envoie ce dont ils ont besoin pour vous répondre.
+
 ## Sauvegarder
 
 Dans Réglages › Place et emplacement :
