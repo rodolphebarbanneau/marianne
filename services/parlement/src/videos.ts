@@ -392,11 +392,10 @@ export interface PortalLive {
 export async function portalLives(http: Http, now = Date.now()): Promise<PortalLive[]> {
   const today = parisDay(new Date(now))
   const early = Number(parisTime(new Date(now).toISOString()).slice(0, 2)) < 6
-  const items = await searchVideos(http, { from: early ? addDays(today, -1) : today, to: today }, LIVE_CACHE_MS)
+  // The search lists a live only some time after it starts; the portal's live page leads to the main one at once. Both asked together.
+  const [items, main] = await Promise.all([searchVideos(http, { from: early ? addDays(today, -1) : today, to: today }, LIVE_CACHE_MS), mainLive(http)])
   // Not those announced for much later (the portal lists a video a little before its live starts).
   const started = items.filter((v) => !v.date || Date.parse(v.date) <= now + 30 * 60_000)
-  // The search lists a live only some time after it starts; the portal's live page leads to the main one at once.
-  const main = await mainLive(http)
   if (main && !started.some((v) => v.id === main)) started.push(liveItem(main))
   const found = await Promise.all(
     started.map(async (item): Promise<PortalLive[]> => {

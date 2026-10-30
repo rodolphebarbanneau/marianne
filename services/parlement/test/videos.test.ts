@@ -4,6 +4,7 @@ import {
   htmlLines,
   liveStreams,
   portalImage,
+  portalLives,
   readSmil,
   searchBoth,
   searchSenateVideos,
@@ -522,6 +523,23 @@ describe('a live at the Assemblée', () => {
     const http = portalToday({ diffusions: [] })
     await liveStreams(http, false, Date.parse('2026-10-31T00:30:00+01:00'))
     expect(http.asked.find((u) => u.includes('eventsearch'))).toContain('Date=30%2F10%2F2026-31%2F10%2F2026')
+  })
+
+  it('asks the portal’s live page along with its search, not once the search has answered', async () => {
+    const portal = portalToday({ diffusions: [] })
+    let answer = () => {}
+    const searched = new Promise<void>((resolve) => (answer = resolve))
+    // The search answers when the test says.
+    const http = {
+      async text(url: string) {
+        if (url.includes('eventsearch')) await searched
+        return portal.text(url)
+      }
+    }
+    const lives = portalLives(http, ON_AIR)
+    expect(portal.asked).toEqual(['https://videos.assemblee-nationale.fr/direct.php'])
+    answer()
+    expect((await lives).map((l) => l.item.id)).toEqual([LIVE_ID])
   })
 })
 
