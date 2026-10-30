@@ -450,17 +450,36 @@ export async function liveStreams(http: Http, upcoming = false, now = Date.now()
   if (api.status === 'rejected' && portal.status === 'rejected') throw api.reason
   const diffusions = api.status === 'fulfilled' ? (api.value.diffusions ?? []).filter((d) => d.liveUrl) : []
   const lives = portal.status === 'fulfilled' ? portal.value : []
-  const taken = new Set<PortalLive>()
-  const streams = diffusions.map((d) => {
-    const free = lives.filter((l) => !taken.has(l)).sort((a, b) => b.item.date.localeCompare(a.item.date))
-    const named = free.find((l) => meetingIdsOf(l.data).includes(d.reunionUid))
-    // On air: the portal's live on its channel. Announced: a live that names its meeting (started early).
-    const video = d.isLive ? (free.find((l) => l.stream.channel === channelOf(d)) ?? named) : named
-    if (video) taken.add(video)
-    return readStream(d, video)
-  })
+  const videos = matchLives(diffusions, lives)
+  const streams = diffusions.map((d) => readStream(d, videos.get(d)))
+  const taken = new Set(videos.values())
   streams.push(...lives.filter((l) => !taken.has(l)).map(portalStream))
   return streams.filter((s) => s.live || upcoming)
+}
+
+/**
+ * The portal video of each broadcast, the latest started first. The broadcasts on air take the live
+ * of their channel first; then those left, on air before announced ones, take a live that names
+ * their meeting (an announced one started early). In this order, whatever order the API lists them
+ * in: an announced broadcast listed first would otherwise take the channel's live through its
+ * meeting, and leave the one on air with the API's 30 seconds.
+ */
+function matchLives(diffusions: readonly RawStream[], lives: readonly PortalLive[]): Map<RawStream, PortalLive> {
+  const free = [...lives].sort((a, b) => b.item.date.localeCompare(a.item.date))
+  const found = new Map<RawStream, PortalLive>()
+  const take = (list: readonly RawStream[], fits: (d: RawStream, l: PortalLive) => boolean) => {
+    for (const d of list) {
+      const i = free.findIndex((l) => fits(d, l))
+      if (i >= 0) found.set(d, free.splice(i, 1)[0])
+    }
+  }
+  take(
+    diffusions.filter((d) => d.isLive),
+    (d, l) => !!channelOf(d) && l.stream.channel === channelOf(d)
+  )
+  const left = diffusions.filter((d) => !found.has(d))
+  take([...left.filter((d) => d.isLive), ...left.filter((d) => !d.isLive)], (d, l) => meetingIdsOf(l.data).includes(d.reunionUid))
+  return found
 }
 
 /** A broadcast of the Assemblée's API, with its portal video when found (its whole stream so far, its page, its meeting). */

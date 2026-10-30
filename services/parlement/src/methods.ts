@@ -100,7 +100,7 @@ export async function senateMeetings(ctx: Pick<ServiceContext, 'http' | 'log'>, 
  * sitting under way, the latest started, whatever meeting the chamber names: the Assemblée's API
  * names the day's first sitting all day long, the Sénat's none. A committee's shows the meeting the
  * Assemblée names, or at the Sénat the latest started of that committee. A broadcast whose meeting
- * the agenda doesn't have keeps the id it came with.
+ * the agenda doesn't have keeps the id it came with. Two for one meeting: the first with a video.
  */
 export function liveMeetings(meetings: Meeting[], streams: LiveStream[], now = Date.now()): Map<string, LiveStream> {
   const today = parisDay(new Date(now))
@@ -130,7 +130,11 @@ export function liveMeetings(meetings: Meeting[], streams: LiveStream[], now = D
       (sitting
         ? (latest(own.filter((m) => m.kind === 'sitting')) ?? named)
         : (named ?? (s.chamber === 'se' ? latest(own.filter((m) => m.kind !== 'sitting' && sameOrgan(m.organ, s.organ))) : undefined)))
-    found.set(shown?.id ?? s.id, s)
+    // Two broadcasts for one meeting (the API's and the portal's, when they couldn't be matched): the
+    // one with its video, the whole sitting so far, rather than the API's last 30 seconds.
+    const id = shown?.id ?? s.id
+    const before = found.get(id)
+    if (!before || (!before.video && s.video)) found.set(id, s)
   }
   return found
 }
