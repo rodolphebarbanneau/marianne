@@ -26,7 +26,17 @@ const SDK = dirname(dirname(fileURLToPath(import.meta.url)))
 /** What a service's main side may import of Marianne: her copies, in its sandbox. */
 export const MAIN_IMPORTS = ['@marianne/sdk', '@marianne/sdk/main', 'zod']
 /** What its view may import of Marianne, in its frame. */
-export const VIEW_IMPORTS = ['react', 'react/jsx-runtime', 'react-dom', 'react-dom/client', '@marianne/sdk', '@marianne/sdk/view', '@marianne/sdk/main', 'zod']
+export const VIEW_IMPORTS = [
+  'react',
+  'react/jsx-runtime',
+  'react-dom',
+  'react-dom/client',
+  '@marianne/sdk',
+  '@marianne/sdk/view',
+  '@marianne/sdk/media',
+  '@marianne/sdk/main',
+  'zod'
+]
 
 /** As Marianne reads a .3615 (apps/desktop/src/main/community/package.ts). */
 export const MAX_FILE_BYTES = 5 * 1024 * 1024

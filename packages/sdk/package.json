@@ -9,6 +9,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./main": "./src/main.ts",
+    "./media": "./src/media/index.ts",
     "./pack": "./scripts/pack.mjs",
     "./sync": "./src/sync.ts",
     "./testing": "./src/testing.ts",
@@ -23,6 +24,7 @@
   },
   "dependencies": {
     "fflate": "^0.8.3",
+    "hls.js": "^1.7.3",
     "vite": "^8.3.5"
   },
   "peerDependencies": {

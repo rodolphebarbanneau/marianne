@@ -43,6 +43,7 @@ const RUNTIME_MODULES: Record<string, string> = {
   'react-dom-client': 'react-dom/client',
   sdk: '@marianne/sdk',
   'sdk-view': '@marianne/sdk/view',
+  'sdk-media': '@marianne/sdk/media',
   'sdk-main': '@marianne/sdk/main',
   zod: 'zod'
 }

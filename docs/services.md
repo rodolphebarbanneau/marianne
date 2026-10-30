@@ -210,6 +210,38 @@ export function View() {
 - `Loading` (`label`, `progress` from 0 to 1, `detail`; `inline` for a part of a page), `Failure` (`title`, `error`, `retry`; `inline`), `Notice` (a note with its `action`): the states of a page, the same in every service (see [services/AGENTS.md](../services/AGENTS.md)). `useDebounced(value, ms)`, `useNow(everyMs)`.
 - `Spinner`, `Field`, `Modal`: the window's blocks (a `Modal` opens over the whole window, out of the screen's layout). Marianne's stylesheet styles them and the usual classes (`.card`, `.grid`, `.btn`, `.rows`, `.dim`…); a service's own styles go in a CSS file its view imports, with class names prefixed by its code (`.meteo-days`).
 
+### Media
+
+`@marianne/sdk/media` is Marianne's video player: an HLS stream (hls.js; a recording or a broadcast) with the controls over the picture. Its styles come with it (the module puts them in the page); it is a module of its own so that a view without video doesn't load hls.js.
+
+```tsx
+import { Player, type PlayerHandle } from '@marianne/sdk/media'
+
+;<Player
+  ref={player}
+  src={video.hls}
+  poster={video.poster}
+  start={params.t}
+  chapters={chapters} // { at, title, speaker?, depth }, ms from the start, in the agenda's order
+  gaps={suspensions}
+  clockStart={video.openedAt}
+  title={video.title}
+  badge="AN"
+  shareUrl={(at, clip) => portalUrl(video, at ?? clip?.from)}
+  onKeepClip={(clip) => keep(clip)}
+  onChapter={(c) => showInAgenda(c)}
+  pin={{ title: video.title, badge: 'AN', route: 'service/parlement', params: { video: video.id } }}
+/>
+```
+
+- **The bar**: play, ∓10 s, the volume, the time, DIRECT for a broadcast, what is said now (the deepest chapter's subject; `onChapter` on a click), then the options, the mini-player and fullscreen. The controls fade after 3 s without a move while it plays. A double click on a side of the picture is ∓10 s, in the middle fullscreen. Under 620px of width the volume and the mini-player go into the options; under 680px the subject goes.
+- **The track**: the agenda's top lines cut it, `gaps` are dark, `kept` clips a yellow line above it; hovered, the moment, its subject and its speaker. A broadcast's spans the sitting up to the live edge (live is taken from the playlist, `live` is a hint).
+- **The options**: the quality (hls.js's levels, or automatic), the speed (0.5 to 2×, back to normal for each video), the time read as the video's or, with `clockStart`, as the room's clock (Paris time), « garder un extrait » (with `onKeepClip`: the track becomes a magnifier around the clip, its strip under the picture; `snapClip` and `clipTitle` change what the chapters suggest), « partager le lien » (with `shareUrl`; `shareText` for « copier avec le titre »), picture-in-picture.
+- **The keyboard**, when the player has the focus, or nothing on the page has it: Space/K, ←/→ and J/L, ↑/↓, M, F, P, < >, 0–9, X, I/O while cutting, End for the live edge. A key it takes is `preventDefault`ed: a page's own shortcuts skip keys whose event says so.
+- **The mini-player**: with `pin` and a host that has one (`host.media`), the bar's key (P) hands the video to the app, which keeps playing it in a corner of the window, over any page; so does leaving the page while it plays. `pin.route` and `pin.params` bring the user back to it, with `t` (ms) to resume from. `MiniPlayer` is the app's side.
+- `PlayerHandle` (`ref`): `seek(ms, play?)`, `time()`, `play()`, `pause()`, `toLive()`. The player remembers the time's mode, the volume and the sound cut in the window's storage (`marianne.media`).
+- `.mp-badge[data-badge='…']` colours a badge (cyan by default).
+
 ## Registration
 
 A built-in service is a dependency of the app (`"@marianne/service-<code>": "*"` in the `devDependencies` of `apps/desktop/package.json`), listed in its two registries: `apps/desktop/src/main/host/registry.ts` (package.json and main) and `apps/desktop/src/renderer/src/host/registry.ts` (view and help). The build bundles it, and takes from it its sync job and the hosts the window may reach: nothing of it is loaded from disk at run time. The app's tests check that the dependencies and both registries agree.
@@ -245,7 +277,7 @@ A community service is the same package as a built-in one (the manifest, `main`,
 
 A `.3615` is a zip of the built service, its files at its root: `package.json` (the manifest), `main.js` and `view.js` (ES modules), and if it has them `view.css`, `help.md`, `README.md`. Nothing else: no folder, no other file, at most 5 MB. `marianne-pack` makes it from the service's package (see [services/AGENTS.md](../services/AGENTS.md#packaging-a-community-service)); the same sources give the same file, byte for byte.
 
-- `main.js` imports only `@marianne/sdk`, `@marianne/sdk/main` and `zod`; `view.js` only `react`, `react/jsx-runtime`, `react-dom`, `react-dom/client`, `@marianne/sdk`, `@marianne/sdk/view` (and the main side's two). Marianne gives her own copies: one React, one SDK, one zod.
+- `main.js` imports only `@marianne/sdk`, `@marianne/sdk/main` and `zod`; `view.js` only `react`, `react/jsx-runtime`, `react-dom`, `react-dom/client`, `@marianne/sdk`, `@marianne/sdk/view`, `@marianne/sdk/media` (and the main side's two). Marianne gives her own copies: one React, one SDK, one zod.
 - `marianne.tools` lists every tool the main side lends, by name and label: « avant d’ajouter » shows them, and a service whose code lends another, or under another label, doesn't start. Its code may not be the start of one of Marianne's tools' names (3615 READ would name its tools as `read_page` is).
 - `marianne.links` are pages on its own declared hosts, never on a host a built-in service reaches or opens nor on a public site Marianne opens herself (the sites of the content, the public sources); « avant d’ajouter » shows them. A link of Marianne's (an answer, a guide) that a community service claims doesn't open in it straight away: the user chooses, « ouvrir dans 3615 X » or « ouvrir dans votre navigateur ».
 - Its words are short and on one line each: its name at most 60 characters, its description 200, a tab's or a tool's label 48, a keyword 40 (`readManifest`): they go to lists, and to the engines.
