@@ -1,5 +1,16 @@
-import { readManifest, readTile, serviceCode, type ServiceTile, type SyncStatus } from './index'
-import type { Commune, HomeCommune, Leaning, ProfileField, ServiceContext, Vehicle } from './main'
+import {
+  foldText,
+  readManifest,
+  readTile,
+  serviceCode,
+  type Lean,
+  type NewsArticle,
+  type NewsReading,
+  type NewsSourceInfo,
+  type ServiceTile,
+  type SyncStatus
+} from './index'
+import type { Commune, HomeCommune, Leaning, ProfileField, ServiceContext, ServiceNews, Vehicle } from './main'
 
 /**
  * @marianne/sdk/testing: Marianne's part in a service's tests. `fakeContext` builds the context
@@ -22,8 +33,24 @@ export interface FakeContextOptions {
   communes?: Commune[]
   /** The commune of the user's address (none by default). */
   home?: HomeCommune | null
-  /** The profile fields the user granted, their vehicles, leaning and themes (given only when granted, as Marianne does). */
-  profile?: { granted?: ProfileField[]; vehicles?: Vehicle[]; leaning?: Leaning; themes?: string[] }
+  /** The profile fields the user granted, their vehicles, leaning, themes and news sources (given only when granted, as Marianne does). */
+  profile?: {
+    granted?: ProfileField[]
+    vehicles?: Vehicle[]
+    leaning?: Leaning
+    themes?: string[]
+    sources?: { accepted: string[]; sections?: Record<string, string[]>; leanings?: Record<string, Lean> }
+  }
+  /**
+   * What ctx.news gives a service that declares `"news": true`: the reading (by its options: `all`,
+   * a `day`), the catalogue, and the articles by headline id. `search` looks in the reading's items.
+   */
+  news?: {
+    read?: NewsReading | ((opts: { day?: string; all?: boolean }) => NewsReading)
+    sources?: NewsSourceInfo[]
+    articles?: Record<string, NewsArticle>
+    filtered?: boolean
+  }
 }
 
 export interface FakeContext {
@@ -73,10 +100,15 @@ export function fakeContext(pkg: unknown, options: FakeContextOptions = {}): Fak
       granted: () => profile.granted ?? [],
       vehicles: () => profile.vehicles ?? [],
       leaning: () => ((profile.granted ?? []).includes('opinions.leaning') ? (profile.leaning ?? null) : null),
-      themes: () => ((profile.granted ?? []).includes('opinions.themes') ? (profile.themes ?? []) : [])
+      themes: () => ((profile.granted ?? []).includes('opinions.themes') ? (profile.themes ?? []) : []),
+      sources: () =>
+        (profile.granted ?? []).includes('opinions.sources') && profile.sources
+          ? { accepted: [...profile.sources.accepted], sections: { ...(profile.sources.sections ?? {}) }, leanings: { ...(profile.sources.leanings ?? {}) } }
+          : null
     },
     sync: { status: () => sync, run: async () => {} }
   }
+  if (manifest.news) ctx.news = fakeNews(options.news ?? {}, (profile.granted ?? []).includes('opinions.sources'))
   return { ctx, urls, stored }
 }
 
@@ -89,4 +121,22 @@ export function checkTile(tile: unknown): ServiceTile | null {
   const read = readTile(tile)
   if (read.problems.length) throw new Error(`Marianne would change this tile:\n- ${read.problems.join('\n- ')}`)
   return read.tile
+}
+
+const EMPTY_READING: NewsReading = { items: [], subjects: [], failed: [], readAt: '1970-01-01T00:00:00.000Z' }
+
+function fakeNews(news: NonNullable<FakeContextOptions['news']>, granted: boolean): ServiceNews {
+  const read = async (opts: { day?: string; all?: boolean } = {}) =>
+    structuredClone(typeof news.read === 'function' ? news.read(opts) : (news.read ?? EMPTY_READING))
+  return {
+    filtered: () => news.filtered ?? granted,
+    read,
+    search: async (words, opts = {}) => {
+      const q = foldText(words.trim())
+      const items = (await read({ all: opts.all })).items.filter((i) => !q || foldText(i.title).includes(q))
+      return items.filter((i) => !opts.since || i.published >= opts.since).slice(0, opts.limit ?? 50)
+    },
+    article: async (id) => structuredClone(news.articles?.[id] ?? null),
+    sources: async () => structuredClone(news.sources ?? [])
+  }
 }

@@ -192,7 +192,9 @@ describe('search and order', () => {
     permissions: { profile: [], purpose: '' },
     tabs: [],
     icon: null,
-    tools: []
+    tools: [],
+    search: null,
+    news: false
   })
   const meteo = manifest('meteo', 'Météo', 'daily', ['pluie'])
   const carte = manifest('carte', 'Carte de France', 'territory')

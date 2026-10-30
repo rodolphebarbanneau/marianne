@@ -20,9 +20,35 @@ export interface ServiceFrame {
   setBadges(badges: Record<string, string>): void
   /** Where the view's tools go: the end of the tab bar, or of the header without tabs. */
   tools: HTMLElement | null
+  /** What is typed in the header's search field (a manifest with `search`), trimmed and debounced; '' without one. */
+  query: string
+  /** Fill the field (and the query at once); '' clears it. */
+  setQuery(text: string): void
+  /** The screen's own keys, shown in the bottom bar after Marianne's. */
+  setKeys(keys: ServiceKey[]): void
 }
 
-const NO_FRAME: ServiceFrame = { tabs: [], tab: '', open: () => undefined, subscribe: () => () => undefined, setBadges: () => undefined, tools: null }
+/** A key of the screen, as the bottom bar shows it: « ENVOI ouvrir le sujet 1 (Entrée) ». */
+export interface ServiceKey {
+  /** The Minitel key's name: ENVOI, SUITE, RETOUR, ANNULATION, CORRECTION, SOMMAIRE, REPETITION. */
+  key: string
+  /** What it does, lowercase: « ouvrir le sujet 1 ». */
+  what: string
+  /** The keyboard's: « Entrée », « ↓ », « 1…14 Entrée ». */
+  shortcut: string
+}
+
+const NO_FRAME: ServiceFrame = {
+  tabs: [],
+  tab: '',
+  open: () => undefined,
+  subscribe: () => () => undefined,
+  setBadges: () => undefined,
+  tools: null,
+  query: '',
+  setQuery: () => undefined,
+  setKeys: () => undefined
+}
 
 const FrameContext = createContext<ServiceFrame>(NO_FRAME)
 
@@ -61,4 +87,27 @@ export function useTabBadges(badges: Record<string, string>): void {
 export function ServiceTools({ children }: { children: ReactNode }) {
   const { tools } = useContext(FrameContext)
   return tools ? createPortal(children, tools) : null
+}
+
+/**
+ * The header's search field, for a manifest that declares `search`: what is typed (trimmed, after a
+ * pause; '' when empty), and ways to fill or clear it. « / » reaches it; Échap in it clears it. The
+ * query stays across tabs and goes when the user leaves the screen; the view decides what it filters.
+ */
+export function useSearch(): { query: string; set(text: string): void; clear(): void } {
+  const { query, setQuery } = useContext(FrameContext)
+  return { query, set: setQuery, clear: () => setQuery('') }
+}
+
+/**
+ * The screen's own keys in the bottom bar, after Marianne's ({ key: 'ENVOI', what: 'ouvrir le sujet 1',
+ * shortcut: 'Entrée' }). The bar only shows them: the view still listens to the keyboard itself.
+ */
+export function useKeys(keys: ServiceKey[]): void {
+  const { setKeys } = useContext(FrameContext)
+  const key = JSON.stringify(keys)
+  useEffect(() => {
+    setKeys(JSON.parse(key) as ServiceKey[])
+    return () => setKeys([])
+  }, [key, setKeys])
 }

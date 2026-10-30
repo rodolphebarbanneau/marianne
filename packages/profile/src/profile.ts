@@ -1,5 +1,5 @@
 import type { Site } from '@marianne/content'
-import type { DomainId, Leaning } from '@marianne/sdk'
+import type { DomainId, Lean, Leaning } from '@marianne/sdk'
 import { domainInfo } from './domains'
 
 /**
@@ -192,9 +192,9 @@ export interface Profile {
   /** Free notes for the assistant ("je suis malvoyant", "je travaille de nuit"…), sent as context. */
   notes: string
   /**
-   * What the user chose to say of their political leaning and of the themes that matter to them:
-   * optional, never inferred, never sent to the engines; a service reads it only when the user
-   * lets it (opinions.leaning, opinions.themes).
+   * What the user chose to say of their political leaning, of the themes that matter to them and of
+   * the news sources they read: optional, never inferred, never sent to the engines; a service reads
+   * it only when the user lets it (opinions.leaning, opinions.themes, opinions.sources).
    */
   opinions: Opinions
 }
@@ -203,6 +203,19 @@ export interface Opinions {
   leaning: Leaning
   /** THEMES ids (@marianne/sdk). */
   themes: string[]
+  /** The news sources they read; null: the defaults (every source, but regional ones of other regions). */
+  sources: NewsChoice | null
+}
+
+/**
+ * The user's choice among Marianne's news sources (news-sources.json): the ones set aside, the
+ * sections kept of a source (absent: all of them) and the colours they gave sources (only those
+ * they changed from Marianne's). A source that joins the list later is accepted.
+ */
+export interface NewsChoice {
+  refused: string[]
+  sections: Record<string, string[]>
+  leanings: Record<string, Lean>
 }
 
 export const EMPTY_PROFILE: Profile = {
@@ -237,7 +250,7 @@ export const EMPTY_PROFILE: Profile = {
   journal: [],
   procedures: {},
   notes: '',
-  opinions: { leaning: { assembly: [], senate: [] }, themes: [] }
+  opinions: { leaning: { assembly: [], senate: [] }, themes: [], sources: null }
 }
 
 /** A deadline as shown: computed or manual, with its status. */

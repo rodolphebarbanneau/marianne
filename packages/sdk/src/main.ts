@@ -1,7 +1,12 @@
 import type * as z from 'zod'
 import type {
   DomainId,
+  Lean,
   Leaning,
+  NewsArticle,
+  NewsHeadline,
+  NewsReading,
+  NewsSourceInfo,
   ProfileField,
   ServiceDeadline,
   ServiceImpl,
@@ -106,6 +111,30 @@ export interface ServiceProfile {
   leaning(): Leaning | null
   /** The themes that matter to them (THEMES ids); [] while locked or without opinions.themes granted. */
   themes(): string[]
+  /**
+   * The news sources they accept, the sections they keep (by source id; absent: all) and the
+   * colours they gave sources (only those they changed); null while locked or without
+   * opinions.sources granted.
+   */
+  sources(): { accepted: string[]; sections: Record<string, string[]>; leanings: Record<string, Lean> } | null
+}
+
+/**
+ * The headlines Marianne reads for a service that declares `"news": true`: it reaches no press site
+ * itself. With opinions.sources granted, only the user's accepted sources and sections (`all`: the
+ * set-aside ones too, marked); without it, every source of Marianne's list, unmarked.
+ */
+export interface ServiceNews {
+  /** The user's sources apply (opinions.sources granted); false: all of Marianne's. */
+  filtered(): boolean
+  /** The last 24 hours (or a day of the 7-day history, YYYY-MM-DD, Paris time): every title, and the subjects. */
+  read(opts?: { day?: string; all?: boolean }): Promise<NewsReading>
+  /** Headlines matching words over the last 7 days, most recent first. */
+  search(words: string, opts?: { since?: string; limit?: number; all?: boolean }): Promise<NewsHeadline[]>
+  /** For one headline on screen: its media and the start of its article (read once, then kept with it); null: nothing to read. */
+  article(id: string): Promise<NewsArticle | null>
+  /** The catalogue, to name and colour sources. */
+  sources(opts?: { all?: boolean }): Promise<NewsSourceInfo[]>
 }
 
 export interface ServiceContext {
@@ -121,6 +150,8 @@ export interface ServiceContext {
   profile: ServiceProfile
   /** The service's sync job: its last run, and a way to run it now. */
   sync: { status(): SyncStatus; run(): Promise<void> }
+  /** The headlines Marianne reads for it: present only when its manifest says `"news": true`. */
+  news?: ServiceNews
 }
 
 export interface ToolCall {

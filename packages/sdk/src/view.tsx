@@ -14,7 +14,7 @@ import { WaitContext } from './ui'
  */
 
 export * from './index'
-export { ServiceFrameProvider, ServiceTools, useTab, useTabBadges, type ServiceFrame } from './frame'
+export { ServiceFrameProvider, ServiceTools, useKeys, useSearch, useTab, useTabBadges, type ServiceFrame, type ServiceKey } from './frame'
 export { Failure, Field, floating, Loading, LoadingGate, Meter, Modal, Notice, Spinner, StickyPanel } from './ui'
 export { ICON_CELLS, Pixels, ServiceIcon, usePixelRatio } from './pixels'
 
@@ -35,8 +35,12 @@ export interface ServiceHost<M extends ServiceMethods = ServiceMethods> {
   home: { code: string; name: string; postcode: string; latitude?: number; longitude?: number } | null
   /** Hand a question to Marianne: a new folder, the question ready in the composer. */
   ask(text: string, page?: ShownPage): void
-  /** Another screen of the app, as in marianne: links ("settings/identity", "service/carte"). */
-  openRoute(route: string): void
+  /**
+   * Another screen of the app, as in marianne: links ("settings/identity", "service/carte"), with
+   * what it opens with: `openRoute('service/infos', { search: 'budget 2027' })` opens 3615 INFOS
+   * with its search field filled; "settings/identity#sources" scrolls Réglages to a section.
+   */
+  openRoute(route: string, params?: Record<string, string | number>): void
   /** A page in the system's browser. */
   openUrl(url: string): void
   copy(text: string, done?: string): void

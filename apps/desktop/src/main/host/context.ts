@@ -99,7 +99,7 @@ export function serviceContext(m: ServiceManifest, sync: ServiceSync, stored: ()
       const a = profile.get().address
       return a.inseeCode ? { code: a.inseeCode, name: a.city, postcode: a.postcode, latitude: a.lat, longitude: a.lon } : null
     },
-    profile: { granted: () => grantedFields(m), vehicles: () => vehicles(m), leaning: () => leaning(m), themes: () => themes(m) },
+    profile: { granted: () => grantedFields(m), vehicles: () => vehicles(m), leaning: () => leaning(m), themes: () => themes(m), sources: () => null },
     sync: { status: () => sync.status(), run: () => sync.run() }
   }
 }
