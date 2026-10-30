@@ -13,7 +13,7 @@ Don't worry, you'll type the passphrase only once per computer. After that, a PI
 
 Right after creating the archive, Marianne shows you its recovery key. If you forget your passphrase, it's the only way to open the archive. Copy or print it, and keep it somewhere else. Without the passphrase or the recovery key, nobody can open the archive again, not even us.
 
-You can make a new one in Réglages › Phrase de passe et code (Settings › Passphrase and PIN). The old one then stops working at once.
+You can make a new one in Réglages › Phrase de passe et code (Settings › Passphrase and PIN), giving your passphrase again. The old one then stops working at once.
 
 ## The PIN for this computer
 

@@ -17,7 +17,7 @@ Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à dr
 ## Les pages
 
 - **Démarches** : les domaines de votre vie administrative (impôts, santé, logement, famille…), chacun avec sa page et ses démarches guidées, étape par étape.
-- **Services** : les codes 3615, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. Tapez un code ou des mots dans la barre 3615 pour en trouver un. L’étoile épingle un service en tuile, en haut de « mes services », avec ce qu’il a de neuf pour vous : la météo du jour, un péage à payer. « + découvrir » propose les services officiels que vous n’avez pas encore ajoutés, puis ceux de la communauté. Avant d’ajouter un service, Marianne vous montre ce qu’il pourra faire. Un service qui a besoin d’une partie de votre profil, comme votre plaque d’immatriculation pour le péage, vous le demande d’abord.
+- **Services** : les codes 3615, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. 3615 METEO donne le temps de votre commune : maintenant, la pluie des deux prochaines heures, 48 heures, 7 et 15 jours, avec l’air, l’UV et les pollens. Tapez un code ou des mots dans la barre 3615 pour en trouver un. L’étoile épingle un service en tuile, en haut de « mes services », avec ce qu’il a de neuf pour vous : la météo du jour, un péage à payer. « + découvrir » propose les services officiels que vous n’avez pas encore ajoutés, puis ceux de la communauté. Avant d’ajouter un service, Marianne vous montre ce qu’il pourra faire. Un service qui a besoin d’une partie de votre profil, comme votre plaque d’immatriculation pour le péage, vous le demande d’abord.
 
 ## Les infos
 
