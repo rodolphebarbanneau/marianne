@@ -53,6 +53,7 @@ import type {
   MemberProfile,
   MemberVote,
   Mine,
+  Representatives,
   Position,
   ParlementMethods,
   Passage,
@@ -199,7 +200,7 @@ interface Cache {
   byKey: Record<Chamber, Map<number, MemberRow>>
 }
 
-export function createMethods(ctx: ServiceContext, index: ParliamentIndex): ServiceImpl<ParlementMethods> {
+export function createMethods(ctx: ServiceContext, index: ParliamentIndex): ServiceImpl<ParlementMethods> & { representatives(): Promise<Representatives> } {
   /** Why the last run couldn't start, when the host's status can't say (no job built…). */
   let failure = ''
   const caches = new WeakMap<DatabaseSync, Cache>()
@@ -264,11 +265,13 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
     }
   }
 
-  async function mine(): Promise<Mine> {
-    const leaning = ctx.profile.leaning()
-    const opinions = { leaning: leaning ? { an: leaning.assembly, se: leaning.senate } : null, themes: ctx.profile.themes() }
+  /**
+   * The user's deputies and senators, from their address alone: the tile needs nothing more, and
+   * doesn't read their opinions (reading them is noted in Réglages › Identité).
+   */
+  async function representatives(): Promise<Representatives> {
     const home = ctx.home()
-    if (!home) return { commune: null, deputies: [], exact: false, senators: [], ...opinions }
+    if (!home) return { commune: null, deputies: [], exact: false, senators: [] }
     db()
     // The geo connection names the département; without it, the INSEE code tells it.
     const commune = await ctx.geo.getCommune(home.code).catch(() => null)
@@ -293,9 +296,15 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
       commune: { name: commune?.name ?? home.name, code: home.code, department, departmentName: commune?.departmentName ?? senators[0]?.data.department ?? '' },
       deputies: deputies.map(memberCard),
       exact: exact && deputies.length === 1,
-      senators: senators.map(memberCard),
-      ...opinions
+      senators: senators.map(memberCard)
     }
+  }
+
+  /** « vos élus »: the user's deputies and senators, and their opinions when they let the service read them. */
+  async function mine(): Promise<Mine> {
+    const leaning = ctx.profile.leaning()
+    const opinions = { leaning: leaning ? { an: leaning.assembly, se: leaning.senate } : null, themes: ctx.profile.themes() }
+    return { ...(await representatives()), ...opinions }
   }
 
   function profileOf(opened: DatabaseSync, row: MemberRow): MemberProfile {
@@ -439,6 +448,7 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
     },
 
     mine,
+    representatives,
 
     members: (query) => findMembers(db(), { ...query, limit: Math.min(query.limit ?? 1000, 1000) }).map(memberCard),
 

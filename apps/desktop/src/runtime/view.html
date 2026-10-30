@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="x-dns-prefetch-control" content="off" />
+    <!-- The service's bare imports, resolved to Marianne's own modules (one React, one SDK, one zod). -->
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "./react.js",
+          "react/jsx-runtime": "./react-jsx-runtime.js",
+          "react-dom": "./react-dom.js",
+          "react-dom/client": "./react-dom-client.js",
+          "@marianne/sdk": "./sdk.js",
+          "@marianne/sdk/view": "./sdk-view.js",
+          "@marianne/sdk/main": "./sdk-main.js",
+          "zod": "./zod.js"
+        }
+      }
+    </script>
+    <title>Marianne</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./view.tsx"></script>
+  </body>
+</html>

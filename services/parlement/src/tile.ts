@@ -6,7 +6,6 @@ import {
   TILE_LIMITS,
   type PaletteColor,
   type PixelArt,
-  type ServiceImpl,
   type ServiceTile,
   type SyncProgress,
   type SyncStatus,
@@ -17,7 +16,7 @@ import { liveMeetings, todayStreams } from './methods'
 import { all, getMember, groupRecords, listGroups, meetingsBetween, one, votesOf } from './queries'
 import type { ParliamentIndex } from './store'
 import { addDays, parisDay } from './time'
-import type { Chamber, LiveStream, Mine, ParlementMethods } from './types'
+import type { Chamber, LiveStream, Representatives } from './types'
 
 /**
  * 3615 PARLEMENT's tile on the Services page: the public ballots of the last day that had some,
@@ -274,7 +273,7 @@ export function ballotDay(db: DatabaseSync, upTo: string, chamber?: Chamber): Ba
  * day the screen's "vos élus" shows them for. A week would mix sittings of every kind; a day says
  * whether they were there. A vote by proxy counts; a non-voting member (presiding) doesn't.
  */
-export function deputyVotes(db: DatabaseSync, mine: Mine, figure: BallotDay | null, today: string): TileFacts['deputy'] {
+export function deputyVotes(db: DatabaseSync, mine: Representatives, figure: BallotDay | null, today: string): TileFacts['deputy'] {
   if (!mine.exact) return mine.deputies.length > 1 ? 'unsure' : null
   const deputy = mine.deputies[0]
   const row = getMember(db, 'an', deputy.id)
@@ -294,14 +293,18 @@ function within<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
 }
 
 /** The tile, from the index, the user's address and the portals; without the index or the network, what can be said. */
-export async function parlementTile(ctx: ServiceContext, index: ParliamentIndex, methods: ServiceImpl<ParlementMethods>): Promise<ServiceTile> {
+export async function parlementTile(
+  ctx: ServiceContext,
+  index: ParliamentIndex,
+  methods: { representatives(): Promise<Representatives> }
+): Promise<ServiceTile> {
   const today = parisDay()
   const home: HomeCommune | null = ctx.home()
   const [streams, mine] = await Promise.all([
     within(todayStreams(ctx), LIVE_WAIT_MS, []).then((found) => found.filter((s) => s.live)),
     home && index.open()
       ? Promise.resolve()
-          .then(() => methods.mine())
+          .then(() => methods.representatives())
           .catch((err: unknown) => {
             ctx.log.warn('tile, the user’s deputy:', (err as Error).message)
             return null

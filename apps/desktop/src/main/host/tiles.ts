@@ -75,24 +75,42 @@ export class TileHost extends EventEmitter {
     return out
   }
 
-  /** Ask a service's tile again at the next look, or every one's (the address changed, a permission was given). */
-  invalidate(id?: string): void {
-    // What a service writes while its own tile is being made (a cache) doesn't make that tile stale.
-    if (id && this.running.has(id)) return
+  /**
+   * Ask a service's tile again at the next look, or every one's (the address changed, a permission
+   * was given). `own`: the service wrote it itself; what it writes while its tile is being made (a
+   * cache) doesn't make that tile stale, while a change from elsewhere then (the user's, on its
+   * screen) asks it again once it is done.
+   */
+  invalidate(id?: string, own = false): void {
+    if (id && this.running.has(id)) {
+      if (!own) this.dirty.add(id)
+      return
+    }
     if (id) this.versions.set(id, (this.versions.get(id) ?? 0) + 1)
     else this.version++
   }
 
-  /** Forget what is held in memory (the account was locked: the next one has its own tiles). */
+  /**
+   * Forget what is held in memory (the account was locked: the next one has its own tiles). A tile
+   * still being made then is dropped when it comes: it was the last account's.
+   */
   clear(): void {
+    this.generation++
     this.kept.clear()
     this.asked.clear()
     this.errors.clear()
     this.failures.clear()
+    this.running.clear()
+    this.dirty.clear()
     this.version = 0
     this.versions.clear()
     this.askedAt.clear()
   }
+
+  /** Bumped by `clear`: what an ask begun before brings back belongs to the account that was open. */
+  private generation = 0
+  /** Changed from elsewhere while their tile was being made: asked again once it is done. */
+  private dirty = new Set<string>()
 
   /**
    * What tiles are worth: bumped for all of them, or one, by `invalidate`. A tile asked at an older
@@ -127,6 +145,9 @@ export class TileHost extends EventEmitter {
 
   private async ask(source: TileSource): Promise<void> {
     const id = source.manifest.id
+    // The account's, captured now: the answer goes to it, or nowhere if it was locked meanwhile.
+    const generation = this.generation
+    const store = this.store()
     this.running.add(id)
     this.asked.set(id, this.now())
     this.askedAt.set(id, this.mark(id))
@@ -139,22 +160,27 @@ export class TileHost extends EventEmitter {
           timer = setTimeout(() => reject(new Error(`no tile after ${TILE_TIMEOUT_MS / 1000} s`)), TILE_TIMEOUT_MS)
         })
       ])
+      if (generation !== this.generation) return
       const { tile, problems } = readTile(raw)
       if (problems.length) this.log.warn(`Tile of 3615 ${id.toUpperCase()}: ${problems.join('; ')}`)
       const kept = { tile, at: new Date(this.now()).toISOString() }
       this.kept.set(id, kept)
       this.errors.delete(id)
       this.failures.delete(id)
-      this.store()?.put(id, kept)
+      store?.put(id, kept)
     } catch (err) {
+      if (generation !== this.generation) return
       const message = (err as Error).message
       this.log.warn(`Tile of 3615 ${id.toUpperCase()}:`, message)
       this.errors.set(id, message)
       this.failures.set(id, (this.failures.get(id) ?? 0) + 1)
     } finally {
       clearTimeout(timer)
-      this.running.delete(id)
-      this.emit('change')
+      if (generation === this.generation) {
+        this.running.delete(id)
+        if (this.dirty.delete(id)) this.versions.set(id, (this.versions.get(id) ?? 0) + 1)
+        this.emit('change')
+      }
     }
   }
 }

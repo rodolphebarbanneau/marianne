@@ -119,7 +119,13 @@ export function CatalogueTable({
         </thead>
         <tbody>
           {rows.slice(0, shown).map((l) => (
-            <tr key={l.code} onClick={() => onReview(l)}>
+            <tr
+              key={l.code}
+              tabIndex={0}
+              aria-label={`3615 ${l.code.toUpperCase()} : avant d’ajouter`}
+              onClick={() => onReview(l)}
+              onKeyDown={(e) => e.target === e.currentTarget && e.key === 'Enter' && onReview(l)}
+            >
               <td>
                 <span className="tsvc">
                   <ServiceIcon icon={l.icon} size="small" />
@@ -142,7 +148,7 @@ export function CatalogueTable({
                   <span className="small muted">version {l.version}</span>
                 </span>
               </td>
-              <td className="dim" title={l.entry ? shortDate(l.entry.published) : undefined}>
+              <td className="dim" title={l.entry ? shortDate(`${l.entry.published}T12:00:00`) : undefined}>
                 {l.entry ? dayMonth(l.entry.published) : ''}
               </td>
               <td>

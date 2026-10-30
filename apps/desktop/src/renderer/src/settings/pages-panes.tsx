@@ -10,20 +10,22 @@ import { useServices } from '../host'
 
 /** My services: on or off, pinned, what they reach and read, their offline data; a way to remove them. */
 export function ServicesPane() {
-  const { settings, setSettings, goPage } = useApp()
+  const { settings, goPage } = useApp()
   const all = useServices()
   const services = sortServices(all.filter((s) => s.added))
   const others = all.length - services.length
   const [error, setError] = useState('')
+  // A community service's files are this computer's: removing it is asked twice.
+  const [confirming, setConfirming] = useState('')
   if (!settings) return null
-  const { pinned, disabled } = settings.services
-  const toggle = (list: string[], id: string, on: boolean) => (on ? [...new Set([...list, id])] : list.filter((x) => x !== id))
+  const { disabled } = settings.services
   const sync = (s: ServiceState) => {
     setError('')
     void api.syncService(s.manifest.id).catch((err) => setError(errorText(err)))
   }
   const remove = (s: ServiceState) => {
     setError('')
+    setConfirming('')
     void api.removeService(s.manifest.id).catch((err) => setError(errorText(err)))
   }
 
@@ -46,7 +48,7 @@ export function ServicesPane() {
                     type="checkbox"
                     checked={!disabled.includes(m.id)}
                     disabled={!s.available}
-                    onChange={(e) => void setSettings({ services: { disabled: toggle(disabled, m.id, !e.target.checked) } })}
+                    onChange={(e) => void api.switchService(m.id, e.target.checked)}
                   />
                   <span className="code">{serviceCode(m)}</span> <span className="hi">{m.name}</span>
                 </label>
@@ -72,7 +74,7 @@ export function ServicesPane() {
               <span>
                 <button
                   className={`star${s.pinned ? ' on' : ''}`}
-                  onClick={() => void setSettings({ services: { pinned: toggle(pinned, m.id, !s.pinned) } })}
+                  onClick={() => void api.pinService(m.id, !s.pinned)}
                   title={s.pinned ? 'désépingler' : 'épingler en tuile'}
                   aria-pressed={s.pinned}
                 >
@@ -84,9 +86,25 @@ export function ServicesPane() {
                     mettre à jour
                   </button>
                 )}{' '}
-                <button className="link small" onClick={() => remove(s)} title="il revient dans « découvrir », sur la page Services">
-                  retirer
-                </button>
+                {confirming === m.id ? (
+                  <span className="small">
+                    effacer ses fichiers de cet ordinateur, pour tous ses comptes ?{' '}
+                    <button className="link bad" onClick={() => remove(s)}>
+                      effacer
+                    </button>{' '}
+                    <button className="link" onClick={() => setConfirming('')}>
+                      non
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    className="link small"
+                    onClick={() => (s.builtIn ? remove(s) : setConfirming(m.id))}
+                    title={s.builtIn ? 'il revient dans « découvrir », sur la page Services' : 'ses fichiers sont effacés de cet ordinateur'}
+                  >
+                    retirer
+                  </button>
+                )}
               </span>
             </div>
           )

@@ -3,8 +3,8 @@ import { EventEmitter } from 'node:events'
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import { SERVICE_CODE, type ServiceTrust } from '@marianne/sdk'
-import type { CatalogueState, ServiceFileReview } from '../../shared/catalogue'
+import { SERVICE_CODE, type ServiceManifest, type ServiceTrust } from '@marianne/sdk'
+import type { CatalogueEntry, CatalogueState, ServiceFileReview } from '../../shared/catalogue'
 import { log } from '../log'
 import { verdictOf } from './catalogue'
 import { download, TooLarge } from './download'
@@ -41,12 +41,11 @@ export interface InstalledPackage {
   verdict: ServiceTrust
   /** When (ISO). */
   installedAt: string
-}
-
-interface InstalledRecord extends Omit<InstalledPackage, 'dir'> {
-  /** The SHA-256 of each file written. */
+  /** The SHA-256 of each file written: checked again before it runs. */
   files: Record<string, string>
 }
+
+type InstalledRecord = Omit<InstalledPackage, 'dir'>
 
 interface Ticket {
   path: string
@@ -61,6 +60,8 @@ export interface CommunityOptions {
   dir: string
   /** The codes of the services built into Marianne: no file may take one. */
   reserved: ReadonlySet<string>
+  /** The hosts whose links are Marianne's (her services', her public sites'): no community service's link may be on one. */
+  protectedHosts?: () => ReadonlySet<string>
   /** The catalogue in use, for the verdicts. */
   catalogue: () => Pick<CatalogueState, 'entries' | 'withdrawn'>
   userAgent: () => string
@@ -104,8 +105,23 @@ const refusedReview = (fileName: string, size: number, sha: string, problems: st
   verdict: 'refused',
   problems,
   sync: false,
-  tools: []
+  tools: [],
+  links: []
 })
+
+const sorted = (list: readonly string[]) => [...list].sort().join('\n')
+
+/** What of a catalogue entry a downloaded file's manifest doesn't say the same (English, for the log). */
+export function manifestDiffers(m: ServiceManifest, e: Pick<CatalogueEntry, 'name' | 'hosts' | 'connections' | 'reads' | 'tools' | 'links'>): string[] {
+  const differs: string[] = []
+  if (m.name.trim() !== e.name.trim()) differs.push('name')
+  if (sorted(m.hosts) !== sorted(e.hosts)) differs.push('hosts')
+  if (sorted(m.connections) !== sorted(e.connections)) differs.push('connections')
+  if (sorted(m.permissions.profile) !== sorted(e.reads)) differs.push('reads')
+  if (sorted(m.tools.map((t) => t.label)) !== sorted(e.tools)) differs.push('tools')
+  if (sorted(m.links) !== sorted(e.links)) differs.push('links')
+  return differs
+}
 
 export class CommunityPackages extends EventEmitter {
   private readonly tickets = new Map<string, Ticket>()
@@ -216,6 +232,9 @@ export class CommunityPackages extends EventEmitter {
       if (unpacked instanceof PackageRefused) throw new Error(`Le fichier du catalogue est refusé. ${unpacked.message}`)
       if (unpacked.manifest.id !== entry.code || unpacked.manifest.version !== entry.version)
         throw new Error(this.mismatch(entry.code, `the file holds ${unpacked.manifest.id} ${unpacked.manifest.version}`))
+      // What the user reviewed is the entry: the file says the same, or isn't added.
+      const differs = manifestDiffers(unpacked.manifest, entry)
+      if (differs.length) throw new Error(this.mismatch(entry.code, `its manifest differs from the entry: ${differs.join(', ')}`))
       return this.write(unpacked, sha)
     })
   }
@@ -277,6 +296,7 @@ export class CommunityPackages extends EventEmitter {
       problems: [],
       sync: files.has('sync.js'),
       tools: manifest.tools.map((t) => t.label),
+      links: manifest.links,
       ...(entry ? { entry } : {}),
       ...(installed ? { installed } : {}),
       ...(reason ? { withdrawnReason: reason } : {})
@@ -286,7 +306,7 @@ export class CommunityPackages extends EventEmitter {
   /** The service in a file's bytes, or why it is refused; an unexpected error refuses it too (and goes to the log). */
   private unpack(bytes: Uint8Array): UnpackedService | PackageRefused {
     try {
-      return unpackService(bytes, { reserved: this.opts.reserved })
+      return unpackService(bytes, { reserved: this.opts.reserved, protectedHosts: this.opts.protectedHosts?.() })
     } catch (err) {
       if (err instanceof PackageRefused) return err
       this.log.warn('Community services: a .3615 file could not be read:', err instanceof Error ? err.message : String(err))
@@ -340,7 +360,15 @@ export class CommunityPackages extends EventEmitter {
       this.log.error(`Community services: ${code} ${manifest.version} not written:`, err instanceof Error ? err.message : String(err))
       throw new Error(`3615 ${code.toUpperCase()} n’a pas pu être enregistré sur cet ordinateur.`)
     }
-    const installed: InstalledPackage = { code, version: record.version, dir: target, sha256: sha, verdict, installedAt: record.installedAt }
+    const installed: InstalledPackage = {
+      code,
+      version: record.version,
+      dir: target,
+      sha256: sha,
+      verdict,
+      installedAt: record.installedAt,
+      files: record.files
+    }
     this.log.info(`Community services: ${code} ${record.version} added (${verdict}, ${sha})`)
     this.emit('installed', installed)
     return installed
@@ -356,7 +384,14 @@ export class CommunityPackages extends EventEmitter {
       if (typeof r.sha256 !== 'string' || !SHA256.test(r.sha256) || !TRUSTS.includes(r.verdict as ServiceTrust) || typeof r.installedAt !== 'string')
         return null
       if (!['package.json', 'main.js', 'view.js'].every((name) => existsSync(join(dir, name)))) return null
-      return { code, version: r.version, dir, sha256: r.sha256, verdict: r.verdict as ServiceTrust, installedAt: r.installedAt }
+      const files = r.files
+      if (
+        !files ||
+        typeof files !== 'object' ||
+        !Object.entries(files).every(([name, hash]) => typeof hash === 'string' && SHA256.test(hash) && /^[\w.-]+$/.test(name))
+      )
+        return null
+      return { code, version: r.version, dir, sha256: r.sha256, verdict: r.verdict as ServiceTrust, installedAt: r.installedAt, files: { ...files } }
     } catch {
       return null
     }

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
 /**
@@ -32,13 +32,48 @@ function useLater(ms: number): boolean {
 /** "les prévisions" → "les prévisions…". */
 const coming = (label: string) => (/[….]$/.test(label) ? label : `${label}…`)
 
-const CELLS = Array.from({ length: 24 }, (_, i) => i)
+/** A meter's cells: as many as the lock screen's opening bar. */
+const METER_CELLS = 32
+/** While nothing says how far it is, one more cell lights at each step… */
+const METER_STEP_MS = 70
+/** …and the full bar holds this many steps before it starts again. */
+const METER_HOLD = 4
+
+const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+
+/**
+ * A bar of mosaic cells, as the lock screen's opening bar: lit to `share` (0 to 1) when it is
+ * known, the next cell blinking; when it isn't, lit one cell after another, held full a moment, and
+ * again, a Minitel's way of saying it is at work. A cell is on or off: nothing slides or fades.
+ */
+export function Meter({ share, cells = METER_CELLS }: { share?: number | null; cells?: number }) {
+  const known = typeof share === 'number' && Number.isFinite(share)
+  const [step, setStep] = useState(0)
+  useEffect(() => {
+    if (known || reducedMotion()) return
+    const t = setInterval(() => setStep((n) => (n + 1) % (cells + METER_HOLD)), METER_STEP_MS)
+    return () => clearInterval(t)
+  }, [known, cells])
+  const lit = known ? Math.round(Math.max(0, Math.min(1, share)) * cells) : Math.min(step, cells)
+  return (
+    <span
+      className="meter"
+      style={{ gridTemplateColumns: `repeat(${cells}, minmax(0, 1fr))` }}
+      {...(known ? { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': Math.round(Math.max(0, Math.min(1, share)) * 100) } : {})}
+      aria-hidden={known ? undefined : true}
+    >
+      {Array.from({ length: cells }, (_, i) => (
+        <i key={i} className={i < lit ? 'on' : i === lit ? 'on now' : undefined} />
+      ))}
+    </span>
+  )
+}
 
 /**
  * What a page, a tab or a pane shows while its content comes: a box in the middle of the space it
- * is given, saying what is coming (`label`, "les prévisions de Bordeaux"), with a bar (filled to
- * `progress`, 0 to 1, when the share is known; moving otherwise) and a line of `detail`. It
- * appears after a moment, so a quick answer doesn't flash it. `inline`: one line instead, for a
+ * is given, saying what is coming (`label`, "les prévisions de Bordeaux"), with a Meter (lit to
+ * `progress`, 0 to 1, when the share is known; cell after cell otherwise) and a line of `detail`.
+ * It appears after a moment, so a quick answer doesn't flash it. `inline`: one line instead, for a
  * part of a page already shown (a list in a card).
  */
 export function Loading({ label, progress, detail, inline }: { label?: string; progress?: number | null; detail?: string; inline?: boolean }) {
@@ -51,7 +86,6 @@ export function Loading({ label, progress, detail, inline }: { label?: string; p
     )
   const known = typeof progress === 'number' && Number.isFinite(progress)
   const share = known ? Math.max(0, Math.min(1, progress)) : 0
-  const lit = Math.round(share * CELLS.length)
   return (
     <div className="state" role="status" aria-busy="true">
       {shown && (
@@ -61,14 +95,7 @@ export function Loading({ label, progress, detail, inline }: { label?: string; p
             {known && <span className="small">{Math.round(share * 100)} %</span>}
           </span>
           <span className="state-what">{coming(label ?? 'un instant')}</span>
-          <span
-            className={`state-bar${known ? '' : ' moving'}`}
-            {...(known ? { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': Math.round(share * 100) } : {})}
-          >
-            {CELLS.map((i) => (
-              <i key={i} className={known && i < lit ? 'on' : undefined} style={{ animationDelay: `${i * 55}ms` }} />
-            ))}
-          </span>
+          <Meter share={known ? share : null} />
           {detail && <span className="small dim">{detail}</span>}
         </div>
       )}
@@ -140,9 +167,19 @@ export const floating = () => document.getElementById('root') ?? document.body
 /**
  * A dialog over the window. Its buttons close it, and échap like its cancel button; a click beside
  * it doesn't, so a stray click loses nothing typed in it. `wide`: for a list or a review that needs
- * the room (760 pixels rather than 580).
+ * the room (760 pixels rather than 580). It takes the focus when it opens (the keys are then its
+ * own, not those of a field behind it) and gives it back when it closes.
  */
 export function Modal({ children, onClose, wide, label }: { children: ReactNode; onClose?: () => void; wide?: boolean; label?: string }) {
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    // The dialog itself, not its first button: Enter is then its own action, not that button's.
+    if (!box.current?.contains(document.activeElement)) box.current?.focus({ preventScroll: true })
+    return () => {
+      if (before?.isConnected) before.focus({ preventScroll: true })
+    }
+  }, [])
   useEffect(() => {
     if (!onClose) return
     const key = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -151,7 +188,7 @@ export function Modal({ children, onClose, wide, label }: { children: ReactNode;
   }, [onClose])
   return createPortal(
     <div className="overlay">
-      <div className={`modal${wide ? ' wide' : ''}`} role="dialog" aria-modal="true" aria-label={label}>
+      <div ref={box} className={`modal${wide ? ' wide' : ''}`} role="dialog" aria-modal="true" aria-label={label} tabIndex={-1}>
         {children}
       </div>
     </div>,

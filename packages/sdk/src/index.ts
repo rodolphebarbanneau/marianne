@@ -199,6 +199,15 @@ export class ManifestError extends Error {
   override name = 'ManifestError'
 }
 
+/** How long a manifest's words may be: they show in Marianne's lists, and go to the engines. */
+export const MANIFEST_LIMITS = { name: 60, description: 200, label: 48, keyword: 40, purpose: 200 } as const
+
+const code = (n: number) => String.fromCharCode(n)
+/** Control characters and line separators: a manifest's words are single lines. */
+const NOT_A_LINE = new RegExp(`[${code(0)}-${code(0x1f)}${code(0x7f)}${code(0x2028)}${code(0x2029)}]`)
+/** One line of text, not empty, within `max` characters. */
+const isLine = (v: unknown, max: number): v is string => typeof v === 'string' && !!v.trim() && v.length <= max && !NOT_A_LINE.test(v)
+
 const HOST = /^(?:[a-z0-9-]+\.)+[a-z]{2,}$/
 const TAB_ID = /^[a-z][a-z0-9-]*$/
 /** A tool's name within its service: engines see it as "<code>_<name>". */
@@ -217,21 +226,29 @@ export function readManifest(pkg: unknown): ServiceManifest {
   const code = m.code as string
   if (p.name !== SERVICE_PACKAGE_PREFIX + code) fail(`the package must be named ${SERVICE_PACKAGE_PREFIX}${code}`)
   if (typeof p.version !== 'string') fail('no version')
-  for (const key of ['name', 'description'] as const) if (typeof m[key] !== 'string' || !m[key]?.trim()) fail(`"marianne.${key}" is missing`)
+  for (const key of ['name', 'description'] as const) {
+    if (typeof m[key] !== 'string' || !m[key]?.trim()) fail(`"marianne.${key}" is missing`)
+    if (!isLine(m[key], MANIFEST_LIMITS[key])) fail(`"marianne.${key}" must be one line of at most ${MANIFEST_LIMITS[key]} characters`)
+  }
   if (!SERVICE_CATEGORIES.some((c) => c.id === m.category)) fail(`unknown category "${m.category}"`)
   for (const key of ['keywords', 'connections', 'links'] as const)
     if (m[key] !== undefined && !isStrings(m[key])) fail(`"marianne.${key}" must be a list of strings`)
+  for (const k of m.keywords ?? [])
+    if (!isLine(k, MANIFEST_LIMITS.keyword)) fail(`keyword "${String(k).slice(0, 40)}" must be one line of at most ${MANIFEST_LIMITS.keyword} characters`)
   if (!isStrings(m.hosts) || !m.hosts.every((h) => HOST.test(h))) fail('"marianne.hosts" must list host names (api.example.fr)')
   for (const link of m.links ?? []) if (!/^https:\/\/[^/]+\//.test(link)) fail(`link "${link}" must be an https:// prefix ending with a path`)
   for (const d of m.domains ?? []) if (!(DOMAIN_IDS as readonly string[]).includes(d)) fail(`unknown domain "${d}"`)
   const permissions = m.permissions ?? { profile: [], purpose: '' }
   for (const f of permissions.profile ?? []) if (!(f in PROFILE_FIELDS)) fail(`unknown profile field "${f}"`)
   if (permissions.profile?.length && !permissions.purpose?.trim()) fail('"marianne.permissions.purpose" must say what the profile fields are for')
+  if (permissions.purpose && !isLine(permissions.purpose, MANIFEST_LIMITS.purpose))
+    fail(`"marianne.permissions.purpose" must be one line of at most ${MANIFEST_LIMITS.purpose} characters`)
   const tabs = m.tabs ?? []
   if (!Array.isArray(tabs) || tabs.length > MAX_TABS) fail(`"marianne.tabs" must list at most ${MAX_TABS} tabs`)
   for (const t of tabs) {
     if (typeof t?.id !== 'string' || !TAB_ID.test(t.id)) fail(`tab "${String(t?.id)}": its id must be lowercase letters, digits and hyphens`)
     if (typeof t.label !== 'string' || !t.label.trim()) fail(`tab "${t.id}" has no label`)
+    if (!isLine(t.label, MANIFEST_LIMITS.label)) fail(`tab "${t.id}": its label must be one line of at most ${MANIFEST_LIMITS.label} characters`)
   }
   if (new Set(tabs.map((t) => t.id)).size !== tabs.length) fail('two tabs have the same id')
   if (m.icon !== undefined) {
@@ -243,6 +260,7 @@ export function readManifest(pkg: unknown): ServiceManifest {
   for (const t of tools) {
     if (typeof t?.name !== 'string' || !TOOL_NAME.test(t.name)) fail(`tool "${String(t?.name)}": its name must be lowercase letters, digits and underscores`)
     if (typeof t.label !== 'string' || !t.label.trim()) fail(`tool "${t.name}" has no label`)
+    if (!isLine(t.label, MANIFEST_LIMITS.label)) fail(`tool "${t.name}": its label must be one line of at most ${MANIFEST_LIMITS.label} characters`)
   }
   if (new Set(tools.map((t) => t.name)).size !== tools.length) fail('two tools have the same name')
   const author = typeof p.author === 'string' ? p.author : (p.author?.name ?? '')
@@ -341,6 +359,11 @@ export interface ServiceState {
   builtIn: boolean
   /** A community service's standing, by the catalogue (see ServiceTrust); none for a built-in service. */
   trust?: ServiceTrust
+  /**
+   * A community service another account updated on this computer: the version this account
+   * reviewed. It stays off until this account reviews the one now here.
+   */
+  reviewedVersion?: string
   /** The profile fields it asks for, and the ones the user granted (null: not asked yet); the day it last read the user's opinions. */
   access: { asked: ProfileField[]; granted: ProfileField[] | null; readAt?: string }
 }

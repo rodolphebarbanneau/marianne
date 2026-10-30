@@ -7,8 +7,7 @@ import { BookIcon, BugIcon, CodeIcon, SparkIcon, TagIcon } from '../components/i
 import { Logo } from '../components/logo'
 import { Markdown } from '../components/markdown'
 import { Modal } from '../components/ui'
-import { useServices } from '../host'
-import { SERVICE_HELP } from '../host/registry'
+import { useServices, useServiceHelp } from '../host'
 import { api } from '../lib/api'
 import { useShortcutLabel } from './commands'
 import { useApp } from './context'
@@ -173,7 +172,7 @@ function MarianneGuide() {
  */
 function ServiceGuide({ state, onGeneral, onClose }: { state: ServiceState; onGeneral: () => void; onClose: () => void }) {
   const m = state.manifest
-  const help = SERVICE_HELP[m.id]?.trim()
+  const help = useServiceHelp(state)
   // Échap closes the guide alone, before the screen under it would go back to the Services.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -203,7 +202,8 @@ function ServiceGuide({ state, onGeneral, onClose }: { state: ServiceState; onGe
             <span className="small dim">{m.description}</span>
           </span>
         </div>
-        {help ? <Markdown source={help} /> : <p className="dim">{m.description}</p>}
+        {/* A community service's help is its own words: no token of the profile is ever shown in it. */}
+        {help ? <Markdown source={help} plain={!state.builtIn} /> : <p className="dim">{m.description}</p>}
         <div className="guide-cols">
           <section>
             <span className="label">Les touches</span>

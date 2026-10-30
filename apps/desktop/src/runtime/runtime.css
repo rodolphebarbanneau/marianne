@@ -1,0 +1,32 @@
+/* A community service's screen, in its own view over the window's content: Marianne's stylesheet,
+   as in the window, with what the screen changes. The window's ground and its CRT lines show
+   through (drawn once, by the window); the screen scrolls as a screen's body does, its column
+   centred, its tools at its head. */
+
+:root,
+body {
+  background: none;
+}
+html[data-crt='on'] body::after {
+  display: none;
+}
+#root {
+  display: flex;
+  flex-direction: column;
+}
+/* The window's .service-body, inside the screen: its gutters, its scroll bar at the window's edge. */
+.community-body {
+  height: 100%;
+}
+/* Under the tab bar, as a screen with tabs is: a step further from the tabs than they are from the header. */
+.community-body.barred {
+  padding-top: var(--s5);
+}
+.community-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--s4);
+}
+.community-tools:has(> .service-tools:empty) {
+  display: none;
+}

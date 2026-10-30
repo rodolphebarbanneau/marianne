@@ -8,7 +8,7 @@ import { app } from 'electron'
 import { log } from './log'
 import { profile } from './profile/store'
 import { activeTools } from './tools'
-import { ToolError, type ToolContext } from './tools/tool'
+import { ToolError, type Tool, type ToolContext } from './tools/tool'
 
 /**
  * Marianne's tools, served to the engines over MCP (streamable HTTP, stateless) from the main
@@ -47,33 +47,49 @@ function readBody(req: IncomingMessage): Promise<unknown> {
 /** One MCP server per request (stateless mode), with the tools enabled right now. */
 function buildServer(ctx: ToolContext): McpServer {
   const server = new McpServer({ name: MCP_SERVER_NAME, title: 'Marianne', version: app.getVersion() }, { capabilities: { tools: {} } })
+  const names = new Set<string>()
   for (const t of activeTools()) {
-    server.registerTool(
-      t.name,
-      { title: t.title, description: t.description, inputSchema: t.input, annotations: { readOnlyHint: t.readOnly ?? false, openWorldHint: true } },
-      async (args: unknown) => {
-        const started = Date.now()
-        const tokens = profile.tokens()
-        try {
-          const raw = JSON.stringify(args ?? {})
-          if (t.tokens === false && /\[\[[a-z0-9_.]+\]\]/i.test(raw))
-            throw new ToolError('Tokens [[…]] are not accepted here: the user’s identifiers never leave the app through an address.')
-          const resolved = resolveDeep(args, tokens)
-          const text = await t.run(resolved as never, { ...ctx, resolved: JSON.stringify(resolved ?? {}) !== raw })
-          log.info(`tool ${t.name} ok in ${Date.now() - started}ms`)
-          return { content: [{ type: 'text' as const, text: redact(text, profile.tokens()) }] }
-        } catch (err) {
-          // Messages may quote the resolved arguments: scrubbed for the log as for the engine.
-          const message = redact((err as Error).message ?? String(err), tokens)
-          // By name: a service's ToolError may come from its own copy of the SDK.
-          if ((err as Error).name === 'ToolError') log.info(`tool ${t.name}: ${message.slice(0, 120)}`)
-          else log.warn(`tool ${t.name} failed: ${message}`)
-          return { content: [{ type: 'text' as const, text: message }], isError: true }
-        }
-      }
-    )
+    // One tool by a name; one that can't be registered is left out, the others are served.
+    if (names.has(t.name)) {
+      log.warn(`MCP: two tools named ${t.name}; the second left out`)
+      continue
+    }
+    names.add(t.name)
+    try {
+      register(server, t, ctx)
+    } catch (err) {
+      log.warn(`MCP: tool ${t.name} left out:`, (err as Error).message)
+    }
   }
   return server
+}
+
+/** One tool on the server: [[tokens]] resolved in its arguments (refused for a service's), its result scrubbed of them. */
+function register(server: McpServer, t: Tool, ctx: ToolContext): void {
+  server.registerTool(
+    t.name,
+    { title: t.title, description: t.description, inputSchema: t.input, annotations: { readOnlyHint: t.readOnly ?? false, openWorldHint: true } },
+    async (args: unknown) => {
+      const started = Date.now()
+      const tokens = profile.tokens()
+      try {
+        const raw = JSON.stringify(args ?? {})
+        if (t.tokens === false && /\[\[[a-z0-9_.]+\]\]/i.test(raw))
+          throw new ToolError('Tokens [[…]] are not accepted here: the user’s identifiers never leave the app through an address.')
+        const resolved = resolveDeep(args, tokens)
+        const text = await t.run(resolved as never, { ...ctx, resolved: JSON.stringify(resolved ?? {}) !== raw })
+        log.info(`tool ${t.name} ok in ${Date.now() - started}ms`)
+        return { content: [{ type: 'text' as const, text: redact(text, profile.tokens()) }] }
+      } catch (err) {
+        // Messages may quote the resolved arguments: scrubbed for the log as for the engine.
+        const message = redact((err as Error).message ?? String(err), tokens)
+        // By name: a service's ToolError may come from its own copy of the SDK.
+        if ((err as Error).name === 'ToolError') log.info(`tool ${t.name}: ${message.slice(0, 120)}`)
+        else log.warn(`tool ${t.name} failed: ${message}`)
+        return { content: [{ type: 'text' as const, text: message }], isError: true }
+      }
+    }
+  )
 }
 
 class McpHost {

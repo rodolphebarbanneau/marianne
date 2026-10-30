@@ -5,7 +5,7 @@ import { format } from 'node:util'
 import { strToU8, zipSync, type Zippable } from 'fflate'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import { CommunityPackages, INSTALLED_FILE, type CommunityOptions } from '../src/main/community/install'
-import { MAX_SERVICE_FILE_BYTES, sha256, unpackService } from '../src/main/community/package'
+import { MAX_SERVICE_FILE_BYTES, NO_SYNC, PackageRefused, sha256, unpackService } from '../src/main/community/package'
 import type { CatalogueEntry, CatalogueState, Withdrawal } from '../src/shared/catalogue'
 
 const root = mkdtempSync(join(tmpdir(), 'marianne-community-'))
@@ -102,6 +102,7 @@ function entryFor(bytes: Uint8Array, patch: Partial<CatalogueEntry> = {}): Catal
     keywords: [],
     author: 'Collectif Santé libre',
     hosts: ['www.data.gouv.fr'],
+    links: [],
     connections: [],
     reads: [],
     tools: ['trouver la pharmacie de garde'],
@@ -151,9 +152,9 @@ function community(options: Partial<CommunityOptions> & { served?: () => Uint8Ar
 
 describe('a .3615 file', () => {
   it('holds a service: its manifest, checked, and its entries', () => {
-    const { manifest: m, files } = unpackService(service({ 'sync.js': 'export default {}', 'help.md': '# Aide' }), { reserved: RESERVED })
+    const { manifest: m, files } = unpackService(service({ 'view.css': '.x{}', 'help.md': '# Aide' }), { reserved: RESERVED })
     expect(m).toMatchObject({ id: 'pharmagarde', version: '1.3.0', author: 'Collectif Santé libre', icon: ICON })
-    expect([...files.keys()].sort()).toEqual(['help.md', 'main.js', 'package.json', 'sync.js', 'view.js'])
+    expect([...files.keys()].sort()).toEqual(['help.md', 'main.js', 'package.json', 'view.css', 'view.js'])
     expect(new TextDecoder().decode(files.get('main.js'))).toBe('export const service = {}')
     expect(problems(service({}, 0))).toEqual([])
   })
@@ -168,13 +169,37 @@ describe('a .3615 file', () => {
   it('holds the allowed entries only, at its root', () => {
     expect(problems(service({ 'install.exe': 'MZ' }))).toEqual([
       '« install.exe » n’a pas sa place dans un service.',
-      'Un fichier .3615 contient package.json, main.js, view.js, et au besoin view.css, sync.js, help.md, README.md : rien d’autre.'
+      'Un fichier .3615 contient package.json, main.js, view.js, et au besoin view.css, help.md, README.md : rien d’autre.'
     ])
     const nested = problems(zipSync({ pharmagarde: { 'package.json': strToU8(manifest()), 'main.js': strToU8('x'), 'view.js': strToU8('x') } }))
     expect(nested).toContain(
-      'Un fichier .3615 n’a pas de dossier : ses fichiers sont à sa racine (package.json, main.js, view.js, view.css, sync.js, help.md, README.md).'
+      'Un fichier .3615 n’a pas de dossier : ses fichiers sont à sa racine (package.json, main.js, view.js, view.css, help.md, README.md).'
     )
     expect(nested).toContain('Il y manque main.js.')
+  })
+
+  it('opens links only on its own hosts, never on a built-in service’s', () => {
+    const protectedHosts = new Set(['videos.assemblee-nationale.fr'])
+    const read = (marianne: Record<string, unknown>) => {
+      try {
+        unpackService(service({ 'package.json': manifest(marianne) }), { reserved: RESERVED, protectedHosts })
+        return []
+      } catch (err) {
+        return (err as PackageRefused).problems
+      }
+    }
+    expect(read({ links: ['https://www.data.gouv.fr/datasets/'] })).toEqual([])
+    expect(read({ links: ['https://www.impots.gouv.fr/'] })).toEqual([
+      'Le lien « https://www.impots.gouv.fr/ » n’est pas sur un site que 3615 PHARMAGARDE déclare.'
+    ])
+    expect(read({ hosts: ['www.data.gouv.fr', 'videos.assemblee-nationale.fr'], links: ['https://videos.assemblee-nationale.fr/'] })).toEqual([
+      'Le lien « https://videos.assemblee-nationale.fr/ » est sur videos.assemblee-nationale.fr, un site que Marianne ouvre elle-même : un service de la communauté ne peut pas l’ouvrir à sa place.'
+    ])
+  })
+
+  it('has no sync job: it would run with Node, out of any sandbox', () => {
+    expect(problems(service({ 'sync.js': 'export default {}' }))).toEqual([NO_SYNC])
+    expect(NO_SYNC).toMatch(/^Ce service a une tâche de synchronisation \(sync\.js\)/)
   })
 
   it('needs its manifest, its main side and its view', () => {
@@ -236,11 +261,11 @@ describe('a .3615 file', () => {
 describe('reviewing a file', () => {
   it('reads it without running it, and gives its verdict by the catalogue', async () => {
     const { c, file, catalogue } = community()
-    const bytes = service({ 'sync.js': 'export default {}' })
+    const bytes = service({ 'help.md': 'Les pharmacies de garde.' })
     const path = file(bytes)
 
     const outside = await c.review(path)
-    expect(outside).toMatchObject({ fileName: 'pharmagarde.3615', size: bytes.length, sha256: sha256(bytes), verdict: 'outside', problems: [], sync: true })
+    expect(outside).toMatchObject({ fileName: 'pharmagarde.3615', size: bytes.length, sha256: sha256(bytes), verdict: 'outside', problems: [], sync: false })
     expect(outside.tools).toEqual(['trouver la pharmacie de garde'])
     expect(outside.manifest?.id).toBe('pharmagarde')
     expect(outside.ticket).toMatch(/^[0-9a-f-]{36}$/)
@@ -279,7 +304,7 @@ describe('reviewing a file', () => {
 describe('adding a service', () => {
   it('writes it whole into its own folder, and says so', async () => {
     const { c, dir, file, events } = community({ now: () => Date.parse('2026-10-30T10:00:00Z') })
-    const bytes = service({ 'sync.js': 'export default {}' })
+    const bytes = service({ 'help.md': 'Les pharmacies de garde.' })
     const review = await c.review(file(bytes))
     const added = await c.install(review.ticket)
     const folder = join(dir, 'packages', 'pharmagarde')
@@ -289,10 +314,12 @@ describe('adding a service', () => {
       dir: folder,
       sha256: sha256(bytes),
       verdict: 'outside',
-      installedAt: '2026-10-30T10:00:00.000Z'
+      installedAt: '2026-10-30T10:00:00.000Z',
+      // Each file's SHA-256: checked again before it runs.
+      files: Object.fromEntries(['help.md', 'main.js', 'package.json', 'view.js'].map((name) => [name, sha256(readFileSync(join(folder, name)))]))
     })
     expect(events).toEqual([['installed', added]])
-    expect(readdirSync(folder).sort()).toEqual([INSTALLED_FILE, 'main.js', 'package.json', 'sync.js', 'view.js'])
+    expect(readdirSync(folder).sort()).toEqual(['help.md', INSTALLED_FILE, 'main.js', 'package.json', 'view.js'])
     expect(readFileSync(join(folder, 'main.js'), 'utf8')).toBe('export const service = {}')
     expect(JSON.parse(readFileSync(join(folder, INSTALLED_FILE), 'utf8'))).toMatchObject({
       code: 'pharmagarde',
@@ -309,7 +336,7 @@ describe('adding a service', () => {
 
   it('replaces an older version only once the new one is complete', async () => {
     const { c, dir, file } = community()
-    await c.install((await c.review(file(service({ 'sync.js': 'export default {}' })))).ticket)
+    await c.install((await c.review(file(service({ 'help.md': 'Les pharmacies de garde.' })))).ticket)
     const next = await c.install((await c.review(file(service({ 'package.json': manifest({}, '1.4.0'), 'view.css': '.x{}' })))).ticket)
     expect(next.version).toBe('1.4.0')
     expect(readdirSync(next.dir).sort()).toEqual([INSTALLED_FILE, 'main.js', 'package.json', 'view.css', 'view.js'])
@@ -376,6 +403,14 @@ describe('adding a service of the catalogue', () => {
       'https://services.example.test/pharmagarde.3615',
       expect.objectContaining({ headers: { 'User-Agent': 'Marianne/test' } })
     )
+  })
+
+  it('refuses a file whose manifest says otherwise than the entry the user reviewed', async () => {
+    const bytes = service({ 'package.json': manifest({ hosts: ['www.data.gouv.fr', 'tracker.example.com'] }) })
+    const { c, catalogue } = community({ served: () => bytes })
+    catalogue.entries = [entryFor(bytes)]
+    await expect(c.addFromCatalogue('pharmagarde')).rejects.toThrow('Le fichier téléchargé ne correspond pas à celui que le catalogue a vérifié')
+    expect(c.installed()).toEqual([])
   })
 
   it('refuses a file that is not the one the index lists', async () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   colorDistance,
+  cutText,
   isPaletteColor,
   nearestPaletteColor,
   PALETTE,
@@ -139,5 +140,16 @@ describe('a data’s own colours, in the palette', () => {
     expect(Object.values(PALETTE_REFERENCE).every((hex) => /^#[0-9a-f]{6}$/.test(hex))).toBe(true)
     expect(colorDistance('bleu', '#3d5afe')).toBe(0)
     expect(colorDistance('bleu-sombre', 'bleu')).toBeGreaterThan(colorDistance('bleu-clair', 'bleu-pale') / 4)
+  })
+})
+
+describe('a text too long', () => {
+  it('is cut before it is split: a tile of a hundred million characters costs no more than a short one', () => {
+    const huge = `${'é'.repeat(50_000_000)} fin`
+    const started = Date.now()
+    expect(cutText(huge, 40)).toBe(`${'é'.repeat(39)}…`)
+    expect(readTile({ title: huge }).tile?.title).toHaveLength(TILE_LIMITS.title)
+    expect(Date.now() - started).toBeLessThan(1000)
+    expect(cutText('  deux   mots  ', 40)).toBe('deux mots')
   })
 })

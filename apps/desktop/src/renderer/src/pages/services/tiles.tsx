@@ -138,7 +138,7 @@ function Tile({
     onDragStart: (e: DragEvent) => void
     onDragOver: (e: DragEvent) => void
     onDrop: (e: DragEvent) => void
-    onDragEnd: () => void
+    onDragEnd: (e: DragEvent) => void
   }
 }) {
   const m = state.manifest
@@ -281,9 +281,13 @@ export function Tiles({
                 if (dragged !== id) setOrder(move(dragged, shown.indexOf(id)))
               },
               onDrop: (e) => void (dragged && e.preventDefault()),
-              onDragEnd: () => {
+              onDragEnd: (e) => {
                 fromGrip.current = false
-                if (dragged) onOrder(shown)
+                // Dropped on the grid, the new order is kept; cancelled (échap) or dropped elsewhere, the tiles go back.
+                if (dragged) {
+                  if (e.dataTransfer.dropEffect === 'none') setOrder(ids)
+                  else onOrder(shown)
+                }
                 setDragged(null)
               }
             }}

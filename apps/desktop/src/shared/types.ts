@@ -135,7 +135,9 @@ export interface AccountSettings {
    * or not (a newer Marianne's new service shows in « découvrir »). `disabled`: switched off, with
    * their tools. `access`: the profile fields each was granted (absent: not asked yet). `reads`:
    * the day each last read the user's opinions (leaning, themes), YYYY-MM-DD. `opened`: when the
-   * user last opened each one's screen (ISO).
+   * user last opened each one's screen (ISO). `reviewed`: the file of each community service this
+   * account reviewed (its SHA-256, its version): another one on this computer (another account
+   * updated it) waits for this account's review.
    */
   services: {
     pinned: string[]
@@ -145,6 +147,7 @@ export interface AccountSettings {
     access: Record<string, string[]>
     reads: Record<string, string>
     opened: Record<string, string>
+    reviewed: Record<string, { sha256: string; version: string }>
   }
   browser: { askOnline: 'folder' | 'site'; show: 'ask' | 'always' | 'never' }
 }

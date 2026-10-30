@@ -468,6 +468,9 @@ export interface Mine {
   themes: string[]
 }
 
+/** The user's deputies and senators, from their address alone: Mine without their opinions. */
+export type Representatives = Omit<Mine, 'leaning' | 'themes'>
+
 /** A member to follow, and why. */
 export interface Suggestion {
   member: MemberCard

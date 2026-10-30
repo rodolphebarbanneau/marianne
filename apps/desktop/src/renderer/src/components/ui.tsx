@@ -82,7 +82,7 @@ export function SearchField({
 }
 
 // Shared with the services' views.
-export { Failure, Field, Loading, Modal, Notice, Spinner } from '@marianne/sdk/view'
+export { Failure, Field, Loading, Meter, Modal, Notice, Spinner } from '@marianne/sdk/view'
 
 /**
  * Keeps an error in one part of the window (a page, the conversation, a dialog) from blanking

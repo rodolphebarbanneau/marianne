@@ -3,13 +3,15 @@ import { PROFILE_FIELDS, serviceCode, tabKey, type ProfileField, type ServiceSta
 import { Loading, ServiceFrameProvider, ServiceHostProvider, type ServiceFrame, type ServiceHost, type ShownPage } from '@marianne/sdk/view'
 import { publicSource } from '@shared/public'
 import { accelOf, matches, SHORTCUTS } from '@shared/shortcuts'
+import type { ServiceFileReview } from '@shared/catalogue'
 import type { PublicSourceId } from '@shared/types'
 import { useApp } from '../app/context'
 import { Boundary } from '../components/ui'
-import { api, isMac } from '../lib/api'
+import { api, errorText, isMac } from '../lib/api'
 import { useProfile } from '../lib/profile'
 import { ReviewDialog } from '../pages/services/dialogs'
 import { useServices } from '.'
+import { CommunityScreen } from './community-screen'
 import { SERVICE_VIEWS } from './registry'
 
 /** The tab a screen opens on: the one its params name (a line of "Aujourd'hui"…), or the first. */
@@ -26,7 +28,9 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
   const state = useServices().find((s) => s.manifest.id === id)
   const profile = useProfile()
   const address = profile?.address
-  const View = SERVICE_VIEWS[id]
+  // A built-in service's screen is bundled; a community service's runs in a view of its own, over its body.
+  const community = !!state && !state.builtIn
+  const View = community ? undefined : SERVICE_VIEWS[id]
   const { setSeed, goPage, openRoute, toast } = app
   const paramsKey = JSON.stringify(params)
   // The list of the services comes again whenever a setting changes or a sync reports progress, each
@@ -81,6 +85,9 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
   const [badges, setBadges] = useState<Record<string, string>>({})
   const [tools, setTools] = useState<HTMLElement | null>(null)
   const [reviewing, setReviewing] = useState(false)
+  // A community service another account updated here: the version now on this computer, to review.
+  const [newVersion, setNewVersion] = useState<ServiceFileReview | null>(null)
+  const [reviewError, setReviewError] = useState('')
   const listeners = useRef(new Set<(id: string) => void>())
   const body = useRef<HTMLDivElement>(null)
   // The services' list may come after the screen: its first tab then.
@@ -138,11 +145,10 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
       </div>
     )
   const m = state.manifest
-  const settings = app.settings?.services
   // The star pins the service as a tile of the Services page, at the end.
-  const pin = () =>
-    void app.setSettings({ services: { pinned: state.pinned ? (settings?.pinned ?? []).filter((x) => x !== id) : [...(settings?.pinned ?? []), id] } })
-  const viewing = state.available && state.on && !state.error && !(state.access.asked.length > 0 && state.access.granted === null) && !!View && !!host
+  const pin = () => void api.pinService(id, !state.pinned)
+  const viewing =
+    state.available && state.on && !state.error && !(state.access.asked.length > 0 && state.access.granted === null) && (community || !!View) && !!host
 
   return (
     <div className="page service-page">
@@ -192,7 +198,8 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
           <span className="service-tools" ref={setTools} />
         </nav>
       )}
-      <div className="service-body" ref={body}>
+      {/* A community screen scrolls in its own view, which fills the body. */}
+      <div className={`service-body${viewing && community ? ' community-host' : ''}`} ref={body}>
         <div className="service-content">
           {!state.added ? (
             <div className="box-note">
@@ -200,6 +207,23 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
               <button className="link" onClick={() => setReviewing(true)}>
                 + l’ajouter
               </button>
+            </div>
+          ) : state.reviewedVersion ? (
+            <div className="box-note">
+              Une nouvelle version de 3615 {serviceCode(m)} ({m.version}) a été ajoutée sur cet ordinateur : elle remplace celle que vous aviez vue (
+              {state.reviewedVersion}).{' '}
+              <button
+                className="link"
+                onClick={() =>
+                  void api
+                    .reviewInstalledService(id)
+                    .then(setNewVersion)
+                    .catch((err: unknown) => setReviewError(errorText(err)))
+                }
+              >
+                la revoir avant de l’utiliser
+              </button>
+              {reviewError && <span className="bad"> · {reviewError}</span>}
             </div>
           ) : state.error ? (
             <div className="box-note">Ce service n’a pas pu démarrer : {state.error}</div>
@@ -213,12 +237,14 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
           ) : !state.on ? (
             <div className="box-note">
               Vous avez désactivé ce service.{' '}
-              <button className="link" onClick={() => void app.setSettings({ services: { disabled: (settings?.disabled ?? []).filter((x) => x !== id) } })}>
+              <button className="link" onClick={() => void api.switchService(id, true)}>
                 le réactiver
               </button>
             </div>
           ) : state.access.asked.length > 0 && state.access.granted === null ? (
             <Consent state={state} />
+          ) : community && host ? (
+            <CommunityScreen host={host} frame={frame} barred={barred} />
           ) : View && host ? (
             <ServiceHostProvider host={host}>
               <ServiceFrameProvider frame={frame}>
@@ -232,6 +258,16 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
           )}
         </div>
       </div>
+      {newVersion && (
+        <ReviewDialog
+          subject={{ kind: 'file', review: newVersion }}
+          onAdded={() => {
+            setNewVersion(null)
+            toast(`3615 ${serviceCode(m)} ${m.version} est à nouveau parmi vos services`)
+          }}
+          onClose={() => setNewVersion(null)}
+        />
+      )}
       {reviewing && (
         <ReviewDialog
           subject={{ kind: 'official', state }}

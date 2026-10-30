@@ -1,0 +1,58 @@
+{
+  "name": "@marianne/service-bonjour",
+  "version": "1.0.0",
+  "description": "3615 BONJOUR · Bonjour : un exemple de service de la communauté, à recopier",
+  "license": "MIT",
+  "author": "Rodolphe Barbanneau",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./main": "./src/main.ts",
+    "./view": "./src/view.tsx",
+    "./help": "./src/help.md"
+  },
+  "marianne": {
+    "code": "bonjour",
+    "name": "Bonjour",
+    "description": "un salut du jour, et le compte de vos visites",
+    "category": "culture",
+    "keywords": [
+      "exemple",
+      "salut",
+      "communauté"
+    ],
+    "hosts": [],
+    "tools": [
+      {
+        "name": "greet",
+        "label": "saluer"
+      }
+    ],
+    "icon": {
+      "palette": {
+        "c": "cyan",
+        "w": "blanc",
+        "j": "jaune"
+      },
+      "pixels": [
+        ".cccccc.",
+        "cwwwwwwc",
+        "cwjwwjwc",
+        "cwwwwwwc",
+        "cwjjjjwc",
+        "cwwwwwwc",
+        ".cccccc.",
+        ".cc....."
+      ]
+    }
+  },
+  "scripts": {
+    "pack": "node ../../scripts/pack.mjs ."
+  },
+  "peerDependencies": {
+    "@marianne/sdk": "*",
+    "react": "^19.0.0",
+    "zod": "^4.0.0"
+  }
+}

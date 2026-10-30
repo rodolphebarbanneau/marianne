@@ -11,6 +11,7 @@ import { profile } from '../profile/store'
 import { findCommunes, getCommune } from '../public/geo'
 import { parisDay } from '../public/time'
 import { session } from '../session'
+import { serviceStorage, storageKind } from './storage'
 import type { ServiceSync } from './sync'
 
 /**
@@ -19,8 +20,7 @@ import type { ServiceSync } from './sync'
  * Nothing personal but the commune of the user's address, and never a [[token]] value.
  */
 
-/** The archive records of a service's stored data. */
-export const storageKind = (code: string) => `service:${code}`
+export { storageKind }
 
 function http(m: ServiceManifest): ServiceHttp {
   const check = (url: string) => {
@@ -75,12 +75,14 @@ function themes(m: ServiceManifest): string[] {
   return [...chosen]
 }
 
-/** `stored`: the service wrote the user's data for it (what its tile shows may have changed). */
-export function serviceContext(m: ServiceManifest, sync: ServiceSync, stored: () => void = () => {}): ServiceContext {
-  const dataDir = join(paths.services, m.id)
-  mkdirSync(dataDir, { recursive: true })
+/**
+ * `stored`: the service wrote the user's data for it (what its tile shows may have changed).
+ * `dataDir: false`: no data folder (a community service has no sync job to fill one).
+ */
+export function serviceContext(m: ServiceManifest, sync: ServiceSync, stored: () => void = () => {}, options: { dataDir?: boolean } = {}): ServiceContext {
+  const dataDir = options.dataDir === false ? '' : join(paths.services, m.id)
+  if (dataDir) mkdirSync(dataDir, { recursive: true })
   const prefix = `[3615 ${m.id.toUpperCase()}]`
-  const kind = storageKind(m.id)
   return {
     manifest: m,
     http: http(m),
@@ -89,17 +91,7 @@ export function serviceContext(m: ServiceManifest, sync: ServiceSync, stored: ()
       warn: (...args) => log.warn(prefix, ...args),
       error: (...args) => log.error(prefix, ...args)
     },
-    storage: {
-      get: <T>(key: string) => session.archive.get<T>(kind, key),
-      set: (key, value) => {
-        session.archive.put(kind, key, value)
-        stored()
-      },
-      remove: (key) => {
-        session.archive.remove(kind, key)
-        stored()
-      }
-    },
+    storage: serviceStorage(m.id, () => session.archive, stored),
     dataDir,
     geo: { findCommunes, getCommune },
     home() {

@@ -53,6 +53,8 @@ const MAX_LIST = 64
 /** As readManifest's: host names, lowercase. */
 const HOST = /^(?:[a-z0-9-]+\.)+[a-z]{2,}$/
 const SHA256 = /^[0-9a-f]{64}$/
+/** As readManifest's: an https:// prefix ending with a path. */
+const LINK = /^https:\/\/[^/]+\//
 const DAY = /^\d{4}-\d{2}-\d{2}$/
 const STATUSES: readonly CatalogueStatus[] = ['validated', 'unvalidated']
 
@@ -111,6 +113,13 @@ function readEntry(raw: unknown): CatalogueEntry | string {
   for (const key of ['keywords', 'connections', 'tools'] as const)
     if (!isList(e[key]) || !(e[key] as unknown[]).every(isText)) return `"${key}" must be a list of at most ${MAX_LIST} non-empty strings`
   if (!isList(e.hosts) || !e.hosts.every((h) => typeof h === 'string' && HOST.test(h))) return '"hosts" must list host names (api.example.fr)'
+  // Older entries have no links: none.
+  const links = e.links ?? []
+  if (
+    !isList(links) ||
+    !links.every((l) => typeof l === 'string' && l.length <= MAX_TEXT && LINK.test(l) && (e.hosts as string[]).includes(new URL(l).hostname))
+  )
+    return '"links" must list https:// prefixes, each ending with a path, on its hosts'
   if (!isList(e.reads) || !e.reads.every((f) => typeof f === 'string' && Object.hasOwn(PROFILE_FIELDS, f)))
     return `"reads" must list fields of the profile (${Object.keys(PROFILE_FIELDS).join(', ')})`
   if (typeof e.sync !== 'boolean') return '"sync" must be true or false'
@@ -134,6 +143,7 @@ function readEntry(raw: unknown): CatalogueEntry | string {
     keywords: (e.keywords as string[]).map((k) => k.trim()),
     author: (e.author as string).trim(),
     hosts: [...new Set(e.hosts as string[])],
+    links: [...new Set(links as string[])],
     connections: [...new Set(e.connections as string[])],
     reads: [...new Set(e.reads as ProfileField[])],
     tools: (e.tools as string[]).map((t) => t.trim()),
@@ -168,6 +178,8 @@ export function readIndex(data: unknown, reserved: ReadonlySet<string>): IndexRe
     throw new IndexError(`the index is of format ${String(data.format)}; this Marianne reads format ${CATALOGUE_FORMAT}`, newer ? 'format' : 'invalid')
   }
   if (typeof data.published !== 'string' || Number.isNaN(Date.parse(data.published))) throw new IndexError('"published" must be an ISO date')
+  if (typeof data.expires !== 'string' || Number.isNaN(Date.parse(data.expires)) || Date.parse(data.expires) <= Date.parse(data.published))
+    throw new IndexError('"expires" must be an ISO date after "published"')
   if (!Array.isArray(data.services) || !Array.isArray(data.withdrawn)) throw new IndexError('"services" and "withdrawn" must be lists')
   if (data.services.length > MAX_ENTRIES || data.withdrawn.length > MAX_ENTRIES) throw new IndexError(`the index lists more than ${MAX_ENTRIES} entries`)
   const notes: string[] = []
@@ -199,7 +211,7 @@ export function readIndex(data: unknown, reserved: ReadonlySet<string>): IndexRe
       services.push({ ...e, recommended: e.recommended && e.status === 'validated' })
     }
   }
-  return { index: { format: CATALOGUE_FORMAT, published: data.published, services, withdrawn }, notes }
+  return { index: { format: CATALOGUE_FORMAT, published: data.published, expires: data.expires, services, withdrawn }, notes }
 }
 
 /** What a community service's file is worth by the catalogue, and the entry or the withdrawal that says so. */
@@ -229,8 +241,12 @@ const FAILURES = {
   unreachable: 'Le catalogue de la communauté est injoignable pour le moment.',
   unsigned: 'Le catalogue reçu n’est pas signé par le projet : Marianne ne l’a pas pris.',
   format: 'Le catalogue reçu est d’un format plus récent : mettez Marianne à jour pour le lire.',
-  invalid: 'Le catalogue reçu est illisible : Marianne ne l’a pas pris.'
+  invalid: 'Le catalogue reçu est illisible : Marianne ne l’a pas pris.',
+  expired: 'Le catalogue de la communauté a expiré : Marianne attend sa nouvelle version, et ne compte plus ses validations d’ici là.'
 } as const
+
+/** The latest publication date of an index ever taken: an older one is never taken again, even once the kept index is gone. */
+const HIGHEST_FILE = 'published.json'
 
 class ReadFailure extends Error {
   constructor(
@@ -278,6 +294,8 @@ export class CatalogueStore extends EventEmitter {
   private lastAttempt = 0
   /** The publication date of the index in use: an older one never replaces it. */
   private inUse: string | null = null
+  /** When the index in use expires (ISO). */
+  private expires: string | null = null
   /** The development file as last read (its modification time and size). */
   private devStamp = ''
   private readonly fetch: typeof fetch
@@ -298,6 +316,7 @@ export class CatalogueStore extends EventEmitter {
    * is read again (once at a time, not sooner than ten minutes after a failure): 'change' tells.
    */
   state(fresh = false): CatalogueState {
+    this.expireIfDue()
     if (fresh && this.started) this.refreshIfOld()
     return this.current
   }
@@ -407,8 +426,9 @@ export class CatalogueStore extends EventEmitter {
     }
     if (!signed) throw new ReadFailure('its signature does not match the project’s key', 'unsigned')
     const reading = this.parse(data)
-    if (this.inUse && Date.parse(reading.index.published) < Date.parse(this.inUse))
-      throw new ReadFailure(`it was published ${reading.index.published}, before the index in use (${this.inUse})`, 'stale')
+    const latest = Math.max(this.inUse ? Date.parse(this.inUse) : 0, this.highest())
+    if (Date.parse(reading.index.published) < latest)
+      throw new ReadFailure(`it was published ${reading.index.published}, before the latest index taken (${new Date(latest).toISOString()})`, 'stale')
     return reading
   }
 
@@ -430,9 +450,41 @@ export class CatalogueStore extends EventEmitter {
   private use(reading: IndexReading, readAt: string): void {
     for (const note of reading.notes) this.log.warn(`Community catalogue: ${note}`)
     this.inUse = reading.index.published
+    this.expires = reading.index.expires
+    this.raiseHighest(reading.index.published)
     const { services, withdrawn } = reading.index
     this.log.info(`Community catalogue: index of ${reading.index.published}, ${services.length} services, ${withdrawn.length} withdrawn`)
     this.set({ status: 'ready', entries: services, withdrawn, readAt })
+    this.expireIfDue()
+  }
+
+  /** Past its date, an index's validations no longer count (its withdrawals still do): failed, until a newer one comes. */
+  private expireIfDue(): void {
+    if (!this.expires || this.now() < Date.parse(this.expires)) return
+    // Whatever happened since (a reading that failed kept the entries): once, its entries gone, the reason said.
+    if (this.current.status === 'failed' && !this.current.entries.length && this.current.error === FAILURES.expired) return
+    this.log.warn(`Community catalogue: the index of ${this.inUse} expired on ${this.expires}`)
+    this.set({ ...this.current, status: 'failed', entries: [], error: FAILURES.expired })
+  }
+
+  /** The latest publication date ever taken (ms; 0: none). */
+  private highest(): number {
+    try {
+      const v = (JSON.parse(readFileSync(join(this.opts.dir, HIGHEST_FILE), 'utf8')) as { published?: unknown }).published
+      return typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? Date.parse(v) : 0
+    } catch {
+      return 0
+    }
+  }
+
+  private raiseHighest(published: string): void {
+    if (Date.parse(published) <= this.highest()) return
+    try {
+      mkdirSync(this.opts.dir, { recursive: true })
+      writeFileAtomic(join(this.opts.dir, HIGHEST_FILE), JSON.stringify({ published }))
+    } catch (err) {
+      this.log.warn('Community catalogue: the latest publication date could not be kept:', message(err))
+    }
   }
 
   /** Unchanged since it was kept: the index in use is current. */
@@ -471,11 +523,11 @@ export class CatalogueStore extends EventEmitter {
     }
   }
 
-  /** Keep the index taken, the signature first: an index is never left beside another's signature. */
+  /** Keep the index taken, then its signature: cut short between the two, the index fails its check next time and is read again. */
   private keep(data: Buffer, signature: Buffer, remote: Remote): void {
     mkdirSync(this.opts.dir, { recursive: true })
-    writeFileAtomic(join(this.opts.dir, SIGNATURE_FILE), signature)
     writeFileAtomic(join(this.opts.dir, INDEX_FILE), data)
+    writeFileAtomic(join(this.opts.dir, SIGNATURE_FILE), signature)
     this.writeRemote(remote)
   }
 

@@ -21,6 +21,7 @@ What a tab shows is yours, from `@marianne/sdk/view` and Marianne's classes:
 | for                                              | use                                                                                      |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
 | what a page, a tab or a pane waits for           | `<Loading label="les prévisions de Bordeaux" />`: a box in the middle, one per page      |
+| a share of something done (a download, a sync)   | `<Meter share={0.4} />`: the cells of every wait, lit to the share                       |
 | a part of a page already shown that waits        | `<Loading inline label="…" />`, or `<Spinner />` in a line (a search list, a button)     |
 | what couldn't come                               | `<Failure title="Prévisions indisponibles" error={…} retry={…} />` (`inline` for a part) |
 | something to do first (an address, a permission) | `<Notice action={{ label: 'renseigner mon adresse', onClick }}>…</Notice>`               |
@@ -81,6 +82,16 @@ What a pinned service shows on the Services page: data, laid out by Marianne (se
 - **Honest when it can't**: no address, nothing synced yet, nothing to pay: say it in the tile rather than return an empty one; a failure can throw (Marianne keeps the last tile).
 - **Fast and frugal**: read what the service keeps, reach the network only when needed; choose `tile.everyMinutes` for how fast the figure changes (weather 30, a live sitting 5).
 - Test it with `checkTile`: a tile Marianne would cut fails the test.
+
+## Packaging a community service
+
+A community service lives in a repository of its own and is added to Marianne as one `.3615` file; how it runs, and what it may not do, is in [docs/services.md](../docs/services.md#community-services). It is built as a built-in service is, with a few rules more: `marianne.tools` lists every tool its main side lends (by name and label, `[]` for none), its `links` are on its own declared hosts (never on a site Marianne opens herself), its name, description and labels are one short line each, it has no sync job, and it imports of Marianne only what she gives it (`@marianne/sdk`, `@marianne/sdk/main`, `zod` on its main side; React, `react-dom`, `@marianne/sdk/view` in its view). Its own dependencies are bundled with it. Its main side runs in a worker (no `document`, no `window`); its screen in a view of its own, where a link or a copy follows the user's click, Enter or Space (not a timer, a scroll or another key), no dialog opens (`print`, `alert`), and a `Modal` covers its screen only. `packages/sdk/examples/bonjour` is one to copy.
+
+```
+node packages/sdk/scripts/pack.mjs <its folder> [--out <folder>]   # or: npx marianne-pack <its folder>
+```
+
+`marianne-pack` checks the manifest as Marianne will (`readManifest`, then the tools: it activates the main side with `fakeContext` and compares them with `marianne.tools`), refuses a sync job and any import Marianne doesn't give (Node, Electron, another copy of React or zod), builds `main.js` and `view.js` (ES modules, one file each), extracts the view's styles to `view.css`, adds `help.md` and `README.md`, and writes `<code>.3615` (in `dist/` by default). Then add it from « découvrir › ajouter un fichier .3615 », and look at it as above: its screen, its tile, its tools, its guide.
 
 ## Before a pull request
 
