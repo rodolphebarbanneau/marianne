@@ -102,6 +102,22 @@ describe('in the archive', { timeout: 30_000 }, () => {
     expect(profile.get().person.birthName).toBe('')
   })
 
+  it('changes only the part of the opinions a change carries', async () => {
+    const { archive } = await createArchive(join(dir, 'o.marianne'), { id: 'o', display: '', password: PASSWORD })
+    session.open(archive)
+    profile.apply({ type: 'opinions', opinions: { themes: ['ecology'], leaning: { assembly: ['EcoS'], senate: [] } } })
+    // A source set aside a moment later, from a page that hadn't seen the themes yet: they stay.
+    profile.apply({ type: 'opinions', opinions: { sources: { refused: ['cnews'], sections: {}, leanings: {} } } })
+    expect(profile.get().opinions).toEqual({
+      leaning: { assembly: ['EcoS'], senate: [] },
+      themes: ['ecology'],
+      sources: { refused: ['cnews'], sections: {}, leanings: {} }
+    })
+    profile.apply({ type: 'opinions', opinions: { themes: [] } })
+    expect(profile.get().opinions.sources?.refused).toEqual(['cnews'])
+    expect(profile.get().opinions.leaning.assembly).toEqual(['EcoS'])
+  })
+
   it('seals documents in the archive and gives engines their text masked', async () => {
     const { archive } = await createArchive(join(dir, 'c.marianne'), { id: 'c', display: '', password: PASSWORD })
     session.open(archive)

@@ -76,9 +76,12 @@ export function cutAtSentence(text: string, max: number): string {
   const t = text.replace(/\s+/g, ' ').trim()
   if (t.length <= max) return t
   let end = 0
-  // Not after an initial or a title: « M. Dupont », « J. Martin » go on.
-  for (const m of t.slice(0, max + 1).matchAll(/(?<!(?:^|[\s(«“])(?:\p{Lu}|Mme|Mmes|MM|Dr|Me|Pr|St|Ste))[.!?…](?:\s*[»”"’)])?(?=\s|$)/gu))
+  // Not after an initial or a title: « M. Dupont », « J. Martin » go on. Read over the whole text,
+  // not a slice of it: « 1.5 » cut after its point would end a sentence at the slice's edge.
+  for (const m of t.matchAll(/(?<!(?:^|[\s(«“])(?:\p{Lu}|Mme|Mmes|MM|Dr|Me|Pr|St|Ste))[.!?…](?:\s*[»”"’)])?(?=\s|$)/gu)) {
+    if (m.index + m[0].length > max) break
     end = m.index + m[0].length
+  }
   if (end >= 40) return t.slice(0, end).trim()
   return plainText(t, max)
 }

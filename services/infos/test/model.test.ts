@@ -1,6 +1,20 @@
 import { groupSubjects, type NewsHeadline } from '@marianne/sdk'
 import { describe, expect, it } from 'vitest'
-import { arranged, askText, daysInRow, kioskOrder, matches, moveBy, moveTo, newSince, rank, sameSubject, wordsOf, type RankOptions } from '../src/model'
+import {
+  arranged,
+  askText,
+  daysInRow,
+  kioskOrder,
+  matches,
+  moveBy,
+  moveTo,
+  newSince,
+  sameOrder,
+  rank,
+  sameSubject,
+  wordsOf,
+  type RankOptions
+} from '../src/model'
 import { addDays } from '../src/time'
 import { catalogue, ITEMS, READ_AT, readingOf, SOURCES, UNMARKED } from './fixtures'
 
@@ -155,6 +169,12 @@ describe('the kiosk', () => {
     expect(moveTo(order, 'd', 'b')).toEqual(['a', 'd', 'b', 'c'])
     expect(moveBy(order, 'b', -1)).toEqual(['b', 'a', 'c', 'd'])
     expect(moveBy(order, 'd', 1)).toEqual(order)
+    // Among the cards shown: the hidden ones (a set-aside source, a search) keep their places.
+    expect(moveBy(order, 'a', 1, ['a', 'c', 'd'])).toEqual(['c', 'b', 'a', 'd'])
+    expect(moveBy(order, 'd', -1, ['a', 'b', 'd'])).toEqual(['a', 'd', 'c', 'b'])
+    expect(moveBy(order, 'd', 1, ['a', 'd'])).toBe(order)
+    expect(sameOrder(order, [...order])).toBe(true)
+    expect(sameOrder(order, moveBy(order, 'a', 1))).toBe(false)
   })
 
   it('offers « rétablir » once arranged', () => {

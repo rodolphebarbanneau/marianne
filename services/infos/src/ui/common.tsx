@@ -278,3 +278,26 @@ export function FailedLine() {
   if (!reading.failed.length || reading.offline) return null
   return <p className="small dim infos-failed">sans réponse : {reading.failed.join(', ')}</p>
 }
+
+/**
+ * What a search finds nothing for: among the user's sources, with the way to all of them; among all
+ * (« toutes », or sources not shared), plainly. With no search, `none`, the tab's own empty sentence.
+ */
+export function NoneFound({ none }: { none?: string }) {
+  const { reading, query, setAll } = useInfos()
+  if (!query) return <p className="infos-empty">{none}</p>
+  const mine = reading.filtered && !reading.all
+  return (
+    <p className="infos-empty">
+      {mine ? 'Aucun titre de vos sources n’en parle.' : 'Aucun titre n’en parle.'}
+      {mine && (
+        <>
+          {' '}
+          <button className="link" onClick={() => setAll(true)}>
+            chercher dans toutes ›
+          </button>
+        </>
+      )}
+    </p>
+  )
+}

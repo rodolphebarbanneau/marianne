@@ -1,9 +1,9 @@
-import { Fragment, useMemo } from 'react'
+import { Fragment, useLayoutEffect, useMemo, useState } from 'react'
 import { isLive, sideOf, Spinner, subjectWords, useCall, withoutLive, type NewsArticle, type NewsHeadline } from '@marianne/sdk/view'
 import { byLean, shownSources, themeLabel } from '../model'
 import { clock, hour, longDay, parisDay, shortDay } from '../time'
 import type { InfosMethods, Subject } from '../types'
-import { Badges, fill, LeanKey, Marked, Num, placeOf, QueryMarked, sidesOf, SourceTag, Spectrum, Track, TrackAxis, useInfos, Words } from './common'
+import { Badges, fill, LeanKey, Marked, NoneFound, Num, placeOf, QueryMarked, sidesOf, SourceTag, Spectrum, Track, TrackAxis, useInfos, Words } from './common'
 
 /**
  * F2 · à la une: the list of subjects and the subject a row points to. On the left, narrow, every
@@ -67,7 +67,7 @@ export function Band({ refreshing, pending, apply, choose }: { refreshing: boole
               onChoose={() => number !== null && choose(reading.subjects[number - 1].id)}
             />
           ))}
-          {cards.length > 1 && <span className="lv-more small muted">+{cards.length - 1}</span>}
+          {reading.live.length > 1 && <span className="lv-more small muted">+{reading.live.length - 1}</span>}
         </div>
       )}
     </div>
@@ -88,15 +88,10 @@ function LiveCard({
   onChoose: () => void
 }) {
   const text = withoutLive(item.title)
+  // A click anywhere on the card opens the article; from the keys, its title does. The number is a
+  // button of its own beside the title, never inside it, so Entrée on it chooses the subject.
   return (
-    <div
-      className="lv"
-      role="link"
-      tabIndex={0}
-      title={`${name}, en direct depuis ${hour(item.published)} · ${text}`}
-      onClick={onOpen}
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onOpen())}
-    >
+    <div className="lv" title={`${name}, en direct depuis ${hour(item.published)} · ${text}`} onClick={onOpen}>
       <span className="by">
         <SourceTag id={item.source} />
         <span className="tm">depuis {hour(item.published)}</span>
@@ -113,7 +108,18 @@ function LiveCard({
           </button>
         )}
       </span>
-      <span className="t">{text}</span>
+      <span
+        className="t"
+        role="link"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return
+          e.preventDefault()
+          onOpen()
+        }}
+      >
+        {text}
+      </span>
     </div>
   )
 }
@@ -132,6 +138,8 @@ export interface FrontProps {
 export function FrontTab(props: FrontProps) {
   const { reading, openSubject, openTab } = useInfos()
   const single = reading.single.slice(0, SINGLE_SHOWN)
+  const [cur, setCur] = useState<HTMLDivElement | null>(null)
+  const sticky = useFits(cur)
   return (
     <>
       {reading.subjects.length ? (
@@ -139,7 +147,11 @@ export function FrontTab(props: FrontProps) {
           <div className="infos-side">
             <SubjectList {...props} />
           </div>
-          {props.wide && <div className="infos-cur">{props.chosen && <Chosen subject={props.chosen} onOpen={() => openSubject(props.chosen!.id)} />}</div>}
+          {props.wide && (
+            <div ref={setCur} className={`infos-cur${sticky ? ' sticky' : ''}`}>
+              {props.chosen && <Chosen subject={props.chosen} onOpen={() => openSubject(props.chosen!.id)} />}
+            </div>
+          )}
         </div>
       ) : (
         <p className="infos-empty">Aucun titre de vos sources ce matin.</p>
@@ -162,6 +174,33 @@ export function FrontTab(props: FrontProps) {
       )}
     </>
   )
+}
+
+/** Room kept above and below the sticky column, in the page that scrolls. */
+const STICKY_ROOM = 24
+
+/**
+ * Whether the right column fits in the page that scrolls it: it sticks only then. Taller, it would
+ * stay pinned with its end out of reach; it scrolls with the list instead.
+ */
+function useFits(el: HTMLElement | null): boolean {
+  const [fits, setFits] = useState(false)
+  useLayoutEffect(() => {
+    if (!el) return
+    let page: HTMLElement | null = el.parentElement
+    while (page && !/(auto|scroll)/.test(getComputedStyle(page).overflowY)) page = page.parentElement
+    const measure = () => setFits(el.offsetHeight + STICKY_ROOM <= (page?.clientHeight ?? window.innerHeight))
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    if (page) observer.observe(page)
+    window.addEventListener('resize', measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [el])
+  return fits
 }
 
 /** The list, in the left column: a row a subject; a click chooses it, and the right column shows it. */
@@ -314,10 +353,12 @@ export function Chosen({ subject: s, onOpen }: { subject: Subject; onOpen: () =>
         </span>
         <div className="sds">
           {sidesOf(shown).map(({ side, label, sources }) => {
+            // The count is of the user's sources; the side is muted only when no cell is lit, a set-aside one's included.
             const mine = sources.filter((c) => !c.setAside)
             const on = mine.filter((c) => telling.has(c.id)).length
+            const lit = sources.some((c) => telling.has(c.id))
             return (
-              <div key={side} className={`sd${on ? '' : ' none'}`}>
+              <div key={side} className={`sd${lit ? '' : ' none'}`}>
                 <span className="l">{label}</span>
                 <span className="cl">
                   {sources.map((c) => {
@@ -450,7 +491,7 @@ function SingleLine({ item: h }: { item: NewsHeadline }) {
 
 /** The search on « à la une »: the titles that say the words, over the last 7 days, each subject once with its number. */
 export function SearchResults() {
-  const { reading, query, setAll, openArticle, openSubject } = useInfos()
+  const { reading, query, openArticle, openSubject } = useInfos()
   const found = useCall<InfosMethods, 'search'>('search', [query, { all: reading.all }])
   const cols = useMemo(() => byLean(shownSources(reading)), [reading])
   const hits = useMemo(() => {
@@ -463,18 +504,16 @@ export function SearchResults() {
       return true
     })
   }, [found.data, query, reading])
-  const subjects = new Set(hits.map((h) => reading.numbers[h.id]).filter(Boolean)).size
-  const titles = found.data?.length ?? 0
+  // What the list shows: a line a subject, then a line a title in none.
+  const subjects = hits.filter((h) => reading.numbers[h.id]).length
+  const titles = hits.length - subjects
+  const counted = [subjects && `${subjects} sujet${subjects > 1 ? 's' : ''}`, titles && `${titles} titre${titles > 1 ? 's' : ''} hors sujet`].filter(Boolean)
   const today = parisDay(new Date(reading.readAt))
   return (
     <>
       <div className="infos-h infos-first">
         <span className="label">« {query} »</span>
-        {found.data && (
-          <span className="small dim">
-            {subjects} sujet{subjects > 1 ? 's' : ''} · {titles} titre{titles > 1 ? 's' : ''}
-          </span>
-        )}
+        {counted.length > 0 && <span className="small dim">{counted.join(' · ')}</span>}
         {found.loading && <Spinner />}
       </div>
       {found.error ? (
@@ -511,17 +550,7 @@ export function SearchResults() {
           })}
         </div>
       ) : (
-        <p className="infos-empty">
-          {reading.filtered ? 'Aucun titre de vos sources n’en parle.' : 'Aucun titre n’en parle.'}
-          {reading.filtered && !reading.all && (
-            <>
-              {' '}
-              <button className="link" onClick={() => setAll(true)}>
-                chercher dans toutes ›
-              </button>
-            </>
-          )}
-        </p>
+        <NoneFound />
       )}
     </>
   )

@@ -78,8 +78,10 @@ function themes(m: ServiceManifest): string[] {
   return [...chosen]
 }
 
-/** The region of the user's address, for the default sources (the regional ones of their region); null without one. */
+/** The region of the user's address, for the default sources (the regional ones of their region); null without one, or locked. */
 function homeRegion(): string | null {
+  // Locked, the profile can't be read (a service's news still can, unfiltered).
+  if (!session.unlocked) return null
   const code = profile.get().address.inseeCode
   return code ? regionOf(code) : null
 }

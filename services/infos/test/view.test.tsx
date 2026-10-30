@@ -80,6 +80,17 @@ describe('« à la une »', () => {
     }
   })
 
+  it('with « toutes », lights a side told by set-aside sources only, and still counts the user’s sources', () => {
+    const r = readingFor(true)
+    const s1 = r.subjects.find((s) => s.id === 's1')!
+    const html = front(r, { chosen: s1 })
+    const sides = [...html.matchAll(/<div class="sd( none)?"><span class="l">([^<]+)<\/span>.*?<span class="c"><b>(\d+)<\/b> sur (\d+)/g)].map(
+      (m) => `${m[2]}${m[1] ? ' (muted)' : ''} ${m[3]}/${m[4]}`
+    )
+    expect(sides.find((x) => x.startsWith('à droite'))).toBe('à droite 0/2')
+    expect(sides.filter((x) => x.includes('muted')).length).toBe(sides.length - 1)
+  })
+
   it('keeps the numbers when the theme filter hides rows', () => {
     const r = readingFor()
     const html = front(r, { listed: r.subjects.filter((s) => s.themes.length), chosen: r.subjects[2], mine: true })
@@ -122,6 +133,10 @@ describe('the band', () => {
     expect(all(html, /class="lv"/g)).toBe(2)
     expect(html).toContain('Coup de vent en Bretagne')
     expect(html).not.toContain('DIRECT. Coup')
+    // The title opens the article from the keys; the number is a button beside it, never inside a link.
+    expect(html).not.toMatch(/class="lv"[^>]*role=/)
+    expect(html).toMatch(/<span class="t" role="link" tabindex="0">Budget 2027/i)
+    expect(html).toContain('<span class="lv-more small muted">+1</span>')
   })
 
   it('shows four live titles at most, the most recent, and says how many there are', () => {
@@ -135,6 +150,8 @@ describe('the band', () => {
     const html = render(<Band refreshing={false} pending={false} apply={() => undefined} choose={() => undefined} />, readingFor(false, lives))
     expect(all(html, /class="lv"/g)).toBe(4)
     expect(html).toContain('6 directs, les 4 derniers')
+    // Under 760 px one card shows: « +N » counts every other live title, not only the other cards.
+    expect(html).toContain('<span class="lv-more small muted">+5</span>')
     expect(html.indexOf('numéro 5')).toBeLessThan(html.indexOf('numéro 4'))
     expect(html).not.toContain('numéro 1')
   })
@@ -202,6 +219,17 @@ describe('the fil', () => {
     const html = render(<WireTab />, readingFor(), { query: 'goncourt' })
     expect(all(html, /class="infos-w/g)).toBe(2)
   })
+
+  it('found nothing: among the user’s sources, with the way to all; with all of them, plainly', () => {
+    const mine = render(<WireTab />, readingFor(), { query: 'zzz' })
+    expect(mine).toContain('Aucun titre de vos sources n’en parle.')
+    expect(mine).toContain('chercher dans toutes ›')
+    const every = render(<WireTab />, readingFor(true), { query: 'zzz' })
+    expect(every).toContain('Aucun titre n’en parle.')
+    expect(every).not.toContain('chercher dans toutes')
+    const unshared = rank(readingOf(ITEMS, true), catalogue(true), { all: true, filtered: false, themes: [], sections: null })
+    expect(render(<WireTab />, unshared, { query: 'zzz' })).toContain('Aucun titre n’en parle.')
+  })
 })
 
 describe('the kiosk', () => {
@@ -231,5 +259,12 @@ describe('the kiosk', () => {
 
   it('follows the search', () => {
     expect(cards(kiosk({ order: [], large: [] }, 'goncourt'))).toEqual(['LE MONDE', 'LIBÉRATION'])
+    expect(kiosk({ order: [], large: [] }, 'zzz')).toContain('Aucun titre de vos sources n’en parle.')
+  })
+
+  it('with no card and no search, says so without a word of a search', () => {
+    const html = render(<KioskTab kiosk={{ order: [], large: [] }} setKiosk={() => undefined} />, { ...readingFor(), sources: [] })
+    expect(html).toContain('Aucune source à montrer.')
+    expect(html).not.toContain('en parle')
   })
 })

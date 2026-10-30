@@ -411,7 +411,7 @@ mark.infos-q {
   align-self: center;
 }
 
-/* Two columns: the list on the left, narrow; the chosen subject on the right, sticky. */
+/* Two columns: the list on the left, narrow; the chosen subject on the right, sticky when it fits. */
 .infos-dash {
   display: grid;
   grid-template-columns: minmax(300px, 1fr) minmax(0, 1.9fr);
@@ -422,9 +422,12 @@ mark.infos-q {
   min-width: 0;
 }
 .infos-cur {
+  min-width: 0;
+}
+/* Sticky only when it fits in the page (useFits): taller, it scrolls with the list, its end in reach. */
+.infos-cur.sticky {
   position: sticky;
   top: var(--s3);
-  min-width: 0;
 }
 .infos-side .seg button {
   padding: 0 var(--s2);

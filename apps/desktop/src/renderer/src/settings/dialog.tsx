@@ -50,6 +50,8 @@ export function SettingsDialog() {
     const root = pageRef.current
     if (!section || !root) return
     const show = () => root.querySelector(`#${CSS.escape(section)}`)?.scrollIntoView({ block: 'start' })
+    // 3 s at most, and never against the user: a scroll, a key or a click stops it.
+    const limit = setTimeout(() => stop(), 3000)
     let settle = setTimeout(() => stop(), 3000)
     const watch = new MutationObserver(() => {
       show()
@@ -59,13 +61,12 @@ export function SettingsDialog() {
     const stop = () => {
       watch.disconnect()
       clearTimeout(settle)
-      root.removeEventListener('wheel', stop)
-      root.removeEventListener('keydown', stop)
+      clearTimeout(limit)
+      for (const event of ['wheel', 'keydown', 'pointerdown'] as const) root.removeEventListener(event, stop)
     }
     show()
     watch.observe(root, { childList: true, subtree: true })
-    root.addEventListener('wheel', stop, { passive: true })
-    root.addEventListener('keydown', stop)
+    for (const event of ['wheel', 'keydown', 'pointerdown'] as const) root.addEventListener(event, stop, { passive: true })
     return stop
   }, [page, section])
 

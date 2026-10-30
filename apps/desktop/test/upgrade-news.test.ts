@@ -61,6 +61,18 @@ describe('the upgrade from Actualités', () => {
     expect(JSON.stringify(settings)).not.toMatch(/perSource|blog\.fr|"group"/)
   })
 
+  it('leaves to the defaults a pick of none of Marianne’s sources: only own feeds, or nothing', () => {
+    for (const sources of [[], ['custom-1']]) {
+      const s = store({
+        'settings/account': account({ ...OLD, sources, custom: [{ id: 'custom-1', name: 'Mon blog', url: 'https://blog.fr/rss' }] }),
+        'profile/main': { person: { firstNames: 'Camille' } }
+      })
+      expect(upgradeNews(s, CATALOGUE)).toBe(true)
+      expect(s.get<Profile>('profile', 'main')?.opinions?.sources ?? null).toBeNull()
+      expect(s.get('service:infos', 'notice')).toEqual({ customFeedsDropped: true })
+    }
+  })
+
   it('happens once', () => {
     const s = store({ 'settings/account': account({ ...OLD, sources: ['le-monde'] }) })
     expect(upgradeNews(s, CATALOGUE)).toBe(true)

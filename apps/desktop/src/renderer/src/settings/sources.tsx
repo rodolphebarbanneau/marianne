@@ -69,7 +69,14 @@ export function SourcesSection({ stored, address, onChange }: { stored: NewsChoi
   const [query, setQuery] = useState('')
   const [sectionsOpen, setSectionsOpen] = useState<string | null>(null)
   const [leanOpen, setLeanOpen] = useState<string | null>(null)
-  const choice = choiceOf(stored, catalog, address.inseeCode)
+  // The choice as last changed here: a second click before the profile comes back builds on the first.
+  const [pending, setPending] = useState<NewsChoice | null>(null)
+  useEffect(() => setPending(null), [stored])
+  const choice = pending ?? choiceOf(stored, catalog, address.inseeCode)
+  const change = (next: NewsChoice) => {
+    setPending(next)
+    onChange(next)
+  }
   const region = regionOf(address.inseeCode)
   const accepted = catalog.filter((s) => isAccepted(choice, s.id))
   const today = stats?.today ?? []
@@ -85,13 +92,13 @@ export function SourcesSection({ stored, address, onChange }: { stored: NewsChoi
 
   const accept = (ids: string[], on: boolean) => {
     if (!on && sectionsOpen && ids.includes(sectionsOpen)) setSectionsOpen(null)
-    onChange(acceptSources(choice, ids, on))
+    change(acceptSources(choice, ids, on))
   }
   const toggleSection = (source: NewsSource, id: string) => {
     const kept = keptSections(source, choice)
     const next = kept.includes(id) ? kept.filter((x) => x !== id) : [...kept, id]
     if (!next.length) setSectionsOpen(null)
-    onChange(keepSections(choice, source, next))
+    change(keepSections(choice, source, next))
   }
 
   const row = (s: NewsSource) => {
@@ -166,7 +173,7 @@ export function SourcesSection({ stored, address, onChange }: { stored: NewsChoi
           <div className="perm-cfg lean-pick">
             <span className="small dim">{s.name} :</span>
             {LEANS.map((l) => (
-              <button key={l} className={l === lean ? 'on' : ''} onClick={() => onChange(giveLean(choice, s, l))}>
+              <button key={l} className={l === lean ? 'on' : ''} onClick={() => change(giveLean(choice, s, l))}>
                 <i style={{ background: leanColor(l) }} />
                 {LEAN_LABELS[l]}
                 {l === defaultLean(s) && (
@@ -178,7 +185,7 @@ export function SourcesSection({ stored, address, onChange }: { stored: NewsChoi
               </button>
             ))}
             {changed && (
-              <button className="link small" onClick={() => onChange(giveLean(choice, s, null))}>
+              <button className="link small" onClick={() => change(giveLean(choice, s, null))}>
                 rétablir
               </button>
             )}

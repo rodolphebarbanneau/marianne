@@ -6,3 +6,5 @@ import { Session } from '@marianne/archive'
  * the tools and the tests can import it.
  */
 export const session = new Session()
+// Each store forgets what it holds when the session locks: a listener per module, more than Node's ten.
+session.setMaxListeners(32)

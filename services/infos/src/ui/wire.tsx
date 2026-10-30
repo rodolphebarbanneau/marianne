@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type CSSProperties } from 'react'
 import { LEANS, type NewsGroup, type NewsHeadline } from '@marianne/sdk/view'
 import { GROUP_LABELS, GROUPS, matches, newSince, themeLabel } from '../model'
 import { clock, hourOf, parisDay } from '../time'
-import { fill, LeanKey, Num, SourceTag, useInfos } from './common'
+import { fill, LeanKey, NoneFound, Num, SourceTag, useInfos } from './common'
 
 /**
  * F3 · fil: the same titles by time, newest first, one line each under hour rules, each with its
@@ -132,7 +132,7 @@ export function WireTab() {
           )
         })
       ) : (
-        <p className="infos-empty">{query ? 'Aucun titre de vos sources n’en parle.' : 'Aucun titre ne correspond.'}</p>
+        <NoneFound none="Aucun titre ne correspond." />
       )}
     </div>
   )

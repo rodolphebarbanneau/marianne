@@ -142,9 +142,10 @@ export class ScreenRelay extends EventEmitter {
       this.host.lock()
       return 'lock'
     }
+    // « / » needs Shift on some keyboards (AZERTY's main row): Shift alone doesn't stop it.
+    if (key === '/' && !(modifiers && (modifiers.ctrlKey || modifiers.altKey || modifiers.metaKey))) this.lastSlash = now
     if (modifiers && (modifiers.ctrlKey || modifiers.altKey || modifiers.metaKey || modifiers.shiftKey)) return null
     if (key === 'Escape') this.lastEscape = now
-    if (key === '/') this.lastSlash = now
     // The guide and the tabs: the window's, whatever the screen does with them.
     if (/^F[1-9]$/.test(key)) {
       this.emit('window', { type: 'key', key } satisfies FromFrame)

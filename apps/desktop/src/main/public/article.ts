@@ -3,7 +3,7 @@ import type { NewsSource } from '@marianne/content'
 import type { NewsArticle } from '@marianne/sdk'
 import { nativeImage } from 'electron'
 import { blockedAddress } from '../community/runtime/net'
-import { fetchCapped } from '../http'
+import { fetchCapped, lasting } from '../http'
 import { cutAtSentence, decodeEntities, htmlText } from './html'
 
 /**
@@ -33,7 +33,10 @@ export interface MediaRef {
   duration?: string
 }
 
-/** Only the open web: no file:, no address of this computer or its network. */
+/**
+ * Only the open web, as the address reads: no file:, no address of this computer or its network.
+ * The names are checked when fetched (fetchCapped resolves them, and checks each redirect).
+ */
 export function publicUrl(raw: string, base?: string): string | null {
   try {
     const url = new URL(decodeEntities(raw.trim()), base)
@@ -316,28 +319,30 @@ export interface ArticleSource {
 
 /**
  * One headline's article: its media (the feed's, else the page's) and its start (the feed's text,
- * else the page's), nothing past a paywall, no start for a source that asked. `read`: whether
- * something answered (a page or a picture): nothing read and nothing answering is worth asking
- * again later, nothing read from a page that answered is not.
+ * else the page's), nothing past a paywall, no start for a source that asked. `settled`: whether
+ * every fetch tried gave its answer (a page, a picture, or one that won't change, a 404, a refused
+ * address); a page or a picture that timed out or a server in trouble is worth asking again later.
  */
-export async function readArticle(item: ArticleSource, source: NewsSource | undefined): Promise<{ article: NewsArticle | null; read: boolean }> {
+export async function readArticle(item: ArticleSource, source: NewsSource | undefined): Promise<{ article: NewsArticle | null; settled: boolean }> {
   const wantStart = source?.start !== false
   let start = wantStart ? item.start : undefined
   let media = item.media
   let paid = false
-  let read = false
+  let settled = true
+  const failed = (err: unknown) => {
+    if (!lasting(err)) settled = false
+    return null
+  }
   if (!media || (wantStart && !start)) {
-    const page = await readPage(item.url).catch(() => null)
+    const page = await readPage(item.url).catch(failed)
     if (page !== null) {
-      read = true
       paid = paywalled(page, source?.paywall)
       media ??= pageMedia(page, item.url)
       if (paid) start = undefined
       else if (wantStart && !start) start = readerStart(page, item.summary) || undefined
     }
   }
-  const shown = media ? await photo(media).catch(() => undefined) : undefined
-  if (shown !== undefined) read = true
+  const shown = media ? await photo(media).catch(failed) : null
   const article: NewsArticle = { ...(shown ? { media: shown } : {}), ...(start ? { start } : {}), ...(paid ? { paid: true } : {}) }
-  return { article: Object.keys(article).length ? article : null, read: read || !!item.start }
+  return { article: Object.keys(article).length ? article : null, settled }
 }
