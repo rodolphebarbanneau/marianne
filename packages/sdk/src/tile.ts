@@ -6,8 +6,10 @@ import { isPaletteColor, pictureProblems, PICTURE_SIZE, type PaletteColor, type 
  * every service, as she does its line on a domain's dashboard. Marianne draws the head (the icon,
  * the code and the name, the grip to move it) and the foot (« communauté », how fresh the tile is,
  * the action's button); the service fills the body: a figure or a title, one picture, two lines.
+ * A click on the tile opens the service on its first tab, the one F2 shows; only the action's
+ * button opens it elsewhere, with its own params.
  *
- * Limits are Marianne's: a text too long is cut with « … », extra lines, bars and blocks are
+ * Limits are Marianne's: a text too long is cut with « … », extra lines, bars, blocks and rows are
  * dropped, a part that isn't right is left out. A tile never grows. `checkTile` (in
  * @marianne/sdk/testing) says, in a service's tests, what Marianne would cut.
  */
@@ -37,19 +39,29 @@ export interface TileBlock {
   label?: string
 }
 
+/** A row of a list: its text, on one line ("Budget 2027 : le Sénat adopte les recettes"), a short figure at its end ("6/7"), its tone. */
+export interface TileItem {
+  text: string
+  figure?: string
+  tone?: Tone
+}
+
 /**
- * One small picture, of four kinds:
+ * One small picture, of five kinds:
  * - `bars`: up to 7 bars (the week's temperatures), drawn between `range` (default: 0, or the
  *   lowest value if below, to the highest);
  * - `blocks`: up to 16 square blocks in a row (the week's collections);
  * - `gauge`: a bar filled from 0 to 1, with a line under it;
- * - `pixels`: a picture in the palette, up to 24 × 8 (the hemicycle of 3615 PARLEMENT).
+ * - `pixels`: a picture in the palette, up to 24 × 8 (the hemicycle of 3615 PARLEMENT);
+ * - `list`: up to 3 rows, each a text and a figure (the day's first subjects, how many sources
+ *   tell each); `numbered`, each row after its number, in an inverse block.
  */
 export type TileVisual =
   | { kind: 'bars'; bars: TileBar[]; range?: [number, number] }
   | { kind: 'blocks'; blocks: TileBlock[] }
   | { kind: 'gauge'; value: number; label?: string; color?: PaletteColor }
   | ({ kind: 'pixels' } & PixelArt)
+  | { kind: 'list'; items: TileItem[]; numbered?: boolean }
 
 export interface ServiceTile {
   /** The figure ("12°") and what it is ("Rennes · averses à 16 h"). */
@@ -61,10 +73,11 @@ export interface ServiceTile {
   lines?: TileLine[]
   /** 'urgent' frames the tile in yellow (a toll to pay before tomorrow). */
   urgency?: 'none' | 'soon' | 'urgent'
-  /** One button: opening the service with these params ("payer"). */
+  /**
+   * One button, the tile's only way into the service elsewhere than its first tab: it opens it
+   * with these params ("payer": the trip to pay). A click anywhere else opens the first tab.
+   */
   action?: { label: string; params?: TileParams }
-  /** What opening the tile shows (a click anywhere but the button). */
-  params?: TileParams
 }
 
 /** What a tile may hold, in characters and in parts. */
@@ -80,7 +93,10 @@ export const TILE_LIMITS = {
   barText: 5,
   blocks: 16,
   blockLabel: 3,
-  gaugeLabel: 60
+  gaugeLabel: 60,
+  items: 3,
+  item: 60,
+  itemFigure: 5
 } as const
 
 /** How often Marianne asks a service's tile again while the Services page shows, in minutes: its choice, 15 by default, 5 at least. */
@@ -144,6 +160,15 @@ export function readTile(raw: unknown): ReadTile {
       return undefined
     }
     return { ...(value as TileParams) }
+  }
+  /** A line's or a row's tone; `normal`, the default, is left out. */
+  const tone = (value: unknown, what: string): Tone | undefined => {
+    if (value === undefined) return undefined
+    if (!(TONES as readonly unknown[]).includes(value)) {
+      problems.push(`${what} "${String(value)}" is not one of ${TONES.join(', ')}`)
+      return undefined
+    }
+    return value === 'normal' ? undefined : (value as Tone)
   }
   const color = (value: unknown, what: string): PaletteColor | undefined => {
     if (value === undefined) return undefined
@@ -230,7 +255,25 @@ export function readTile(raw: unknown): ReadTile {
       const wrong = pictureProblems(v, PICTURE_SIZE)
       if (wrong.length) problems.push(...wrong.map((p) => `visual (pixels): ${p}`))
       else tile.visual = { kind: 'pixels', palette: { ...(v.palette as Record<string, PaletteColor>) }, pixels: [...(v.pixels as string[])] }
-    } else problems.push(`visual.kind "${String(kind)}" is not one of bars, blocks, gauge, pixels`)
+    } else if (kind === 'list') {
+      if (!Array.isArray(v.items)) problems.push('visual.items must be a list')
+      else {
+        const items = most(v.items, TILE_LIMITS.items, 'visual.items').flatMap((item, i): TileItem[] => {
+          if (!isRecord(item)) {
+            problems.push(`visual.items[${i}] must be { text, figure?, tone? }`)
+            return []
+          }
+          const t = text(item.text, TILE_LIMITS.item, `visual.items[${i}].text`)
+          if (!t) return []
+          const figure = text(item.figure, TILE_LIMITS.itemFigure, `visual.items[${i}].figure`)
+          const tn = tone(item.tone, `visual.items[${i}].tone`)
+          return [{ text: t, ...(figure ? { figure } : {}), ...(tn ? { tone: tn } : {}) }]
+        })
+        if (v.numbered !== undefined && typeof v.numbered !== 'boolean') problems.push('visual.numbered must be true or false')
+        if (items.length) tile.visual = { kind: 'list', items, ...(v.numbered === true ? { numbered: true } : {}) }
+        else problems.push('visual.items has no row: the picture is left out')
+      }
+    } else problems.push(`visual.kind "${String(kind)}" is not one of bars, blocks, gauge, pixels, list`)
   }
 
   if (raw.lines !== undefined) {
@@ -243,10 +286,8 @@ export function readTile(raw: unknown): ReadTile {
         }
         const t = text(l.text, TILE_LIMITS.line, `lines[${i}].text`)
         if (!t) return []
-        if (l.tone !== undefined && !(TONES as readonly unknown[]).includes(l.tone))
-          problems.push(`lines[${i}].tone "${String(l.tone)}" is not one of ${TONES.join(', ')}`)
-        const tone = (TONES as readonly unknown[]).includes(l.tone) ? (l.tone as Tone) : undefined
-        return [{ text: t, ...(tone && tone !== 'normal' ? { tone } : {}) }]
+        const tn = tone(l.tone, `lines[${i}].tone`)
+        return [{ text: t, ...(tn ? { tone: tn } : {}) }]
       })
       if (lines.length) tile.lines = lines
     }
@@ -266,8 +307,9 @@ export function readTile(raw: unknown): ReadTile {
       if (label) tile.action = { label, ...(p ? { params: p } : {}) }
     }
   }
-  const p = params(raw.params, 'params')
-  if (p) tile.params = p
+  // Where a click on the tile opens is Marianne's, the same for every service: a tile that gives params of its own is told why they go.
+  if (raw.params !== undefined)
+    problems.push('params is left out: a click on the tile opens the service on its first tab, the action’s params open it elsewhere')
 
   if (!tile.value && !tile.title && !tile.visual && !tile.lines) {
     problems.push('the tile shows nothing (no value, title, visual or line): the default tile is shown')

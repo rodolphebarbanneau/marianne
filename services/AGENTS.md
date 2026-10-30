@@ -79,10 +79,12 @@ Eight by eight pixels in the palette (`marianne.icon`), the same grid as every o
 What a pinned service shows on the Services page: data, laid out by Marianne (see `ServiceTile` in docs/services.md). Think of it as the answer to "what's new for me here?", read in a second.
 
 - **One figure or one title.** A figure when there is a number worth seeing ("12°", "1", "20"), with what it is in `unit` ("trajet à payer"); a title otherwise ("Mairie de Rennes"). Six characters at most for a figure: shorten ("223 k").
-- **One picture, when it says more than words**: the week's temperatures as bars, the collection days as blocks, how much of the day is left as a gauge, a hemicycle in pixels. None is better than a decorative one.
+- **One picture, when it says more than words**: the week's temperatures as bars, the collection days as blocks, how much of the day is left as a gauge, the day's vote in a hemicycle of pixels, the first three subjects as a list (each its title and a figure, « 6/7 »). None is better than a decorative one.
+- **A list only for a ranking**: up to three rows of the same kind, the first the most important, each cut where the tile ends (the start of a text says what it is); its figure is what ranks them, the same unit on every row, and a line under it says what that unit is.
 - **Two lines at most**, the most useful first; `dim` for what is secondary, `accent` for a deadline, `ok`/`bad` for a state, `live` only for what is happening now.
 - **Urgent only when it is**: `urgency: 'urgent'` frames the tile in yellow; keep it for something to do today.
-- **One action, if any**: the one thing the user would do from there ("payer"), with the `params` that open it.
+- **A click opens your first tab**: wherever the tile points, a click on it opens the service as F2 does, so the user always lands in the same place.
+- **One action, if any**: the one thing the user would do from there ("payer", "voir le direct"), with the `params` that open it there; it is the only way a tile opens the service elsewhere than its first tab.
 - **Honest when it can't**: no address, nothing synced yet, nothing to pay: say it in the tile rather than return an empty one; a failure can throw (Marianne keeps the last tile).
 - **Fast and frugal**: read what the service keeps, reach the network only when needed; choose `tile.everyMinutes` for how fast the figure changes (weather 30, a live sitting 5).
 - Test it with `checkTile`: a tile Marianne would cut fails the test.

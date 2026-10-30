@@ -10,7 +10,21 @@ import { service } from '../src/main'
 import { memberCard } from '../src/present'
 import { getMember } from '../src/queries'
 import { DB_FILE, openWriter } from '../src/store'
-import { dayWords, deputyVotes, fit, hemicyclePicture, liveLine, shortSubject, streamLabel, tileOf, type TileFacts } from '../src/tile'
+import {
+  ballotLabel,
+  dayWords,
+  deputyVotes,
+  fit,
+  hemicyclePicture,
+  liveLine,
+  POSITION_COLORS,
+  shortSubject,
+  streamLabel,
+  tileOf,
+  voteTitle,
+  type DayVote,
+  type TileFacts
+} from '../src/tile'
 import type { LiveStream } from '../src/types'
 import { buildIndex, fakeHttp, SITTING } from './fixtures'
 
@@ -177,17 +191,91 @@ describe('the tile’s parts', () => {
   it('says which day the deputy’s votes are of when it isn’t the figure’s, and when there is no ballot', () => {
     const facts: TileFacts = {
       today: '2026-10-29',
-      index: { groups: [], ballots: { day: '2026-10-29', count: 2 } },
+      index: { groups: [], ballots: { day: '2026-10-29', count: 2 }, vote: null },
       sync: {},
       live: [],
+      watch: null,
       deputy: { female: true, voted: 12, total: 14, day: '2026-10-28' }
     }
+    // A day of ballots at the Sénat only: their figure, in the hemicycle of the groups' colours.
     expect(checkTile(tileOf(facts))).toMatchObject({
       value: { text: '2', unit: 'scrutins aujourd’hui' },
-      lines: [{ text: 'votre députée : 12 / 14 votes hier' }]
+      lines: [{ text: 'votre députée : 12 / 14 votes hier' }],
+      action: { label: 'scrutins du jour', params: { tab: 'ballots' } }
     })
-    expect(checkTile(tileOf({ ...facts, index: { groups: [], ballots: null }, deputy: null }))).toMatchObject({ title: 'aucun scrutin public pour l’instant' })
-    expect(checkTile(tileOf({ ...facts, index: { groups: [], ballots: null }, deputy: null }))?.lines).toBeUndefined()
+    const none = checkTile(tileOf({ ...facts, index: { groups: [], ballots: null, vote: null }, deputy: null }))
+    expect(none).toMatchObject({ title: 'aucun scrutin public pour l’instant' })
+    expect(none?.lines).toBeUndefined()
+    expect(none?.action).toBeUndefined()
+  })
+
+  it('names a ballot in a few words: the text, the amendment, the article, the motion', () => {
+    expect(ballotLabel("l'ensemble du projet de loi de finances pour 2027 (première lecture).", 'text')).toBe('PLF 2027')
+    expect(ballotLabel("l'ensemble de la proposition de loi visant à protéger les enfants", 'text')).toBe('proposition de loi visant à protéger les enfants')
+    expect(
+      ballotLabel("l'amendement n° 1781 de M. Tesson après l'article 7 du projet de loi de financement de la sécurité sociale pour 2027", 'amendment')
+    ).toBe('amendement n° 1781')
+    expect(ballotLabel("le sous-amendement n° 48 de M. Tanguy à l'amendement n° 39 du Gouvernement", 'amendment')).toBe('sous-amendement n° 48')
+    expect(ballotLabel("sur l'amendement n° 5, présenté par M. Bernard Jomier et plusieurs de ses collègues, à l'article 1er", 'amendment')).toBe(
+      'amendement n° 5'
+    )
+    expect(ballotLabel("l'article premier du projet de loi relatif à l'énergie", 'article')).toBe('article premier')
+    expect(ballotLabel("la motion de censure déposée par M. Dupont et 57 membres de l'Assemblée", 'motion')).toBe('motion de censure')
+  })
+
+  it('titles the day’s vote by its result and its day first, so that a narrow tile cuts the end of the text’s name', () => {
+    const vote: DayVote = { label: 'PLF 2027', result: 'adopté', day: '2026-10-28', groups: [] }
+    expect(voteTitle(vote, '2026-10-28')).toBe('adopté : PLF 2027')
+    expect(voteTitle(vote, '2026-10-29')).toBe('adopté hier : PLF 2027')
+    const amendment = { ...vote, result: 'rejeté', label: 'amendement n° 1781' }
+    expect(voteTitle(amendment, '2026-10-28')).toBe('rejeté : amendement n° 1781')
+    // Too long to show whole: the number goes rather than be cut in half.
+    expect(voteTitle({ ...amendment, day: '2026-10-22' }, '2026-10-29')).toBe('rejeté le 22/10 : un amendement')
+    expect(voteTitle({ ...amendment, label: 'sous-amendement n° 48', day: '2026-10-27' }, '2026-10-28')).toBe('rejeté hier : un sous-amendement')
+    expect(voteTitle({ ...vote, day: '2025-12-18' }, '2026-01-05')).toBe('adopté le 18/12/2025 : PLF 2027')
+    const long = voteTitle({ ...vote, label: 'proposition de loi visant à protéger les enfants des écrans' }, '2026-10-28')
+    expect(long).toBe('adopté : proposition de loi visant à…')
+    expect(checkTile({ title: long })).toEqual({ title: long })
+  })
+
+  it('draws the vote in the hemicycle, each group’s seats in what most of its voters chose, and opens the broadcast now', () => {
+    const facts: TileFacts = {
+      today: '2026-10-28',
+      index: {
+        groups: [],
+        ballots: { day: '2026-10-28', count: 4 },
+        vote: {
+          label: 'PLF 2027',
+          result: 'adopté',
+          day: '2026-10-28',
+          groups: [
+            { members: 3, position: 'against' },
+            { members: 1, position: null },
+            { members: 2, position: 'abstention' },
+            { members: 6, position: 'for' }
+          ]
+        }
+      },
+      sync: {},
+      live: ['PLF 2027'],
+      watch: { video: 'an:123' },
+      deputy: { female: false, voted: 4, total: 4, day: '2026-10-28' }
+    }
+    const tile = checkTile(tileOf(facts))
+    expect(tile).toMatchObject({
+      title: 'adopté : PLF 2027',
+      lines: [{ text: '1 direct · PLF 2027', tone: 'live' }, { text: 'votre député : 4 / 4 votes' }],
+      action: { label: 'voir le direct', params: { video: 'an:123' } }
+    })
+    const picture = tile?.visual?.kind === 'pixels' ? tile.visual : null
+    expect(picture?.palette).toEqual({ r: 'rouge', g: 'gris', j: 'jaune', v: 'vert' })
+    expect(POSITION_COLORS).toEqual({ for: 'vert', against: 'rouge', abstention: 'jaune' })
+    // Half the seats for, a quarter against, as the groups sit.
+    expect([count(picture!.pixels, 'v'), count(picture!.pixels, 'r')]).toEqual([29, 14])
+    // Nothing live: the day's ballots, by their day.
+    expect(tileOf({ ...facts, live: [], watch: null }).action).toEqual({ label: 'scrutins du jour', params: { tab: 'ballots' } })
+    expect(tileOf({ ...facts, today: '2026-10-29', live: [], watch: null }).action).toEqual({ label: 'scrutins d’hier', params: { tab: 'ballots' } })
+    expect(tileOf({ ...facts, today: '2026-11-02', live: [], watch: null }).action).toEqual({ label: 'les scrutins', params: { tab: 'ballots' } })
   })
 })
 
@@ -252,14 +340,15 @@ describe('the tile', () => {
     expect((await start({ sync: { error: 'HTTP 503' } }).tile())?.lines).toEqual([{ text: 'le dernier téléchargement a échoué', tone: 'dim' }])
   })
 
-  it('once synced, counts today’s public ballots in both chambers and draws the hemicycle; without an address, says what is missing', async () => {
+  it('once synced, titles the day’s main vote by its result and draws it in the hemicycle; without an address, says what is missing', async () => {
     synced()
     const { tile, urls } = start()
+    // The vote on the whole budget rather than the day's other ballots; the group that voted abstained, the other didn't vote.
     expect(await tile()).toEqual({
-      value: { text: '3', unit: 'scrutins aujourd’hui' },
-      visual: { kind: 'pixels', palette: { m: 'magenta-pale', b: 'bleu-sombre' }, pixels: expect.any(Array) },
+      title: 'adopté : PLF 2027',
+      visual: { kind: 'pixels', palette: { j: 'jaune', g: 'gris' }, pixels: expect.any(Array) },
       lines: [{ text: 'votre député·e : renseignez votre adresse', tone: 'dim' }],
-      params: { tab: 'ballots' }
+      action: { label: 'scrutins du jour', params: { tab: 'ballots' } }
     })
     // Neither the Sénat's agenda nor anything else through `json`.
     expect(urls).toEqual([])
@@ -273,14 +362,21 @@ describe('the tile', () => {
     expect((await start({ home: rennes }).tile())?.lines).toEqual([{ text: 'votre député·e : complétez votre adresse', tone: 'dim' }])
   })
 
-  it('without a ballot today, counts the last day’s and says which', async () => {
+  it('without a ballot today, shows the last day’s vote and says which day, in its title and its button', async () => {
     synced()
     vi.setSystemTime(new Date('2026-10-29T10:00:00Z'))
-    expect(await start({ home: CENON }).tile()).toMatchObject({ value: { text: '3', unit: 'scrutins hier' }, lines: [{ text: 'votre député : 1 / 1 vote' }] })
+    expect(await start({ home: CENON }).tile()).toMatchObject({
+      title: 'adopté hier : PLF 2027',
+      lines: [{ text: 'votre député : 1 / 1 vote' }],
+      action: { label: 'scrutins d’hier', params: { tab: 'ballots' } }
+    })
     vi.setSystemTime(new Date('2026-10-25T10:00:00Z'))
     expect(await start({ home: CENON }).tile()).toMatchObject({
-      value: { text: '1', unit: 'scrutin le 22 octobre' },
-      lines: [{ text: 'votre député : 1 / 1 vote' }]
+      title: 'rejeté le 22/10 : un amendement',
+      // Most of one group against, the other for.
+      visual: { palette: { r: 'rouge', v: 'vert' } },
+      lines: [{ text: 'votre député : 1 / 1 vote' }],
+      action: { label: 'les scrutins', params: { tab: 'ballots' } }
     })
   })
 
@@ -294,15 +390,17 @@ describe('the tile', () => {
     db.close()
   })
 
-  it('says what is live, first: the text the Assemblée’s sitting debates, from its agenda once synced', async () => {
-    expect((await start({ portals: PORTALS }).tile())?.lines).toEqual([
+  it('says what is live, first: the text the Assemblée’s sitting debates, from its agenda once synced; its button opens the first', async () => {
+    const before = await start({ portals: PORTALS }).tile()
+    expect(before?.lines).toEqual([
       { text: '2 directs · questions au Gouvernement, Sénat', tone: 'live' },
       { text: 'à télécharger depuis le service', tone: 'dim' }
     ])
+    // Its meeting until the portal names its video: the meeting's pane plays the live.
+    expect(before?.action).toEqual({ label: 'voir le direct', params: { meeting: SITTING } })
     synced()
-    expect((await start({ home: CENON, portals: PORTALS }).tile())?.lines).toEqual([
-      { text: '2 directs · PLF 2027, Sénat', tone: 'live' },
-      { text: 'votre député : 1 / 1 vote' }
-    ])
+    const after = await start({ home: CENON, portals: PORTALS }).tile()
+    expect(after?.lines).toEqual([{ text: '2 directs · PLF 2027, Sénat', tone: 'live' }, { text: 'votre député : 1 / 1 vote' }])
+    expect(after?.action).toEqual({ label: 'voir le direct', params: { meeting: SITTING } })
   })
 })

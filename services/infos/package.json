@@ -58,18 +58,19 @@
     "icon": {
       "palette": {
         "w": "blanc",
-        "j": "jaune",
-        "d": "gris-clair"
+        "b": "bleu-sombre",
+        "r": "rouge",
+        "g": "gris-clair"
       },
       "pixels": [
-        "wwwwwww.",
-        "wjjjjjw.",
-        "wwwwwwwd",
-        "wd.dd.wd",
-        "wd.dd.wd",
-        "wwwwwwwd",
-        "wddddwwd",
-        "wwwwwwdd"
+        "wwwwwwww",
+        "wbbbbbbw",
+        "wwwwwwww",
+        "wrrrwggw",
+        "wrrrwwww",
+        "wrrrwggw",
+        "wwwwwwww",
+        "wggggggw"
       ]
     }
   },

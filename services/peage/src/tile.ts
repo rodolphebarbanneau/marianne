@@ -43,8 +43,6 @@ export function tripTile(trips: Trip[], granted: boolean, now: Date): ServiceTil
   const [first] = due
   const left = first.due.getTime() - now.getTime()
   const late = left <= 0
-  // The screen opens on that trip, with its ways to pay.
-  const params = { trip: first.trip.id }
   return {
     value: { text: String(due.length), unit: due.length > 1 ? 'trajets à payer' : 'trajet à payer' },
     lines: [
@@ -52,7 +50,7 @@ export function tripTile(trips: Trip[], granted: boolean, now: Date): ServiceTil
       { text: dueText(first.due, now), tone: late ? 'bad' : 'accent' }
     ],
     ...(left < URGENT_MS ? { urgency: 'urgent' as const } : left < SOON_MS ? { urgency: 'soon' as const } : {}),
-    action: { label: 'payer', params },
-    params
+    // « payer » opens the screen on that trip, with its ways to pay; the rest of the tile opens the list of trips.
+    action: { label: 'payer', params: { trip: first.trip.id } }
   }
 }
