@@ -17,13 +17,13 @@ const source = (id: string, more: Partial<NewsSource> = {}): NewsSource => ({
 const sections = (...ids: string[]) => ids.map((id) => ({ id, label: id, feed: `https://example.fr/${id}.xml` }))
 
 const catalog = [
-  source('le-monde', { lean: 'centre-gauche', leanBasis: 'une étude', sections: sections('une', 'politique', 'economie') }),
-  source('liberation', { lean: 'gauche', leanBasis: 'une étude' }),
-  source('le-figaro', { lean: 'droite', leanBasis: 'une étude' }),
-  source('la-croix', { lean: 'centre', leanBasis: 'une étude' }),
+  source('le-monde', { lean: 'centre-gauche', sections: sections('une', 'politique', 'economie') }),
+  source('liberation', { lean: 'gauche' }),
+  source('le-figaro', { lean: 'droite' }),
+  source('la-croix', { lean: 'centre' }),
   source('franceinfo', { group: 'broadcast' }),
-  source('ouest-france', { group: 'regional', regions: ['53', '52', '28'], lean: 'centre', leanBasis: 'une étude' }),
-  source('sud-ouest', { group: 'regional', regions: ['75'], lean: 'centre', leanBasis: 'une étude' })
+  source('ouest-france', { group: 'regional', regions: ['53', '52', '28'], lean: 'centre' }),
+  source('sud-ouest', { group: 'regional', regions: ['75'], lean: 'centre' })
 ]
 const byId = (id: string) => catalog.find((s) => s.id === id)!
 // Rennes (35238): Bretagne.
@@ -88,6 +88,9 @@ describe('the sources of Réglages › Identité', () => {
     expect(sidesOf(catalog, defaults)).toEqual({ left: 2, centre: 2, right: 1, none: 1 })
     const moved = giveLean(acceptSources(defaults, ['liberation'], false), byId('la-croix'), 'droite')
     expect(sidesOf(catalog, moved)).toEqual({ left: 1, centre: 1, right: 2, none: 1 })
+    // A side no source belongs to is left out; one whose sources are all set aside stays, at 0.
+    expect(sidesOf(catalog, giveLean(defaults, byId('franceinfo'), 'centre'))).toEqual({ left: 2, centre: 3, right: 1 })
+    expect(sidesOf(catalog, acceptSources(defaults, ['le-figaro'], false))).toEqual({ left: 2, centre: 2, right: 0, none: 1 })
     expect(byLean(catalog, defaults).map((s) => s.id)).toEqual(['liberation', 'le-monde', 'la-croix', 'ouest-france', 'sud-ouest', 'le-figaro', 'franceinfo'])
   })
 })

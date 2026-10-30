@@ -7,7 +7,7 @@ body:
       value: |
         Marianne's content is legal and practical guidance people act on: thanks for helping keep it right. Don't write **any personal data** here: this message is public.
 
-        A news source for 3615 INFOS is a newsroom writing in French, with an open feed that works (RSS or Atom, carrying its articles). Its editorial line needs a reference anyone can check that states it (the outlet's own statement, its encyclopaedia article, a published study of the press); without one, it is « sans classement ». Who owns an outlet is not its line.
+        A news source for 3615 INFOS is a newsroom writing in French, with an open feed that works (RSS or Atom, carrying its articles).
   - type: dropdown
     id: kind
     attributes:
@@ -34,7 +34,7 @@ body:
     id: source
     attributes:
       label: Official source
-      description: A link to the text or page that says so (Légifrance, service-public.fr, the administration concerned…); for a news source, the reference that states its editorial line, quoted, with the day you read it, if there is one.
+      description: A link to the text or page that says so (Légifrance, service-public.fr, the administration concerned…); for a news source, its site.
     validations:
       required: true
   - type: input

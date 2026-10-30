@@ -1,6 +1,6 @@
 {
   "updated": "2026-10-30",
-  "note": "French news sources and their public RSS or Atom feeds, checked in October 2026; the section feeds checked to answer with articles on 2026-10-30. Les Échos has no front-page feed: its economy section is the paper's core. lean is Marianne's default editorial line, given only where a published reference states it (leanBasis quotes it, with the day it was read); the scale stops at gauche and droite, so a reference that goes further (CNews, Europe 1) is classed at the end. Without such a statement a source is aucune: Le Parisien (its stated line is political neutrality), La Croix (it follows the Church, not a party), Les Échos and L'Opinion (liberal and pro-business, no left-right claim), the regional dailies but Ouest-France, the broadcasters, the fact-checkers. paywall is a CSS selector found on paid pages only, checked against free ones; the other sources rely on their pages' isAccessibleForFree. Not listed: RTL (no news feed, only podcasts), AFP Factuel (its feed carries no articles), LCI (its feed is TF1 Info's).",
+  "note": "French news sources and their public RSS or Atom feeds, checked in October 2026; the section feeds checked to answer with articles on 2026-10-30. Les Échos has no front-page feed: its economy section is the paper's core. TF1 Info is the news site of TF1 and LCI: one feed for both. lean is Marianne's default editorial line, on a scale that stops at gauche and droite; the fact-checkers are aucune, as they take no side; the user may change it for any source in their settings. paywall is a CSS selector found on paid pages only, checked against free ones; the other sources rely on their pages' isAccessibleForFree. Not listed: RTL (no news feed, only podcasts).",
   "sources": [
     {
       "id": "le-monde",
@@ -46,7 +46,6 @@
         }
       ],
       "lean": "centre-gauche",
-      "leanBasis": "Wikipédia, article « Le Monde » : « Il est classé politiquement au centre gauche » (consulté le 30 octobre 2026)",
       "paywall": ".article__wrapper--premium"
     },
     {
@@ -93,7 +92,6 @@
         }
       ],
       "lean": "droite",
-      "leanBasis": "Wikipédia, article « Le Figaro » : « sa ligne éditoriale est issue des trois grandes familles de la droite » (consulté le 30 octobre 2026)",
       "paywall": ".fig-premium-paywall"
     },
     {
@@ -139,8 +137,7 @@
           "feed": "https://www.liberation.fr/arc/outboundfeeds/rss-all/category/environnement/?outputType=xml"
         }
       ],
-      "lean": "gauche",
-      "leanBasis": "Wikipédia, article « Libération (journal) » : « le journal de toutes les gauches » (consulté le 30 octobre 2026)"
+      "lean": "gauche"
     },
     {
       "id": "les-echos",
@@ -148,7 +145,7 @@
       "group": "national",
       "feed": "https://services.lesechos.fr/rss/les-echos-economie.xml",
       "homepage": "https://www.lesechos.fr",
-      "lean": "aucune",
+      "lean": "centre-droit",
       "sections": [
         {
           "id": "economie",
@@ -230,7 +227,7 @@
           "feed": "https://feeds.leparisien.fr/leparisien/rss/sports"
         }
       ],
-      "lean": "aucune",
+      "lean": "centre",
       "paywall": ".paywall-article-section",
       "dates": "https://www.leparisien.fr/arc/outboundfeeds/sitemapnews/?outputType=xml&from=0"
     },
@@ -277,7 +274,7 @@
           "feed": "https://www.la-croix.com/feeds/rss/religion.xml"
         }
       ],
-      "lean": "aucune",
+      "lean": "centre",
       "paywall": ".article-premium"
     },
     {
@@ -324,7 +321,6 @@
         }
       ],
       "lean": "gauche",
-      "leanBasis": "Wikipédia, article « L’Humanité » : « Sa ligne éditoriale est liée dès ses débuts à la gauche » (consulté le 30 octobre 2026)",
       "paywall": ".cv-paywall-unlocker"
     },
     {
@@ -355,7 +351,7 @@
           "feed": "https://www.lopinion.fr/economie.rss"
         }
       ],
-      "lean": "aucune",
+      "lean": "centre-droit",
       "paywall": ".paywall-premium"
     },
     {
@@ -365,8 +361,7 @@
       "feed": "https://www.ouest-france.fr/rss/une",
       "homepage": "https://www.ouest-france.fr",
       "regions": ["53", "52", "28"],
-      "lean": "centre-droit",
-      "leanBasis": "Wikipédia, article « Ouest-France » : « orientation politique : centre-droit, démocratie chrétienne » (consulté le 30 octobre 2026)"
+      "lean": "centre"
     },
     {
       "id": "sud-ouest",
@@ -375,7 +370,7 @@
       "feed": "https://www.sudouest.fr/rss.xml",
       "homepage": "https://www.sudouest.fr",
       "regions": ["75"],
-      "lean": "aucune",
+      "lean": "centre",
       "paywall": "html.article-premium"
     },
     {
@@ -385,7 +380,7 @@
       "feed": "https://www.lavoixdunord.fr/rss.xml",
       "homepage": "https://www.lavoixdunord.fr",
       "regions": ["32"],
-      "lean": "aucune",
+      "lean": "centre",
       "paywall": ".r-article--payant"
     },
     {
@@ -395,7 +390,7 @@
       "feed": "https://www.leprogres.fr/rss",
       "homepage": "https://www.leprogres.fr",
       "regions": ["84", "27"],
-      "lean": "aucune",
+      "lean": "centre",
       "paywall": ".paywall-content"
     },
     {
@@ -404,7 +399,7 @@
       "group": "broadcast",
       "feed": "https://www.franceinfo.fr/titres.rss",
       "homepage": "https://www.franceinfo.fr",
-      "lean": "aucune"
+      "lean": "centre"
     },
     {
       "id": "bfmtv",
@@ -412,7 +407,7 @@
       "group": "broadcast",
       "feed": "https://www.bfmtv.com/rss/news-24-7/",
       "homepage": "https://www.bfmtv.com",
-      "lean": "aucune"
+      "lean": "centre"
     },
     {
       "id": "cnews",
@@ -420,8 +415,7 @@
       "group": "broadcast",
       "feed": "https://www.cnews.fr/rss.xml",
       "homepage": "https://www.cnews.fr",
-      "lean": "droite",
-      "leanBasis": "Wikipédia, article « CNews » : « Sa ligne éditoriale est décrite comme très ancrée à droite et conservatrice, avec une orientation marquée de plus en plus à l’extrême droite » (consulté le 30 octobre 2026)"
+      "lean": "droite"
     },
     {
       "id": "tf1-info",
@@ -429,7 +423,7 @@
       "group": "broadcast",
       "feed": "https://www.tf1info.fr/feeds/rss-une.xml",
       "homepage": "https://www.tf1info.fr",
-      "lean": "aucune"
+      "lean": "centre-droit"
     },
     {
       "id": "france-24",
@@ -437,7 +431,7 @@
       "group": "broadcast",
       "feed": "https://www.france24.com/fr/rss",
       "homepage": "https://www.france24.com/fr",
-      "lean": "aucune"
+      "lean": "centre"
     },
     {
       "id": "rfi",
@@ -445,7 +439,7 @@
       "group": "broadcast",
       "feed": "https://www.rfi.fr/fr/rss",
       "homepage": "https://www.rfi.fr/fr",
-      "lean": "aucune"
+      "lean": "centre"
     },
     {
       "id": "europe-1",
@@ -453,8 +447,7 @@
       "group": "broadcast",
       "feed": "https://www.europe1.fr/rss.xml",
       "homepage": "https://www.europe1.fr",
-      "lean": "droite",
-      "leanBasis": "Wikipédia, article « Europe 1 » : « orientation éditoriale plus à droite, voire à l’extrême droite » (consulté le 30 octobre 2026)"
+      "lean": "droite"
     },
     {
       "id": "les-decodeurs",

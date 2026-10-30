@@ -193,10 +193,8 @@ export interface NewsSource {
   sections?: Array<{ id: string; label: string; feed: string }>
   /** INSEE region codes: a regional source's area. */
   regions?: string[]
-  /** Marianne's default editorial line; absent: `aucune`. */
+  /** Marianne's default editorial line, which the user may change; absent: `aucune`. */
   lean?: NewsLean
-  /** Where `lean` comes from (a published study, a reference work), with its date. */
-  leanBasis?: string
   /** Its pages are behind a paywall: a CSS selector that marks a paid article (nothing past the summary is read then). */
   paywall?: string
   /** It asked that Marianne show no start of its articles: its summary alone. */
@@ -575,7 +573,7 @@ function readSites(file: string, report: Report): { updated: string; sites: Site
   return { updated: data.updated, sites }
 }
 
-const NEWS_KEYS = ['id', 'name', 'group', 'feed', 'homepage', 'sections', 'regions', 'lean', 'leanBasis', 'paywall', 'start', 'dates'] as const
+const NEWS_KEYS = ['id', 'name', 'group', 'feed', 'homepage', 'sections', 'regions', 'lean', 'paywall', 'start', 'dates'] as const
 const NEWS_SECTION_KEYS = ['id', 'label', 'feed'] as const
 /** The INSEE codes of the regions (since 2016), as a commune's `region` gives them. */
 const REGION_CODES = ['01', '02', '03', '04', '06', '11', '24', '27', '28', '32', '44', '52', '53', '75', '76', '84', '93', '94'] as const
@@ -633,10 +631,6 @@ function readNewsSources(file: string, report: Report): { updated: string; sourc
     const sections = readSections(o, source.feed, where, report)
     const regions = readRegions(o, source.group, where, report)
     const lean = optionalField(o, 'lean', where, report, oneOf(NEWS_LEANS)) as NewsLean | undefined
-    const leanBasis = optionalField(o, 'leanBasis', where, report)
-    // A position is a claim about a newsroom: it says where it comes from.
-    if (lean && lean !== 'aucune' && leanBasis === undefined)
-      report(`${where}.leanBasis`, `required with "lean": "${lean}": the published reference it comes from, with its date`)
     const paywall = optionalField(o, 'paywall', where, report)
     const dates = optionalField(o, 'dates', where, report, (v) => urlProblem(v, true))
     if (o.start !== undefined && o.start !== false) report(`${where}.start`, 'only false: the source asked that no start of its articles be shown')
@@ -645,7 +639,6 @@ function readNewsSources(file: string, report: Report): { updated: string; sourc
       ...(sections ? { sections } : {}),
       ...(regions ? { regions } : {}),
       ...(lean !== undefined ? { lean } : {}),
-      ...(leanBasis !== undefined ? { leanBasis } : {}),
       ...(paywall !== undefined ? { paywall } : {}),
       ...(o.start === false ? { start: false as const } : {}),
       ...(dates !== undefined ? { dates } : {})

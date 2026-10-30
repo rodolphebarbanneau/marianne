@@ -705,12 +705,14 @@ mark.infos-q {
 }
 .infos-detail .sds {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* A column for each side that has sources, four at most, sharing the width. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: var(--s3);
 }
 .infos-detail .sd {
   display: grid;
-  /* The cells take what the count leaves, and wrap: a side may have a dozen sources (sans classement). */
+  /* The cells take what the count leaves, and wrap: a side may have a dozen sources. */
   grid-template-columns: minmax(0, auto) auto;
   justify-content: start;
   align-items: center;

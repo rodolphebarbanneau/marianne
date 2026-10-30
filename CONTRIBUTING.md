@@ -8,7 +8,7 @@ Please read the [code of conduct](CODE_OF_CONDUCT.md) first. To report a securit
 
 - **Report a bug, suggest an idea, share feedback**: [open an issue](https://github.com/rodolphebarbanneau/marianne/issues/new/choose) on one of its forms.
 - **Correct the content**: a guided démarche, a skill, a calendar date, a public site or a news source that is wrong or outdated. Use the "Content correction" form, or send a pull request (see [docs/content.md](docs/content.md)).
-- **Propose a news source** for 3615 INFOS, with the same form: a newsroom writing in French, with an open feed that works (RSS or Atom, carrying its articles). Its editorial line comes with a reference anyone can check that states it (the outlet's own statement, its encyclopaedia article, a published study of the press), quoted with the day you read it; without one, it is « sans classement ». Who owns an outlet is not its line.
+- **Propose a news source** for 3615 INFOS, with the same form: a newsroom writing in French, with an open feed that works (RSS or Atom, carrying its articles).
 - **Write a service**: the 3615 add-ons are packages built on `@marianne/sdk`: the contract in [docs/services.md](docs/services.md), how to build one well in [services/AGENTS.md](services/AGENTS.md).
 - **Improve or translate the user guide**: it lives in `docs/guide/<language>/`, every language with the same English file names (see [docs/guide](docs/guide/README.md)). A change to one page goes to every language in the same pull request.
 - **Improve the code**: start with an issue, ideally one labeled `good first issue` or `help wanted`, and say you're on it.
@@ -45,7 +45,7 @@ Working with an AI agent? [AGENTS.md](AGENTS.md) gives it the map of the reposit
 4. CI must pass: the checks, then a package build on Windows, macOS and Linux.
 5. Pull requests are merged by rebase, so `main` stays a straight line of commits. Write commit messages as short, plain sentences ("Give the profile's archive tests 30 seconds"), with details in the body when they help.
 
-Content changes are reviewed with extra care: skills go into the engines' instructions, and démarches are legal guidance people will act on. Cite an official source (Légifrance, service-public.fr, the administration concerned) for anything you add or change; for a news source, its feed and the reference for its editorial line.
+Content changes are reviewed with extra care: skills go into the engines' instructions, and démarches are legal guidance people will act on. Cite an official source (Légifrance, service-public.fr, the administration concerned) for anything you add or change; for a news source, its feed.
 
 ## Releases
 
