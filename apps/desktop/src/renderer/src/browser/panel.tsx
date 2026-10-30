@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { DEFAULT_CONFIG } from '@shared/config'
 import type { BrowserState, KeychainEntry } from '@shared/types'
 import { useApp } from '../app/context'
 import { CloseIcon } from '../components/icons'
@@ -6,11 +7,9 @@ import { addressUrl } from '../lib/address'
 import { api, errorText, useLive } from '../lib/api'
 import { plainKey } from '../lib/keys'
 import { overlay } from '../lib/overlay'
+import { CONVERSATION_MIN, DRAG_FROM, draggedWidth, pageBounds } from './layout'
 
-const rect = (el: HTMLElement) => {
-  const r = el.getBoundingClientRect()
-  return { x: Math.round(r.left), y: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height) }
-}
+const rect = (el: HTMLElement) => pageBounds(el.getBoundingClientRect())
 
 const siteOf = (url: string) => {
   try {
@@ -25,6 +24,62 @@ const siteOf = (url: string) => {
 }
 
 /**
+ * The browser's left edge: dragged, it shares the window between the conversation and the page;
+ * double-clicked, it puts the default width back. It sits just left of the page, which is a native
+ * view and would take the pointer from anything over it; while it is dragged the page hides, so
+ * the pointer can't be lost over it, and comes back at its new width.
+ */
+function BrowserEdge({ onDragging }: { onDragging: (dragging: boolean) => void }) {
+  const { setConfig } = useApp()
+  const [drag, setDrag] = useState(false)
+  return (
+    <div
+      className={`splitter browser-edge${drag ? ' drag' : ''}`}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="largeur du navigateur"
+      title="glisser pour redimensionner · double-clic : largeur par défaut"
+      onDoubleClick={() => void setConfig({ ui: { browserWidth: DEFAULT_CONFIG.ui.browserWidth } })}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return
+        // Not a text selection in the conversation as the pointer goes over it.
+        e.preventDefault()
+        const el = e.currentTarget
+        el.setPointerCapture(e.pointerId)
+        const panel = el.parentElement!
+        const main = panel.parentElement?.querySelector<HTMLElement>(':scope > .main')
+        const start = panel.getBoundingClientRect().width
+        const room = Math.max(0, (main?.getBoundingClientRect().width ?? 0) - CONVERSATION_MIN)
+        const from = e.clientX
+        let last = start
+        let dragging = false
+        const move = (m: PointerEvent) => {
+          if (!dragging && Math.abs(m.clientX - from) < DRAG_FROM) return
+          if (!dragging) {
+            dragging = true
+            setDrag(true)
+            onDragging(true)
+          }
+          last = draggedWidth(start, m.clientX - from, room)
+          document.documentElement.style.setProperty('--browser-w', `${last}px`)
+        }
+        const end = () => {
+          el.removeEventListener('pointermove', move)
+          el.removeEventListener('lostpointercapture', end)
+          if (!dragging) return
+          setDrag(false)
+          onDragging(false)
+          void setConfig({ ui: { browserWidth: last } })
+        }
+        el.addEventListener('pointermove', move)
+        // After a release, a cancel or a capture taken away: the drag ends whichever way it does.
+        el.addEventListener('lostpointercapture', end)
+      }}
+    />
+  )
+}
+
+/**
  * The built-in browser, in the folder's right column. The page itself is a native view the main
  * process draws over the viewport box; this is its chrome: address, who drives, take control.
  */
@@ -35,9 +90,10 @@ export function BrowserPanel({ folderId }: { folderId: string }) {
   const [logins, setLogins] = useState<KeychainEntry[]>([])
   const [notice, setNotice] = useState('')
   const viewport = useRef<HTMLDivElement>(null)
-  // Dialogs and menus draw over the page: the native view hides while one is open.
+  const [resizing, setResizing] = useState(false)
+  // Dialogs and menus draw over the page: the native view hides while one is open, and while the browser's edge is dragged.
   const dialog = useSyncExternalStore(overlay.subscribe, overlay.get)
-  const covered = !!app.palette || !!app.settingsPage || dialog
+  const covered = !!app.palette || !!app.settingsPage || dialog || resizing
   const hidden = useRef(covered)
   hidden.current = covered
 
@@ -80,6 +136,7 @@ export function BrowserPanel({ folderId }: { folderId: string }) {
 
   return (
     <aside className="browser">
+      <BrowserEdge onDragging={setResizing} />
       <div className="bhead">
         <button className="icon-btn" disabled={!state?.canGoBack} onClick={() => api.browserBack()} title="page précédente">
           ‹
