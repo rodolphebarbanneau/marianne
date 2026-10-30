@@ -9,20 +9,24 @@ import {
   type ServiceTile,
   type SyncProgress,
   type SyncStatus,
-  type TileLine
+  type TileLine,
+  type TileParams
 } from '@marianne/sdk'
 import type { HomeCommune, ServiceContext } from '@marianne/sdk/main'
+import { groupPositions } from './analysis'
 import { liveMeetings, todayStreams } from './methods'
-import { all, getMember, groupRecords, listGroups, meetingsBetween, one, votesOf } from './queries'
+import { all, ballotsBetween, getMember, groupRecords, listGroups, meetingsBetween, membersByKey, one, votesIn, votesOf, type BallotRecord } from './queries'
 import type { ParliamentIndex } from './store'
 import { addDays, parisDay } from './time'
-import type { Chamber, LiveStream, Representatives } from './types'
+import { streamLine } from './today'
+import type { BallotKind, Chamber, GroupInfo, LiveStream, Position, Representatives } from './types'
 
 /**
- * 3615 PARLEMENT's tile on the Services page: the public ballots of the last day that had some,
- * the Assemblée's hemicycle in its groups' colours, what is broadcast now, and how the user's
- * deputy took part in that day's ballots. `tileOf` lays it out from facts, so the tests run it
- * without the index or the portals; `parlementTile` gathers them.
+ * 3615 PARLEMENT's tile on the Services page: the Assemblée's main vote of its last day of public
+ * ballots, its result in words and in its hemicycle (each group's seats in what most of its voters
+ * chose), what is broadcast now, and how the user's deputy took part in that day's ballots; its
+ * button, the broadcast to watch, else that day's ballots. `tileOf` lays it out from facts, so the
+ * tests run it without the index or the portals; `parlementTile` gathers them.
  */
 
 // ---------------------------------------------------------------- groups' colours in the palette
@@ -180,6 +184,98 @@ export function liveLine(labels: string[]): TileLine | null {
   return { text: fit(text, TILE_LIMITS.line), tone: 'live' }
 }
 
+// ---------------------------------------------------------------- the day's vote
+
+/** A group's seats in the picture of a vote: what most of its voters chose; grey, none voted or it split evenly. */
+export const POSITION_COLORS: Record<Exclude<Position, 'nonVoting'>, PaletteColor> = { for: 'vert', against: 'rouge', abstention: 'jaune' }
+
+/**
+ * A ballot in a few words, from its subject as the chamber words it: "PLF 2027", "amendement n°
+ * 1781", "article 7", "motion de censure". An amendment's or an article's text is left out: the
+ * tile's title has room for what was voted, not for where it sits.
+ */
+export function ballotLabel(title: string, kind: BallotKind): string {
+  const said = title
+    .replace(/^sur /i, '')
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/[\s.]+$/, '')
+  if (kind === 'amendment') {
+    const n = said.match(/amendements?\D*?(\d+)/i)?.[1]
+    return `${/^(?:le )?sous-amendement/i.test(said) ? 'sous-amendement' : 'amendement'}${n ? ` n° ${n}` : ''}`
+  }
+  if (kind === 'article') return said.match(/^l['’](article (?:premier|liminaire|\d+\S*))/i)?.[1] ?? 'un article'
+  const plain = said.replace(/^(?:l['’]ensemble (?:du |de la |des |de l['’])|la totalité (?:du |de la |de l['’])|l['’]|la |le |les )/i, '')
+  if (kind === 'motion') return plain.replace(/,.*$/, '').replace(/\s+(?:déposée|présentée)\b.*$/i, '')
+  return shortSubject(plain)
+}
+
+/** The Assemblée's vote the tile shows, with each group's position, left to right. */
+export interface DayVote {
+  label: string
+  /** As the chamber says it: "adopté", "rejeté". */
+  result: string
+  day: string
+  groups: Array<{ members: number; position: Position | null }>
+}
+
+/** Which of a day's ballots says most of it: a whole text first, then a motion, another vote, an article, an amendment. */
+const KIND_RANK: Record<BallotKind, number> = { text: 0, motion: 1, other: 2, article: 3, amendment: 4 }
+
+/**
+ * The Assemblée's main vote of a day: the first of its ballots by kind (KIND_RANK), then by how many
+ * voted, then the latest; with what most of each group's voters chose. Null: no ballot that day.
+ */
+export function mainVote(db: DatabaseSync, day: string, groups: GroupInfo[]): DayVote | null {
+  const records = ballotsBetween(db, 'an', day, day)
+  // The votes cast: a member presiding the sitting doesn't vote.
+  const votes = votesIn(
+    db,
+    'an',
+    records.map((r) => r.key)
+  ).filter((v) => v.position !== 'nonVoting')
+  const voters = new Map<number, number>()
+  for (const v of votes) voters.set(v.ballot, (voters.get(v.ballot) ?? 0) + 1)
+  const cast = (r: BallotRecord) => voters.get(r.key) ?? 0
+  const main = [...records].sort((a, b) => KIND_RANK[a.kind] - KIND_RANK[b.kind] || cast(b) - cast(a) || b.number - a.number)[0]
+  if (!main) return null
+  const positions =
+    groupPositions(
+      votes.filter((v) => v.ballot === main.key),
+      membersByKey(db, 'an')
+    ).get(main.key) ?? new Map<string, Position>()
+  return {
+    label: ballotLabel(main.title, main.kind),
+    result: main.result,
+    day,
+    groups: groups.map((g) => ({ members: g.members, position: positions.get(g.id) ?? null }))
+  }
+}
+
+/** A day the way the tile's title says it, short: "" for today, "hier", "le 22/10". */
+function shortDay(day: string, today: string): string {
+  if (day === today) return ''
+  if (day === addDays(today, -1)) return 'hier'
+  const [year, month, date] = day.split('-')
+  return `le ${date}/${month}${year === today.slice(0, 4) ? '' : `/${year}`}`
+}
+
+/** What a tile's title shows whole on one line, a quarter of the page wide. */
+const TITLE_FITS = 31
+
+/**
+ * "adopté : PLF 2027", "rejeté hier : amendement n° 1781": the result and the day first, so that
+ * the end of a long text's name is what a narrow tile cuts. An amendment's number goes when the
+ * title wouldn't show whole: « un amendement » still says what was voted, a number cut in half
+ * says nothing.
+ */
+export function voteTitle(vote: DayVote, today: string): string {
+  const when = shortDay(vote.day, today)
+  const head = [vote.result.trim(), when].filter(Boolean).join(' ')
+  const title = head ? `${head} : ${vote.label}` : vote.label
+  const said = [...title].length > TITLE_FITS ? title.replace(/\b(sous-)?amendement n° \S+/, 'un $1amendement') : title
+  return fit(said, TILE_LIMITS.title)
+}
+
 // ---------------------------------------------------------------- the tile
 
 /** The user's deputy as the tile shows them: their votes in a day's public ballots at the Assemblée. */
@@ -199,10 +295,14 @@ export interface TileFacts {
     groups: Array<{ members: number; color: string }>
     /** The last day with public ballots up to today, in both chambers, and how many; null: none indexed. */
     ballots: { day: string; count: number } | null
+    /** The Assemblée's main vote of its last day with ballots; null: none indexed. */
+    vote: DayVote | null
   } | null
   sync: SyncStatus
   /** The broadcasts now, in a few words each (streamLabel). */
   live: string[]
+  /** What « voir le direct » opens: the first broadcast now, as its line of "Aujourd'hui" does; null: none. */
+  watch: TileParams | null
   /** No address in the profile, an address that doesn't say which constituency, or the deputy's votes; null: none to show. */
   deputy: DeputyVotes | 'no-address' | 'unsure' | null
 }
@@ -210,41 +310,58 @@ export interface TileFacts {
 const progressWords = (p: SyncProgress) =>
   `${p.phase === 'download' ? 'téléchargement' : 'indexation'}${p.label ? ` : ${p.label}` : p.total ? ` : ${p.done} / ${p.total}` : ''}`
 
-function deputyLine(deputy: TileFacts['deputy'], today: string, figureDay = ''): TileLine | null {
+function deputyLine(deputy: TileFacts['deputy'], today: string, shownDay = ''): TileLine | null {
   if (deputy === 'no-address') return { text: 'votre député·e : renseignez votre adresse', tone: 'dim' }
   if (deputy === 'unsure') return { text: 'votre député·e : complétez votre adresse', tone: 'dim' }
   if (!deputy) return null
-  // Another day than the figure's (it had ballots at the Sénat only): which one.
-  const when = deputy.day === figureDay ? '' : ` ${dayWords(deputy.day, today)}`
+  // Another day than the one the tile shows (it had ballots at the Sénat only): which one.
+  const when = deputy.day === shownDay ? '' : ` ${dayWords(deputy.day, today)}`
   return { text: `${deputy.female ? 'votre députée' : 'votre député'} : ${deputy.voted} / ${deputy.total} ${deputy.total > 1 ? 'votes' : 'vote'}${when}` }
 }
 
+/** The button: the broadcast now, else the Ballots tab, which opens on the last day with ballots, said in its label. */
+function actionOf(facts: TileFacts): ServiceTile['action'] {
+  if (facts.watch) return { label: 'voir le direct', params: facts.watch }
+  const day = facts.index?.ballots?.day
+  if (!day) return undefined
+  const label = day === facts.today ? 'scrutins du jour' : day === addDays(facts.today, -1) ? 'scrutins d’hier' : 'les scrutins'
+  return { label, params: { tab: 'ballots' } }
+}
+
 /**
- * The tile from its facts: the figure of the last day's public ballots (today's, else the last
- * day's, said in its unit), the hemicycle, the broadcasts now and the user's deputy. Before the
- * first sync, what is coming, in a grey hemicycle. Opening it shows the ballots of that day.
+ * The tile from its facts: the Assemblée's main vote of its last day with ballots, its result as the
+ * title and its groups' positions in the hemicycle; the broadcasts now and the user's deputy under
+ * it. A day without a vote at the Assemblée, the figure of the day's ballots in the hemicycle of its
+ * groups' colours. Before the first sync, what is coming, in a grey hemicycle.
  */
 export function tileOf(facts: TileFacts): ServiceTile {
   const live = liveLine(facts.live)
+  const action = actionOf(facts)
   if (!facts.index) {
     const { running, error } = facts.sync
     const state = running ? progressWords(running) : error ? 'le dernier téléchargement a échoué' : 'à télécharger depuis le service'
     return {
       title: running ? 'données en cours de téléchargement' : 'données pas encore téléchargées',
       visual: { kind: 'pixels', ...hemicyclePicture([]) },
-      lines: [...(live ? [live] : []), { text: fit(state, TILE_LIMITS.line), tone: 'dim' }]
+      lines: [...(live ? [live] : []), { text: fit(state, TILE_LIMITS.line), tone: 'dim' }],
+      ...(action ? { action } : {})
     }
   }
-  const { ballots, groups } = facts.index
-  const lines = [live, deputyLine(facts.deputy, facts.today, ballots?.day)].filter((l): l is TileLine => !!l)
-  return {
-    ...(ballots
+  const { ballots, groups, vote } = facts.index
+  const lines = [live, deputyLine(facts.deputy, facts.today, vote?.day ?? ballots?.day)].filter((l): l is TileLine => !!l)
+  const head: ServiceTile = vote
+    ? { title: voteTitle(vote, facts.today) }
+    : ballots
       ? { value: { text: String(ballots.count), unit: `${ballots.count > 1 ? 'scrutins' : 'scrutin'} ${dayWords(ballots.day, facts.today)}` } }
-      : { title: 'aucun scrutin public pour l’instant' }),
-    visual: { kind: 'pixels', ...hemicyclePicture(groups.map((g) => ({ members: g.members, color: nearestPaletteColor(g.color) }))) },
+      : { title: 'aucun scrutin public pour l’instant' }
+  const seats = vote
+    ? vote.groups.map((g) => ({ members: g.members, color: g.position && g.position !== 'nonVoting' ? POSITION_COLORS[g.position] : ('gris' as const) }))
+    : groups.map((g) => ({ members: g.members, color: nearestPaletteColor(g.color) }))
+  return {
+    ...head,
+    visual: { kind: 'pixels', ...hemicyclePicture(seats) },
     ...(lines.length ? { lines } : {}),
-    // The Ballots tab opens on the last day with ballots: the figure's.
-    params: { tab: 'ballots' }
+    ...(action ? { action } : {})
   }
 }
 
@@ -269,8 +386,8 @@ export function ballotDay(db: DatabaseSync, upTo: string, chamber?: Chamber): Ba
 
 /**
  * The user's deputy and their votes in the Assemblée's public ballots of the figure's day (else
- * its last day with some): the ballots the figure counts, which opening the tile shows, and the
- * day the screen's "vos élus" shows them for. A week would mix sittings of every kind; a day says
+ * its last day with some): the day of the vote the tile shows, and the day the screen's "vos élus"
+ * shows them for. A week would mix sittings of every kind; a day says
  * whether they were there. A vote by proxy counts; a non-voting member (presiding) doesn't.
  */
 export function deputyVotes(db: DatabaseSync, mine: Representatives, figure: BallotDay | null, today: string): TileFacts['deputy'] {
@@ -317,17 +434,24 @@ export async function parlementTile(
   // The meeting each broadcast shows, for its agenda (the Assemblée's API names the day's first sitting all day).
   const items = new Map([...liveMeetings(meetings, streams)].map(([id, s]) => [s, meetings.find((m) => m.id === id)?.items ?? []]))
   const live = streams.map((s) => streamLabel(s, items.get(s)))
-  if (!db) return tileOf({ today, index: null, sync: ctx.sync.status(), live, deputy: null })
+  // « voir le direct » opens the first broadcast as its line of "Aujourd'hui" does: its video, else its meeting.
+  const watch = streams.length ? (streamLine(streams[0]).params ?? null) : null
+  if (!db) return tileOf({ today, index: null, sync: ctx.sync.status(), live, watch, deputy: null })
   const figure = ballotDay(db, today)
   const raw = groupRecords(db)
+  const groups = listGroups(db, 'an')
+  // The Assemblée's day: the figure's when it voted then, else its own last day with ballots (the deputy's too).
+  const assembly = figure?.an.length ? figure : ballotDay(db, today, 'an')
   return tileOf({
     today,
     index: {
-      groups: listGroups(db, 'an').map((g) => ({ members: g.members, color: raw.get(`an:${g.id}`)?.color ?? '' })),
-      ballots: figure ? { day: figure.day, count: figure.an.length + figure.se } : null
+      groups: groups.map((g) => ({ members: g.members, color: raw.get(`an:${g.id}`)?.color ?? '' })),
+      ballots: figure ? { day: figure.day, count: figure.an.length + figure.se } : null,
+      vote: assembly ? mainVote(db, assembly.day, groups) : null
     },
     sync: ctx.sync.status(),
     live,
+    watch,
     deputy: !home ? 'no-address' : mine ? deputyVotes(db, mine, figure, today) : null
   })
 }

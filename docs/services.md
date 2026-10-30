@@ -158,8 +158,7 @@ export const service = defineService<MeteoMethods>({
         return {
           value: { text: `${f.now}°`, unit: `${home.name} · averses à 16 h` },
           visual: { kind: 'bars', bars: f.days.map((d) => ({ value: d.max, label: d.day, text: `${d.max}°`, color: d.rain ? 'cyan' : 'jaune' })) },
-          lines: [{ text: 'vent 25 km/h, rafales 50', tone: 'dim' }],
-          params: { commune: home.code }
+          lines: [{ text: 'vent 25 km/h, rafales 50', tone: 'dim' }]
         }
       }
     }
@@ -167,9 +166,10 @@ export const service = defineService<MeteoMethods>({
 })
 ```
 
-- **`ServiceTile`**: a figure (`value`: its text, at most 6 characters, and what it is, `unit`) or a `title`; one `visual`; at most two `lines`, each with a `tone` (`normal`, `dim`, `accent`, `ok`, `bad`, `live`: something happening now, with a blinking red dot); `urgency: 'urgent'` frames the tile in yellow; one `action` (a button, its `label` at most 16 characters, and the `params` it opens the service with); `params`: what a click on the tile opens.
-- **The four pictures** (`TileVisual`): `bars` (up to 7, each a value, a short label, the value as read, a colour; drawn between `range`, by default from 0 to the highest), `blocks` (up to 16 squares in a row, a colour or `null` for an empty one, and a label), `gauge` (from 0 to 1, a line under it), `pixels` (a picture of the palette, up to 24 × 8). Colours are the palette's names only.
-- **Marianne holds it to its limits** (`TILE_LIMITS`): a text too long is cut with « … », extra lines, bars and blocks are dropped, a part that isn't right is left out, and the log says why (`readTile`). A tile never grows. In its tests, a service checks its tiles with `checkTile` (`@marianne/sdk/testing`), which throws with the list of what Marianne would change.
+- **`ServiceTile`**: a figure (`value`: its text, at most 6 characters, and what it is, `unit`) or a `title`; one `visual`; at most two `lines`, each with a `tone` (`normal`, `dim`, `accent`, `ok`, `bad`, `live`: something happening now, with a blinking red dot); `urgency: 'urgent'` frames the tile in yellow; one `action` (a button, its `label` at most 16 characters, and the `params` it opens the service with).
+- **Where a click opens**: a click on the tile, or Entrée on it, opens the service on its first tab, the one F2 shows, whatever the tile says: the same place every time. Only the action's button opens it elsewhere (« payer » on the trip to pay, « voir le direct » on the broadcast); a tile has no `params` of its own, and Marianne leaves out any it gives.
+- **The five pictures** (`TileVisual`): `bars` (up to 7, each a value, a short label, the value as read, a colour; drawn between `range`, by default from 0 to the highest), `blocks` (up to 16 squares in a row, a colour or `null` for an empty one, and a label), `gauge` (from 0 to 1, a line under it), `pixels` (a picture of the palette, up to 24 × 8), `list` (up to 3 rows, each a `text` on one line, cut where the tile ends, a `figure` of at most 5 characters at its end and a `tone`; `numbered`, each after its number in an inverse block: 3615 INFOS's first subjects and how many sources tell each). Colours are the palette's names only.
+- **Marianne holds it to its limits** (`TILE_LIMITS`): a text too long is cut with « … », extra lines, bars, blocks and rows are dropped, a part that isn't right is left out, and the log says why (`readTile`). A tile never grows. In its tests, a service checks its tiles with `checkTile` (`@marianne/sdk/testing`), which throws with the list of what Marianne would change.
 - **When**: Marianne asks for the tile while the Services page shows it, when the last one is older than `tile.everyMinutes` (15 by default, 5 at least), one call at a time; she keeps the last tile in the archive and shows it at once, with its age, until a newer one comes. A tile that takes more than 10 seconds or fails leaves the last one, and is asked again 2 minutes later, then twice as late each time, never later than its period. `tile()` reads what the service keeps and may reach its declared hosts; it is asked again when the user's address, vehicles or opinions change, when its access to the profile does, and when it stores something for the user (a trip recorded on its screen).
 - Without `tile()`, or while it returns null, the tile shows the service's description.
 - `synced()`: its sync job has just written new data (reopen a database…).

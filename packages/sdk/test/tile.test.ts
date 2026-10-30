@@ -48,9 +48,57 @@ describe('readTile', () => {
       value: { text: '12°', unit: 'Rennes · averses à 16 h' },
       visual: { kind: 'bars', bars: [{ value: 14, label: 'jeu', text: '14°', color: 'jaune' }] },
       lines: [{ text: 'vent 25 km/h, rafales 50', tone: 'dim' }],
-      params: { commune: '35238' }
+      action: { label: 'heure par heure', params: { commune: '35238' } }
     }
     expect(readTile(tile)).toEqual({ tile, problems: [] })
+  })
+
+  it('leaves out a tile’s own params: a click opens the first tab, only the action’s params open the service elsewhere', () => {
+    const { tile, problems } = readTile({ title: 'aucun trajet à payer', action: { label: 'payer', params: { trip: 't1' } }, params: { trip: 't1' } })
+    expect(tile).toEqual({ title: 'aucun trajet à payer', action: { label: 'payer', params: { trip: 't1' } } })
+    expect(problems).toEqual(['params is left out: a click on the tile opens the service on its first tab, the action’s params open it elsewhere'])
+    expect(readTile({ title: 'x', action: { label: 'voir', params: { when: new Date() } } })).toEqual({
+      tile: { title: 'x', action: { label: 'voir' } },
+      problems: ['action.params must map names to strings or numbers']
+    })
+  })
+
+  it('keeps a list of up to three rows, each cut to its line, its figure to five characters', () => {
+    const list = {
+      kind: 'list',
+      numbered: true,
+      items: [
+        { text: 'Budget 2027 : le Sénat adopte les recettes', figure: '6/7', tone: 'live' },
+        { text: 'Coup de vent en Bretagne', figure: '4/7', tone: 'normal' },
+        { text: 'y'.repeat(70), figure: '123456' },
+        { text: 'une quatrième' }
+      ]
+    }
+    const { tile, problems } = readTile({ visual: list })
+    expect(tile?.visual).toEqual({
+      kind: 'list',
+      numbered: true,
+      items: [
+        { text: 'Budget 2027 : le Sénat adopte les recettes', figure: '6/7', tone: 'live' },
+        { text: 'Coup de vent en Bretagne', figure: '4/7' },
+        { text: `${'y'.repeat(TILE_LIMITS.item - 1)}…`, figure: '1234…' }
+      ]
+    })
+    expect(problems).toEqual([
+      'visual.items: 4 given, 3 at most, the others are left out',
+      `visual.items[2].text is cut to 60 characters: "${'y'.repeat(59)}…"`,
+      'visual.items[2].figure is cut to 5 characters: "1234…"'
+    ])
+    // A row that isn't one is left out; without a row, the picture is.
+    expect(readTile({ title: 'x', visual: { kind: 'list', items: [{ text: 'a', tone: 'loud' }, 'b'], numbered: 'yes' } })).toEqual({
+      tile: { title: 'x', visual: { kind: 'list', items: [{ text: 'a' }] } },
+      problems: [
+        'visual.items[0].tone "loud" is not one of normal, dim, accent, ok, bad, live',
+        'visual.items[1] must be { text, figure?, tone? }',
+        'visual.numbered must be true or false'
+      ]
+    })
+    expect(readTile({ title: 'x', visual: { kind: 'list', items: [] } }).problems).toEqual(['visual.items has no row: the picture is left out'])
   })
 
   it('cuts long texts with an ellipsis and drops extra lines, bars and blocks, saying so', () => {
@@ -74,8 +122,7 @@ describe('readTile', () => {
       title: 'Mairie de Rennes',
       visual: { kind: 'gauge', value: 1.4, color: 'orange' },
       lines: [{ text: 'ouverte', tone: 'green' }, { text: 42 }],
-      urgency: 'now',
-      params: { when: new Date() }
+      urgency: 'now'
     })
     expect(tile).toEqual({ title: 'Mairie de Rennes', visual: { kind: 'gauge', value: 1 }, lines: [{ text: 'ouverte' }] })
     expect(problems).toEqual([
@@ -83,9 +130,9 @@ describe('readTile', () => {
       'visual.color: "orange" is not a colour of the palette',
       'lines[0].tone "green" is not one of normal, dim, accent, ok, bad, live',
       'lines[1].text must be a non-empty string',
-      'urgency "now" is not one of none, soon, urgent',
-      'params must map names to strings or numbers'
+      'urgency "now" is not one of none, soon, urgent'
     ])
+    expect(readTile({ title: 'x', visual: { kind: 'chart' } }).problems).toEqual(['visual.kind "chart" is not one of bars, blocks, gauge, pixels, list'])
     expect(() => readTile({ visual: { kind: 'pixels', palette: { r: 'rouge' }, pixels: 'rrr' } })).not.toThrow()
   })
 

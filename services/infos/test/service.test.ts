@@ -151,28 +151,37 @@ describe('the other methods', () => {
 })
 
 describe('the tile', () => {
-  it('shows the first subject: its words, the sources that tell it in their colours, its latest title, how many tell it', async () => {
-    const tile = checkTile(await setup().tile())
-    expect(tile).toEqual({
-      title: 'budget · sénat · adopte',
-      // Only the sources that tell it, from the left to the right: the one that keeps quiet isn't drawn.
+  it('shows the first subjects, numbered as « à la une » does, each by its latest title and how many of the user’s sources tell it', async () => {
+    expect(checkTile(await setup().tile())).toEqual({
       visual: {
-        kind: 'blocks',
-        blocks: [{ color: 'rouge' }, { color: 'rouge-clair' }, { color: 'blanc' }, { color: 'blanc' }, { color: 'bleu-clair' }, { color: 'bleu' }]
+        kind: 'list',
+        numbered: true,
+        // The fourth subject waits on the screen: three rows read at a glance.
+        items: [
+          { text: 'Budget 2027 : le Sénat adopte les recettes, suivez le vote', figure: '6/7', tone: 'live' },
+          { text: 'Goncourt : les quatre finalistes dévoilés par le jury', figure: '2/7' },
+          { text: 'Taxe foncière : le doublement pour les propriétaires, un ch…', figure: '2/7' }
+        ]
       },
-      lines: [
-        { text: 'Budget 2027 : le Sénat adopte les recettes, suivez le vote', tone: 'live' },
-        { text: '6 de vos 7 sources en parlent', tone: 'dim' }
-      ],
-      params: { subject: 'b1' }
+      lines: [{ text: '4 sujets sur vos 7 sources', tone: 'dim' }]
     })
   })
 
-  it('names the subject with the words that fit whole', async () => {
+  it('counts of all of Marianne’s sources when the user’s don’t apply, and opens nowhere of its own', async () => {
+    const tile = checkTile(await setup({ profile: {} }).tile())
+    expect(tile?.visual?.kind === 'list' && tile.visual.items.map((i) => i.figure)).toEqual(['6/9', '2/9', '2/9'])
+    expect(tile?.lines).toEqual([{ text: '4 sujets sur 9 sources', tone: 'dim' }])
+    // A click on the tile opens « à la une », where the same numbers open the same subjects.
+    expect(tile?.action).toBeUndefined()
+  })
+
+  it('says when its titles are from, when no feed answered', async () => {
     const reading = (await setup().methods.reading({ all: false })) as Reading
-    const [first, ...rest] = reading.subjects
-    const tile = checkTile(infosTile({ ...reading, subjects: [{ ...first, words: ['binance', 'cryptomonnaies', 'cyberattaque'] }, ...rest] }))
-    expect(tile?.title).toBe('binance · cryptomonnaies')
+    const one = reading.subjects.slice(0, 1)
+    expect(checkTile(infosTile({ ...reading, subjects: one, offline: true, readAt: '2026-10-28T13:05:00.000Z' }))?.lines).toEqual([
+      { text: 'hors ligne · titres de 14 h 05', tone: 'dim' }
+    ])
+    expect(checkTile(infosTile({ ...reading, subjects: one }))?.lines).toEqual([{ text: '1 sujet sur vos 7 sources', tone: 'dim' }])
   })
 
   it('says so when there is no subject, or no title', async () => {

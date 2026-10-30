@@ -40,8 +40,7 @@ describe('the tile', () => {
       value: { text: '2', unit: 'trajets à payer' },
       lines: [{ text: 'A13-A14 Paris–Normandie · 28/10' }, { text: 'avant demain 14 h 30', tone: 'accent' }],
       urgency: 'urgent',
-      action: { label: 'payer', params: { trip: 't1' } },
-      params: { trip: 't1' }
+      action: { label: 'payer', params: { trip: 't1' } }
     })
   })
 
@@ -75,7 +74,11 @@ describe('the tile', () => {
     const runtime = service.activate(ctx)
     expect(checkTile(await runtime.tile!())?.title).toBe('aucun trajet à payer')
     ctx.storage.set('trips', [trip()])
-    expect(checkTile(await runtime.tile!())).toMatchObject({ value: { text: '1', unit: 'trajet à payer' }, urgency: 'urgent', params: { trip: 't1' } })
+    expect(checkTile(await runtime.tile!())).toMatchObject({
+      value: { text: '1', unit: 'trajet à payer' },
+      urgency: 'urgent',
+      action: { params: { trip: 't1' } }
+    })
   })
 
   it('is asked every 15 minutes', () => {

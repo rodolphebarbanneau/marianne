@@ -9,9 +9,10 @@ import { Code, Community } from './parts'
 /**
  * The pinned services, as tiles: one size, laid out by Marianne. The head (icon, code, name, the
  * grip) and the foot (« communauté », how fresh the tile is, its button) are Marianne's; the body
- * is what the service's `tile()` returned, or its description. A tile moves by its grip only: over
- * the grip it turns ghost, dragged the others make room, dropped the order is kept. The grip also
- * moves it with the arrow keys.
+ * is what the service's `tile()` returned, or its description. A click on a tile opens its service
+ * on its first tab, the one F2 shows; only the button opens it elsewhere, with its params. A tile
+ * moves by its grip only: over the grip it turns ghost, dragged the others make room, dropped the
+ * order is kept. The grip also moves it with the arrow keys.
  */
 
 type Params = Record<string, string | number>
@@ -63,6 +64,25 @@ function Visual({ visual }: { visual: TileVisual }) {
         </span>
         {visual.label && <span className="ell">{visual.label}</span>}
       </div>
+    )
+  if (visual.kind === 'list')
+    return (
+      <ol className="v-list">
+        {visual.items.map((item, i) => (
+          <li key={i}>
+            {visual.numbered && (
+              <span className="n" aria-hidden>
+                {i + 1}
+              </span>
+            )}
+            <span className={`t ell tone-${item.tone ?? 'normal'}`}>
+              {item.tone === 'live' && <span className="dotlive" aria-label="en ce moment" />}
+              {item.text}
+            </span>
+            {item.figure && <span className="f">{item.figure}</span>}
+          </li>
+        ))}
+      </ol>
     )
   return (
     <div>
@@ -117,7 +137,8 @@ function Freshness({ state, now }: { state?: TileState; now: Date }) {
   )
 }
 
-function Tile({
+/** One tile. `onOpen` opens its service: with no params from the tile itself, with the action's from its button. */
+export function Tile({
   state,
   tileState,
   now,
@@ -153,12 +174,13 @@ function Tile({
       data-tile={m.id}
       draggable
       {...drag}
-      onClick={() => onOpen(tile?.params ?? {})}
+      // The tile opens its service on its first tab, the one F2 shows, whatever the tile says: the same place every time.
+      onClick={() => onOpen({})}
       onKeyDown={(e) => {
         // Entrée or Espace alone: with ctrl they are the app's (a new folder, SOMMAIRE).
         if (e.target !== e.currentTarget || !plainKey(e, 'Enter', ' ')) return
         e.preventDefault()
-        onOpen(tile?.params ?? {})
+        onOpen({})
       }}
     >
       <button
@@ -191,7 +213,7 @@ function Tile({
             className="btn small primary"
             onClick={(e) => {
               e.stopPropagation()
-              onOpen(tile.action?.params ?? tile.params ?? {})
+              onOpen(tile.action?.params ?? {})
             }}
           >
             {tile.action.label}

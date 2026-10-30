@@ -21,21 +21,19 @@
     "icon": {
       "palette": {
         "r": "rouge",
-        "m": "magenta",
         "j": "jaune",
-        "c": "cyan",
         "b": "bleu",
         "w": "blanc"
       },
       "pixels": [
         "........",
-        "..rmjc..",
-        ".rm..cb.",
+        "..rjjb..",
+        ".rrjjbb.",
+        "rrrjjbbb",
+        "rrr..bbb",
         "rr....bb",
-        "r......b",
-        "........",
-        "..wwww..",
-        "........"
+        "...ww...",
+        "..wwww.."
       ]
     },
     "tabs": [
