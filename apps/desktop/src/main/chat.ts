@@ -18,7 +18,7 @@ import { approvals } from './approvals'
 import { browser } from './browser'
 import { configStore } from './config'
 import { content } from './content'
-import { listSkills, runTurn, systemPrompt, taskMessage, userMessage, type EngineEvent } from './engines'
+import { listSkills, runsSince, runTurn, systemPrompt, taskMessage, userMessage, type EngineEvent } from './engines'
 import { folders, redoFrom, titleFrom } from './folders'
 import { log } from './log'
 import { profile } from './profile/store'
@@ -116,6 +116,8 @@ class Chat extends EventEmitter {
       return origin.kind !== 'service' || services.taskTemplates().some((t) => t.service === origin.service && t.id === origin.template)
     }
     tasks.runTurn = (task, line) => this.runTask(task, line)
+    // The user reached for the browser (opened it, took it, typed an address): a run gives way.
+    browser.on('taken', () => void this.interruptRun())
     tasks.addLine = (folderId, text, outcome) => void this.addTaskLine(folderId, text, outcome)
     approvals.canShow = (id) => this.writing.has(id)
     approvals.on('part', (id: string, part: ApprovalPart | SetupPart) => {
@@ -236,12 +238,13 @@ class Chat extends EventEmitter {
     const messages = folders.messages(folder.id)
     const opening = this.taskLine(line)
     messages.push(opening)
-    // Its page goes to its own sites only, held there before any request leaves (browser/run-guard.ts).
-    browser.setRunGuard((url) => siteAllowed(task, url))
+    // Its page goes to its own sites only, held there before any request leaves, in a browser session
+    // of its own that never has the user's sign-ins (browser/index.ts, run-guard.ts).
+    await browser.beginRun((url) => siteAllowed(task, url))
     const running = this.turn(folder, messages, opening, { text: taskMessage(task), timeoutMs: TASK_MINUTES * 60_000 })
     const run = { folderId: folder.id, done: running.catch(() => undefined), interrupted: false }
     this.run = run
-    const answer = await running.finally(() => browser.setRunGuard(null))
+    const answer = await running.finally(() => browser.endRun())
     this.run = null
     const reported = tasks.takeReport()
     if (run.interrupted) {
@@ -307,6 +310,9 @@ class Chat extends EventEmitter {
 
     const attempt = async (resume: boolean) => {
       const earlier = messages.slice(0, messages.indexOf(user))
+      // A run is a session of its own, told its task only: the conversation, its words and its
+      // documents aren't a run's business. A resumed session of the user's hears what runs reported since.
+      const history = run ? [] : resume ? runsSince(earlier) : earlier
       const attachments = user.parts.filter((p) => p.type === 'page' || p.type === 'document')
       const text = run?.text ?? user.parts.map((p) => (p.type === 'text' ? p.text : '')).join('\n')
       const tokens = profile.tokens()
@@ -316,7 +322,7 @@ class Chat extends EventEmitter {
       await runTurn(engine, {
         folderId: folder.id,
         // The user may type an identifier, a page may show one: the engine only ever sees tokens.
-        message: redact(userMessage(text, attachments, resume ? [] : earlier, new Date(), screen), tokens),
+        message: redact(userMessage(text, attachments, history, new Date(), screen, resume), tokens),
         system: systemPrompt({
           skills: listSkills(),
           services: services.instructions(),
@@ -326,12 +332,14 @@ class Chat extends EventEmitter {
         }),
         sessionId,
         resume,
+        unattended: !!run,
         web,
         signal: controller.signal,
         timeoutMs: run?.timeoutMs ?? TURN_MINUTES * 60_000,
         waitedMs: () => approvals.waitedMs(folder.id),
         onEvent: (e) => {
-          if (e.type === 'session') w.folder = folders.update(folder.id, { sessions: { ...w.folder.sessions, [engine]: e.id } })
+          // A run's session isn't the folder's: the user's next turn resumes their own.
+          if (e.type === 'session' && !run) w.folder = folders.update(folder.id, { sessions: { ...w.folder.sessions, [engine]: e.id } })
           builder.apply(e)
           tick()
         }
@@ -339,7 +347,7 @@ class Chat extends EventEmitter {
     }
 
     try {
-      const resume = !!w.folder.sessions[engine]
+      const resume = !run && !!w.folder.sessions[engine]
       await attempt(resume)
       // A session the CLI no longer knows (another computer, cleaned up): start over with a recap.
       if (resume && builder.error && !answer.parts.length && /session|conversation|thread/i.test(builder.error)) {
@@ -364,7 +372,8 @@ class Chat extends EventEmitter {
       this.writing.delete(folder.id)
       try {
         folders.saveMessages(folder.id, messages)
-        folders.update(folder.id, { updatedAt: new Date().toISOString(), seen: false })
+        // A run's folder wakes only when it found something (tasks.ts): a quiet run leaves it as it was.
+        if (!run) folders.update(folder.id, { updatedAt: new Date().toISOString(), seen: false })
       } catch (err) {
         // Locked meanwhile: the answer is lost with the session, never written in clear.
         log.warn('Could not save the answer of', folder.id, (err as Error).message)

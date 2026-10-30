@@ -20,7 +20,7 @@ import { vibe } from './vibe'
 
 export type { EngineEvent } from './events'
 export type { Turn } from './types'
-export { recap, systemPrompt, taskMessage, userMessage } from './prompt'
+export { recap, runsSince, systemPrompt, taskMessage, userMessage } from './prompt'
 export { listSkills, readSkill } from './skills'
 export { forgetTranscripts } from './transcripts'
 
@@ -149,7 +149,14 @@ export async function runTurn(id: EngineId, turn: Turn): Promise<void> {
     })
   } finally {
     setRunning(id, -1)
-    if (sessionId) captureTranscript(turn.folderId, id, sessionId, engine.transcript(home, cwd, sessionId))
+    if (sessionId) {
+      const found = engine.transcript(home, cwd, sessionId)
+      // A run's session is nobody's to resume: what it read of the pages leaves the disk with it,
+      // and the folder's own transcript stays the user's.
+      if (turn.unattended) {
+        if (found) discardTranscript(found)
+      } else captureTranscript(turn.folderId, id, sessionId, found)
+    }
     // What came back from the archive leaves too, should the CLI have forked a new session.
     if (restored) discardTranscript(restored)
   }

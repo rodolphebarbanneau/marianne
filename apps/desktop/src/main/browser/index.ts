@@ -27,6 +27,11 @@ import {
 
 /** Not "persist:": cookies and logins never reach the disk, and go away with the lock. */
 const PARTITION = 'marianne-web'
+/**
+ * A planned task's run browses in a session of its own, emptied before and after each run: it never
+ * carries the user's sign-ins, and leaves nothing for the next run or for the user.
+ */
+const RUN_PARTITION = 'marianne-run'
 const MAX_PAGE_CHARS = 40_000
 
 export interface PageElement {
@@ -60,11 +65,51 @@ class Browser extends EventEmitter {
   private usedAt = 0
   /** While a planned task runs, the sites its page may go to (run-guard.ts). */
   private runGuard: RunGuard = null
-  private downloadsHeld = false
+  /** The user's page and folder, set aside while a run has its own view. */
+  private aside: { view: WebContentsView | null; folderId: string; usedAt: number } | null = null
+  private prepared = new Set<string>()
 
-  /** A planned task's run starts (its sites) or ends (null): its page is held to them, nothing downloads. */
-  setRunGuard(guard: RunGuard): void {
+  /**
+   * A planned task's run starts: it gets a view of its own, in its own empty session, held to its
+   * sites (run-guard.ts); the user's page waits aside, untouched. The scheduler only starts a run
+   * while the browser isn't the user's (tasks.ts).
+   */
+  async beginRun(guard: (url: string) => boolean): Promise<void> {
+    if (this.runGuard) await this.endRun()
+    await electronSession.fromPartition(RUN_PARTITION).clearStorageData()
+    this.aside = { view: this.view, folderId: this.folderId, usedAt: this.usedAt }
+    this.view?.setVisible(false)
+    this.view = null
     this.runGuard = guard
+    this.changed()
+  }
+
+  /** The run is over: its view and everything it reached go, the user's page comes back. */
+  async endRun(): Promise<void> {
+    if (!this.runGuard) return
+    const run = this.view
+    this.runGuard = null
+    this.view = this.aside?.view ?? null
+    this.folderId = this.aside?.folderId ?? ''
+    // The user's page was left when they left it: a run's own use doesn't make it look fresh to the scheduler.
+    this.usedAt = this.aside?.usedAt ?? 0
+    this.aside = null
+    if (run) {
+      try {
+        this.win?.contentView.removeChildView(run)
+      } catch {
+        // the window is gone
+      }
+      if (!run.webContents.isDestroyed()) run.webContents.close()
+    }
+    await electronSession.fromPartition(RUN_PARTITION).clearStorageData()
+    this.layout()
+    this.changed()
+  }
+
+  /** The user reached for the browser during a run: the run gives way (chat.ts), as it does to their message. */
+  private reachedFor(): void {
+    if (this.runGuard) this.emit('taken')
   }
 
   /** The window the panel lives in. */
@@ -79,18 +124,18 @@ class Browser extends EventEmitter {
   private ensure(): WebContentsView {
     if (this.view) return this.view
     if (!this.win) throw new Error('La fenêtre de Marianne n’est pas ouverte.')
-    const web = electronSession.fromPartition(PARTITION)
-    // Websites get nothing beyond plain browsing: no camera, location, notifications…
-    web.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'clipboard-sanitized-write' || permission === 'fullscreen'))
-    // Nobody watches a run: nothing it reaches is saved on the computer.
-    if (!this.downloadsHeld) {
-      this.downloadsHeld = true
-      web.on('will-download', (e) => {
-        if (this.runGuard) e.preventDefault()
-      })
+    const run = !!this.runGuard
+    const partition = run ? RUN_PARTITION : PARTITION
+    const web = electronSession.fromPartition(partition)
+    if (!this.prepared.has(partition)) {
+      this.prepared.add(partition)
+      // Websites get nothing beyond plain browsing: no camera, location, notifications…
+      web.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'clipboard-sanitized-write' || permission === 'fullscreen'))
+      // Nobody watches a run: nothing it reaches is saved on the computer.
+      if (run) web.on('will-download', (e) => e.preventDefault())
     }
     const view = new WebContentsView({
-      webPreferences: { partition: PARTITION, sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck: false }
+      webPreferences: { partition, sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck: false }
     })
     view.setVisible(false)
     this.win.contentView.addChildView(view)
@@ -105,7 +150,7 @@ class Browser extends EventEmitter {
       } else if (/^(mailto|tel):/i.test(url) && !this.runGuard) void shell.openExternal(url)
       return { action: 'deny' }
     })
-    holdToRun(wc, () => this.runGuard)
+    if (run) holdToRun(wc, () => this.runGuard)
     for (const event of ['did-navigate', 'did-navigate-in-page', 'page-title-updated', 'did-start-loading', 'did-stop-loading'] as const) {
       wc.on(event as 'did-navigate', () => this.changed())
     }
@@ -121,13 +166,15 @@ class Browser extends EventEmitter {
   /** The panel's rectangle, from the screens; null when it is closed (the page keeps running). */
   setBounds(bounds: Electron.Rectangle | null): void {
     this.bounds = bounds
+    if (bounds) this.reachedFor()
     this.layout()
     this.changed()
   }
 
   private layout(): void {
     if (!this.view) return
-    if (this.bounds && this.bounds.width > 0 && this.bounds.height > 0) {
+    // A run's page is never shown: it runs out of sight, and gives way if the user opens the panel.
+    if (!this.runGuard && this.bounds && this.bounds.width > 0 && this.bounds.height > 0) {
       this.view.setBounds(this.bounds)
       this.view.setVisible(true)
     } else this.view.setVisible(false)
@@ -145,6 +192,7 @@ class Browser extends EventEmitter {
   navigate(input: string): void {
     const text = input.trim()
     if (!text) return
+    this.reachedFor()
     const url = /^https?:\/\//i.test(text)
       ? text
       : /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(text)
@@ -187,6 +235,7 @@ class Browser extends EventEmitter {
 
   /** "Prendre la main": Marianne's actions are refused until the user gives it back. */
   setController(controller: BrowserState['controller']): void {
+    if (controller === 'human') this.reachedFor()
     this.controller = controller
     this.changed()
   }
@@ -324,6 +373,7 @@ class Browser extends EventEmitter {
     this.folderId = ''
     this.waiting = ''
     this.controller = 'agent'
+    await this.endRun()
     if (this.view) void this.view.webContents.loadURL('about:blank')
     await electronSession.fromPartition(PARTITION).clearStorageData()
     this.changed()

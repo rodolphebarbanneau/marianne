@@ -13,6 +13,8 @@ export interface Turn {
   sessionId?: string
   /** Continue `sessionId` rather than start a new session. */
   resume: boolean
+  /** A planned task's run: a session of its own, nobody's to resume, whose transcript isn't kept. */
+  unattended?: boolean
   web: WebAccess
   signal: AbortSignal
   timeoutMs: number
