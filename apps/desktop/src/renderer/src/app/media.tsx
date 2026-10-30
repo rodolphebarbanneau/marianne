@@ -6,7 +6,7 @@ import { Boundary } from '../components/ui'
 import { useServices } from '../host'
 import { api } from '../lib/api'
 import { useApp } from './context'
-import { backTo, PinnedDesk } from './pinned'
+import { backTo, PinnedDesk, serviceGone } from './pinned'
 
 type HostMedia = NonNullable<ServiceHost['media']>
 
@@ -39,8 +39,8 @@ const hostOf = (url: string) => {
 
 /**
  * The app's mini-player: a video a screen hands over (`host.media.pin`) goes on in a corner of the
- * window, over any page, until the user closes it, goes back to its page, or a page takes it back
- * (`host.media.take`). Community screens reach it through the bridge.
+ * window, over any page, until the user closes it, goes back to its page, a page takes it back
+ * (`host.media.take`), or its service goes. Community screens reach it through the bridge.
  */
 export function MediaProvider({ children }: { children: ReactNode }) {
   const [item, setItem] = useState<PinnedMedia | null>(null)
@@ -60,6 +60,11 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     .join(' ')
   const hosts = useMemo(() => new Set(hostsKey.split(' ').filter(Boolean)), [hostsKey])
   const playable = useCallback((hostname: string) => hosts.has(hostname), [hosts])
+
+  // A video whose service the user removes or turns off stops with it.
+  useEffect(() => {
+    if (item && serviceGone(item, services)) desk.close()
+  }, [item, services, desk])
 
   // A community screen's pin and take, checked by the main process already (its declared hosts, its own screen).
   const latest = useRef(playable)

@@ -1,6 +1,7 @@
+import type { ServiceState } from '@marianne/sdk'
 import type { PinnedMedia } from '@marianne/sdk/media'
 import { describe, expect, it } from 'vitest'
-import { AUTO_PIN_MS, backTo, PinnedDesk, roomBeside } from '../../src/renderer/src/app/pinned'
+import { AUTO_PIN_MS, backTo, PinnedDesk, roomBeside, serviceGone } from '../../src/renderer/src/app/pinned'
 
 /** Timers run by hand. */
 function clock() {
@@ -98,6 +99,19 @@ describe('the mini-player', () => {
   it('goes back to the video’s page with its params and where it was', () => {
     expect(backTo(video(), 90_123.6)).toEqual({ route: 'service:parlement', params: { video: 'a', t: 90_124 } })
     expect(backTo({ ...video(), params: undefined }, -4)).toEqual({ route: 'service:parlement', params: { t: 0 } })
+  })
+
+  it('stops when its service is removed or turned off, never before the services are known', () => {
+    const service = (id: string, more: { added?: boolean; on?: boolean } = {}) => ({ manifest: { id }, added: true, on: true, ...more })
+    const mine = [service('parlement'), service('meteo')]
+    expect(serviceGone(video(), mine as ServiceState[])).toBe(false)
+    expect(serviceGone({ ...video(), route: 'service/parlement' }, mine as ServiceState[])).toBe(false)
+    expect(serviceGone(video(), [service('parlement', { on: false }), service('meteo')] as ServiceState[])).toBe(true)
+    expect(serviceGone(video(), [service('parlement', { added: false }), service('meteo')] as ServiceState[])).toBe(true)
+    expect(serviceGone(video(), [service('meteo')] as ServiceState[])).toBe(true)
+    // Not loaded yet; or a video that leads back to another screen than a service's.
+    expect(serviceGone(video(), [])).toBe(false)
+    expect(serviceGone({ ...video(), route: 'procedures' }, [service('meteo')] as ServiceState[])).toBe(false)
   })
 })
 

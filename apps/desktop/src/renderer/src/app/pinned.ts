@@ -1,4 +1,6 @@
+import type { ServiceState } from '@marianne/sdk'
 import type { PinnedMedia } from '@marianne/sdk/media'
+import { routeTarget } from './routes'
 
 /** A pin from a page that is leaving waits this long: the same video taken back by then, it never shows. */
 export const AUTO_PIN_MS = 300
@@ -89,6 +91,19 @@ export class PinnedDesk {
 /** Back to a pinned video's page: its route, its params and `t`, where it was (ms). */
 export function backTo(item: PinnedMedia, at: number): { route: string; params: Record<string, string | number> } {
   return { route: item.route, params: { ...item.params, t: Math.max(0, Math.round(at)) } }
+}
+
+/**
+ * Whether the service a pinned video brings the user back to is no longer among theirs (removed,
+ * or turned off): the video stops with it, as its ⤢ would open a screen that is off. A route to
+ * another screen keeps it, and so does an empty list (not loaded yet: it holds every built-in
+ * service, the ones not added included).
+ */
+export function serviceGone(item: PinnedMedia, services: ReadonlyArray<Pick<ServiceState, 'manifest' | 'added' | 'on'>>): boolean {
+  const target = routeTarget(item.route)
+  if (target?.kind !== 'view' || target.view.kind !== 'service' || !services.length) return false
+  const code = target.view.id
+  return !services.some((s) => s.manifest.id === code && s.added && s.on)
 }
 
 export interface Rect {
