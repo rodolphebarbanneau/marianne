@@ -27,15 +27,15 @@ export function Level({ volume, muted, onVolume }: { volume: number; muted: bool
       }}
       onPointerMove={(e) => e.buttons & 1 && set(e)}
     >
-      <i className="fill" style={{ width: `${v * 100}%` }} />
-      <i className="knob" style={{ left: `${v * 100}%` }} />
+      <i className="mp-level-fill" style={{ width: `${v * 100}%` }} />
+      <i className="mp-level-knob" style={{ left: `${v * 100}%` }} />
     </span>
   )
 }
 
 /** A line of the menu: its icon and its words. */
 const Row = ({ icon, children }: { icon: IconName; children: ReactNode }) => (
-  <span className="k">
+  <span className="mp-k">
     <Icon name={icon} size={16} />
     {children}
   </span>
@@ -74,22 +74,22 @@ export function OptionsMenu(p: OptionsMenuProps) {
     const low = p.levels.at(-1)
     return (
       <div className="menu mp-opts" role="menu" aria-label="qualité">
-        <button className="back" onClick={() => p.onView('main')}>
+        <button className="mp-back" onClick={() => p.onView('main')}>
           ‹ qualité
         </button>
-        <button className={`pick${p.level < 0 ? ' sel' : ''}`} role="menuitemradio" aria-checked={p.level < 0} onClick={() => p.onLevel(-1)}>
-          auto<span className="v">{p.playing ? `en ce moment ${heightLabel(p.playing)}` : ''}</span>
+        <button className={`mp-pick${p.level < 0 ? ' mp-sel' : ''}`} role="menuitemradio" aria-checked={p.level < 0} onClick={() => p.onLevel(-1)}>
+          auto<span className="mp-v">{p.playing ? `en ce moment ${heightLabel(p.playing)}` : ''}</span>
         </button>
         {p.levels.map((l) => (
           <button
             key={l.index}
-            className={`pick${p.level === l.index ? ' sel' : ''}`}
+            className={`mp-pick${p.level === l.index ? ' mp-sel' : ''}`}
             role="menuitemradio"
             aria-checked={p.level === l.index}
             onClick={() => p.onLevel(l.index)}
           >
             {heightLabel(l)}
-            <span className="v">{l.height >= 720 ? 'HD' : l === low && p.levels.length > 1 ? 'économe' : ''}</span>
+            <span className="mp-v">{l.height >= 720 ? 'HD' : l === low && p.levels.length > 1 ? 'économe' : ''}</span>
           </button>
         ))}
       </div>
@@ -98,13 +98,13 @@ export function OptionsMenu(p: OptionsMenuProps) {
   if (p.view === 'speed') {
     return (
       <div className="menu mp-opts" role="menu" aria-label="vitesse">
-        <button className="back" onClick={() => p.onView('main')}>
+        <button className="mp-back" onClick={() => p.onView('main')}>
           ‹ vitesse
         </button>
         {SPEEDS.map((s) => (
-          <button key={s} className={`pick${p.rate === s ? ' sel' : ''}`} role="menuitemradio" aria-checked={p.rate === s} onClick={() => p.onRate(s)}>
+          <button key={s} className={`mp-pick${p.rate === s ? ' mp-sel' : ''}`} role="menuitemradio" aria-checked={p.rate === s} onClick={() => p.onRate(s)}>
             {speedLabel(s)}
-            <span className="v">{s === 1 ? 'normale' : ''}</span>
+            <span className="mp-v">{s === 1 ? 'normale' : ''}</span>
           </button>
         ))}
       </div>
@@ -117,17 +117,17 @@ export function OptionsMenu(p: OptionsMenuProps) {
     <div className="menu mp-opts" role="menu" aria-label="options">
       <span className="label">options</span>
       {p.levels.length > 1 && (
-        <button className="go" onClick={() => p.onView('quality')}>
+        <button className="mp-go" onClick={() => p.onView('quality')}>
           <Row icon="quality">qualité</Row>
-          <span className="v">{quality}</span>
+          <span className="mp-v">{quality}</span>
         </button>
       )}
-      <button className="go" onClick={() => p.onView('speed')}>
+      <button className="mp-go" onClick={() => p.onView('speed')}>
         <Row icon="speed">vitesse</Row>
-        <span className="v">{p.rate === 1 ? 'normale' : speedLabel(p.rate)}</span>
+        <span className="mp-v">{p.rate === 1 ? 'normale' : speedLabel(p.rate)}</span>
       </button>
       {p.time && (
-        <div className="item">
+        <div className="mp-item">
           <Row icon="clock">temps</Row>
           <span className="mp-seg" role="radiogroup" aria-label="temps">
             <button
@@ -159,20 +159,20 @@ export function OptionsMenu(p: OptionsMenuProps) {
         </button>
       )}
       {p.onShare && (
-        <button className="go" onClick={p.onShare}>
+        <button className="mp-go" onClick={p.onShare}>
           <Row icon="share">partager le lien</Row>
-          <span className="v" />
+          <span className="mp-v" />
         </button>
       )}
       <hr />
-      <div className="item mp-narrow">
-        <button className="k" onClick={p.onMute} title={p.muted ? 'remettre le son (M)' : 'couper le son (M)'}>
+      <div className="mp-item mp-narrow">
+        <button className="mp-k" onClick={p.onMute} title={p.muted ? 'remettre le son (M)' : 'couper le son (M)'}>
           <Icon name={p.muted ? 'mute' : 'sound'} size={16} />
           son
         </button>
         <span className="mp-vol">
           <Level volume={p.volume} muted={p.muted} onVolume={p.onVolume} />
-          <span className="v">{p.muted ? 'coupé' : `${Math.round(p.volume * 100)} %`}</span>
+          <span className="mp-v">{p.muted ? 'coupé' : `${Math.round(p.volume * 100)} %`}</span>
         </span>
       </div>
       {p.onMini && (
@@ -184,7 +184,7 @@ export function OptionsMenu(p: OptionsMenuProps) {
       {p.onPip && (
         <button onClick={p.onPip} title="la fenêtre du système, au-dessus des autres applications">
           <Row icon="pip">image dans l’image</Row>
-          <span className="v">système</span>
+          <span className="mp-v">système</span>
         </button>
       )}
     </div>
@@ -215,19 +215,19 @@ export function SharePanel(p: SharePanelProps) {
   )
   return (
     <div className="menu mp-share" role="dialog" aria-label="partager le lien">
-      <button className="back" onClick={p.onBack}>
+      <button className="mp-back" onClick={p.onBack}>
         ‹ partager le lien
       </button>
-      <div className="in">
-        <span className="chips">
+      <div className="mp-in">
+        <span className="mp-chips">
           {chip('video', 'la vidéo')}
           {chip('at', p.atLabel)}
           {p.clipLabel && chip('clip', p.clipLabel)}
         </span>
-        <span className="url">
+        <span className="mp-url">
           <input readOnly value={p.url} aria-label="le lien" onFocus={(e) => e.currentTarget.select()} />
         </span>
-        <span className="acts">
+        <span className="mp-acts">
           <button className="btn small primary" onClick={p.onCopy}>
             copier le lien
           </button>

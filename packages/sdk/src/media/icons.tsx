@@ -7,16 +7,16 @@ import { usePixelRatio } from '../pixels'
  */
 
 const hair = { strokeWidth: 1.1 }
-const speaker = <path className="f" d="M2.8 7.4h3.1l4.3-3.6v12.4l-4.3-3.6H2.8z" />
+const speaker = <path className="mp-solid" d="M2.8 7.4h3.1l4.3-3.6v12.4l-4.3-3.6H2.8z" />
 const GEAR =
   'M6.31 3.08L6.66 1.13L9.34 1.13L9.69 3.08L11.41 4.08L13.28 3.41L14.62 5.72L13.1 7.01L13.1 8.99L14.62 10.28L13.28 12.59L11.41 11.92L9.69 12.92L9.34 14.87L6.66 14.87L6.31 12.92L4.59 11.92L2.72 12.59L1.38 10.28L2.9 8.99L2.9 7.01L1.38 5.72L2.72 3.41L4.59 4.08z M8 5.8a2.2 2.2 0 1 1 0 4.4a2.2 2.2 0 1 1 0-4.4z'
 
 const GLYPHS = {
-  play: <path className="f" d="M6 3.6v12.8c0 .5.5.8.9.5l9.6-6.4c.4-.2.4-.8 0-1L6.9 3.1c-.4-.3-.9 0-.9.5z" />,
+  play: <path className="mp-solid" d="M6 3.6v12.8c0 .5.5.8.9.5l9.6-6.4c.4-.2.4-.8 0-1L6.9 3.1c-.4-.3-.9 0-.9.5z" />,
   pause: (
     <>
-      <rect className="f" x="4.6" y="3.6" width="3.6" height="12.8" rx=".6" />
-      <rect className="f" x="11.8" y="3.6" width="3.6" height="12.8" rx=".6" />
+      <rect className="mp-solid" x="4.6" y="3.6" width="3.6" height="12.8" rx=".6" />
+      <rect className="mp-solid" x="11.8" y="3.6" width="3.6" height="12.8" rx=".6" />
     </>
   ),
   sound: (
@@ -38,13 +38,13 @@ const GLYPHS = {
   mini: (
     <>
       <rect x="2.4" y="4" width="15.2" height="12" rx="1" />
-      <rect className="f" x="10" y="10" width="5.6" height="4.2" rx=".5" />
+      <rect className="mp-solid" x="10" y="10" width="5.6" height="4.2" rx=".5" />
     </>
   ),
   pip: (
     <>
       <rect x="2.4" y="3.4" width="11" height="8.4" rx="1" />
-      <rect className="f" x="8.6" y="9.2" width="9" height="7.4" rx=".8" />
+      <rect className="mp-solid" x="8.6" y="9.2" width="9" height="7.4" rx=".8" />
     </>
   ),
   cut: (
@@ -63,16 +63,16 @@ const GLYPHS = {
   quality: (
     <>
       <path d="M3 6h14M3 10h14M3 14h14" />
-      <rect className="f" x="11" y="4.4" width="2.4" height="3.2" rx=".4" />
-      <rect className="f" x="5.6" y="8.4" width="2.4" height="3.2" rx=".4" />
-      <rect className="f" x="12.6" y="12.4" width="2.4" height="3.2" rx=".4" />
+      <rect className="mp-solid" x="11" y="4.4" width="2.4" height="3.2" rx=".4" />
+      <rect className="mp-solid" x="5.6" y="8.4" width="2.4" height="3.2" rx=".4" />
+      <rect className="mp-solid" x="12.6" y="12.4" width="2.4" height="3.2" rx=".4" />
     </>
   ),
   speed: (
     <>
       <path d="M3.6 14.4a6.6 6.6 0 1 1 12.8 0" />
       <path d="M10 13.6l3.4-4.4" />
-      <circle className="f" cx="10" cy="13.6" r="1.3" />
+      <circle className="mp-solid" cx="10" cy="13.6" r="1.3" />
     </>
   ),
   clock: (
@@ -84,9 +84,9 @@ const GLYPHS = {
   list: (
     <>
       <path d="M7 5h10M7 10h10M7 15h10" />
-      <circle className="f" cx="3.8" cy="5" r="1.1" />
-      <circle className="f" cx="3.8" cy="10" r="1.1" />
-      <circle className="f" cx="3.8" cy="15" r="1.1" />
+      <circle className="mp-solid" cx="3.8" cy="5" r="1.1" />
+      <circle className="mp-solid" cx="3.8" cy="10" r="1.1" />
+      <circle className="mp-solid" cx="3.8" cy="15" r="1.1" />
     </>
   ),
   expand: (
@@ -110,15 +110,15 @@ const GLYPHS = {
   chevBack: <path d="M9.4 5L4.4 10l5 5M15.4 5l-5 5 5 5" />,
   chevFwd: <path d="M4.6 5l5 5-5 5M10.6 5l5 5-5 5" />,
   close: <path d="M5 5l10 10M15 5L5 15" />,
-  dot: <circle className="f" cx="10" cy="10" r="5" />,
+  dot: <circle className="mp-solid" cx="10" cy="10" r="5" />,
   grip: (
     <>
-      <circle className="f" cx="7" cy="5" r="1.3" />
-      <circle className="f" cx="13" cy="5" r="1.3" />
-      <circle className="f" cx="7" cy="10" r="1.3" />
-      <circle className="f" cx="13" cy="10" r="1.3" />
-      <circle className="f" cx="7" cy="15" r="1.3" />
-      <circle className="f" cx="13" cy="15" r="1.3" />
+      <circle className="mp-solid" cx="7" cy="5" r="1.3" />
+      <circle className="mp-solid" cx="13" cy="5" r="1.3" />
+      <circle className="mp-solid" cx="7" cy="10" r="1.3" />
+      <circle className="mp-solid" cx="13" cy="10" r="1.3" />
+      <circle className="mp-solid" cx="7" cy="15" r="1.3" />
+      <circle className="mp-solid" cx="13" cy="15" r="1.3" />
     </>
   )
 } satisfies Record<string, ReactNode>

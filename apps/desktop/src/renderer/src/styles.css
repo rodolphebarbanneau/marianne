@@ -4032,7 +4032,7 @@ button.choice:hover {
   z-index: 25;
   pointer-events: none;
 }
-.mini-area > .mini {
+.mini-area > .mp-mini {
   pointer-events: auto;
 }
 

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { chapterEnd, chapterIndexAt, clipTitleAt, parentIndex, saidAt, spanAt } from '../src/media/chapters'
 import { startedPlaying } from '../src/media/handover'
@@ -239,6 +240,32 @@ describe('the preferences', () => {
     expect(parsePrefs('{"time":"clock","volume":3,"muted":"yes","corner":"middle"}')).toEqual({ ...DEFAULT_PREFS, volume: 1 })
     expect(parsePrefs('{"volume":-1}').volume).toBe(0)
     expect(parsePrefs('{"volume":null,"speed":2}')).toEqual(DEFAULT_PREFS)
+  })
+})
+
+describe('the player’s styles', () => {
+  /** What it takes of Marianne's stylesheet on purpose: her blocks, and their state. */
+  const BORROWED = new Set(['menu', 'btn', 'small', 'primary', 'chip', 'on', 'label', 'code', 'dim', 'bad', 'link', 'sc', 'spinner'])
+  const own = (c: string) => c === 'mp' || c.startsWith('mp-') || BORROWED.has(c)
+  const read = (file: string) => readFileSync(new URL(`../src/media/${file}`, import.meta.url), 'utf8')
+
+  it('name every class of its own mp-, in the stylesheet and the components, so that no page’s rule reaches in', () => {
+    const css = read('media.css').replace(/\/\*[\s\S]*?\*\//g, '')
+    const styled = [...css.matchAll(/([^{};]+)\{/g)].flatMap((r) =>
+      r[1].trim().startsWith('@') ? [] : [...r[1].matchAll(/\.([a-zA-Z][\w-]*)/g)].map((m) => m[1])
+    )
+    expect(styled.length).toBeGreaterThan(100)
+    expect(styled.filter((c) => !own(c))).toEqual([])
+    const given: string[] = []
+    for (const file of ['clip.tsx', 'icons.tsx', 'menu.tsx', 'mini.tsx', 'player.tsx', 'timeline.tsx']) {
+      for (const m of read(file).matchAll(/(?:className|kind)=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
+        // A template's fixed parts (`mp-${corner}` keeps its mp-), and the words its expressions may add.
+        const text = m[1] ?? m[2].replace(/\$\{([^}]*)\}/g, (_, x: string) => ` ${[...x.matchAll(/'([^']*)'/g)].map((q) => q[1]).join(' ')} `)
+        given.push(...text.split(/\s+/).filter(Boolean))
+      }
+    }
+    expect(given.length).toBeGreaterThan(100)
+    expect(given.filter((c) => !own(c))).toEqual([])
   })
 })
 
