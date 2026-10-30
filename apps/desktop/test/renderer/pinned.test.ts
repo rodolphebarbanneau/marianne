@@ -82,6 +82,19 @@ describe('the mini-player', () => {
     expect(desk.position).toBe(60_000)
   })
 
+  it('hands a video back only to whom it is, when that is asked: another service’s take leaves it be', () => {
+    const { desk, run } = deskOf()
+    const theirs = (it: PinnedMedia) => it.route === 'service:autre'
+    desk.pin(video(), { auto: true })
+    expect(desk.take('https://videos.example.fr/a.m3u8', theirs)).toBeNull()
+    run()
+    expect(desk.item?.src).toBe('https://videos.example.fr/a.m3u8')
+    expect(desk.take('https://videos.example.fr/a.m3u8', theirs)).toBeNull()
+    expect(desk.item?.src).toBe('https://videos.example.fr/a.m3u8')
+    expect(desk.take('https://videos.example.fr/a.m3u8', (it) => it.route === 'service:parlement')).toBe(60_000)
+    expect(desk.item).toBeNull()
+  })
+
   it('goes back to the video’s page with its params and where it was', () => {
     expect(backTo(video(), 90_123.6)).toEqual({ route: 'service:parlement', params: { video: 'a', t: 90_124 } })
     expect(backTo({ ...video(), params: undefined }, -4)).toEqual({ route: 'service:parlement', params: { t: 0 } })

@@ -67,7 +67,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   useEffect(
     () =>
       api.onCommunityScreen(({ code, message }) => {
-        if (message.type === 'take') return void desk.take(message.src)
+        if (message.type === 'take') return void desk.take(message.src, (it) => ownRoute(code, it.route))
         if (message.type !== 'pin' || !ownRoute(code, message.item.route) || !latest.current(hostOf(message.item.src))) return
         const { poster, ...rest } = message.item
         desk.pin({ ...rest, ...(poster && latest.current(hostOf(poster)) ? { poster } : {}) }, { auto: message.auto })
