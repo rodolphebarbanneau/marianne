@@ -8,15 +8,16 @@ import { KioskHead } from './kiosk'
 import { byOrigin, MineTable, ORIGIN_FILTERS, type OriginFilter } from './mine'
 import { listings, nextSort, search, searchTerms, type CatalogueKey, type Listing, type MineKey, type Sort } from './model'
 import { onFileReview, takeFileReview } from './pending'
-import { flatten, SearchView } from './search-view'
+import { flatten, SearchHead, SearchView } from './search-view'
 import { Tiles } from './tiles'
 
 /**
  * Services: the 3615 kiosk. Its head is the one search of the page (a code or words, my services
  * and the catalogue's together); under it, two tabs: « mes services » (the pinned ones as tiles,
  * then all of mine as a table) and « découvrir » (what Marianne recommends as cards, then the
- * community catalogue). Adding always goes through « avant d’ajouter »; closing a dialog gives the
- * page back as it was.
+ * community catalogue). The head and the tabs stay: only what is under them scrolls, each view from
+ * its top. Adding always goes through « avant d’ajouter »; closing a dialog gives the page back as
+ * it was.
  */
 
 type Tab = 'mine' | 'discover'
@@ -142,139 +143,138 @@ export function ServicesPage() {
 
   return (
     <div className="page services-page">
-      <div className="page-body">
-        <div className="section">
-          <div className="kiosk">
-            <KioskHead ref={input} query={query} onQuery={typed} onEnvoi={envoi} onKey={onKey} />
-            {searching ? (
-              <SearchView
-                query={query.trim()}
-                terms={terms}
-                groups={groups}
-                selected={selected}
-                onSelect={setSelected}
-                onActivate={review}
-                onClear={clear}
-                onFile={() => setDialog({ kind: 'file' })}
-              />
-            ) : (
-              <div>
-                <div className="ktabs" role="tablist">
-                  <button role="tab" aria-selected={tab === 'mine'} className={tab === 'mine' ? 'on' : undefined} onClick={() => setTab('mine')}>
-                    mes services<span className="n">{mine.length}</span>
-                  </button>
-                  <button
-                    role="tab"
-                    aria-selected={tab === 'discover'}
-                    className={`disc${tab === 'discover' ? ' on' : ''}`}
-                    onClick={() => {
-                      setTab('discover')
-                      setShown(CATALOGUE_PAGE)
-                    }}
-                  >
-                    + découvrir
-                  </button>
-                </div>
-                {tab === 'mine' ? (
-                  <div role="tabpanel">
-                    <div className="sec-h">
-                      <span className="label">★ épinglés</span>
-                      <span className="small dim">{pinnedServices.length}</span>
-                      <span className="tools">
-                        <button className="btn small" onClick={() => setDialog({ kind: 'pins' })}>
-                          modifier les épingles
-                        </button>
-                      </span>
-                    </div>
-                    {pinnedServices.length ? (
-                      <Tiles
-                        services={pinnedServices}
-                        tiles={tiles}
-                        onOpen={open}
-                        onOrder={(order) => void setSettings({ services: { pinned: [...order, ...pinnedOrder.filter((id) => !order.includes(id))] } })}
-                      />
-                    ) : (
-                      <p className="dim">Aucun service épinglé : ☆ dans le tableau en fait une tuile.</p>
-                    )}
-                    <div className="sec-h">
-                      <span className="label">mes services</span>
-                      <span className="small dim">{mine.length}</span>
-                      <span className="tools">
-                        <span className="seg" role="group" aria-label="origine">
-                          {ORIGIN_FILTERS.map(([id, label]) => (
-                            <button key={id} aria-pressed={origin === id} onClick={() => setOrigin(id)}>
-                              {label}
-                            </button>
-                          ))}
-                        </span>
-                      </span>
-                    </div>
-                    <MineTable
-                      list={mine.filter(byOrigin(origin))}
-                      sort={mineSort}
-                      onSort={(key) => setMineSort((s) => nextSort(s, key))}
-                      onOpen={(l) => open(l.code)}
-                      onPin={(l) => togglePin(l.code)}
-                      onSwitch={switchOn}
-                      onSettings={() => openSettings('services')}
-                    />
-                  </div>
-                ) : (
-                  <div role="tabpanel">
-                    {recs.length > 0 && (
-                      <>
-                        <div className="sec-h">
-                          <span className="label">recommandés</span>
-                          <span className="small dim">{recs.length}</span>
-                        </div>
-                        <RecommendedCards list={recs} onReview={review} />
-                      </>
-                    )}
-                    <div className="sec-h">
-                      <span className="label">catalogue</span>
-                      <span className="small dim">{rows.length}</span>
-                      <span className="tools">
-                        {catalogue.entries.length > 0 && (
-                          <span className="seg" role="group" aria-label="validation">
-                            {TRUST_FILTERS.map(([id, label]) => (
-                              <button
-                                key={id}
-                                aria-pressed={trust === id}
-                                onClick={() => {
-                                  setTrust(id)
-                                  setShown(CATALOGUE_PAGE)
-                                }}
-                              >
-                                {label}
-                              </button>
-                            ))}
-                          </span>
-                        )}
-                        <button className="btn small" onClick={() => setDialog({ kind: 'file' })}>
-                          ajouter un fichier .3615
-                        </button>
-                      </span>
-                    </div>
-                    {rows.length ? (
-                      <CatalogueTable
-                        rows={rows}
-                        sort={catalogueSort}
-                        onSort={(key) => {
-                          setCatalogueSort((s) => nextSort(s, key))
-                          setShown(CATALOGUE_PAGE)
-                        }}
-                        shown={shown}
-                        onMore={more}
-                        onReview={review}
-                      />
-                    ) : (
-                      <CatalogueNote state={catalogue} filtered={trust !== 'all'} />
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+      <div className="section kiosk-top">
+        <KioskHead ref={input} query={query} onQuery={typed} onEnvoi={envoi} onKey={onKey} />
+        {searching ? (
+          <SearchHead query={query.trim()} groups={groups} onClear={clear} />
+        ) : (
+          <div className="ktabs" role="tablist">
+            <button role="tab" aria-selected={tab === 'mine'} className={tab === 'mine' ? 'on' : undefined} onClick={() => setTab('mine')}>
+              mes services<span className="n">{mine.length}</span>
+            </button>
+            <button
+              role="tab"
+              aria-selected={tab === 'discover'}
+              className={`disc${tab === 'discover' ? ' on' : ''}`}
+              onClick={() => {
+                setTab('discover')
+                setShown(CATALOGUE_PAGE)
+              }}
+            >
+              + découvrir
+            </button>
           </div>
+        )}
+      </div>
+      <div key={searching ? 'search' : tab} className="page-body">
+        <div className="section">
+          {searching ? (
+            <SearchView
+              query={query.trim()}
+              terms={terms}
+              groups={groups}
+              selected={selected}
+              onSelect={setSelected}
+              onActivate={review}
+              onFile={() => setDialog({ kind: 'file' })}
+            />
+          ) : tab === 'mine' ? (
+            <div role="tabpanel">
+              <div className="sec-h">
+                <span className="label">★ épinglés</span>
+                <span className="small dim">{pinnedServices.length}</span>
+                <span className="tools">
+                  <button className="btn small" onClick={() => setDialog({ kind: 'pins' })}>
+                    modifier les épingles
+                  </button>
+                </span>
+              </div>
+              {pinnedServices.length ? (
+                <Tiles
+                  services={pinnedServices}
+                  tiles={tiles}
+                  onOpen={open}
+                  onOrder={(order) => void setSettings({ services: { pinned: [...order, ...pinnedOrder.filter((id) => !order.includes(id))] } })}
+                />
+              ) : (
+                <p className="dim">Aucun service épinglé : ☆ dans le tableau en fait une tuile.</p>
+              )}
+              <div className="sec-h">
+                <span className="label">mes services</span>
+                <span className="small dim">{mine.length}</span>
+                <span className="tools">
+                  <span className="seg" role="group" aria-label="origine">
+                    {ORIGIN_FILTERS.map(([id, label]) => (
+                      <button key={id} aria-pressed={origin === id} onClick={() => setOrigin(id)}>
+                        {label}
+                      </button>
+                    ))}
+                  </span>
+                </span>
+              </div>
+              <MineTable
+                list={mine.filter(byOrigin(origin))}
+                sort={mineSort}
+                onSort={(key) => setMineSort((s) => nextSort(s, key))}
+                onOpen={(l) => open(l.code)}
+                onPin={(l) => togglePin(l.code)}
+                onSwitch={switchOn}
+                onSettings={() => openSettings('services')}
+              />
+            </div>
+          ) : (
+            <div role="tabpanel">
+              {recs.length > 0 && (
+                <>
+                  <div className="sec-h">
+                    <span className="label">recommandés</span>
+                    <span className="small dim">{recs.length}</span>
+                  </div>
+                  <RecommendedCards list={recs} onReview={review} />
+                </>
+              )}
+              <div className="sec-h">
+                <span className="label">catalogue</span>
+                <span className="small dim">{rows.length}</span>
+                <span className="tools">
+                  {catalogue.entries.length > 0 && (
+                    <span className="seg" role="group" aria-label="validation">
+                      {TRUST_FILTERS.map(([id, label]) => (
+                        <button
+                          key={id}
+                          aria-pressed={trust === id}
+                          onClick={() => {
+                            setTrust(id)
+                            setShown(CATALOGUE_PAGE)
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </span>
+                  )}
+                  <button className="btn small" onClick={() => setDialog({ kind: 'file' })}>
+                    ajouter un fichier .3615
+                  </button>
+                </span>
+              </div>
+              {rows.length ? (
+                <CatalogueTable
+                  rows={rows}
+                  sort={catalogueSort}
+                  onSort={(key) => {
+                    setCatalogueSort((s) => nextSort(s, key))
+                    setShown(CATALOGUE_PAGE)
+                  }}
+                  shown={shown}
+                  onMore={more}
+                  onReview={review}
+                />
+              ) : (
+                <CatalogueNote state={catalogue} filtered={trust !== 'all'} />
+              )}
+            </div>
+          )}
         </div>
       </div>
       {dialog?.kind === 'pins' && (
