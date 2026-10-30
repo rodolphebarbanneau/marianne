@@ -1,6 +1,6 @@
 import { chapterIndexAt, saidAt, spanAt, type MediaChapter, type MediaClip, type MediaSpan } from '@marianne/sdk/media'
 import { videoKey, videoPage } from '../links'
-import type { Clip, LiveStream, VideoDetail } from '../types'
+import type { Chamber, Clip, LiveStream, VideoDetail } from '../types'
 import { CHAMBER_NAMES } from '../types'
 import type { Target } from './common'
 
@@ -112,4 +112,18 @@ export function streamTarget(s: LiveStream): Target {
 export function streamOf(streams: readonly LiveStream[], v: Pick<VideoDetail, 'id' | 'chamber' | 'channel'>): LiveStream | null {
   const on = streams.filter((s) => s.live && s.chamber === v.chamber)
   return on.find((s) => s.video === v.id) ?? on.find((s) => !!v.channel && s.channel === v.channel) ?? null
+}
+
+/**
+ * What the page of a broadcast opened without its video shows, from the latest answer of the lives:
+ * its video once the portal has it, and from then on the one it showed (`seen`) whatever later
+ * answers say. One without it (a portal request failed, the sitting is over) would take the whole
+ * sitting away, and the video's page tells itself when it is over. Else the broadcast as the answer
+ * has it; null once it is no longer on air.
+ */
+export function livePage(streams: readonly LiveStream[], chamber: Chamber, id: string, seen: string | null): { video: string } | { stream: LiveStream } | null {
+  if (seen) return { video: seen }
+  const stream = streams.find((s) => s.chamber === chamber && (s.id === id || s.video === id))
+  if (stream?.video) return { video: stream.video }
+  return stream ? { stream } : null
 }

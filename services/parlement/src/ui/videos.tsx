@@ -36,7 +36,7 @@ import {
   yourTitle
 } from './common'
 import { Thumb } from './home'
-import { clipOf, keptOf, mediaChapters, shareLine, shareLink, snapAt, streamOf, streamTarget, suspensions, type AgendaLine } from './media'
+import { clipOf, keptOf, livePage, mediaChapters, shareLine, shareLink, snapAt, streamOf, streamTarget, suspensions, type AgendaLine } from './media'
 import { videoRef } from './members'
 
 /**
@@ -728,18 +728,25 @@ function usePlayable(urls: string[]): string | null {
 
 /**
  * A broadcast the portal doesn't have the video of yet: the Assemblée's live stream, its last
- * seconds only. Asked again every 30 s: once the portal has its video, that video, the whole sitting.
+ * seconds only. Asked again every 30 s: once the portal has its video, that video, the whole
+ * sitting, kept from then on; the lives aren't asked again, the video's page follows it.
  */
 export function LivePane({ chamber, id }: { chamber: Chamber; id: string }) {
   const host = useHost()
   const nav = useNav()
+  const [seen, setSeen] = useState<string | null>(null)
   const live = useMethod('live', [])
-  usePolling(live, POLL_MS)
-  const stream = live.data?.find((s) => s.chamber === chamber && (s.id === id || s.video === id))
+  usePolling(live, POLL_MS, !seen)
+  const shown = live.data ? livePage(live.data, chamber, id, seen) : null
+  const video = shown && 'video' in shown ? shown.video : null
+  const stream = shown && 'stream' in shown ? shown.stream : null
+  useEffect(() => {
+    if (video) setSeen(video)
+  }, [video])
   const src = usePlayable(stream?.hls ? [stream.hls, ...stream.mirrors] : [])
+  if (video) return <VideoPane refId={videoKey(chamber, video)} />
   if (live.error && !live.data) return <Failure error={live.error} retry={live.reload} />
   if (!live.data) return <Loading label="le direct" />
-  if (stream?.video) return <VideoPane refId={videoKey(chamber, stream.video)} />
   if (!stream)
     return (
       <div className="box-note">

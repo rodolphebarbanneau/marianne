@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clipOf, keptOf, mediaChapters, shareLine, shareLink, snapAt, streamOf, suspensions } from '../src/ui/media'
+import { clipOf, keptOf, livePage, mediaChapters, shareLine, shareLink, snapAt, streamOf, suspensions } from '../src/ui/media'
 import type { Clip, LiveStream, VideoChapter } from '../src/types'
 
 const chapter = (id: string, depth: number, timecode: number | null, title: string, speaker?: string): VideoChapter => ({
@@ -115,5 +115,35 @@ describe('a video in the player', () => {
     expect(streamOf([committee, sitting], { ...v, id: 'V2', channel: '' })?.id).toBe('H')
     expect(streamOf([committee], { ...v, channel: '' })).toBeNull()
     expect(streamOf([{ ...sitting, live: false }], v)).toBeNull()
+  })
+
+  it('keeps, on a live’s page, its video once seen, whatever the lives say after', () => {
+    const api: LiveStream = {
+      id: 'RUANR5L17S2027IDS30972',
+      chamber: 'an',
+      organ: 'Séance publique',
+      start: '',
+      startAt: '',
+      title: '',
+      subject: '',
+      place: '',
+      live: true,
+      hls: 'https://videos.assemblee-nationale.fr/live/live36/playlist36.m3u8',
+      mirrors: [],
+      poster: '',
+      url: '',
+      channel: '36'
+    }
+    const onPortal = { ...api, video: '19655971_6ae44b8fc51ef' }
+    const page = (streams: LiveStream[], seen: string | null) => livePage(streams, 'an', api.id, seen)
+    // The API's last seconds, then the whole sitting once the portal has it.
+    expect(page([api], null)).toEqual({ stream: api })
+    expect(page([onPortal], null)).toEqual({ video: onPortal.video })
+    // Seen: a portal request that failed, then the sitting over, don't take it away.
+    expect(page([api], onPortal.video)).toEqual({ video: onPortal.video })
+    expect(page([], onPortal.video)).toEqual({ video: onPortal.video })
+    // Never seen, and no longer on air.
+    expect(page([], null)).toBeNull()
+    expect(livePage([api], 'se', api.id, null)).toBeNull()
   })
 })
