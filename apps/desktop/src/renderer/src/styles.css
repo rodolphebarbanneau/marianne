@@ -1507,12 +1507,19 @@ button.ev:hover {
 /* ---------- the Services page: the 3615 kiosk, my services, « découvrir » ---------- */
 
 /* The page takes the window's whole width, and lays out by the room the sidebar leaves it: a container, as a service's
-   screen is. */
-.services-page .kiosk {
+   screen is. Its head and tabs stay: only what is under them scrolls, so the bar starts there. */
+.services-page .section {
   container: kiosk / inline-size;
+}
+.kiosk-top {
+  flex: none;
   display: flex;
   flex-direction: column;
   gap: var(--s4);
+  padding-bottom: 0;
+}
+.services-page .page-body > .section {
+  padding-top: 14px;
   padding-bottom: var(--s6);
 }
 /* Layout helpers of the Services page and its dialogs (which float over the window, out of the page). */
@@ -1565,13 +1572,17 @@ button.ev:hover {
 * + .sec-h {
   margin-top: 22px;
 }
-/* The kiosk's head, on the screen's own background: QUEL SERVICE ?, the 3615 bar, ENVOI, and a Minitel waiting. */
+/* The kiosk's head: QUEL SERVICE ?, the 3615 bar, ENVOI, and a Minitel waiting. Frame and padding make 15px, the tabs'
+   own inset: the text under the frame starts where the tabs' text does. */
 .kiosk-head {
+  border: 3px double var(--rule);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 24px;
   align-items: center;
-  padding: 4px 0 0;
+  padding: 10px 12px;
+  background-image: radial-gradient(circle at 1.5px 1.5px, color-mix(in srgb, var(--dot) 46%, transparent) 0.6px, transparent 0.9px);
+  background-size: 4px 4px;
 }
 .kiosk-head .ask {
   font-family: var(--retro);
@@ -1682,7 +1693,6 @@ button.ev:hover {
   display: flex;
   align-items: flex-end;
   border-bottom: 1px solid var(--rule);
-  margin-bottom: 14px;
 }
 .ktabs button {
   padding: 6px 14px;
@@ -1793,9 +1803,11 @@ button.ev:hover {
   font-size: 0.8em;
   color: var(--dim);
 }
-/* The grip: six dots, top right, on hover; a tile moves by it only. */
+/* The grip: six dots, top right, on hover; a tile moves by it only. Above the tile's dimmed parts: an opacity puts them
+   over it, under the pointer, which would take its hover away and flicker. */
 .tile .grip {
   position: absolute;
+  z-index: 1;
   top: 7px;
   right: 7px;
   width: 22px;
@@ -2179,11 +2191,14 @@ button.ev:hover {
 .results-bar .link {
   margin-left: auto;
 }
+.search-list > * + * {
+  margin-top: 16px;
+}
 .sgroup {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  margin: 16px 0 4px;
+  margin-bottom: 4px;
   padding-bottom: 4px;
   border-bottom: 1px solid var(--rule);
 }

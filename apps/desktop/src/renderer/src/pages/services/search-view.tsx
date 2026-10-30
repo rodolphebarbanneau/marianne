@@ -13,6 +13,24 @@ import { Code, Lit, Origin } from './parts'
 /** The rows in order, as ↑ ↓ go through them. */
 export const flatten = (groups: SearchGroup[]) => groups.flatMap((g) => g.rows.map((r) => r.listing))
 
+/** What stays above the results, in the tabs' place: what was asked, what it found, and effacer. */
+export function SearchHead({ query, groups, onClear }: { query: string; groups: SearchGroup[]; onClear: () => void }) {
+  const found = flatten(groups).length
+  const yours = groups.filter((g) => g.id === 'pinned' || g.id === 'installed').reduce((n, g) => n + g.rows.length, 0)
+  return (
+    <div className="results-bar">
+      <span className="label">recherche</span>
+      <span className="hi">« {query} »</span>
+      <span className="small dim" aria-live="polite">
+        {found ? `${found} service${found > 1 ? 's' : ''} · ${yours} chez vous · ${found - yours} ailleurs` : 'aucun service'}
+      </span>
+      <button className="link small" onClick={onClear}>
+        effacer
+      </button>
+    </div>
+  )
+}
+
 export function SearchView({
   query,
   terms,
@@ -20,7 +38,6 @@ export function SearchView({
   selected,
   onSelect,
   onActivate,
-  onClear,
   onFile
 }: {
   query: string
@@ -29,46 +46,27 @@ export function SearchView({
   selected: number
   onSelect: (index: number) => void
   onActivate: (l: Listing) => void
-  onClear: () => void
   onFile: () => void
 }) {
   const list = useRef<HTMLDivElement>(null)
-  const rows = flatten(groups)
-  const yours = groups.filter((g) => g.id === 'pinned' || g.id === 'installed').reduce((n, g) => n + g.rows.length, 0)
   // The row chosen with the keys stays in sight.
   // (void: Chromium's scroll methods may return a promise, which React would take for a cleanup.)
   useEffect(() => void list.current?.querySelector('.srow.sel')?.scrollIntoView({ block: 'nearest' }), [selected])
 
-  const head = (
-    <div className="results-bar">
-      <span className="label">recherche</span>
-      <span className="hi">« {query} »</span>
-      <span className="small dim" aria-live="polite">
-        {rows.length ? `${rows.length} service${rows.length > 1 ? 's' : ''} · ${yours} chez vous · ${rows.length - yours} ailleurs` : 'aucun service'}
-      </span>
-      <button className="link small" onClick={onClear}>
-        effacer
-      </button>
-    </div>
-  )
-  if (!rows.length)
+  if (!flatten(groups).length)
     return (
-      <div>
-        {head}
-        <p className="dim" style={{ marginTop: 14 }}>
-          Aucun service « {query} ». Essayez un autre mot, ou{' '}
-          <button className="link" onClick={onFile}>
-            ajoutez un fichier .3615
-          </button>
-          .
-        </p>
-      </div>
+      <p className="dim" style={{ marginTop: 0 }}>
+        Aucun service « {query} ». Essayez un autre mot, ou{' '}
+        <button className="link" onClick={onFile}>
+          ajoutez un fichier .3615
+        </button>
+        .
+      </p>
     )
 
   let index = -1
   return (
-    <div ref={list} role="listbox" aria-label="services trouvés">
-      {head}
+    <div ref={list} className="search-list" role="listbox" aria-label="services trouvés">
       {groups.map((g) => (
         <div key={g.id} role="group" aria-label={g.label}>
           <div className="sgroup">
