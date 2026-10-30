@@ -13,7 +13,15 @@ const fr = {
     description:
       'Vos droits, vos démarches et vos papiers, avec votre propre Claude Code, Codex ou Mistral Vibe. Gratuit, open source, et tout reste chiffré sur votre ordinateur.'
   },
-  nav: { features: 'Fonctions', privacy: 'Vie privée', services: 'Services', download: 'Télécharger', guide: 'Guide' },
+  nav: {
+    features: 'Fonctions',
+    privacy: 'Vie privée',
+    services: 'Services',
+    download: 'Télécharger',
+    guide: 'Guide',
+    manifesto: 'Manifeste',
+    about: 'À propos'
+  },
   ui: {
     mono: 'Minitel 1',
     monoTitle: 'Le noir et blanc du premier Minitel',
@@ -88,8 +96,8 @@ const fr = {
       },
       {
         code: 'ÉCHÉANCES',
-        title: 'Vos papiers, vos échéances',
-        text: 'Vos pièces et votre profil servent à préparer vos démarches, et Marianne vous rappelle ce qui arrive : un paiement, un contrôle technique, une déclaration.'
+        title: 'Vos échéances, des tâches qui reviennent',
+        text: 'Marianne vous rappelle ce qui arrive : un paiement, un contrôle technique, une déclaration. Une tâche planifiée revient à son jour, pour un rappel ou une vérification qu’elle fait pour vous, comme les péages à payer : elle regarde et vous prévient, elle ne paie jamais.'
       }
     ]
   },
@@ -110,9 +118,33 @@ const fr = {
     title: 'Votre IA, votre abonnement.',
     lead: 'Marianne n’a pas d’IA à elle : elle prête ses outils à celle que vous avez déjà, avec votre compte chez son éditeur. Le moteur travaille dans un dossier vide, sans terminal ni accès à vos fichiers : il ne passe que par Marianne.',
     items: [
-      { code: 'CL', name: 'Claude Code', maker: 'Anthropic', state: 'ready', note: '' },
-      { code: 'CX', name: 'Codex', maker: 'OpenAI', state: 'ready', note: '' },
-      { code: 'MI', name: 'Mistral Vibe', maker: 'Mistral', state: 'soon', note: 'pas encore essayé avec une vraie installation' }
+      {
+        code: 'CL',
+        name: 'Claude Code',
+        maker: 'Anthropic',
+        href: 'https://claude.com/product/claude-code',
+        plan: 'compris dans un abonnement Claude payant (Pro, Max…), ou avec un compte Claude Console',
+        state: 'ready',
+        note: ''
+      },
+      {
+        code: 'CX',
+        name: 'Codex',
+        maker: 'OpenAI',
+        href: 'https://chatgpt.com/codex',
+        plan: 'Codex fait partie de ChatGPT : il est compris dans votre offre ChatGPT, avec des limites selon l’offre',
+        state: 'ready',
+        note: ''
+      },
+      {
+        code: 'MI',
+        name: 'Mistral Vibe',
+        maker: 'Mistral AI',
+        href: 'https://mistral.ai/products/vibe',
+        plan: 'compris dans votre offre Mistral, gratuite ou Pro, avec des limites selon l’offre',
+        state: 'soon',
+        note: 'pas encore essayé avec une vraie installation'
+      }
     ],
     install: 'installer un moteur'
   },
@@ -122,7 +154,12 @@ const fr = {
     items: [
       { code: 'METEO', name: 'Météo', text: 'le temps de votre commune, maintenant et sur 7 jours (Météo-France)' },
       { code: 'PEAGE', name: 'Péage en flux libre', text: 'les autoroutes sans barrière : vos trajets, l’échéance de 72 heures, le paiement officiel' },
-      { code: 'PARLEMENT', name: 'Parlement', text: 'l’Assemblée nationale et le Sénat : vos élus, les scrutins, l’agenda, les séances en direct' },
+      { code: 'INFOS', name: 'Les infos', text: 'l’actualité de vos sources, regroupée en sujets : qui en parle, comment chacun titre' },
+      {
+        code: 'PARLEMENT',
+        name: 'Parlement',
+        text: 'l’Assemblée nationale et le Sénat : vos élus, les scrutins, l’agenda, les séances en vidéo et en direct'
+      },
       {
         code: 'ANNUAIRE',
         name: 'Annuaire des services publics',
@@ -178,6 +215,112 @@ const fr = {
     next: 'SUITE',
     back: 'retour à l’accueil'
   },
+  manifesto: {
+    title: 'Manifeste',
+    description: 'Pourquoi nous faisons Marianne : vos droits et vos démarches au même endroit, sur votre ordinateur, chiffrés, sous votre contrôle.',
+    heading: 'Vos droits, sans le labyrinthe.',
+    lead: 'Nous faisons Marianne parce qu’en France, faire valoir ses droits ne devrait pas demander de connaître le bon site, le bon formulaire et le bon guichet. Voici ce que nous croyons, et ce que nous en faisons.',
+    sections: [
+      {
+        title: 'Plus de mille sites',
+        text: [
+          'Vos impôts sont sur un site, votre santé sur un autre, vos allocations sur un troisième. Votre retraite, votre carte grise, votre logement, votre mairie : chacun le sien. Les informations et les données des citoyens français sont dispersées sur plus de mille sites publics, chacun avec son compte, ses mots et ses délais.',
+          'Chacun de ces sites, pris seul, rend service. Ensemble, ils forment un labyrinthe. Pour faire valoir un droit, il faut d’abord savoir qu’il existe, puis savoir à quelle porte frapper. Beaucoup s’y perdent, se heurtent à un mur, ou renoncent. Ce n’est pas une question d’effort : c’est une question d’architecture.'
+        ]
+      },
+      {
+        title: 'Tout au même endroit',
+        text: [
+          'Marianne rassemble ce qui est dispersé. Vos papiers, vos échéances, vos démarches et l’information publique utile tiennent au même endroit : sur votre ordinateur.',
+          'Elle ne remplace pas les sites de l’administration, et ce n’est pas un navigateur de plus : c’est un agrégateur. Elle sait où aller, ouvre le bon site au bon moment par des liens intégrés, prépare ce qui peut l’être et automatise vos échanges avec les services publics et l’État, là où c’est possible. Le dernier mot, celui qui signe, paie ou envoie, reste le vôtre.'
+        ]
+      },
+      {
+        title: 'Comprendre, sans chercher',
+        text: [
+          'Chaque citoyen devrait pouvoir accéder à ses données, comprendre ses droits et ses démarches, sans avoir à savoir où aller. Avec Marianne, vous posez la question comme elle vient, avec vos mots. Elle cherche dans les sources officielles, vous explique ce qui s’applique à vous, et vous dit quoi faire, et avant quand.',
+          'Les démarches guidées vous mènent pas à pas. Les échéances viennent à vous, au lieu que vous couriez après elles.'
+        ]
+      },
+      {
+        title: 'Chez vous, et nulle part ailleurs',
+        text: [
+          'Rassembler des données aussi personnelles n’a de sens que dans une architecture à la hauteur. Marianne n’a pas de serveur. Tout ce que vous lui confiez tient dans une archive chiffrée, sur votre ordinateur, que vous êtes la seule personne à pouvoir ouvrir. Pas de compte en ligne, pas de base centrale à pirater, rien à revendre. Nous-mêmes ne pouvons pas la lire.'
+        ]
+      },
+      {
+        title: 'L’IA ne voit que des jetons',
+        text: [
+          'Marianne travaille avec l’IA que vous avez déjà, Claude Code, Codex ou Mistral Vibe, et avec votre abonnement. Mais votre numéro de sécurité sociale, votre numéro fiscal, votre nom, votre adresse ou votre IBAN ne lui sont jamais montrés : elle ne voit que des jetons, que Marianne remet en clair sur votre écran, et seulement là.'
+        ]
+      },
+      {
+        title: 'Vous décidez, toujours',
+        text: [
+          'Une IA peut aider. Elle ne décide pas à votre place. Rien ne change votre profil, ne remplit un formulaire, ne signe, ne paie ni n’envoie sans votre accord, donné sur une carte qui vous montre tout.'
+        ]
+      },
+      {
+        title: 'Ouvert, et vérifiable',
+        text: [
+          'La confiance ne se décrète pas : elle se vérifie. Le code de Marianne est ouvert, sous licence MIT : chacun peut lire ce qu’il fait, le vérifier et l’améliorer. Les démarches et les guides sont relus, et chacun de leurs faits renvoie à une source officielle.'
+        ]
+      },
+      {
+        title: 'Indépendante',
+        text: [
+          'Marianne est un projet indépendant, sans lien avec l’État ni avec aucune administration. Elle porte le nom de la République parce qu’elle sert ses citoyens, pas parce qu’elle parle en son nom.'
+        ]
+      }
+    ],
+    end: {
+      title: 'Les services publics sont à nous tous.',
+      text: [
+        'Il y a plus de quarante ans, le Minitel faisait entrer des services dans des millions de foyers, avec un code et un écran. Marianne en garde l’esprit : les services publics à portée de main, pour tout le monde. Cette fois, vos données restent chez vous.'
+      ]
+    },
+    signed: 'les auteurs de Marianne',
+    download: 'télécharger Marianne',
+    guide: 'lire le guide',
+    code: 'lire le code'
+  },
+  about: {
+    title: 'À propos',
+    description: 'Marianne, l’assistant citoyen sur votre ordinateur : ce qu’elle est, qui la fait, et sous quelle licence.',
+    heading: 'À propos de Marianne',
+    lead: 'Marianne est un assistant citoyen pour votre ordinateur : vos droits, vos démarches, vos papiers et vos échéances, et l’information publique utile, au même endroit.',
+    app: {
+      title: 'L’application',
+      text: [
+        'Marianne est une application de bureau pour Windows, macOS et Linux, gratuite et open source. Elle travaille avec votre propre moteur d’IA, Claude Code, Codex ou Mistral Vibe, à travers ses seuls outils, et garde tout ce que vous lui confiez dans une archive chiffrée, sur votre ordinateur. Elle n’a ni serveur ni compte en ligne.',
+        'C’est une version alpha : elle sert à trouver ce qui ne va pas avant une vraie sortie. L’application est en français.'
+      ]
+    },
+    independent: {
+      title: 'Un projet indépendant',
+      text: [
+        'Marianne est un projet indépendant, sans lien avec l’État ni avec aucune administration. Elle aide à comprendre et à préparer vos démarches, sans remplacer l’administration ni un conseil juridique. Les démarches se font sur les sites officiels, avec votre accord.'
+      ]
+    },
+    authors: {
+      title: 'Les auteurs',
+      lead: 'Marianne est écrite par ses contributeurs, au grand jour, sur GitHub :',
+      text: [
+        'Rodolphe Barbanneau l’a créée et la maintient : il relit les changements et publie les versions.',
+        'Chacun peut y prendre part : signaler un problème, proposer une idée, corriger une démarche, traduire le guide ou écrire un service 3615.'
+      ],
+      all: 'les contributeurs sur GitHub',
+      contribute: 'contribuer'
+    },
+    license: {
+      title: 'Licence et crédits',
+      text: [
+        'Le code est sous licence MIT (© 2026 Rodolphe Barbanneau) : chacun peut le lire, le réutiliser et le modifier.',
+        'En fond de page : Eugène Delacroix, La Liberté guidant le peuple (1830), musée du Louvre, domaine public. Polices : VT323 et JetBrains Mono, sous licence SIL Open Font.'
+      ]
+    },
+    why: 'Pourquoi nous la faisons : le manifeste'
+  },
   bar: { locked: 'rien ne quitte votre ordinateur', prev: 'précédent', next: 'suivant', top: 'haut de page', help: 'le guide' },
   footer: {
     disclaimer:
@@ -201,7 +344,15 @@ const en: typeof fr = {
     description:
       'Your rights, your formalities and your papers in France, with your own Claude Code, Codex or Mistral Vibe. Free, open source, and everything stays encrypted on your computer.'
   },
-  nav: { features: 'Features', privacy: 'Privacy', services: 'Services', download: 'Download', guide: 'Guide' },
+  nav: {
+    features: 'Features',
+    privacy: 'Privacy',
+    services: 'Services',
+    download: 'Download',
+    guide: 'Guide',
+    manifesto: 'Manifesto',
+    about: 'About'
+  },
   ui: {
     mono: 'Minitel 1',
     monoTitle: 'The black and white of the first Minitel',
@@ -276,8 +427,8 @@ const en: typeof fr = {
       },
       {
         code: 'ÉCHÉANCES',
-        title: 'Your papers, your deadlines',
-        text: 'Your documents and profile help prepare your formalities, and Marianne reminds you of what’s coming: a payment, a car inspection, a tax return.'
+        title: 'Your deadlines, tasks that come back',
+        text: 'Marianne reminds you of what’s coming: a payment, a car inspection, a tax return. A planned task comes back on its day, for a reminder or a check it makes for you, like unpaid tolls: it looks and tells you, it never pays.'
       }
     ]
   },
@@ -298,9 +449,33 @@ const en: typeof fr = {
     title: 'Your AI, your subscription.',
     lead: 'Marianne has no AI of its own: it lends its tools to the one you already have, with your account at its maker. The engine works in an empty folder, with no terminal and no access to your files: it only goes through Marianne.',
     items: [
-      { code: 'CL', name: 'Claude Code', maker: 'Anthropic', state: 'ready', note: '' },
-      { code: 'CX', name: 'Codex', maker: 'OpenAI', state: 'ready', note: '' },
-      { code: 'MI', name: 'Mistral Vibe', maker: 'Mistral', state: 'soon', note: 'not yet tried with a real installation' }
+      {
+        code: 'CL',
+        name: 'Claude Code',
+        maker: 'Anthropic',
+        href: 'https://claude.com/product/claude-code',
+        plan: 'included in a paid Claude plan (Pro, Max…), or with a Claude Console account',
+        state: 'ready',
+        note: ''
+      },
+      {
+        code: 'CX',
+        name: 'Codex',
+        maker: 'OpenAI',
+        href: 'https://chatgpt.com/codex',
+        plan: 'Codex is part of ChatGPT: it is included in your ChatGPT plan, with limits that depend on the plan',
+        state: 'ready',
+        note: ''
+      },
+      {
+        code: 'MI',
+        name: 'Mistral Vibe',
+        maker: 'Mistral AI',
+        href: 'https://mistral.ai/products/vibe',
+        plan: 'included in your Mistral plan, Free or Pro, with limits that depend on the plan',
+        state: 'soon',
+        note: 'not yet tried with a real installation'
+      }
     ],
     install: 'install an engine'
   },
@@ -310,7 +485,12 @@ const en: typeof fr = {
     items: [
       { code: 'METEO', name: 'Weather', text: 'the weather of your commune, now and over 7 days (Météo-France)' },
       { code: 'PEAGE', name: 'Free-flow tolls', text: 'barrier-free motorways: your trips, the 72-hour deadline, the official payment' },
-      { code: 'PARLEMENT', name: 'Parliament', text: 'the National Assembly and the Senate: your representatives, the votes, the agenda, live sittings' },
+      { code: 'INFOS', name: 'The news', text: 'the news of your sources, grouped into subjects: who covers it, how each one headlines it' },
+      {
+        code: 'PARLEMENT',
+        name: 'Parliament',
+        text: 'the National Assembly and the Senate: your representatives, the votes, the agenda, the sittings on video and live'
+      },
       { code: 'ANNUAIRE', name: 'Public services directory', text: 'town hall, Caf, CPAM, tax office, courts near you: addresses, hours, phone numbers' },
       { code: 'CARTE', name: 'Map of France', text: 'départements and communes: population, area, density' }
     ],
@@ -356,6 +536,112 @@ const en: typeof fr = {
     prev: 'RETOUR',
     next: 'SUITE',
     back: 'back to the home page'
+  },
+  manifesto: {
+    title: 'Manifesto',
+    description: 'Why we make Marianne: your rights and formalities in one place, on your computer, encrypted, under your control.',
+    heading: 'Your rights, without the maze.',
+    lead: 'We make Marianne because, in France, standing up for your rights shouldn’t mean knowing the right website, the right form and the right office. Here is what we believe, and what we do about it.',
+    sections: [
+      {
+        title: 'More than a thousand sites',
+        text: [
+          'Your taxes are on one site, your health on another, your benefits on a third. Your pension, your car registration, your housing, your town hall: each has its own. The information and data of French citizens are scattered across more than a thousand public websites, each with its own account, its own words and its own deadlines.',
+          'Each of these sites, on its own, does its job. Together, they make a maze. To claim a right, you first have to know it exists, then which door to knock on. Many people get lost, hit a wall, or give up. It isn’t a matter of effort: it’s a matter of architecture.'
+        ]
+      },
+      {
+        title: 'Everything in one place',
+        text: [
+          'Marianne brings together what is scattered. Your papers, your deadlines, your formalities and the public information you need sit in one place: on your computer.',
+          'It doesn’t replace the administration’s websites, and it isn’t one more browser: it is an aggregator. It knows where to go, opens the right site at the right moment through integrated links, prepares what can be prepared, and automates your dealings with public services and the State where it can. The last word, the one that signs, pays or sends, stays yours.'
+        ]
+      },
+      {
+        title: 'Understand, without searching',
+        text: [
+          'Every citizen should be able to reach their own data and understand their rights and formalities, without having to know where to go. With Marianne, you ask your question as it comes, in your own words. It searches the official sources, explains what applies to you, and tells you what to do, and by when.',
+          'Guided formalities take you through, step by step. Deadlines come to you, instead of you chasing them.'
+        ]
+      },
+      {
+        title: 'At home, and nowhere else',
+        text: [
+          'Bringing such personal data together only makes sense in an architecture that lives up to it. Marianne has no server. Everything you give it fits in an encrypted archive, on your computer, that only you can open. No online account, no central database to breach, nothing to sell. Not even we can read it.'
+        ]
+      },
+      {
+        title: 'The AI only sees tokens',
+        text: [
+          'Marianne works with the AI you already have, Claude Code, Codex or Mistral Vibe, on your own subscription. But your social security number, tax number, name, address or IBAN are never shown to it: it only sees tokens, which Marianne turns back into your real values on your screen, and only there.'
+        ]
+      },
+      {
+        title: 'You decide, always',
+        text: [
+          'An AI can help. It doesn’t decide for you. Nothing changes your profile, fills in a form, signs, pays or sends without your approval, given on a card that shows you everything.'
+        ]
+      },
+      {
+        title: 'Open, and verifiable',
+        text: [
+          'Trust isn’t declared: it’s checked. Marianne’s code is open, under the MIT license: anyone can read what it does, check it and improve it. The formalities and guides are reviewed, and each of their facts points to an official source.'
+        ]
+      },
+      {
+        title: 'Independent',
+        text: [
+          'Marianne is an independent project, not affiliated with the French State or any administration. It bears the Republic’s name because it serves its citizens, not because it speaks for it.'
+        ]
+      }
+    ],
+    end: {
+      title: 'Public services belong to all of us.',
+      text: [
+        'More than forty years ago, the Minitel brought services into millions of French homes, with a code and a screen. Marianne keeps its spirit: public services within reach, for everyone. This time, your data stays with you.'
+      ]
+    },
+    signed: 'the authors of Marianne',
+    download: 'download Marianne',
+    guide: 'read the guide',
+    code: 'read the code'
+  },
+  about: {
+    title: 'About',
+    description: 'Marianne, the citizen assistant on your computer: what it is, who makes it, and under which license.',
+    heading: 'About Marianne',
+    lead: 'Marianne is a citizen assistant for your computer, for people living in France: your rights, your formalities, your papers and deadlines, and useful public information, in one place.',
+    app: {
+      title: 'The app',
+      text: [
+        'Marianne is a desktop app for Windows, macOS and Linux, free and open source. It works with your own AI engine, Claude Code, Codex or Mistral Vibe, through its own tools only, and keeps everything you give it in an encrypted archive, on your computer. It has no server and no online account.',
+        'This is an alpha version: it’s here to find what’s wrong before a real release. The app is in French.'
+      ]
+    },
+    independent: {
+      title: 'An independent project',
+      text: [
+        'Marianne is an independent project, not affiliated with the French State or any administration. It helps you understand and prepare your formalities, without replacing the administration or legal advice. Formalities are done on the official websites, with your approval.'
+      ]
+    },
+    authors: {
+      title: 'The authors',
+      lead: 'Marianne is written by its contributors, in the open, on GitHub:',
+      text: [
+        'Rodolphe Barbanneau created it and maintains it: he reviews the changes and publishes the releases.',
+        'Anyone can take part: report a problem, suggest an idea, correct a formality, translate the guide or write a 3615 service.'
+      ],
+      all: 'the contributors on GitHub',
+      contribute: 'contribute'
+    },
+    license: {
+      title: 'License and credits',
+      text: [
+        'The code is under the MIT license (© 2026 Rodolphe Barbanneau): anyone may read it, reuse it and change it.',
+        'In the background: Eugène Delacroix, Liberty Leading the People (1830), Louvre, public domain. Fonts: VT323 and JetBrains Mono, under the SIL Open Font License.'
+      ]
+    },
+    why: 'Why we make it: the manifesto'
   },
   bar: { locked: 'nothing leaves your computer', prev: 'previous', next: 'next', top: 'top of the page', help: 'the guide' },
   footer: {

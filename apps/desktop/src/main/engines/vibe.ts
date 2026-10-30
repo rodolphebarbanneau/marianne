@@ -143,7 +143,7 @@ async function plan(home: string): Promise<string | undefined> {
 
 export const vibe: Engine = {
   candidates,
-  site: 'docs.mistral.ai/vibe',
+  site: 'mistral.ai/products/vibe',
   async account(_cli, env, home) {
     const source = await keySource(env, home)
     if (source === undefined) return {}

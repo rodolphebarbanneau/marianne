@@ -1,0 +1,70 @@
+---
+import TextPage from './TextPage.astro'
+import { localized, words, type Lang } from '../i18n'
+
+// Why Marianne exists, in plain words: the scattered sites, the one place, and the principles that
+// make that one place worth trusting. French first; the English says the same.
+interface Props {
+  lang: Lang
+}
+const { lang } = Astro.props
+const t = words(lang)
+const m = t.manifesto
+const two = (n: number) => String(n).padStart(2, '0')
+---
+
+<TextPage lang={lang} path="manifeste/" title={m.title} description={m.description} code="MANIFESTE" heading={m.heading} lead={m.lead}>
+  {m.sections.map((s, i) => (
+    <section data-section>
+      <h2>
+        <span class="n inv">{two(i + 1)}</span>
+        {s.title}
+      </h2>
+      {s.text.map((p) => (
+        <p>{p}</p>
+      ))}
+    </section>
+  ))}
+  <section class="end" data-section>
+    <p class="big">{m.end.title}</p>
+    {m.end.text.map((p) => (
+      <p>{p}</p>
+    ))}
+    <p class="signed dim">
+      — <a href={localized(lang, 'a-propos/')}>{m.signed}</a>
+    </p>
+    <p class="go">
+      <a class="btn primary" href={localized(lang) + '#telecharger'}>
+        {m.download} ›
+      </a>
+      <a class="btn" href={localized(lang, 'guide/')}>
+        {m.guide} ›
+      </a>
+      <a class="btn" href="https://github.com/rodolphebarbanneau/marianne">
+        {m.code} ›
+      </a>
+    </p>
+  </section>
+</TextPage>
+
+<style>
+  .end {
+    margin-top: 72px;
+  }
+  .big {
+    font-family: var(--retro);
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    line-height: 1.05;
+    color: var(--accent);
+    margin-bottom: 18px;
+  }
+  .signed {
+    font-style: italic;
+  }
+  .go {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 28px;
+  }
+</style>

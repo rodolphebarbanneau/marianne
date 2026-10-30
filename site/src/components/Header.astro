@@ -9,13 +9,20 @@ const { lang, path } = Astro.props
 const t = words(lang)
 const other: Lang = lang === 'fr' ? 'en' : 'fr'
 const home = localized(lang)
-// The home page's sections; from a guide page, the same links lead back to them.
+// The home page's sections; from another page, the same links lead back to them. `fits`: down to
+// which width a tab stays as the header narrows (wide, medium, or any).
 const onHome = path === ''
 const links = [
-  { id: 'fonctions', label: t.nav.features },
-  { id: 'vie-privee', label: t.nav.privacy },
-  { id: 'services', label: t.nav.services },
-  { id: 'telecharger', label: t.nav.download }
+  { id: 'fonctions', label: t.nav.features, fits: 'wide' },
+  { id: 'vie-privee', label: t.nav.privacy, fits: 'wide' },
+  { id: 'services', label: t.nav.services, fits: 'wide' },
+  { id: 'telecharger', label: t.nav.download, fits: 'medium' }
+]
+// The site's own pages, after the home page's sections: the same path in each language.
+const pages = [
+  { path: 'guide/', label: t.nav.guide, fits: 'any' },
+  { path: 'manifeste/', label: t.nav.manifesto, fits: 'medium' },
+  { path: 'a-propos/', label: t.nav.about, fits: 'medium' }
 ]
 ---
 
@@ -26,13 +33,20 @@ const links = [
     </a>
     <nav class="tabs" aria-label={lang === 'fr' ? 'Sections' : 'Sections'}>
       {links.map((l) => (
-        <a href={onHome ? `#${l.id}` : `${home}#${l.id}`} data-spy={onHome ? l.id : undefined}>
+        <a href={onHome ? `#${l.id}` : `${home}#${l.id}`} data-spy={onHome ? l.id : undefined} data-fits={l.fits}>
           {l.label}
         </a>
       ))}
-      <a href={localized(lang, 'guide/')} class:list={{ on: path.startsWith('guide/') }}>
-        {t.nav.guide}
-      </a>
+      {pages.map((p) => (
+        <a
+          href={localized(lang, p.path)}
+          class:list={{ on: path.startsWith(p.path) }}
+          aria-current={path.startsWith(p.path) ? 'page' : undefined}
+          data-fits={p.fits}
+        >
+          {p.label}
+        </a>
+      ))}
     </nav>
     <div class="tools">
       <button type="button" class="opt" data-opt="mono" title={t.ui.monoTitle} aria-pressed="false">
@@ -176,8 +190,15 @@ const links = [
       display: none;
     }
   }
+  /* As the header narrows, the home page's sections go first (the keys at the bottom still reach
+     them), but Télécharger; then every tab but the guide's. */
+  @media (max-width: 1240px) {
+    .tabs a[data-fits='wide'] {
+      display: none;
+    }
+  }
   @media (max-width: 820px) {
-    .tabs a:not(:last-child) {
+    .tabs a[data-fits='medium'] {
       display: none;
     }
     .bar {

@@ -17,14 +17,14 @@ Vous pouvez en refaire une dans Réglages › Phrase de passe et code. L’ancie
 
 ## Le code sur cet ordinateur
 
-Après une ouverture avec la phrase de passe, Marianne vous propose un code de 6 chiffres ou plus. La prochaine fois, il suffira pour ouvrir l’archive. Il ne marche que sur cet ordinateur, car il s’appuie sur le trousseau du système. Après 5 erreurs, il faut de nouveau la phrase de passe.
+Après une ouverture avec la phrase de passe, Marianne vous propose un code de 6 à 12 chiffres, autre qu’une suite (123456) ou un chiffre répété (111111). La prochaine fois, il suffira pour ouvrir l’archive. Il ne marche que sur cet ordinateur, car il s’appuie sur le trousseau du système. Après 5 erreurs, il faut de nouveau la phrase de passe.
 
 Pour changer ou retirer le code : Réglages › Phrase de passe et code.
 
 ## Verrouiller
 
-Le cadenas en bas à gauche, ou ctrl+L, verrouille l’archive. Marianne la verrouille aussi d’elle-même après un moment sans activité, et quand l’ordinateur se met en veille. Vous réglez les deux dans Réglages › Phrase de passe et code.
+Le cadenas en bas à gauche, ou ctrl+L, verrouille l’archive. Marianne la verrouille aussi d’elle-même après un moment sans activité (15 minutes, au départ), et quand l’ordinateur se met en veille. Vous réglez les deux dans Réglages › Phrase de passe et code.
 
 ## Plusieurs comptes
 
-Chaque compte est une archive, un fichier `.marianne`. Sur l’écran de verrouillage, « créer un autre compte » en ajoute un, et « changer de compte » revient à la liste. Pour une archive rangée ailleurs, sur une clé USB ou un autre disque, choisissez « ouvrir une archive ailleurs… », ou ouvrez le fichier d’un double clic. Si un autre compte est ouvert, Marianne vous demande avant de le verrouiller.
+Chaque compte est une archive, un fichier `.marianne`. Sur l’écran de verrouillage, « + créer un autre compte » en ajoute un, et « changer de compte » revient à la liste. Pour une archive rangée ailleurs, sur une clé USB ou un autre disque, choisissez « ouvrir une archive ailleurs… », ou ouvrez le fichier d’un double clic. Si un autre compte est ouvert, Marianne vous demande avant de le verrouiller.

@@ -4,7 +4,7 @@
 
 A folder is a conversation with Marianne about one subject: a formality, a question, a letter to understand. Write on the home page to start one (ctrl+enter opens a new one from anywhere). « + pièce » attaches a document, and the menu next to the « envoyer » (send) button chooses the folder's engine.
 
-Ongoing folders are in the left column, with « chercher » (search) at the top to find one. Those you put on hold come back on the date you chose, and those you file stay within reach, under « Classés » (filed).
+Ongoing folders are in the left column, with « chercher » (search) at the top to find one. Those you put on hold come back on the date you chose, and those you file stay within reach, under « Classés » (filed). A folder is also filed by itself when its guided formality is done, or after 7 days without activity when it follows none; a pinned folder, or one holding a planned task, never is. A new message brings it back.
 
 ## Your approval
 
@@ -12,7 +12,7 @@ Anything that changes your profile, fills in a form, signs, pays or sends goes t
 
 ## The built-in browser
 
-Marianne opens the sites it needs in the folder's browser, on the right (the « navigateur » button). It asks for your approval before going online, and always before signing, paying or sending. You can take over (« prendre la main ») at any time. When it needs you (FranceConnect, a code received by text message), it opens the folder's browser; if you are on another screen, it opens when you come back to the folder. This browser forgets everything when the archive locks.
+Marianne opens the sites it needs in the folder's browser, on the right (the « navigateur », browser, button). It asks for your approval before going online, and always before signing, paying or sending. You can take over (« prendre la main ») at any time. When it needs you (FranceConnect, a code received by text message), it opens the folder's browser; if you are on another screen, a message tells you, and the browser opens when you come back to the folder. The rest of the time, Réglages › Navigateur › « afficher le navigateur » (Settings › Browser › show the browser) decides: « quand Marianne le propose » (when Marianne offers), « toujours » (always), or « jamais, il travaille hors de vue » (never, it works out of sight). This browser forgets everything when the archive locks.
 
 ## The pages
 
@@ -23,17 +23,18 @@ Marianne opens the sites it needs in the folder's browser, on the right (the « 
 
 3615 INFOS, among your services, shows the headlines of your sources over the last 24 hours, grouped into subjects: a subject is the headlines of different newspapers that say the same thing, ranked by how many sources cover it. « à la une » (front page, F2) shows the list and the chosen subject, the « fil » (wire, F3) the same headlines by time, the « kiosque » (newsstand, F4) source by source. « / » goes to the search field, at the top.
 
-Each source has its colour, its editorial line, from the left (red) to the right (blue), a greyish white at the centre, for a source with no clear lean. The one Marianne gives is its default classification, and you can change it. The colours don't sort or hide anything. You choose your sources in Réglages › Identité › sources d’information (news sources): accept or set aside (« accepter · écarter ») a newspaper, and its sections with ⚙. The list is Marianne's, the same for everyone.
+Each source has its colour, its editorial line, from the left (red) to the right (blue), a greyish white at the centre, for a source with no clear lean. The one Marianne gives is its default classification, and you can change it. The colours don't sort or hide anything. You choose your sources in Réglages › Identité › sources d’information (news sources): accept (« accepter ») or set aside (« écarter ») a newspaper, and choose its sections with ⚙. The list is Marianne's, the same for everyone.
 
 ## The Parliament's videos
 
-In 3615 PARLEMENT, the vidéos tab opens the sittings and committees of the Assemblée nationale and the Sénat in Marianne's player, with the agenda beside it.
+In 3615 PARLEMENT, the vidéos (videos) tab opens the sittings and committees of the Assemblée nationale and the Sénat in Marianne's player, with the agenda beside it.
 
 - **The player**: the controls are over the picture and fade while it plays. The track shows the agenda's main points and, in black, the suspensions of the sitting; hovered, the moment, the subject and the speaker. After the position, the current subject: a click shows it in the agenda, which follows the playback. A click on a line of the agenda goes there.
-- **The options** (the gear): the quality, the speed, and the time, the video's or the hémicycle's clock (the agenda follows this choice).
-- **Keeping a clip** (« garder un extrait », in the options, or X): the track narrows around the passage; set its start and end (I and O at the position), « caler sur l’intervention » takes the speaker's, then « garder ». Your clips are in vidéos › extraits, private, in your archive: to watch them again, share them or talk about them with Marianne.
-- **Sharing the link** (« partager le lien »): a link to the video's official page that anyone can open, at its start, at the chosen moment or at the start of the clip. « copier avec le titre » adds the subject, the speaker, the chamber, the day and the time.
-- **Live**: a sitting on air opens at the live edge, and the track goes back to its opening; its agenda fills in as it goes (« ● en cours » marks the latest point). DIRECT, or the End key, goes back to live. Once the sitting is over, the page moves to the recorded video as soon as the portal has it ready, at the same place. Until the portal offers a live's video, only its last seconds can be watched.
+- **Full screen** (F, the button on the right, or a double click in the middle of the picture): the video takes the whole screen, and esc leaves it. O shows the agenda, leaving full screen. On the keyboard too: space plays or pauses, ← and → go back or forward 10 seconds, ↑ and ↓ set the volume, M mutes it.
+- **The options** (the gear): the quality, the speed, the time, the video's or the hémicycle's clock (the agenda follows this choice), and picture-in-picture (« image dans l’image »).
+- **Keeping a clip** (« garder un extrait », in the options, or X): the track narrows around the passage; set its start and end (I and O at the position), « caler sur l’intervention » (fit to the speech) takes the speaker's, then « garder l’extrait » (keep the clip, enter); « annuler » (cancel) or esc drops it. Your clips are in vidéos › extraits (videos › clips), private, in your archive: to watch them again, share them or talk about them with Marianne.
+- **Sharing the link** (« partager le lien »): a link to the video's official page that anyone can open, at its start, at the chosen moment or at the start of the clip. « copier avec le titre » (copy with the title) adds the subject, the speaker, the chamber, the day and the time.
+- **Live**: a sitting on air opens at the live edge, and the track goes back to its opening; its agenda fills in as it goes (« ● en cours », in progress, marks the latest point). DIRECT (live), or the End key, goes back to live. Once the sitting is over, the page moves to the recorded video as soon as the portal has it ready, at the same place. Until the portal offers a live's video, only its last seconds can be watched.
 - **The mini-player** (P): the video goes on in a corner of the window while you do something else in Marianne; it also opens when you leave the page of a video that is playing. Drag it to a corner; a click on its caption brings you back to the video's page, where it is. Another video that starts playing takes its place (opening a video's page without playing it doesn't), and it closes if you turn off or remove its service.
 
 ## The Démarches page
@@ -48,7 +49,7 @@ Under the bar, three tabs:
 
 ## An area's page
 
-An area's page has the same head, with its counter's number: Mobilité is GUICHET 8. The ← arrow or esc goes back to Démarches, and the bar takes a question: Marianne answers it in a new folder, filed in this area. Four tabs, on F2 to F5:
+An area's page has the same head, with its counter's number: Mobilité is GUICHET 8 (counter 8). The ← arrow at the top, or esc, goes back to Démarches, and the bar takes a question: Marianne answers it in a new folder, filed in this area. Four tabs, on F2 to F5:
 
 - **aperçu** (overview): questions to start from, what's to do here, your vehicles or homes, the weeks to come, the services that can help, your folders and tasks.
 - **tâches planifiées** (planned tasks): each task in full, then those your services propose.
@@ -91,4 +92,6 @@ Like on a Minitel, the bottom bar shows the screen's keys:
 | SOMMAIRE   | the app's menu              | ctrl+space |
 | GUIDE      | help, links, your shortcuts | F1         |
 
-Also: ctrl+K for commands, ctrl+alt+space to search everywhere, ctrl+, for settings, ctrl+shift+R to reload the window. In a service, F2, F3… open its tabs, and F1 its guide; on an area's page, F2 to F5 open its tabs. On macOS, cmd replaces ctrl, except for the menu and search. All of them can be changed in Réglages › Raccourcis clavier (Settings › Keyboard shortcuts).
+The bar follows the screen: on a service's screen or an area's page, RETOUR (esc) goes back, and in the settings, ENVOI (ctrl+S) saves.
+
+Also: ctrl+K for commands, ctrl+alt+space to search everywhere, ctrl+2 and ctrl+3 for Démarches and Services, ctrl+, for settings, ctrl+B to fold the left column, F11 for full screen, ctrl+shift+R to reload the window. In a service, F2, F3… open its tabs, F1 its guide, and « / » its search; on an area's page, F2 to F5 open its tabs. On macOS, cmd replaces ctrl, except for the menu and search, and full screen is ctrl+cmd+F. All of them can be changed in Réglages › Raccourcis clavier (Settings › Keyboard shortcuts).

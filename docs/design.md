@@ -15,7 +15,7 @@ Marianne is a desktop citizen assistant for people living in France: their right
 ## The window
 
 ```
-[◧] MARIANNE  Démarches  Services                                     ⌕  ⚙  ─ □ ✕
+[◧] MARIANNE  Démarches  Services                                    ⌕ ⚙ ↻  ─ □ ✕
 ┌────────────────┬───────────────────────────────────────────┬────────────────────┐
 │ ⌕ filtre  ＋    │                                           │                    │
 │ ● pinned       │     the page, or the open folder          │  built-in browser  │
@@ -28,13 +28,14 @@ Marianne is a desktop citizen assistant for people living in France: their right
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Title bar**: the sidebar toggle; MARIANNE (a new folder, on the composer); the pages, the current one as an inverse block; search and settings; the system's window buttons. Full screen is F11, without a button.
+- **Title bar**: the sidebar toggle; MARIANNE (a new folder, on the composer); the pages, the current one as an inverse block; search, settings and reload; the system's window buttons. Full screen is F11 (ctrl+cmd+F on macOS), without a button.
 - **Sidebar** (after T3 Code): search, filter by domain (shift+click for several), new folder; rows with domain badge, pin, status or time, title, a meta line and the engine badge; on hover, snooze and settle. "En veille" and "Classés" fold at the bottom. The account selector sits in the footer; its menu shows the archive gauge under the name, then Réglages, Archive, Changer de compte, Verrouiller.
 - **Bottom bar**: the lock, then each enabled engine with its light (● ready, ◐ working, greyed ✕ enabled but not found); on the right, the Minitel keys of the screen.
-- **Pages**, in this order, each separate (scrolling never switches): Marianne (the composer), Démarches, Services. The news is a service, 3615 INFOS, one of a new account's services. ▼ at the bottom, SUITE pg↓ / RETOUR pg↑ and ctrl+↓/↑ go to the next or previous one, at once (a Minitel had no transitions).
+- **Pages**, in this order, each separate (scrolling never switches): Marianne (the composer), Démarches, Services. The news is a service, 3615 INFOS, one of a new account's services. ▼ at the bottom of Marianne's page, SUITE pg↓ / RETOUR pg↑ and ctrl+↓/↑ go to the next or previous one, at once (a Minitel had no transitions).
 - **The head**: Services, Démarches and a domain's page open the same way (`KioskHead`), so that they read as one app: a double frame, a line above a bar, the bar with its block and ENVOI, a pixel art on the right; tabs under it, and only what is under the tabs scrolls. Services asks QUEL SERVICE ?, its block 3615, its art the Minitel. Démarches asks QUELLE DÉMARCHE ?, its block GUICHET, its art a ticket machine, with the tabs mes domaines, à faire and tâches planifiées. A domain is a numbered counter, as a service has its code: typing 8 prints a ticket showing 08, ENVOI opens Mobilité, and on its page, whose block says GUICHET 8, the ticket stays out. There the bar takes a question, which opens a folder filed in the domain, and the tabs, on F2 to F5, are aperçu, tâches planifiées, dossiers and ressources.
 - **Settings**: a dialog over the app, grouped MOI (identity, household, documents), ARCHIVE (space, security, accounts), CONNEXIONS (sites, engines, browser, privacy, public data), PAGES (services), APPLICATION (display, shortcuts, skills, about).
-- **Keyboard**: ctrl+k commands, ctrl+space the menu (the Minitel's SOMMAIRE), ctrl+alt+space search, ctrl+enter Marianne, ctrl+2/3 Démarches / Services (ctrl+1 was the Actualités page's: the others kept their keys). CommandOrControl everywhere (cmd on macOS); every shortcut can be changed.
+- **Keyboard**: ctrl+k commands, ctrl+space the menu (the Minitel's SOMMAIRE), ctrl+alt+space search, ctrl+enter Marianne, ctrl+2/3 Démarches / Services (ctrl+1 was the Actualités page's: the others kept their keys), ctrl+b the sidebar, ctrl+l the lock, ctrl+shift+r reload (`shared/shortcuts.ts`). CommandOrControl everywhere (cmd on macOS), but the menu and search, which keep ctrl there (cmd+space is Spotlight's), and full screen. Every shortcut can be changed. A page's own Enter and Space leave ctrl+enter and ctrl+space to the app.
+- **The mini-player**: a video a service's player hands over (P, or leaving its page while it plays) keeps playing in a corner of the window, over any page, one video at a time ([services.md](services.md#media)).
 - **Look**: Minitel touches on a clean monospace screen: inverse blocks, codes, function keys; the pixel font for titles and codes only; the old screen's lines and glow are an option.
 
 ## Folders
@@ -43,7 +44,7 @@ A folder has a title, a domain, an engine, its conversation and its pièces (doc
 
 - Pinned folders stay on top and are never settled automatically.
 - Snoozed ("en veille") until a date, a folder comes back on its own and shows it.
-- Settled ("classé") by hand; automatically when its procedure's last step is done, or after 7 days without activity when it follows no procedure and holds no planned task. A new message reopens it.
+- Settled ("classé") by hand; automatically when its procedure's last step is done, or after 7 days without activity when it follows no procedure and holds no planned task. A new message reopens it. One the user takes out of "Classés" by hand stays out of the automatic rule until its next message.
 - A folder may hold one planned task: it sleeps between two runs and comes back on the task's day ([below](#planned-tasks)).
 
 ## The archive
@@ -63,7 +64,8 @@ One file per account, `<8-hex-id>.marianne`, in a folder the user chooses (other
 Claude Code (CL), Codex (CX) and Mistral Vibe (MI) are the user's own CLIs. Each can be turned on or off; its setting is its configuration folder (`~/.claude`, `~/.codex`, `~/.vibe`), its program being found on its own.
 
 - They run in an empty scratch folder, with no shell and no file tools: only Marianne's MCP server (loopback, a token per launch, the folder's id in its URL) and, depending on the setting, web search and public sites.
-- Each folder keeps each engine's session; transcripts are captured into the archive after each turn and put back before the next. Claude compacts at 300 000 tokens (`autoCompactWindow`).
+- Each folder keeps each engine's session; transcripts are captured into the archive after each turn and put back before the next. Claude compacts at 300 000 tokens by default (`autoCompactWindow`; Réglages › Moteurs offers 150 000 to 800 000).
+- Where to get each one is its `site` (the "not found" message): claude.com/product/claude-code, chatgpt.com/codex (Codex comes with ChatGPT's plans), mistral.ai/products/vibe. The user signs in with the CLI's own sign-in; « se connecter » in Réglages › Moteurs opens it in a terminal (`login`).
 - The system prompt and every message are in English; the engine answers in French.
 
 ## Tools, cards and the browser
@@ -71,6 +73,8 @@ Claude Code (CL), Codex (CX) and Mistral Vibe (MI) are the user's own CLIs. Each
 Marianne's MCP tools read the profile, propose changes (an approval card), follow procedures, read pièces (masked), search Service-Public, compute deadlines, estimate benefits, query public data, and drive the built-in browser. The MCP server resolves `[[tokens]]` in arguments and scrubs results before they go back.
 
 The built-in browser is a folder's: shown in the right column or kept out of sight. Going online needs consent (once per folder or per site); signing, paying and sending always need approval; the user can take control ("prendre la main") at any time, and in a conversation Marianne hands over for CAPTCHAs, codes and FranceConnect. Its cookies live in memory only.
+
+When Marianne hands over, or opens a site to show it (Réglages › Navigateur › « afficher le navigateur »: when she offers, always, never), the window opens the folder's browser (`renderer/src/browser/reveal.ts`). On another screen the window stays where it is: a toast says which folder asks, and its browser opens when the user goes there (a hand-over waits ten minutes). Marianne asks for the user's attention; she never takes the screen from them.
 
 ## Planned tasks
 
@@ -85,9 +89,9 @@ A planned task is a folder that comes back. Between two runs its folder sleeps i
 
 ## Public information
 
-- **Connexions**: the public sources Marianne uses (Service-Public, indexed offline; Légifrance with the user's API key; data.gouv.fr; the companies directory; communes and addresses; the official calendar; OpenFisca). Each can be turned off or pointed elsewhere.
-- **3615 INFOS**: the news, as a service (`services/infos`). Marianne reads every source of the content's list, whatever the user chose, so that no outlet can tell which ones they read; keeps 7 days of titles; groups the titles of different sources that say the same thing into subjects; and hands them to the services that declare `news` (`ctx.news`, see [services.md](services.md#news)). INFOS reaches no site itself. It shows the title, the time, the link and the feed's summary and, for the one title a subject shows, the start of the article (600 characters at most, read on demand, never past a paywall); the article opens at the source. The sources a user reads are a profile field (`opinions.sources`, Réglages › Identité › sources d'information), sensitive like the leaning: never ticked in advance, never given to the engines, shared service by service. Each source's colour is its editorial line, Marianne's by default or the user's own: colours show, they never sort or pick.
-- **Services**: apps with a code, starred ones first, grouped by category; not tied to folders. Each is an add-on package (see [services.md](services.md)) in the same frame: the 3615 header and the tabs its manifest declares (F2, F3…), fixed above its screen, and its guide on F1; what a page waits for, a box in its middle.
+- **Connexions**: the public sources Marianne uses (`shared/public.ts`: Service-Public, indexed offline; Légifrance with the user's API key; the Code du travail numérique; data.gouv.fr; the companies directory; communes and addresses; public holidays; OpenFisca). Each can be turned off in Réglages › Données publiques; its address (`url`, in `~/.marianne/config.json`) can point elsewhere.
+- **3615 INFOS**: the news, as a service (`services/infos`). Marianne reads every source of the content's list, whatever the user chose, so that no outlet can tell which ones they read; keeps 7 days of titles; groups the titles of different sources that say the same thing into subjects; and hands them to the services that declare `news` (`ctx.news`, see [services.md](services.md#news)). INFOS reaches no site itself. It shows the title, the time, the link and the feed's summary and, for the one title a subject shows, the start of the article (600 characters at most, read on demand, never past a paywall); the article opens at the source. The sources a user reads are a profile field (`opinions.sources`, Réglages › Identité › sources d'information), sensitive like the leaning: never ticked in advance, never given to the engines, shared service by service. Each source's colour is its editorial line, Marianne's by default or the user's own: colours show, and place the sources from left to right (`byLean`); they never rank the news, hide or pick a source.
+- **Services**: apps with a code, not tied to folders, in two tabs: « mes services » (the pinned ones as tiles, then all of the user's in a table) and « découvrir » (see [services.md](services.md#the-services-page)). Each is an add-on package (see [services.md](services.md)) in the same frame: the 3615 header and the tabs its manifest declares (F2, F3…), fixed above its screen, and its guide on F1; what a page waits for, a box in its middle.
 - **Content**: the public sites, the news sources and the yearly dates of the official calendar come from the content ([content.md](content.md)), built in and replaced by a newer bundle when the project publishes one it signed.
 
 ## The code
@@ -102,18 +106,23 @@ apps/desktop/             the app (Electron): its package, build and packaging
     public/               the connections and the news reader (ctx.news)
     browser/              the built-in browser
     host/                 the services' host
+    community/            community services: the catalogue, .3615 files, their sandboxes (runtime/)
   src/preload/            window.marianne, from the channel lists
   src/renderer/src/       the window (React)
   src/shared/             what the main process and the window share: channels, settings, types
+  src/runtime/            the pages a community service runs in (its main side's, its screen's)
   resources/              icons the app reads at run time
   build/                  the installers' icons and entitlements
   test/                   the app's tests (test/renderer: the window's)
 packages/
-  sdk/                    @marianne/sdk: the contract with the services, and their tests' context
+  sdk/                    @marianne/sdk: the contract with the services, the views' blocks, the media
+                          player, marianne-pack, and their tests' context
   archive/                @marianne/archive: the encrypted archive, PIN, accounts, session
   profile/                @marianne/profile: the profile's model, domains, tokens, deadlines, context view
   content/                @marianne/content: skills, démarches, calendar, sites, news sources
 services/<code>/          @marianne/service-<code>: the built-in services
+docs/                     design, services, content; the user guide in docs/guide/<language>/
+site/                     the website (Astro), a project of its own outside the workspace
 scripts/                  the repository's checks
 ```
 
@@ -131,4 +140,4 @@ archive, sdk      nothing of Marianne
 
 A package imports another by its name, never by a path; only the apps run on Electron; in `packages/`, React is for the SDK's views only. `scripts/check-boundaries.mjs` holds these rules, in `npm run check` and in CI: a new package gets its line there.
 
-`npm run check` runs Prettier, a check that no `.gitkeep` is left beside other files, the package boundaries, the type checks (the app, then every package) and the tests (the app's and every package's).
+`npm run check` runs Prettier, a check that no `.gitkeep` is left beside other files, the package boundaries, the type checks (the app, then every package and service) and the tests (the app's, every package's and every service's).

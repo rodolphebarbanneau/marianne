@@ -22,8 +22,11 @@ const t = words(lang)
       {t.engines.items.map((e, i) => (
         <li class:list={['reveal', e.state]} style={`--d: ${i}`}>
           <span class="light">{e.code}</span>
-          <span class="name">{e.name}</span>
+          <a class="name" href={e.href}>
+            {e.name} ›
+          </a>
           <span class="maker dim">{e.maker}</span>
+          <span class="plan dim">{e.plan}</span>
           {e.note && <span class="note muted">{e.note}</span>}
         </li>
       ))}
@@ -83,6 +86,11 @@ const t = words(lang)
     color: var(--hi);
     font-size: 1.1rem;
   }
+  .name:hover {
+    color: var(--accent);
+  }
+  /* What it comes with: the maker's plan, so that nobody pays twice for an AI they already have. */
+  .plan,
   .note {
     grid-column: 2 / -1;
     font-size: 0.82rem;

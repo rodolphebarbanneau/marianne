@@ -1,0 +1,90 @@
+---
+import Base from '../layouts/Base.astro'
+import type { Lang } from '../i18n'
+
+/**
+ * A page of the site that is text: the manifesto, the about page. A Minitel page's head (its code in
+ * inverse video, its title in the pixel font, a lead), then its sections, each one a stop for the
+ * bottom bar's RETOUR and SUITE.
+ */
+interface Props {
+  lang: Lang
+  /** The page's path without its language (manifeste/), the same in every language. */
+  path: string
+  title: string
+  description: string
+  /** What follows 3615 in the page's head. */
+  code: string
+  heading: string
+  lead: string
+}
+const { lang, path, title, description, code, heading, lead } = Astro.props
+---
+
+<Base lang={lang} path={path} title={title} description={description}>
+  <article class="wrap text-page">
+    <header class="head" data-section>
+      <p class="code-line">
+        <span class="inv">3615</span> <span class="code">{code}</span>
+      </p>
+      <h1>{heading}</h1>
+      <p class="lead">{lead}</p>
+    </header>
+    <slot />
+  </article>
+</Base>
+
+<style>
+  .text-page {
+    max-width: calc(78ch + 2 * var(--gutter));
+    padding-top: clamp(48px, 8vw, 96px);
+  }
+  .head {
+    display: grid;
+    gap: 18px;
+  }
+  .head p {
+    margin: 0;
+  }
+  .code-line {
+    font-size: 1.6rem;
+    display: flex;
+    gap: 8px;
+  }
+  .code-line .inv {
+    letter-spacing: 0.08em;
+  }
+  h1 {
+    font-family: var(--retro);
+    font-size: clamp(2.8rem, 7vw, 4.6rem);
+    line-height: 1;
+    color: var(--hi);
+  }
+  .lead {
+    color: var(--fg);
+    font-size: 1.08rem;
+  }
+  /* The sections, as the guide's pages draw theirs: a rule, a title in the pixel font. Global, and
+     no more specific than a class, so that the page's own styles win over them. */
+  :global(.text-page section) {
+    margin-top: 48px;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+  }
+  :global(.text-page h2) {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    font-family: var(--retro);
+    font-size: 2rem;
+    line-height: 1.1;
+    color: var(--hi);
+    margin-bottom: 14px;
+  }
+  :global(.text-page h2 .n) {
+    font-size: 1.3rem;
+  }
+  :global(.text-page p) {
+    margin: 0 0 16px;
+  }
+</style>
