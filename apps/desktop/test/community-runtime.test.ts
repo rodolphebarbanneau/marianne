@@ -261,7 +261,7 @@ function contextOf(m: ServiceManifest, store: RecordStore) {
     dataDir: '',
     geo: { findCommunes: vi.fn(async () => []), getCommune: vi.fn(async () => null) },
     home: () => ({ code: '35238', name: 'Rennes', postcode: '35000' }),
-    profile: { granted: () => [], vehicles: () => [], leaning: () => null, themes: () => [] },
+    profile: { granted: () => [], vehicles: () => [], leaning: () => null, themes: () => [], sources: () => null },
     sync: { status: () => ({}), run: async () => {} }
   }
   return { ctx, json }

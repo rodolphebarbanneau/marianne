@@ -16,6 +16,7 @@
 
 import { ICON_SIZE, pictureProblems, type PixelArt } from './palette'
 
+export * from './news'
 export * from './palette'
 export * from './tile'
 
@@ -51,7 +52,8 @@ export const PROFILE_FIELDS = {
   'vehicles.lastInspection': 'la date du dernier contrôle technique de vos véhicules',
   'vehicles.critair': 'la vignette Crit’Air de vos véhicules',
   'opinions.leaning': 'votre sensibilité politique (les groupes dont vous vous sentez proche)',
-  'opinions.themes': 'les thèmes qui comptent pour vous'
+  'opinions.themes': 'les thèmes qui comptent pour vous',
+  'opinions.sources': 'vos sources d’information (celles que vous acceptez)'
 } as const
 export type ProfileField = keyof typeof PROFILE_FIELDS
 
@@ -63,7 +65,8 @@ export const PROFILE_FIELD_SHORT: Record<ProfileField, string> = {
   'vehicles.lastInspection': 'vos contrôles techniques',
   'vehicles.critair': 'vos vignettes Crit’Air',
   'opinions.leaning': 'sensibilité',
-  'opinions.themes': 'thèmes'
+  'opinions.themes': 'thèmes',
+  'opinions.sources': 'sources'
 }
 
 /**
@@ -162,6 +165,10 @@ export interface ServiceDeclaration {
    * shows them before the user adds it. A community service may lend no other.
    */
   tools?: Array<{ name: string; label: string }>
+  /** The screen's search field, drawn by Marianne in its header (`useSearch`): its placeholder, in French. */
+  search?: { placeholder: string }
+  /** It reads headlines through Marianne (ctx.news): no press host to declare. Built-in services only. */
+  news?: boolean
 }
 
 /** The fields of a service's package.json that Marianne reads. */
@@ -193,6 +200,10 @@ export interface ServiceManifest {
   icon: PixelArt | null
   /** The tools it declares (see ServiceDeclaration.tools). */
   tools: Array<{ name: string; label: string }>
+  /** Its screen's search field (see ServiceDeclaration.search); null: none. */
+  search: { placeholder: string } | null
+  /** It reads headlines through Marianne (ctx.news). */
+  news: boolean
 }
 
 export class ManifestError extends Error {
@@ -263,6 +274,9 @@ export function readManifest(pkg: unknown): ServiceManifest {
     if (!isLine(t.label, MANIFEST_LIMITS.label)) fail(`tool "${t.name}": its label must be one line of at most ${MANIFEST_LIMITS.label} characters`)
   }
   if (new Set(tools.map((t) => t.name)).size !== tools.length) fail('two tools have the same name')
+  if (m.search !== undefined && (typeof m.search !== 'object' || m.search === null || !isLine(m.search.placeholder, MANIFEST_LIMITS.label)))
+    fail(`"marianne.search" must be { "placeholder": one line of at most ${MANIFEST_LIMITS.label} characters }`)
+  if (m.news !== undefined && typeof m.news !== 'boolean') fail('"marianne.news" must be true or false')
   const author = typeof p.author === 'string' ? p.author : (p.author?.name ?? '')
   return {
     id: code,
@@ -280,7 +294,9 @@ export function readManifest(pkg: unknown): ServiceManifest {
     permissions: { profile: permissions.profile ?? [], purpose: permissions.purpose ?? '' },
     tabs: tabs.map((t) => ({ id: t.id, label: t.label.trim() })),
     icon: m.icon ? { palette: { ...m.icon.palette }, pixels: [...m.icon.pixels] } : null,
-    tools: tools.map((t) => ({ name: t.name, label: t.label.trim() }))
+    tools: tools.map((t) => ({ name: t.name, label: t.label.trim() })),
+    search: m.search ? { placeholder: m.search.placeholder.trim() } : null,
+    news: m.news === true
   }
 }
 

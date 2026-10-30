@@ -10,6 +10,7 @@
     ".": "./src/index.ts",
     "./main": "./src/main.ts",
     "./media": "./src/media/index.ts",
+    "./news": "./src/news.ts",
     "./pack": "./scripts/pack.mjs",
     "./sync": "./src/sync.ts",
     "./testing": "./src/testing.ts",

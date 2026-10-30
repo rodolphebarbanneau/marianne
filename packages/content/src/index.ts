@@ -177,13 +177,30 @@ export interface Site {
 export const NEWS_GROUPS = ['national', 'regional', 'broadcast', 'factcheck'] as const
 export type NewsGroup = (typeof NEWS_GROUPS)[number]
 
-/** A news source of Actualités: its public feed (RSS 2.0 or Atom). */
+/** The editorial lines a source may have, from the left to the right; `aucune`: sans classement. */
+export const NEWS_LEANS = ['gauche', 'centre-gauche', 'centre', 'centre-droit', 'droite', 'aucune'] as const
+export type NewsLean = (typeof NEWS_LEANS)[number]
+
+/** A news source Marianne reads for 3615 INFOS: its public feeds (RSS 2.0 or Atom). */
 export interface NewsSource {
   id: string
   name: string
   group: NewsGroup
+  /** Its front page's feed (older versions of the app read only this one). */
   feed: string
   homepage: string
+  /** Its feeds, the front page's first; absent: `feed` alone. */
+  sections?: Array<{ id: string; label: string; feed: string }>
+  /** INSEE region codes: a regional source's area. */
+  regions?: string[]
+  /** Marianne's default editorial line; absent: `aucune`. */
+  lean?: NewsLean
+  /** Where `lean` comes from (a published study, a reference work), with its date. */
+  leanBasis?: string
+  /** Its pages are behind a paywall: a CSS selector that marks a paid article (nothing past the summary is read then). */
+  paywall?: string
+  /** It asked that Marianne show no start of its articles: its summary alone. */
+  start?: false
 }
 
 /** The two chambers of the Parlement: the Assemblée nationale and the Sénat. */

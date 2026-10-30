@@ -106,7 +106,8 @@ function context(): ServiceContext {
       granted: () => [...(granted.leaning ? (['opinions.leaning'] as const) : []), ...(granted.themes ? (['opinions.themes'] as const) : [])],
       vehicles: () => [],
       leaning: () => granted.leaning ?? null,
-      themes: () => granted.themes ?? []
+      themes: () => granted.themes ?? [],
+      sources: () => null
     },
     sync: {
       status: () => status,
