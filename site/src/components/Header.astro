@@ -1,5 +1,4 @@
 ---
-import Logo from './Logo.astro'
 import { localized, words, type Lang } from '../i18n'
 
 interface Props {
@@ -23,7 +22,6 @@ const links = [
 <header class="top">
   <div class="bar wrap">
     <a class="mark" href={home} aria-label="Marianne">
-      <Logo size={32} />
       <span class="wordmark">MARIANNE</span>
     </a>
     <nav class="tabs" aria-label={lang === 'fr' ? 'Sections' : 'Sections'}>
@@ -109,9 +107,6 @@ const links = [
     gap: 28px;
   }
   .mark {
-    display: flex;
-    align-items: center;
-    gap: 12px;
     color: var(--hi);
   }
   .mark .wordmark {
