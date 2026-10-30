@@ -31,6 +31,7 @@ import {
   useFollowed,
   useMethod,
   useNav,
+  usePolling,
   useStore,
   yourTitle
 } from './common'
@@ -695,15 +696,6 @@ function useTimeMode(): TimeMode {
   return mode
 }
 
-/** A method asked again every 30 s while `on`. */
-function usePolling(reload: () => void, on: boolean) {
-  useEffect(() => {
-    if (!on) return
-    const t = setInterval(reload, POLL_MS)
-    return () => clearInterval(t)
-  }, [reload, on])
-}
-
 /**
  * The stream to play: the first of the playlists that answers (a live's mirror when its origin
  * doesn't); null while trying them. A single one is played as it is.
@@ -742,7 +734,7 @@ export function LivePane({ chamber, id }: { chamber: Chamber; id: string }) {
   const host = useHost()
   const nav = useNav()
   const live = useMethod('live', [])
-  usePolling(live.reload, true)
+  usePolling(live, POLL_MS)
   const stream = live.data?.find((s) => s.chamber === chamber && (s.id === id || s.video === id))
   const src = usePlayable(stream?.hls ? [stream.hls, ...stream.mirrors] : [])
   if (live.error && !live.data) return <Failure error={live.error} retry={live.reload} />
@@ -823,7 +815,7 @@ export function LiveAgenda({ items }: { items: string[] }) {
 export function useVideo(ref: string | null) {
   const video = useMethod('video', ref ? [ref] : null)
   const v = video.data
-  usePolling(video.reload, !!v && (v.live || (!v.hls && Date.now() - Date.parse(v.date) < DAY_MS)))
+  usePolling(video, POLL_MS, !!v && (v.live || (!v.hls && Date.now() - Date.parse(v.date) < DAY_MS)))
   return video
 }
 

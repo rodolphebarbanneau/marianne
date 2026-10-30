@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useHost } from '@marianne/sdk/view'
 import { FIND_DEPUTY } from '../links'
 import { parisDay } from '../time'
@@ -25,6 +25,7 @@ import {
   useLens,
   useMethod,
   useNav,
+  usePolling,
   useStore,
   yourTitle
 } from './common'
@@ -51,13 +52,8 @@ function Home() {
   const agenda = useMethod('agenda', [parisDay(), 14])
   const day = useBallotDay()
   const result = useMethod('day', day ? [day] : null)
-  const { reload } = live
-
   // Broadcasts start and end through the day.
-  useEffect(() => {
-    const t = setInterval(reload, 60_000)
-    return () => clearInterval(t)
-  }, [reload])
+  usePolling(live, 60_000)
   const { mine } = useStore()
   if (!mine || !day || (!result.data && !result.error)) return <Loading label="votre journée au Parlement" />
 

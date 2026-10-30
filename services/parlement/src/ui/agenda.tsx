@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Player } from '@marianne/sdk/media'
 import { useHost } from '@marianne/sdk/view'
 import { AGENDA_PAGE, SENATE_AGENDA_PAGE, videoKey } from '../links'
@@ -6,7 +6,7 @@ import { mondayOf } from '../senate'
 import { addDays, parisDay } from '../time'
 import type { AgendaMeeting, Chamber, LiveStream, Meeting } from '../types'
 import { CHAMBER_NAMES } from '../types'
-import { ChamberCode, dateTime, Failure, hour, Loading, shortDay, useFollowed, useMethod, useNav } from './common'
+import { ChamberCode, dateTime, Failure, hour, Loading, shortDay, useFollowed, useMethod, useNav, usePolling } from './common'
 import { Thumb } from './home'
 import { videoRef } from './members'
 import { LiveAgenda, useVideo, VideoWatch } from './videos'
@@ -42,15 +42,9 @@ export function AgendaTab() {
   const [monday, setMonday] = useState(() => mondayOf(parisDay()))
   const [day, setDay] = useState(parisDay)
   const agenda = useMethod('agenda', [monday, 7])
-  const { reload } = agenda
   const thisWeek = monday === mondayOf(parisDay())
-
   // This week's broadcasts start and end through the day.
-  useEffect(() => {
-    if (!thisWeek) return
-    const t = setInterval(reload, 120_000)
-    return () => clearInterval(t)
-  }, [thisWeek, reload])
+  usePolling(agenda, 120_000, thisWeek)
 
   const meetings = (agenda.data?.meetings ?? []).filter((m) => nav.shows(m.chamber) && m.kind !== 'other')
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
@@ -113,7 +107,7 @@ export function AgendaTab() {
         })}
       </div>
       {agenda.error ? (
-        <Failure error={agenda.error} retry={reload} />
+        <Failure error={agenda.error} retry={agenda.reload} />
       ) : !agenda.data ? (
         <Loading label="l’agenda" />
       ) : (
@@ -220,12 +214,7 @@ export function MeetingPane({ id }: { id: string }) {
   const detail = useMethod('meeting', [id])
   // On air without its video on the portal: asked again, to open the video once there.
   const waiting = !!detail.data?.stream?.live && !detail.data.stream.video
-  const { reload } = detail
-  useEffect(() => {
-    if (!waiting) return
-    const t = setInterval(reload, 30_000)
-    return () => clearInterval(t)
-  }, [waiting, reload])
+  usePolling(detail, 30_000, waiting)
   if (detail.error && !detail.data) return <Failure error={detail.error} retry={detail.reload} />
   if (!detail.data) return <Loading label="la réunion" />
   const { meeting: m, stream, videos: all } = detail.data

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useCall, type Loaded } from '@marianne/sdk/view'
 import { ordinal } from '../links'
 import { parisDay } from '../time'
@@ -24,6 +24,52 @@ export function useBallotDay(): string | null {
   if (!latest.data) return null
   const day = latest.data[0]?.date.slice(0, 10)
   return day && day < parisDay() ? day : parisDay()
+}
+
+// ---------------------------------------------------------------- asking again
+
+/** Whether a pane covers the tab: the tab stays under it as it was left, without asking the portals again meanwhile. */
+export const CoveredContext = createContext(false)
+
+/** Whether the window is in sight, not minimised nor hidden: the page's visibility, followed. */
+function useWindowShown(): boolean {
+  const [shown, setShown] = useState(() => typeof document === 'undefined' || document.visibilityState !== 'hidden')
+  useEffect(() => {
+    const follow = () => setShown(document.visibilityState !== 'hidden')
+    document.addEventListener('visibilitychange', follow)
+    return () => document.removeEventListener('visibilitychange', follow)
+  }, [])
+  return shown
+}
+
+/**
+ * When a poller asks again, in ms from now; null: not now. `everyMs` after its last answer and never
+ * while one is awaited, so that a slow portal doesn't pile requests up; not while out of sight; back
+ * in sight, at once if it is due.
+ */
+export function pollDelay(p: { on: boolean; shown: boolean; loading: boolean; everyMs: number; sinceAnswer: number }): number | null {
+  if (!p.on || !p.shown || p.loading) return null
+  return Math.max(0, p.everyMs - p.sinceAnswer)
+}
+
+/**
+ * A method asked again every `everyMs` while `on` (broadcasts start and end, a live's chapters
+ * grow): only while the page is in sight, the window shown and the tab not under a pane, and once
+ * its last answer has come.
+ */
+export function usePolling({ reload, loading }: Pick<Loaded<unknown>, 'reload' | 'loading'>, everyMs: number, on = true): void {
+  const covered = useContext(CoveredContext)
+  const shown = useWindowShown() && !covered
+  const last = useRef({ at: 0, awaiting: false })
+  useEffect(() => {
+    const l = last.current
+    if (loading) l.awaiting = true
+    else if (l.awaiting || !l.at) Object.assign(l, { at: Date.now(), awaiting: false })
+    const delay = pollDelay({ on, shown, loading, everyMs, sinceAnswer: Date.now() - l.at })
+    if (delay === null) return
+    const timer = setTimeout(reload, delay)
+    return () => clearTimeout(timer)
+  }, [on, shown, loading, everyMs, reload])
 }
 
 // ---------------------------------------------------------------- navigation

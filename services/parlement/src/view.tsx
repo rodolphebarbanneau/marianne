@@ -4,7 +4,19 @@ import { parseVideoRef, videoKey } from './links'
 import type { Clips, Favorites, ParlementMethods, Shelf, VideoItem } from './types'
 import { AgendaTab, MeetingPane } from './ui/agenda'
 import { BallotPane, BallotsTab } from './ui/ballots'
-import { LensIcon, NavContext, StoreContext, useMethod, type Chambers, type Nav, type Prefs, type Store, type Tab, type Target } from './ui/common'
+import {
+  CoveredContext,
+  LensIcon,
+  NavContext,
+  StoreContext,
+  useMethod,
+  type Chambers,
+  type Nav,
+  type Prefs,
+  type Store,
+  type Tab,
+  type Target
+} from './ui/common'
 import { DataLine, DataProvider, useData } from './ui/data'
 import { HemicycleTab } from './ui/hemicycle'
 import { HomeTab } from './ui/home'
@@ -212,9 +224,9 @@ function Screen() {
               </LoadingGate>
             </div>
           )}
-          {/* The tab stays under its panes, as it was left. A sync that brings new data shows it: the tab loads again. */}
+          {/* The tab stays under its panes, as it was left, its pollers at rest. A sync that brings new data shows it: the tab loads again. */}
           <div key={`${tab}:${status?.sync.syncedAt ?? ''}`} className="parlement-body" hidden={!!top}>
-            {content(tab, videoSearch, setVideoSearch)}
+            <CoveredContext.Provider value={!!top}>{content(tab, videoSearch, setVideoSearch)}</CoveredContext.Provider>
           </div>
           <DataLine />
         </div>
