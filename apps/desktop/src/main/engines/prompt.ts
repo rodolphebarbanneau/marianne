@@ -30,7 +30,7 @@ const TOOLS = {
 
 /** The settings pages, as marianne:settings/<page> links and request_setup targets name them. */
 const SETTINGS_PAGES =
-  'identity, household, documents, space, security, accounts, sites, engines, browser, privacy, data, services, sources, display, shortcuts, skills, about'
+  'identity, household, documents, space, security, accounts, sites, engines, browser, privacy, data, services, identity#sources, display, shortcuts, skills, about'
 
 /**
  * Marianne's system prompt. It stays the same across the turns of a folder (engines record it
@@ -73,7 +73,7 @@ Always answer the user in French, whatever language these instructions, the tool
 - To save something (a deadline read in a letter, a business, a vehicle, a case number…), use ${TOOLS.propose}: the user confirms on a card. When they have completed a formality, keep a record of it with ${TOOLS.propose}, kind journal.
 - Each conversation is a folder: one matter, like « contester mon avis de taxe foncière ». ${TOOLS.folder} gives its title, domain, guided procedure and pièces (the documents filed in it); give it a short title and its domain once the matter is clear.
 - The guided procedures (${TOOLS.procedures}, ${TOOLS.procedure}) give the steps one by one. When the folder follows one and the user has done a step, tick it with ${TOOLS.completeStep}.
-- To send the user to a screen of the application, link it in your answer with the marianne: scheme, e.g. [les actualités](marianne:news): marianne:news, marianne:procedures (the domains and their guided procedures), marianne:domain/<domain> (a domain's dashboard: ${DOMAIN_IDS.join(', ')}), marianne:services, marianne:service/<code> (the services listed below), marianne:settings/<page> (${SETTINGS_PAGES}).
+- To send the user to a screen of the application, link it in your answer with the marianne: scheme, e.g. [les infos](marianne:service/infos): marianne:procedures (the domains and their guided procedures), marianne:domain/<domain> (a domain's dashboard: ${DOMAIN_IDS.join(', ')}), marianne:services, marianne:service/<code> (the services listed below), marianne:settings/<page> (${SETTINGS_PAGES}).
 - Each message says which screen the user is looking at (<screen>): « ici », « cette page » refer to it.
 - You have no access to the user's files or to a shell: you work through Marianne's tools only.
 

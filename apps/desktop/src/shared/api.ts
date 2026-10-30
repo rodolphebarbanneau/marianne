@@ -3,7 +3,7 @@ export type { ParliamentGroup }
 import type { Deadline, DocumentMeta, Profile, ProfileOp } from '@marianne/profile'
 import type { ProfileField, ServiceState, ServiceSummary } from '@marianne/sdk'
 import type { NewsSource, NewsStats } from './news'
-import type { FranceDigest, NewsDigest, PublicSourceStatus, TodayEvent } from './public'
+import type { PublicSourceStatus } from './public'
 import type { CatalogueState, ServiceFileReview } from './catalogue'
 import type { FromFrame, ToFrame } from './community'
 import type { Site } from './sites'
@@ -85,7 +85,7 @@ export interface MarianneApi {
   // ---------- app ----------
   getInfo(): Promise<AppInfo>
   openExternal(url: string): void
-  /** The main process asks to show something: "folder:<id>", "settings:<page>", "news"… */
+  /** The main process asks to show something: "folder:<id>", "settings:<page>", "service:infos"… */
   onNavigate(cb: (route: string) => void): () => void
   toggleFullscreen(): void
   /** Reload the screens (what the main process holds, the open archive first, stays). */
@@ -222,16 +222,10 @@ export interface MarianneApi {
   /** The page's text, to give to the conversation. */
   browserCapture(): Promise<Attachment | null>
 
-  // ---------- public information (Actualités, Connexions) ----------
+  // ---------- public information (Connexions) ----------
   listPublicSources(): Promise<PublicSourceStatus[]>
   onPublicSources(cb: (list: PublicSourceStatus[]) => void): () => void
   syncPublicSource(id: PublicSourceId): Promise<void>
-  /** The headlines of the user's sources (feeds are fetched again after a few minutes). */
-  news(): Promise<NewsDigest>
-  /** What happens today in public life: sittings, holidays, school holidays, clock changes. */
-  todayEvents(): Promise<TodayEvent[]>
-  /** What changes in France, and the news of public services. */
-  franceDigest(): Promise<FranceDigest>
 
   // ---------- services ----------
   listServices(): Promise<ServiceState[]>

@@ -21,6 +21,8 @@ export const paths = {
   work: join(home, 'work'),
   /** Each service's public data (services/<code>), written by its sync job. */
   services: join(home, 'services'),
+  /** The headlines of the last 7 days (news/<day>.json): the catalogue's public feeds, nothing of the user's choice. */
+  news: join(home, 'news'),
   /** Community services: the signed catalogue kept (catalogue/) and the .3615 packages added (packages/<code>). */
   community: join(home, 'community'),
   /** The user's own skills, next to the built-in ones. */

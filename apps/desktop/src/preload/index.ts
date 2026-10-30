@@ -98,9 +98,6 @@ const INVOKE = [
   'browserCapture',
   'listPublicSources',
   'syncPublicSource',
-  'news',
-  'todayEvents',
-  'franceDigest',
   'listServices',
   'callService',
   'getServiceData',
@@ -125,6 +122,7 @@ const INVOKE = [
   'listSkills',
   'listSites',
   'newsSources',
+  'newsStats',
   'parliamentGroups'
 ] as const
 

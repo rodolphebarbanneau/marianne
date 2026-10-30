@@ -1,0 +1,84 @@
+{
+  "name": "@marianne/service-infos",
+  "version": "1.0.0",
+  "description": "3615 INFOS · Les infos : l’actualité de vos sources, qui en parle, comment ils titrent",
+  "license": "MIT",
+  "author": "Rodolphe Barbanneau",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./main": "./src/main.ts",
+    "./view": "./src/view.tsx",
+    "./help": "./src/help.md"
+  },
+  "marianne": {
+    "code": "infos",
+    "name": "Les infos",
+    "description": "l’actualité de vos sources : qui en parle, comment ils titrent",
+    "category": "daily",
+    "keywords": [
+      "actualité",
+      "actu",
+      "presse",
+      "journal",
+      "journaux",
+      "titres",
+      "une",
+      "revue de presse",
+      "news"
+    ],
+    "hosts": [],
+    "news": true,
+    "search": {
+      "placeholder": "chercher dans les titres"
+    },
+    "permissions": {
+      "profile": [
+        "opinions.themes",
+        "opinions.sources"
+      ],
+      "purpose": "les titres de vos sources, vos thèmes d’abord"
+    },
+    "tabs": [
+      {
+        "id": "front",
+        "label": "à la une"
+      },
+      {
+        "id": "wire",
+        "label": "fil"
+      },
+      {
+        "id": "kiosk",
+        "label": "kiosque"
+      }
+    ],
+    "tools": [],
+    "icon": {
+      "palette": {
+        "w": "blanc",
+        "j": "jaune",
+        "d": "gris-clair"
+      },
+      "pixels": [
+        "wwwwwww.",
+        "wjjjjjw.",
+        "wwwwwwwd",
+        "wd.dd.wd",
+        "wd.dd.wd",
+        "wwwwwwwd",
+        "wddddwwd",
+        "wwwwwwdd"
+      ]
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@marianne/sdk": "*",
+    "react": "^19.0.0"
+  }
+}

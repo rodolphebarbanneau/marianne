@@ -1,5 +1,5 @@
 import type { Site } from '@marianne/content'
-import type { DomainId, Lean, Leaning } from '@marianne/sdk'
+import { LEANS, type DomainId, type Lean, type Leaning } from '@marianne/sdk'
 import { domainInfo } from './domains'
 
 /**
@@ -216,6 +216,28 @@ export interface NewsChoice {
   refused: string[]
   sections: Record<string, string[]>
   leanings: Record<string, Lean>
+}
+
+/** A catalogue id or a section id, as news-sources.json writes them. */
+const NEWS_ID = /^[a-z0-9][a-z0-9-]{0,47}$/
+
+/**
+ * A stored or sent choice, checked: ids as the list writes them (unknown ones kept: the catalogue
+ * may have them again), the six positions only; anything else of the wrong shape is dropped. Null
+ * (the defaults) for what isn't a choice at all.
+ */
+export function readNewsChoice(raw: unknown): NewsChoice | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null
+  const r = raw as Record<string, unknown>
+  const ids = (v: unknown) => [...new Set(Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && NEWS_ID.test(x)) : [])].slice(0, 200)
+  const record = (v: unknown) =>
+    typeof v === 'object' && v !== null && !Array.isArray(v) ? Object.entries(v as Record<string, unknown>).filter(([k]) => NEWS_ID.test(k)) : []
+  const leans = new Set<string>(LEANS)
+  return {
+    refused: ids(r.refused),
+    sections: Object.fromEntries(record(r.sections).flatMap(([k, v]) => (Array.isArray(v) ? [[k, ids(v)]] : []))),
+    leanings: Object.fromEntries(record(r.leanings).filter((e): e is [string, Lean] => typeof e[1] === 'string' && leans.has(e[1])))
+  }
 }
 
 export const EMPTY_PROFILE: Profile = {

@@ -2,7 +2,7 @@ import { GearIcon, PanelIcon, ReloadIcon, SearchIcon } from '../components/icons
 import { useShortcutLabel } from './commands'
 import { PAGE_LABELS, useApp, type PageId } from './context'
 
-const TABS: PageId[] = ['news', 'procedures', 'services']
+const TABS: PageId[] = ['procedures', 'services']
 
 /** Sidebar toggle and MARIANNE on the left; the pages; search, settings and reload before the window buttons. */
 export function TitleBar() {

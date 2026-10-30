@@ -134,6 +134,40 @@ html[data-theme='monochrome'] {
   --dot: rgba(210, 235, 220, 0.17);
 }
 
+/* The news sources' colours: a source's editorial line, from the left (red) to the right (blue), grey without a
+   classification (packages/sdk/src/news.ts, LEANS). One property per position and its text's colour, so
+   Réglages › Identité and 3615 INFOS draw a source the same way: var(--lean-centre), var(--lean-centre-ink). */
+:root {
+  --lean-gauche: var(--rouge);
+  --lean-gauche-ink: var(--noir);
+  --lean-centre-gauche: color-mix(in srgb, var(--rouge) 50%, var(--blanc));
+  --lean-centre-gauche-ink: var(--noir);
+  --lean-centre: color-mix(in srgb, var(--jaune) 45%, var(--rouge));
+  --lean-centre-ink: var(--noir);
+  --lean-centre-droit: color-mix(in srgb, var(--bleu) 55%, var(--blanc));
+  --lean-centre-droit-ink: var(--noir);
+  --lean-droite: var(--bleu);
+  --lean-droite-ink: var(--blanc);
+  --lean-aucune: #a4a6b2;
+  --lean-aucune-ink: var(--noir);
+}
+/* Minitel 1: six greys from dark (the left) to light (the right), sans classement the lightest; every block says its
+   position in its title too. */
+html[data-theme='monochrome'] {
+  --lean-gauche: #4f5551;
+  --lean-gauche-ink: var(--blanc);
+  --lean-centre-gauche: #6e7470;
+  --lean-centre-gauche-ink: var(--blanc);
+  --lean-centre: #8d938f;
+  --lean-centre-ink: var(--noir);
+  --lean-centre-droit: #aab0ac;
+  --lean-centre-droit-ink: var(--noir);
+  --lean-droite: #c6ccc8;
+  --lean-droite-ink: var(--noir);
+  --lean-aucune: #e1e6e3;
+  --lean-aucune-ink: var(--noir);
+}
+
 /* The Minitel touches. */
 .px,
 .wordmark,
@@ -1182,7 +1216,7 @@ button.card:hover {
   background: transparent;
 }
 
-/* Actualités, in a Minitel frame: its edge on the gutter, like the cards of the other pages. */
+/* A bulletin in a Minitel double frame (3615 PARLEMENT's « le jour au parlement »): its edge on the gutter, like the cards of the other pages. */
 .news {
   border: 3px double var(--rule);
   padding: 10px 14px 12px;
@@ -1192,89 +1226,6 @@ button.card:hover {
   flex-direction: column;
   gap: 10px;
 }
-/* Each column's headings on their own line, even while what follows them is still loading. */
-.news-cols .label {
-  display: block;
-  margin-bottom: 6px;
-}
-.news-cols .label:not(:first-child) {
-  margin-top: var(--s4);
-}
-.srcs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-.news-themes {
-  margin-left: auto;
-}
-.src {
-  font-size: 0.8em;
-  border: 1px solid var(--rule);
-  padding: 0 6px;
-  color: var(--dim);
-}
-.news-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
-  gap: 22px;
-}
-.ni {
-  display: grid;
-  grid-template-columns: 96px minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  padding: 7px 0;
-  border-bottom: 1px dashed var(--rule);
-}
-.ni .ns {
-  background: var(--fg);
-  color: var(--noir);
-  font-size: 10px;
-  padding: 1px 4px;
-  text-align: center;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ni .title {
-  color: var(--hi);
-  white-space: normal;
-}
-.ni .acts {
-  display: flex;
-  gap: 4px;
-}
-.ev {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
-  gap: 8px;
-  width: 100%;
-  padding: 6px 0;
-  border-bottom: 1px dashed var(--rule);
-  font-size: 0.92em;
-  text-align: left;
-  white-space: normal;
-}
-button.ev:hover {
-  color: var(--hi);
-}
-.ev.cancelled > span:last-child {
-  text-decoration: line-through;
-  color: var(--muted);
-}
-.ev .live {
-  background: var(--rouge);
-  color: var(--noir);
-  font-size: 0.8em;
-  padding: 0 4px;
-}
-.ni .title {
-  text-align: left;
-}
-
 /* A domain's dashboard: what the user has in it on the left, what helps on the right. */
 .domain-page {
   padding: var(--s4) var(--gutter-end-in) var(--s6) var(--gutter-in);
@@ -1374,19 +1325,8 @@ button.ev:hover {
   color: var(--muted);
 }
 @media (max-width: 900px) {
-  .dash,
-  .news-cols {
+  .dash {
     grid-template-columns: minmax(0, 1fr);
-  }
-}
-/* A phone-wide window: an article's buttons under its title, which keeps the width. */
-@media (max-width: 640px) {
-  .ni {
-    grid-template-columns: 96px minmax(0, 1fr);
-  }
-  .ni .acts {
-    grid-column: 2;
-    flex-wrap: wrap;
   }
 }
 /* A narrow window (a tablet held upright, a phone): the sidebar comes over the screen when it is
@@ -2546,6 +2486,18 @@ button.ev:hover {
 .service-head .star {
   margin-left: auto;
 }
+/* The frame's search field (a manifest with `search`): the screen's only one, in its header before the star,
+   at the right after the name (and after the tools of a screen without tabs). */
+.service-search.search-field.framed {
+  width: 300px;
+  max-width: 100%;
+  margin-left: auto;
+  align-self: center;
+}
+.service-head .service-tools:not(:empty) + .service-search,
+.service-search + .star {
+  margin-left: 0;
+}
 .tabs {
   display: flex;
   flex-wrap: wrap;
@@ -3347,6 +3299,148 @@ button.ev:hover {
   .perm-head > :nth-child(2),
   .perm-head > :nth-child(3) {
     display: none;
+  }
+}
+/* Réglages › Identité › sources d'information: the kiosk's summary, the families, a source's row (its block, its sections,
+   its colour, accepter · écarter) and the pick of its colour. */
+.source-tag {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0 5px;
+  font-size: 10.5px;
+  line-height: 15px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.source-tag.off {
+  background: transparent;
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+.source-region {
+  font-size: 0.8em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 0 5px;
+  white-space: nowrap;
+}
+.source-kiosk {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+}
+.source-kiosk .cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  flex: none;
+  max-width: 50%;
+}
+.source-kiosk .cells i {
+  width: 11px;
+  height: 22px;
+}
+.source-kiosk .cells i.off {
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+.source-kiosk b {
+  font-family: var(--retro);
+  font-weight: 400;
+  font-size: calc(var(--pixel-size) * 1.05);
+  color: var(--hi);
+}
+.source-kiosk .sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  font-size: 0.86em;
+}
+.source-kiosk .sides i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: var(--s1);
+}
+.perms.sources {
+  border-top: 0;
+}
+.source-family {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s3);
+  padding: var(--s4) 0 var(--s1);
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.78em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.source-family .where,
+.source-family .perm-seg {
+  text-transform: none;
+  letter-spacing: 0;
+}
+.source-family .perm-seg {
+  margin-left: auto;
+  font-size: 1.15em;
+}
+.source-row {
+  grid-template-columns: minmax(0, 1fr) 190px 150px auto;
+}
+.lean-btn,
+.lean-pick button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 2px var(--s2);
+  border: 1px solid var(--rule);
+  font-size: 0.86em;
+  white-space: nowrap;
+}
+.lean-btn {
+  justify-self: start;
+  color: var(--fg);
+}
+.lean-btn:hover,
+.lean-btn.open {
+  border-color: var(--accent);
+}
+.lean-btn i,
+.lean-pick button i {
+  width: 10px;
+  height: 10px;
+  flex: none;
+}
+.lean-btn .mod {
+  color: var(--accent);
+  font-size: 0.86em;
+}
+.lean-pick {
+  gap: var(--s2) var(--s3);
+}
+.lean-pick button.on {
+  border-color: var(--hi);
+  color: var(--hi);
+}
+/* Narrow: its sections under its name, its colour and the buttons beside both. */
+@container perms (max-width: 560px) {
+  .source-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .source-row > :nth-child(3) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .source-row > :nth-child(4) {
+    grid-column: 2;
+    grid-row: 2;
   }
 }
 /* A narrow window: the dialog takes it all, its pages' list above the page. */

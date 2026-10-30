@@ -6,7 +6,7 @@ import './runtime.css'
 import { Component, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import type { ServiceTab } from '@marianne/sdk'
-import { Failure, Loading, LoadingGate, ServiceFrameProvider, ServiceHostProvider, type ServiceFrame, type ServiceHost } from '@marianne/sdk/view'
+import { Failure, Loading, LoadingGate, ServiceFrameProvider, ServiceHostProvider, type ServiceFrame, type ServiceHost, type ServiceKey } from '@marianne/sdk/view'
 import { readToFrame, type FrameHost, type FrameLook, type FrameMedia, type FromFrame, type ScreenBridge } from '../shared/community'
 import { removeConnections } from './isolate'
 
@@ -14,7 +14,8 @@ import { removeConnections } from './isolate'
  * Marianne's view runtime, in a community service's screen (view.html, in a view of its own over
  * the window's content): it loads the service's view.js and view.css, and gives its View what a
  * built-in screen gets — its host (calls to its main side, its stored data, the app's hand) and
- * its frame (the tab shown, its badges, its tools) — each a message through the bridge to the main
+ * its frame (the tab shown, its badges, its tools, the window's search field, its keys in the
+ * bottom bar) — each a message through the bridge to the main
  * process, which checks it and answers, or hands it to the window. Marianne's stylesheet and fonts
  * are here, and the window's look follows (theme, text size). The service's `react` and
  * `@marianne/sdk/view` are this runtime's own (the page's import map): one React, one SDK, so its
@@ -51,9 +52,11 @@ interface FrameState {
   tabs: ServiceTab[]
   tab: string
   barred: boolean
+  /** What the window's search field holds (a manifest with `search`). */
+  query: string
 }
 
-let state: FrameState = { host: null, tabs: [], tab: '', barred: false }
+let state: FrameState = { host: null, tabs: [], tab: '', barred: false, query: '' }
 
 /**
  * The app's mini-player, as the window last said, and a video this screen pinned as its view left
@@ -109,7 +112,7 @@ bridge?.onMessage((data) => {
     case 'init':
       applyLook(m.look)
       if (m.media) media = m.media
-      return update({ host: m.host, tabs: m.tabs, tab: m.tab, barred: m.barred })
+      return update({ host: m.host, tabs: m.tabs, tab: m.tab, barred: m.barred, query: m.query ?? '' })
     case 'media': {
       const can = media.can
       media = m.media
@@ -123,6 +126,8 @@ bridge?.onMessage((data) => {
       return update({ host: m.host })
     case 'look':
       return applyLook(m.look)
+    case 'query':
+      return update({ query: m.query })
     case 'tab':
       update({ tab: m.tab })
       if (m.picked) for (const fn of picks) fn(m.tab)
@@ -131,12 +136,15 @@ bridge?.onMessage((data) => {
 
 const typing = (target: EventTarget | null) => !!(target as Element | null)?.closest?.('input, textarea, select, [contenteditable]')
 
-// The way back (échap), when the screen doesn't use it: no dialog of its own open, nothing typed in.
+// The way back (échap), when the screen doesn't use it: no dialog of its own open, nothing typed in;
+// « / » likewise, to the window's search field when the manifest declares one.
 // F1 to F9 never reach the page: the main process hands them to the window.
 window.addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape' || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return
+  const slash = e.key === '/' && !!state.host?.manifest.search
+  if ((e.key !== 'Escape' && !slash) || e.ctrlKey || e.altKey || e.metaKey || (e.shiftKey && !slash)) return
   if (document.querySelector('#root > .overlay') || e.defaultPrevented || typing(e.target)) return
-  post({ type: 'key', key: 'Escape' })
+  if (slash) e.preventDefault()
+  post({ type: 'key', key: e.key })
 })
 
 function hostOf(h: FrameHost): ServiceHost {
@@ -146,7 +154,7 @@ function hostOf(h: FrameHost): ServiceHost {
     home: h.home,
     call: ((method: string, ...args: unknown[]) => request({ type: 'call', method, args })) as ServiceHost['call'],
     ask: (text, page) => post({ type: 'ask', text, ...(page ? { page: { url: page.url, title: page.title, text: page.text } } : {}) }),
-    openRoute: (route) => post({ type: 'route', route }),
+    openRoute: (route, params) => post({ type: 'route', route, ...(params ? { params } : {}) }),
     openUrl: (url) => post({ type: 'url', url }),
     copy: (text, done) => post({ type: 'copy', text, ...(done ? { done } : {}) }),
     toast: (text) => post({ type: 'toast', text }),
@@ -191,9 +199,12 @@ function Screen({ View }: { View: ComponentType }) {
     return () => void picks.delete(fn)
   }, [])
   const setBadges = useCallback((badges: Record<string, string>) => post({ type: 'badges', badges }), [])
+  // The field is the window's: what it holds comes back as the query, filled there at once.
+  const setQuery = useCallback((text: string) => post({ type: 'query', text }), [])
+  const setKeys = useCallback((keys: ServiceKey[]) => post({ type: 'keys', keys: keys.map((k) => ({ key: k.key, what: k.what, shortcut: k.shortcut })) }), [])
   const frame = useMemo<ServiceFrame>(
-    () => ({ tabs: s.tabs, tab: s.tab, open, subscribe: onPick, setBadges, tools }),
-    [s.tabs, s.tab, open, onPick, setBadges, tools]
+    () => ({ tabs: s.tabs, tab: s.tab, open, subscribe: onPick, setBadges, tools, query: s.query, setQuery, setKeys }),
+    [s.tabs, s.tab, open, onPick, setBadges, tools, s.query, setQuery, setKeys]
   )
   // A new tab: back to its top.
   useEffect(() => {

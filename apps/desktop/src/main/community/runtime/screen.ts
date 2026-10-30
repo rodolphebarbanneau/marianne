@@ -72,6 +72,8 @@ export class ScreenRelay extends EventEmitter {
   /** The user's last click, Enter or Space in the screen: what a link or a copy needs. */
   private lastConsent = -Infinity
   private lastEscape = -Infinity
+  /** The user's last « / » in the screen: the frame's search field takes it. */
+  private lastSlash = -Infinity
   private lastTouch = -Infinity
   private readonly limit = new RateLimit(100, 300)
   private warned = false
@@ -142,6 +144,7 @@ export class ScreenRelay extends EventEmitter {
     }
     if (modifiers && (modifiers.ctrlKey || modifiers.altKey || modifiers.metaKey || modifiers.shiftKey)) return null
     if (key === 'Escape') this.lastEscape = now
+    if (key === '/') this.lastSlash = now
     // The guide and the tabs: the window's, whatever the screen does with them.
     if (/^F[1-9]$/.test(key)) {
       this.emit('window', { type: 'key', key } satisfies FromFrame)
@@ -177,7 +180,9 @@ export class ScreenRelay extends EventEmitter {
       case 'activity':
         return
       case 'key':
+        // Only a key the user just pressed in the screen: a screen can't send the window back nor into its field by itself.
         if (m.key === 'Escape' && this.now() - this.lastEscape <= ESCAPE_WINDOW_MS) this.emit('window', m)
+        if (m.key === '/' && this.now() - this.lastSlash <= ESCAPE_WINDOW_MS) this.emit('window', m)
         return
       case 'copy':
         if (!recent) return this.host.log.warn(`${this.who}: a copy without the user's click, ignored`)
@@ -310,7 +315,11 @@ export class CommunityScreens extends EventEmitter {
       const wc = this.views.get(relay)?.webContents
       if (wc && !wc.isDestroyed() && (this.relay === relay || relay.leaving)) wc.send(SCREEN_CHANNELS.message, message)
     })
-    relay.on('window', (message: FromFrame) => this.emit('window', { code, message }))
+    relay.on('window', (message: FromFrame) => {
+      // « / » goes to the frame's search field, in the window's page: the keyboard follows it there.
+      if (message.type === 'key' && message.key === '/' && this.win && !this.win.webContents.isDestroyed()) this.win.webContents.focus()
+      this.emit('window', { code, message })
+    })
     this.relay = relay
     void prepare(code, this.opts.source, (c) => this.opts.host.manifestOf(c)).then(
       () => {

@@ -109,7 +109,9 @@ function context(manifest: ServiceManifest, b: WorkerBridge): ServiceContext {
       granted: () => sync('profile.granted') as never,
       vehicles: () => sync('profile.vehicles') as never,
       leaning: () => sync('profile.leaning') as never,
-      themes: () => sync('profile.themes') as never
+      themes: () => sync('profile.themes') as never,
+      // The news sources serve ctx.news, which a community service doesn't get: nothing crosses for them.
+      sources: () => null
     },
     sync: { status: () => ({}), run: async () => {} }
   }

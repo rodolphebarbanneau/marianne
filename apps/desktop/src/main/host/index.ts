@@ -268,6 +268,8 @@ class ServiceHost extends EventEmitter {
       manifest = readManifest(JSON.parse(readFileSync(join(pkg.dir, 'package.json'), 'utf8')))
       if (manifest.id !== pkg.code) throw new Error(`its folder is ${pkg.code}, its manifest says ${manifest.id}`)
       if (this.loaded.some((s) => s.builtIn && s.manifest.id === manifest.id)) throw new Error(`${manifest.id} is a built-in service`)
+      // Its file was checked when added (unpackService); a manifest changed since is refused the same way.
+      if (manifest.news) throw new Error(`${manifest.id} asks for ctx.news, which only built-in services get`)
     } catch (err) {
       log.error(`Community service ${pkg.code} left out:`, (err as Error).message)
       return null
@@ -281,7 +283,7 @@ class ServiceHost extends EventEmitter {
     const storage = quotaStorage(manifest.id, `3615 ${serviceCode(manifest)}`, () => session.archive, stored, STORAGE_QUOTA)
     // A built-in service's context, but its network checked at each redirect and address, its home the commune only, its storage held to a quota.
     const ctx = {
-      ...serviceContext(manifest, sync, stored, { dataDir: false }),
+      ...serviceContext(manifest, sync, stored, { dataDir: false, news: false }),
       http: communityHttp(manifest, userAgent),
       home: () => this.communityHome(),
       storage
