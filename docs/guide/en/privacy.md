@@ -10,7 +10,7 @@ The engine, Claude Code, Codex or Mistral Vibe, works with your account at its m
 
 ## What goes online
 
-Marianne fetches public information (the newspapers' headlines, the services' data) from its public sources, opens the formalities' websites in its browser, and downloads its updates from GitHub. These requests carry nothing personal, except what you agreed to: the part of your profile a service asked you for, like your license plate for the tolls, and what Marianne fills in for you on a website, with your approval.
+Marianne fetches public information (the newspapers' headlines, the services' data) from its public sources, opens the formalities' websites in its browser, and downloads its updates from GitHub. These requests carry nothing personal, except what you agreed to: the part of your profile a service asked you for, like your license plate for the tolls, and what Marianne fills in for you on a website, with your approval. A planned task reaches the sites you gave it without asking again, and types there what its sheet says, like your license plate for the tolls.
 
 ## The news
 

@@ -32,6 +32,7 @@ Marianne is a desktop citizen assistant for people living in France: their right
 - **Sidebar** (after T3 Code): search, filter by domain (shift+click for several), new folder; rows with domain badge, pin, status or time, title, a meta line and the engine badge; on hover, snooze and settle. "En veille" and "Classés" fold at the bottom. The account selector sits in the footer; its menu shows the archive gauge under the name, then Réglages, Archive, Changer de compte, Verrouiller.
 - **Bottom bar**: the lock, then each enabled engine with its light (● ready, ◐ working, greyed ✕ enabled but not found); on the right, the Minitel keys of the screen.
 - **Pages**, in this order, each separate (scrolling never switches): Marianne (the composer), Démarches, Services. The news is a service, 3615 INFOS, one of a new account's services. ▼ at the bottom, SUITE pg↓ / RETOUR pg↑ and ctrl+↓/↑ go to the next or previous one, at once (a Minitel had no transitions).
+- **The head**: Services, Démarches and a domain's page open the same way (`KioskHead`), so that they read as one app: a double frame, a line above a bar, the bar with its block and ENVOI, a pixel art on the right; tabs under it, and only what is under the tabs scrolls. Services asks QUEL SERVICE ?, its block 3615, its art the Minitel. Démarches asks QUELLE DÉMARCHE ?, its block GUICHET, its art a ticket machine, with the tabs mes domaines, à faire and tâches planifiées. A domain is a numbered counter, as a service has its code: typing 8 prints a ticket showing 08, ENVOI opens Mobilité, and on its page, whose block says GUICHET 8, the ticket stays out. There the bar takes a question, which opens a folder filed in the domain, and the tabs, on F2 to F5, are aperçu, tâches planifiées, dossiers and ressources.
 - **Settings**: a dialog over the app, grouped MOI (identity, household, documents), ARCHIVE (space, security, accounts), CONNEXIONS (sites, engines, browser, privacy, public data), PAGES (services), APPLICATION (display, shortcuts, skills, about).
 - **Keyboard**: ctrl+k commands, ctrl+space the menu (the Minitel's SOMMAIRE), ctrl+alt+space search, ctrl+enter Marianne, ctrl+2/3 Démarches / Services (ctrl+1 was the Actualités page's: the others kept their keys). CommandOrControl everywhere (cmd on macOS); every shortcut can be changed.
 - **Look**: Minitel touches on a clean monospace screen: inverse blocks, codes, function keys; the pixel font for titles and codes only; the old screen's lines and glow are an option.
@@ -42,7 +43,8 @@ A folder has a title, a domain, an engine, its conversation and its pièces (doc
 
 - Pinned folders stay on top and are never settled automatically.
 - Snoozed ("en veille") until a date, a folder comes back on its own and shows it.
-- Settled ("classé") by hand; automatically when its procedure's last step is done, or after 7 days without activity when it follows no procedure. A new message reopens it.
+- Settled ("classé") by hand; automatically when its procedure's last step is done, or after 7 days without activity when it follows no procedure and holds no planned task. A new message reopens it.
+- A folder may hold one planned task: it sleeps between two runs and comes back on the task's day ([below](#planned-tasks)).
 
 ## The archive
 
@@ -69,6 +71,17 @@ Claude Code (CL), Codex (CX) and Mistral Vibe (MI) are the user's own CLIs. Each
 Marianne's MCP tools read the profile, propose changes (an approval card), follow procedures, read pièces (masked), search Service-Public, compute deadlines, estimate benefits, query public data, and drive the built-in browser. The MCP server resolves `[[tokens]]` in arguments and scrubs results before they go back.
 
 The built-in browser is a folder's: shown in the right column or kept out of sight. Going online needs consent (once per folder or per site); signing, paying and sending always need approval; the user can take control ("prendre la main") at any time, and Marianne hands over for CAPTCHAs, codes and FranceConnect. Its cookies live in memory only.
+
+## Planned tasks
+
+A planned task is a folder that comes back. Between two runs its folder sleeps in "En veille"; on its day it wakes, and either Marianne does the work in it ("Marianne vérifie": the task's instruction, each run a turn of the conversation) or it only comes back with its reminder ("rappel": one line, no engine). The tasks are in the archive (`main/tasks.ts`), their calendar in `shared/tasks.ts`.
+
+- **A day, no hour.** A task needs the archive open: its folder, the profile and the engine's context are all inside, and the archive locks after 15 minutes without use by default, on sleep and on quit. A task set for 8:00 would almost never run at 8:00, so a task has a day and runs at the first opening on or after it; a run later than its day is marked as caught up ("rattrapée"). The price is plain: a task can't protect someone who doesn't open Marianne. Days and weeks count from the last run, so a late run moves the rhythm; months and years keep their date.
+- **The scheduler.** 15 seconds after each unlock, then every 5 minutes while unlocked, it runs what is due, oldest first, one at a time and never during another turn: there is one browser, and a run must not take it from the user. Each run spends the user's engine, so there are at most 12 engine runs a day; reminders don't count. A run has 10 minutes, time waiting for the user aside. If the archive locks meanwhile, the run is forgotten and the task is still due at the next opening.
+- **A run looks and reports.** Its turn starts from no user message: the task's instruction, in a frame saying that nobody may be watching and that it must not pay, sign, send or change anything. The cards stay: nothing that needs the user's yes passes without it, and a run that leaves one unanswered ends as waiting. It can't plan another task, and it ends by saying how it went (`task_report`): nothing, found, waiting or failed. A run that doesn't say is shown to the user, to read again.
+- **Per-run site grants.** A run reaches the task's own sites without asking, for that run only: the grant holds while the run is under way, and never joins the folder's consents. For any other site it asks site by site, whatever the user's setting for a folder. Its browser stays out of sight.
+- **What comes back.** A run that found nothing puts the folder back to sleep, and folds with the others into one line of the conversation. Anything else wakes the folder and notifies the user; à faire lists the tasks that wait or failed. A task's folder the user has read goes back to sleep after a day; paused, it goes to "Classés".
+- **Where a task comes from.** Nothing runs without the user's yes: on a sheet built from what a service proposes (`tasks()`, built-in services only, see [services.md](services.md)), for a reminder of their own, or on a card when Marianne proposes one in a conversation (`task_propose`). A task's sites and instruction come from the service or from that card, never from the window.
 
 ## Public information
 

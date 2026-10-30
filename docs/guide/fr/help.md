@@ -5,6 +5,7 @@
 - **Phrase de passe oubliée.** Sur l’écran de verrouillage, choisissez « phrase oubliée ? utiliser la clé de secours », puis une nouvelle phrase de passe.
 - **Le code ne marche plus.** Après 5 erreurs, il faut de nouveau la phrase de passe. Vous pourrez ensuite remettre un code.
 - **Marianne ne répond pas.** Vérifiez que votre moteur est installé et connecté : les témoins en bas à gauche, et Réglages › Moteurs.
+- **Une tâche planifiée ne s’est pas faite.** Elle ne se fait que Marianne ouverte et votre archive déverrouillée, à la première ouverture de son jour ou après, et jamais pendant que Marianne vous répond. Vérifiez qu’elle n’est pas en pause, dans Démarches › « tâches planifiées ».
 - **L’écran n’est pas à jour.** Rechargez la fenêtre, avec ctrl+maj+R (cmd+maj+R sur macOS) ou le bouton en haut à droite. L’archive reste ouverte.
 - **L’archive est pleine.** Faites de la place dans Réglages › Place et emplacement.
 

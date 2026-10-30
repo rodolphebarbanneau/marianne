@@ -62,7 +62,7 @@ A service's code is lowercase letters and digits, without accents: `meteo`, `par
 - `news`: `true` when it reads headlines through Marianne (`ctx.news`, below) rather than from the press itself: no press host to declare. Built-in services only: a community service that declares it is refused when it is added.
 - `search`: the screen's search field, drawn by Marianne in its header, `{ "placeholder": "chercher dans les titres" }` (French, one line); the view reads it with `useSearch()`.
 - `links`: URL prefixes the service opens itself; a link in an answer that starts with one opens the service with `params.url`.
-- `domains`: the domains it is useful for (`DOMAIN_IDS`: identity, family, health, taxes, work, retirement, housing, mobility, justice, business). Their dashboards show its line, and its deadlines must belong to one of them.
+- `domains`: the domains it is useful for (`DOMAIN_IDS`: identity, family, health, taxes, work, retirement, housing, mobility, justice, business). Their dashboards show its line, and its deadlines and the tasks it proposes must belong to one of them.
 - `permissions`: what of the user's profile it asks to read, among `PROFILE_FIELDS` (`vehicles.plate`, `vehicles.model`…, `opinions.leaning`, `opinions.themes`, `opinions.sources`), and what for, in one French line: `{ "profile": ["vehicles.plate"], "purpose": "retrouver vos passages en flux libre" }`. The first time the user opens the service, Marianne asks them, field by field; they can take it back in the settings. Nothing else of the profile is ever available to a service.
 - `tools`: the tools its main side lends the engines, by `name` and French `label`, as `defineTool` gives them. « Avant d’ajouter » lists them before the user adds the service; a community service may lend no other (the host refuses a tool it didn't declare). The tests check that the declaration and the runtime agree.
 - `icon`: its icon, a picture in the Marianne palette (below), exactly 8 × 8. Without one, Marianne draws a neutral frame.
@@ -138,6 +138,7 @@ The context is all a service gets of Marianne:
 - `today(day)`: its lines of "Aujourd'hui" for a day (`TodayItem`), each opening the service with its `params`. No screen shows them since the Actualités page left the frame; the day's agenda (3615 CALENDRIER) will.
 - `summary(domain)`: its line on the dashboard of one of its domains (`ServiceSummary`: a French sentence, an urgency, the `params` to open it with), or null. It is data: Marianne lays out every service's line the same way.
 - `deadlines()`: the deadlines it knows of (`ServiceDeadline`), from what it keeps in `ctx.storage`; they join the user's deadlines and reminders. Called often: no network.
+- `tasks()`: the planned tasks it proposes (`ServiceTaskTemplate`, below), from what it keeps. Read when the Démarches pages show: no network. Built-in services only for now.
 - `tile()`: its tile on the Services page, once the user pins it (below), or null for the default tile.
 
 ### The tile
@@ -172,6 +173,34 @@ export const service = defineService<MeteoMethods>({
 - **When**: Marianne asks for the tile while the Services page shows it, when the last one is older than `tile.everyMinutes` (15 by default, 5 at least), one call at a time; she keeps the last tile in the archive and shows it at once, with its age, until a newer one comes. A tile that takes more than 10 seconds or fails leaves the last one, and is asked again 2 minutes later, then twice as late each time, never later than its period. `tile()` reads what the service keeps and may reach its declared hosts; it is asked again when the user's address, vehicles or opinions change, when its access to the profile does, and when it stores something for the user (a trip recorded on its screen).
 - Without `tile()`, or while it returns null, the tile shows the service's description.
 - `synced()`: its sync job has just written new data (reopen a database…).
+
+### Planned tasks
+
+A service may propose a **planned task**: something Marianne checks for the user on a rhythm, in a folder that comes back ([design.md](design.md#planned-tasks)). `tasks()` returns its proposals as **data**, as `summary()` and `deadlines()` do: a service proposes and never schedules. Marianne lays each one out on the sheet the user reads, and nothing runs without their yes.
+
+```ts
+export const service = defineService<PeageMethods>({
+  activate(ctx) {
+    return {
+      // One per vehicle whose plate the service was given: without it, there is nothing to look for.
+      tasks: () => tollTasks(vehicles().list)
+    }
+  }
+})
+```
+
+A `ServiceTaskTemplate` says:
+
+- `id`: stable within the service, for one thing it covers (`tolls:<vehicle id>`). The user's task remembers it, and what they have taken is no longer proposed.
+- `domain`: one of the manifest's `domains`; a template outside them is left out.
+- `title`, `checks`, `detail`: French, what it is called, what it checks, and where.
+- `entity`: what it is about, its `id` and the `label` the user knows it by (a plate).
+- `rhythms`: what the user chooses from (`every`, a French `label`, a `note` on what this rhythm means here, `warn` when it is too spaced for what the task is for), the usual one at `rhythm`.
+- `allows`, `never`: French, what Marianne may do at each run, and what she will never do.
+- `instruction`: English, what Marianne is asked at each run. A run looks and reports: ask it to look, and leave paying, signing and sending to the user.
+- `sites`: the hosts she may open at each run without asking again, for this task only.
+
+**Built-in services only for now.** A task's instruction feeds the engine and its sites are reached without asking, so it is content that can inject: the host doesn't read a community service's `tasks()`.
 
 ## Sync job
 
@@ -327,6 +356,7 @@ A service is added on this computer, for every account that has it. Each account
 ### The limits of this version
 
 - **No sync job**: it would run with Node, out of any sandbox. A file with a `sync.js` is refused; `ctx.dataDir` is `''` and `ctx.sync` does nothing.
+- **No planned tasks**: a task's instruction feeds the engine and its sites are reached without asking, so the host leaves out what its `tasks()` would propose.
 - **A screen of its own**: it lays out by its view's width as a built-in screen does by its column's, but it can't reach the window. `ServiceTools` are drawn at the top of its screen rather than at the end of the tab bar; a `Modal` covers its screen, not the whole window; the window's keyboard shortcuts other than F1 to F9, échap and the lock work once the focus is back on the window.
 - **Plain data across**: what its methods and tools return, and what it stores, crosses processes as JSON (1 MB at most for a stored value).
 

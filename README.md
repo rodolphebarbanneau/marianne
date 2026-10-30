@@ -5,7 +5,7 @@ A desktop citizen assistant for people living in France: rights, formalities, pa
 **Status: alpha.** To install and use it, see the user guide, in [English](docs/guide/en/index.md) or in [French](docs/guide/fr/index.md), and the [releases](https://github.com/rodolphebarbanneau/marianne/releases). Marianne is an independent project, not affiliated with the French State or any administration.
 
 - [User guide](docs/guide/README.md): installing and using Marianne, in French and in English, the same pages in each.
-- [Design](docs/design.md): the window, folders, the archive and its security, engines, tools.
+- [Design](docs/design.md): the window, folders, the archive and its security, engines, tools, planned tasks.
 - [Services](docs/services.md): the 3615 add-ons and their SDK.
 - [Content](docs/content.md): skills, guided démarches, the calendar, sites, and the news sources of 3615 INFOS with their editorial lines; how to contribute, and how signed updates reach the app.
 - [Site](site/README.md): the website, to download the app and read the user guide.

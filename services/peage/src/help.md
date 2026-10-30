@@ -3,3 +3,4 @@ Les autoroutes en **flux libre**, sans barrière : chaque passage se paie après
 - Notez vos passages : le service compte le temps qu’il reste, et vos échéances rejoignent vos rappels.
 - Le paiement se fait toujours sur le site officiel, ouvert dans votre navigateur ou dans celui de Marianne ; c’est vous qui le validez.
 - Aucun lien de paiement officiel n’arrive par SMS : un SMS de péage avec un lien est une arnaque.
+- Dans Démarches › Mobilité, une tâche planifiée peut chercher vos passages non payés, tous les 2 jours par défaut : elle ne tourne que si vous ouvrez Marianne, et elle ne paie jamais.
