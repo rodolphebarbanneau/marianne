@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import type { TaskEvery } from '@marianne/sdk'
-import { dayOf, dayStart, nextDay } from '../shared/tasks'
+import { addEvery, dayOf, dayStart, nextDay } from '../shared/tasks'
 import type { DomainId, EngineId, PlannedTask, TaskOrigin, TaskOutcome, TaskRun, TaskRunner } from '../shared/types'
 import { configStore } from './config'
 import { folders } from './folders'
@@ -128,7 +128,15 @@ class Tasks extends EventEmitter {
   update(id: string, patch: Partial<Pick<PlannedTask, 'every' | 'everyLabel' | 'why' | 'notify'>>): PlannedTask {
     const task = this.get(id)
     if (!task) throw new Error('Tâche introuvable.')
-    return this.put({ ...task, ...patch })
+    const rhythm = patch.every && (patch.every.unit !== task.every.unit || patch.every.n !== task.every.n) ? patch.every : null
+    if (!rhythm) return this.put({ ...task, ...patch })
+    // The reason given was for the old rhythm, and the next day counts from the last run in the new one.
+    const last = task.runs[task.runs.length - 1]
+    const today = dayOf()
+    const next = last ? addEvery(dayOf(new Date(last.at)), rhythm) : task.next
+    const changed = this.put({ ...task, ...patch, why: undefined, next: next < today ? today : next })
+    if (folders.get(task.folderId)?.snoozedUntil) this.sleep(changed)
+    return changed
   }
 
   /** Paused, its folder goes to « classés »; taken up again, it sleeps until its day. */

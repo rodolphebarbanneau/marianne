@@ -51,7 +51,7 @@ export function tripDeadlines(trips: Trip[]): ServiceDeadline[] {
         title: `Péage ${network.short} : trajet du ${shortDay(new Date(t.at))} à payer`,
         due: parisIso(due),
         detail: `sur ${hostOf(network.payUrl)} (${network.operator}), jamais depuis un lien reçu par SMS`,
-        params: { trip: t.id }
+        params: { trip: t.id, vehicle: t.vehicleId }
       }
     ]
   })

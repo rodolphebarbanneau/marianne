@@ -30,7 +30,7 @@ function useKeys(): Key[] {
       ['GUIDE', 'guide', 'aide', 'guide']
     ]
   if (view.kind === 'service') return serviceKeys(serviceBar, menu)
-  if (view.kind === 'domain') return [['RETOUR', 'Escape', 'Démarches', 'prev'], ...menu]
+  if (view.kind === 'domain') return [['ENVOI', 'Enter', 'demander', null], ['RETOUR', 'Escape', 'Démarches', 'prev'], ...menu]
   const i = PAGES.indexOf(view.page)
   const keys: Key[] = []
   if (view.page === 'home') keys.push(['ENVOI', 'send', 'envoyer', null])

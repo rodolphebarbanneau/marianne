@@ -450,6 +450,8 @@ export interface ServiceTaskTemplate {
   allows: string[]
   /** French: what she will never do. */
   never: string
+  /** French, short: what an entity's card says while the task isn't planned, "péages non vérifiés". */
+  unplanned?: string
   /** What Marianne is asked at each run, in English. */
   instruction: string
   /** The hosts she may open at each run without asking again, for this task only. */

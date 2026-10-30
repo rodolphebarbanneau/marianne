@@ -15,6 +15,7 @@ import { useSites } from '../lib/content'
 import { shortDate } from '../lib/format'
 import { useDocuments } from '../lib/profile'
 import { useTasks } from '../lib/tasks'
+import { TaskEditDialog } from '../pages/tasks/dialogs'
 import { Composer } from './composer'
 import { Message } from './message'
 import { foldLabel, foldRuns, nextLabel, runLabel, type QuietRun } from './runs'
@@ -177,6 +178,7 @@ function FolderHead({ view, procedure }: { view: FolderView; procedure: Procedur
   const [renaming, setRenaming] = useState(false)
   const [title, setTitle] = useState(folder.title)
   const [pieces, setPieces] = useState(false)
+  const [changing, setChanging] = useState(false)
   const domain = DOMAINS.find((d) => d.id === folder.domain)
 
   const rename = () => {
@@ -261,8 +263,8 @@ function FolderHead({ view, procedure }: { view: FolderView; procedure: Procedur
         <button className="btn small" onClick={() => setPieces(!pieces)}>
           pièces ({documents.length}) {pieces ? '▴' : '▾'}
         </button>
-        {task && domain && (
-          <button className="btn small" onClick={() => app.go({ kind: 'domain', id: domain.id, tab: 'taches' })}>
+        {task && (
+          <button className="btn small" onClick={() => setChanging(true)}>
             modifier la tâche
           </button>
         )}
@@ -272,6 +274,7 @@ function FolderHead({ view, procedure }: { view: FolderView; procedure: Procedur
           </button>
         )}
       </div>
+      {changing && task && <TaskEditDialog task={task} onClose={() => setChanging(false)} />}
       {pieces && (
         <div className="inline-card" style={{ margin: 0 }}>
           <div className="in">
