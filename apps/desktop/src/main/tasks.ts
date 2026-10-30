@@ -259,7 +259,7 @@ class Tasks extends EventEmitter {
       this.settleBack(now.getTime())
       const today = dayOf(now)
       for (const task of this.list().filter((t) => t.on && t.next <= today)) {
-        if (!session.unlocked || this.isBusy()) break
+        if (!session.unlocked || this.current || this.isBusy()) break
         if (task.runner === 'marianne' && this.spentToday(today) >= MAX_RUNS_A_DAY) continue
         await this.run(task)
       }

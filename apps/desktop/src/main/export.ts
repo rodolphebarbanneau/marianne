@@ -6,10 +6,12 @@ import { folders } from './folders'
 import { documents } from './profile/documents'
 import { profile } from './profile/store'
 import { session } from './session'
+import { tasks } from './tasks'
 
 /**
  * "Tout exporter": the account as ordinary files, in clear, for the user to keep or move
- * elsewhere: the profile, every pièce in its domain, every folder's conversation in Markdown.
+ * elsewhere: the profile, the planned tasks, every pièce in its domain, every folder's conversation
+ * in Markdown.
  * The keychain stays out: its passwords never leave the archive in clear.
  */
 
@@ -51,6 +53,7 @@ export function exportAll(parent: string): string {
   const root = join(parent, `Marianne ${archive.id} ${new Date().toISOString().slice(0, 10)}`)
   mkdirSync(root, { recursive: true })
   writeFileSync(join(root, 'profil.json'), JSON.stringify(profile.get(), null, 2))
+  writeFileSync(join(root, 'tâches planifiées.json'), JSON.stringify(tasks.list(), null, 2))
 
   const byDomain = new Map<string, Set<string>>()
   for (const d of documents.list()) {

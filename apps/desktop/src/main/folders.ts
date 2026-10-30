@@ -38,6 +38,15 @@ export function statusOf(folder: Folder, messages: ChatMessage[], running: boole
   return 'idle'
 }
 
+/**
+ * The message an answer is redone from: the last of the user's, unless a planned task's run came
+ * after it, which redoing would wipe; then -1.
+ */
+export function redoFrom(messages: ChatMessage[]): number {
+  const last = messages.map((m) => m.role).lastIndexOf('user')
+  return messages.slice(last + 1).some((m) => m.note === 'task') ? -1 : last
+}
+
 /** Whether a folder should be settled now, by the automatic rule. */
 export function shouldAutoSettle(folder: Folder, status: FolderStatus, at = Date.now()): boolean {
   if (folder.settledAt || folder.pinned || folder.keepOpen || folder.procedure || folder.snoozedUntil || folder.task) return false
