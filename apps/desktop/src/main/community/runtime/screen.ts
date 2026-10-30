@@ -4,6 +4,7 @@ import { allowedUrl, serviceCode, type ServiceManifest } from '@marianne/sdk'
 import {
   frameMayOpen,
   frameUrl,
+  ownRoute,
   readFromFrame,
   readToFrame,
   SCREEN_CHANNELS,
@@ -16,14 +17,14 @@ import { SCREEN_LIMITS } from '../../../shared/screen-channels'
 import { matches, type KeyLike } from '../../../shared/shortcuts'
 import { fromOwn, type SenderEvent } from './bridge'
 import { RateLimit } from './limits'
-import { pictureUrl, schemeHandler, type SchemeSource } from './scheme'
+import { mediaUrl, pictureUrl, schemeHandler, type SchemeSource } from './scheme'
 
 /**
  * A community service's screen, out of Marianne's window's page: a view of its own (a
  * WebContentsView drawn over the screen's content area, as the built-in browser is), locked down
  * as its main side's sandbox: a session of its own that keeps nothing, every request cancelled but
- * its own files (its declared hosts' pictures come through the scheme, fetched by the main
- * process), no permission, WebRTC and DNS sent to a proxy that leads nowhere. Its page reaches
+ * its own files (its declared hosts' pictures and videos come through the scheme, fetched by the
+ * main process), no permission, WebRTC and DNS sent to a proxy that leads nowhere. Its page reaches
  * Marianne only through its preload (preload/community-screen.ts) and this relay, which answers its
  * calls and data itself and hands the window only what the window shows: a question for Marianne,
  * another screen, a link to confirm, a toast, a tab, a key. The user's keys and clicks are read
@@ -38,6 +39,8 @@ const ESCAPE_WINDOW_MS = 1000
 /** The account's idle lock hears of the user at most this often. */
 const TOUCH_EVERY_MS = 10_000
 const NOWHERE = 'socks5://127.0.0.1:9'
+/** A screen that goes keeps its page this long, hidden: its view unmounts, and a video that played pins itself. */
+export const LEAVE_MS = 250
 
 /** What the relay needs of the app. */
 export interface ScreenHost {
@@ -73,6 +76,8 @@ export class ScreenRelay extends EventEmitter {
   private readonly limit = new RateLimit(100, 300)
   private warned = false
   private readonly now: () => number
+  /** Going: only a video pinned by its unmounting view still crosses. */
+  leaving = false
 
   constructor(
     readonly code: string,
@@ -107,7 +112,15 @@ export class ScreenRelay extends EventEmitter {
     }
     if (m.type === 'tab' && this.init) this.init = { ...this.init, tab: m.tab }
     if (m.type === 'look' && this.init) this.init = { ...this.init, look: m.look }
+    if (m.type === 'media' && this.init) this.init = { ...this.init, media: m.media }
+    if (m.type === 'leave') return
     if (this.ready) this.send(m)
+  }
+
+  /** The screen goes: its page unmounts its view; what it pins then still reaches the window, nothing else. */
+  leave(): void {
+    this.leaving = true
+    if (this.ready) this.send({ type: 'leave' })
   }
 
   /**
@@ -145,7 +158,7 @@ export class ScreenRelay extends EventEmitter {
       return
     }
     const m = readFromFrame(raw)
-    if (!m) return
+    if (!m || (this.leaving && m.type !== 'pin')) return
     const manifest = this.host.manifestOf(this.code)
     if (!manifest) return
     const recent = this.now() - this.lastConsent <= INPUT_WINDOW_MS
@@ -178,6 +191,13 @@ export class ScreenRelay extends EventEmitter {
       case 'toast':
         this.emit('window', { type: 'toast', text: `${this.who} · ${m.text}` })
         return
+      // A video of its declared hosts, which brings the user back to its own screen; its picture only from there too.
+      case 'pin': {
+        const { poster, ...item } = m.item
+        if (!allowedUrl(manifest, item.src) || !ownRoute(this.code, item.route)) return this.host.log.warn(`${this.who}: a video not pinned`)
+        this.emit('window', { ...m, item: { ...item, ...(poster && allowedUrl(manifest, poster) ? { poster } : {}) } })
+        return
+      }
       case 'ask': {
         // A page it hands with a question is its own: labelled so, its address kept only on its declared hosts.
         const page = m.page && {
@@ -219,6 +239,9 @@ async function prepare(code: string, source: SchemeSource, manifestOf: (code: st
       if (details.url.startsWith(own)) return callback({})
       const m = manifestOf(code)
       if (m && details.resourceType === 'image' && allowedUrl(m, details.url)) return callback({ redirectURL: pictureUrl(code, details.url) })
+      // A video's playlist and pieces (a player's requests, a <video>'s), fetched by the main process too.
+      if (m && details.method === 'GET' && (details.resourceType === 'xhr' || details.resourceType === 'media') && allowedUrl(m, details.url))
+        return callback({ redirectURL: mediaUrl(code, details.url) })
       callback({ cancel: true })
     })
     ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(false))
@@ -256,6 +279,8 @@ export class CommunityScreens extends EventEmitter {
   private relay: ScreenRelay | null = null
   private bounds: Electron.Rectangle | null = null
   private opening = 0
+  /** Each relay's view, the one leaving included. */
+  private readonly views = new Map<ScreenRelay, WebContentsView>()
 
   constructor(private readonly opts: ScreensOptions) {
     super()
@@ -282,8 +307,8 @@ export class CommunityScreens extends EventEmitter {
     this.close()
     const ticket = ++this.opening
     const relay = new ScreenRelay(code, this.opts.host, (message) => {
-      const wc = this.view?.webContents
-      if (wc && !wc.isDestroyed() && this.relay === relay) wc.send(SCREEN_CHANNELS.message, message)
+      const wc = this.views.get(relay)?.webContents
+      if (wc && !wc.isDestroyed() && (this.relay === relay || relay.leaving)) wc.send(SCREEN_CHANNELS.message, message)
     })
     relay.on('window', (message: FromFrame) => this.emit('window', { code, message }))
     this.relay = relay
@@ -312,6 +337,7 @@ export class CommunityScreens extends EventEmitter {
         view.setVisible(false)
         this.win.contentView.addChildView(view)
         this.view = view
+        this.views.set(relay, view)
         this.wire(view.webContents, relay)
         this.layout()
         void view.webContents.loadURL(frameUrl(code)).catch(() => undefined)
@@ -322,7 +348,7 @@ export class CommunityScreens extends EventEmitter {
   }
 
   private wire(wc: WebContents, relay: ScreenRelay): void {
-    const own = (e: SenderEvent) => this.relay === relay && fromOwn(wc, e)
+    const own = (e: SenderEvent) => (this.relay === relay || relay.leaving) && fromOwn(wc, e)
     wc.setWebRTCIPHandlingPolicy('disable_non_proxied_udp')
     wc.setWindowOpenHandler(() => ({ action: 'deny' }))
     wc.on('will-navigate', (e) => e.preventDefault())
@@ -384,16 +410,22 @@ export class CommunityScreens extends EventEmitter {
     if (code !== undefined && this.relay?.code !== code) return
     this.opening++
     const view = this.view
+    const relay = this.relay
     this.view = null
-    this.relay?.removeAllListeners()
     this.relay = null
-    if (!view) return
-    try {
-      this.win?.contentView.removeChildView(view)
-    } catch {
-      // the window is gone
-    }
-    if (!view.webContents.isDestroyed()) view.webContents.close()
+    if (!view || !relay) return void relay?.removeAllListeners()
+    view.setVisible(false)
+    relay.leave()
+    setTimeout(() => {
+      relay.removeAllListeners()
+      this.views.delete(relay)
+      try {
+        this.win?.contentView.removeChildView(view)
+      } catch {
+        // the window is gone
+      }
+      if (!view.webContents.isDestroyed()) view.webContents.close()
+    }, LEAVE_MS)
   }
 
   /** The services changed: a screen whose service is no longer on goes. */

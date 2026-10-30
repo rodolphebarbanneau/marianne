@@ -11,7 +11,8 @@ import { SERVICE_SCHEME } from '../../../shared/community'
  * folder: never installed.json), marianne-service://<code>/~runtime/… Marianne's runtime (the
  * two pages, the modules of their import maps, the stylesheet and the fonts: the files listed
  * when the app started, nothing else), and for its screen marianne-service://<code>/~picture/…
- * a picture of one of its declared hosts, fetched by the main process. Only while the service is
+ * a picture of one of its declared hosts and marianne-service://<code>/~media/… a piece of one of
+ * their videos, fetched by the main process. Only while the service is
  * active: any other code is not found. Every answer says its type and may not be sniffed as
  * another; the pages carry the content policy that keeps them to their own scheme.
  */
@@ -26,6 +27,12 @@ export interface SchemeSource {
   runtimeFiles: () => ReadonlySet<string>
   /** A picture of a declared host (checked again here), for a screen; absent: none served. */
   picture?: (manifest: Pick<ServiceManifest, 'id' | 'hosts'>, url: string) => Promise<{ type: string; body: Uint8Array } | null>
+  /** A piece of a video of a declared host (checked again here), for a screen; absent: none served. */
+  media?: (
+    manifest: Pick<ServiceManifest, 'id' | 'hosts'>,
+    url: string,
+    range: string | null
+  ) => Promise<{ status: number; type: string; body: Uint8Array; range?: string } | null>
 }
 
 export interface SchemeAnswer {
@@ -100,31 +107,43 @@ export function listRuntime(dir: string): Set<string> {
   return files
 }
 
+/**
+ * Where a screen gets a piece of a video of its declared host: the scheme, which fetches it. The
+ * host and the path stay a path (~media/<host>/<path>), so that a playlist's relative lines lead
+ * back here.
+ */
+export const mediaUrl = (code: string, url: string) => {
+  const u = new URL(url)
+  return `${SERVICE_SCHEME}://${code}/~media/${u.host}${u.pathname}${u.search}`
+}
+
 /** Where a screen gets a picture of its declared host: the scheme, which fetches it. */
 export const pictureUrl = (code: string, url: string) => `${SERVICE_SCHEME}://${code}/~picture/${Buffer.from(url, 'utf8').toString('base64url')}`
 
 /**
  * The content policy of a runtime page: scripts, styles and fonts from the service's own
  * address only (and the page's import map, by its hash), pictures from there and its declared
- * hosts (which its session turns into the scheme's), no connection, no frame, no form, no base;
- * the screen's page sandboxed (no dialog, popup nor download, in it or a frame it makes). The main
- * side's page needs even less.
+ * hosts (which its session turns into the scheme's), no frame, no form, no base; the screen's page
+ * sandboxed (no dialog, popup nor download, in it or a frame it makes). The screen connects and
+ * plays videos from its own address and its declared hosts only (its session turns those into the
+ * scheme's too), and from blob: (a stream's buffer); the main side's page connects nowhere.
  */
 export function contentPolicy(page: 'view' | 'main' | 'worker', code: string, hosts: readonly string[], inlineHashes: readonly string[] = []): string {
   const self = `${SERVICE_SCHEME}://${code}`
   const scripts = [self, ...inlineHashes.map((h) => `'${h}'`)].join(' ')
   // The main side's page starts one worker, of its own address; the worker none.
+  const declared = hosts.map((h) => `https://${h}`)
   const common = [
     "default-src 'none'",
     `script-src ${scripts}`,
-    "connect-src 'none'",
+    page === 'view' ? `connect-src ${[self, ...declared].join(' ')}` : "connect-src 'none'",
     "frame-src 'none'",
     "child-src 'none'",
     `worker-src ${page === 'main' ? self : "'none'"}`
   ]
   const end = ["object-src 'none'", "base-uri 'none'", "form-action 'none'"]
   if (page === 'main' || page === 'worker') return [...common, "img-src 'none'", "style-src 'none'", "font-src 'none'", ...end].join('; ')
-  const images = [self, 'data:', ...hosts.map((h) => `https://${h}`)].join(' ')
+  const images = [self, 'data:', ...declared].join(' ')
   // The screen's page and every frame it makes, sandboxed: no dialog (print, alert), no popup, no download.
   const sandbox = 'sandbox allow-scripts allow-same-origin allow-forms'
   return [
@@ -132,7 +151,7 @@ export function contentPolicy(page: 'view' | 'main' | 'worker', code: string, ho
     `style-src ${self} 'unsafe-inline'`,
     `font-src ${self}`,
     `img-src ${images}`,
-    "media-src 'none'",
+    `media-src ${[self, 'blob:', ...declared].join(' ')}`,
     "manifest-src 'none'",
     ...end,
     sandbox
@@ -149,7 +168,8 @@ export function inlineScriptHashes(html: string): string[] {
   return hashes
 }
 
-type Target = { code: string; kind: 'package' | 'runtime'; file: string } | { code: string; kind: 'picture'; url: string }
+type Target =
+  { code: string; kind: 'package' | 'runtime'; file: string } | { code: string; kind: 'picture'; url: string } | { code: string; kind: 'media'; url: string }
 
 /** What a URL of the scheme names: a file of the service, of the runtime, a picture; null: nothing served. */
 export function resolveServiceUrl(url: string, source: SchemeSource, only?: string): Target | null {
@@ -175,6 +195,11 @@ export function resolveServiceUrl(url: string, source: SchemeSource, only?: stri
     const target = /^[A-Za-z0-9_-]{1,4000}$/.test(segments[1]) ? Buffer.from(segments[1], 'base64url').toString('utf8') : ''
     return target && allowedUrl(pkg.manifest, target) ? { code, kind: 'picture', url: target } : null
   }
+  // A video's piece: its host, then its path as it was (and its query).
+  if (segments[0] === '~media' && segments.length >= 3 && source.media) {
+    const target = `https://${u.pathname.slice('/~media/'.length)}${u.search}`
+    return allowedUrl(pkg.manifest, target) && new URL(target).host === segments[1] ? { code, kind: 'media', url: target } : null
+  }
   if (segments[0] !== '~runtime' || segments.length < 2) return null
   const file = segments.slice(1).join('/')
   // Only what the runtime's folder held at start: no other name (a device, a path out) is ever opened.
@@ -188,11 +213,29 @@ export function resolveServiceUrl(url: string, source: SchemeSource, only?: stri
  * service's sandbox and its screen load their own files only). GET only; the service's view.css,
  * when it has none, is an empty stylesheet (its view runtime always links one).
  */
-export async function answerServiceRequest(request: { url: string; method: string }, source: SchemeSource, only?: string): Promise<SchemeAnswer> {
+export async function answerServiceRequest(
+  request: { url: string; method: string; headers?: { get(name: string): string | null } },
+  source: SchemeSource,
+  only?: string
+): Promise<SchemeAnswer> {
   if (request.method !== 'GET') return { ...notFound(), status: 405 }
   const target = resolveServiceUrl(request.url, source, only)
   if (!target) return notFound()
   const pkg = source.packageOf(target.code)!
+  if (target.kind === 'media') {
+    const got = await source.media!(pkg.manifest, target.url, request.headers?.get('range') ?? null).catch(() => null)
+    if (!got) return { ...notFound(), status: 502 }
+    return {
+      status: got.status,
+      headers: {
+        ...COMMON,
+        'Content-Type': got.type,
+        'Content-Security-Policy': "default-src 'none'",
+        ...(got.range ? { 'Content-Range': got.range, 'Accept-Ranges': 'bytes' } : {})
+      },
+      body: got.body
+    }
+  }
   if (target.kind === 'picture') {
     const got = await source.picture!(pkg.manifest, target.url).catch(() => null)
     if (!got) return notFound()
@@ -232,6 +275,7 @@ export async function answerServiceRequest(request: { url: string; method: strin
 export function schemeHandler(source: SchemeSource, only?: string) {
   return async (request: Request): Promise<Response> => {
     const a = await answerServiceRequest(request, source, only)
-    return new Response(a.status === 200 ? (a.body as ConstructorParameters<typeof Response>[0]) : null, { status: a.status, headers: a.headers })
+    const body = a.status === 200 || a.status === 206 ? (a.body as ConstructorParameters<typeof Response>[0]) : null
+    return new Response(body, { status: a.status, headers: a.headers })
   }
 }

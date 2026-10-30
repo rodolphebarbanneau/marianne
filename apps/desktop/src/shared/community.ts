@@ -136,13 +136,39 @@ export interface FrameLook {
   platform: string
 }
 
+/** A video a frame hands to the app's mini-player (PinnedMedia in @marianne/sdk/media). */
+export interface FramePinned {
+  src: string
+  poster?: string
+  title: string
+  badge?: string
+  live?: boolean
+  at: number
+  route: string
+  params?: Record<string, string | number>
+}
+
+/**
+ * The app's mini-player, as a frame knows it: whether it may hand its videos to it (`can`: its
+ * declared hosts include one the window plays from), and the video it shows, with where it was
+ * when the window last said (the window says again every few seconds while it plays). A frame's
+ * `host.media.take` answers from this at once, and tells the window, which closes it.
+ */
+export interface FrameMedia {
+  can: boolean
+  pinned: { src: string; at: number } | null
+}
+
 /** From the window to the frame. */
 export type ToFrame =
-  | { type: 'init'; host: FrameHost; tabs: ServiceTab[]; tab: string; barred: boolean; look: FrameLook }
+  | { type: 'init'; host: FrameHost; tabs: ServiceTab[]; tab: string; barred: boolean; look: FrameLook; media?: FrameMedia }
   | { type: 'host'; host: FrameHost }
   /** The tab shown; `picked`: the user picked it (a click, its key), the one shown included. */
   | { type: 'tab'; tab: string; picked: boolean }
   | { type: 'look'; look: FrameLook }
+  | { type: 'media'; media: FrameMedia }
+  /** The screen is going: its page unmounts its view (a video playing then pins itself), and is closed a moment later. */
+  | { type: 'leave' }
   | { type: 'reply'; id: number; ok?: unknown; error?: string }
 
 /** From the frame to the window. */
@@ -160,6 +186,10 @@ export type FromFrame =
   | { type: 'badges'; badges: Record<string, string> }
   | { type: 'key'; key: string }
   | { type: 'activity' }
+  /** host.media.pin: a video for the app's mini-player (`auto`: its page is leaving). */
+  | { type: 'pin'; item: FramePinned; auto: boolean }
+  /** host.media.take: the frame took back the video the mini-player showed. */
+  | { type: 'take'; src: string }
 
 /** The keys a frame hands to the window: the guide, the tabs, the way back. */
 export const FRAME_KEYS: ReadonlySet<string> = new Set(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'Escape'])
@@ -168,6 +198,44 @@ const IDENT = /^[A-Za-z_$][\w$]{0,63}$/
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 const text = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max
 const id = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) > 0
+
+const ROUTE = /^[a-z]+(?:[:/][a-z0-9-]+)?$/
+const https = (v: unknown): v is string => text(v, 2000) && /^https:\/\//.test(v)
+
+/** A video a frame pins, its parts checked one by one; null when one is wrong. */
+function readPinned(v: unknown): FramePinned | null {
+  if (!isRecord(v)) return null
+  const { src, poster, title, badge, live, at, route, params } = v
+  if (!https(src) || !text(title, 300) || !text(route, 200) || !ROUTE.test(route)) return null
+  if (typeof at !== 'number' || !Number.isFinite(at) || at < 0) return null
+  if ((poster !== undefined && !https(poster)) || (badge !== undefined && !text(badge, 12)) || (live !== undefined && typeof live !== 'boolean')) return null
+  let kept: Record<string, string | number> | undefined
+  if (params !== undefined) {
+    if (!isRecord(params)) return null
+    const entries = Object.entries(params)
+    const value = (x: unknown) => text(x, 200) || (typeof x === 'number' && Number.isFinite(x))
+    if (entries.length > 16 || !entries.every(([k, x]) => text(k, 40) && IDENT.test(k) && value(x))) return null
+    kept = Object.fromEntries(entries) as Record<string, string | number>
+  }
+  return {
+    src,
+    title,
+    at,
+    route,
+    ...(poster !== undefined ? { poster } : {}),
+    ...(badge !== undefined ? { badge } : {}),
+    ...(live !== undefined ? { live } : {}),
+    ...(kept ? { params: kept } : {})
+  }
+}
+
+/** The mini-player's state a window sends; null when it isn't one. */
+function readMedia(v: unknown): FrameMedia | null {
+  if (!isRecord(v) || typeof v.can !== 'boolean') return null
+  if (v.pinned === null) return { can: v.can, pinned: null }
+  const p = v.pinned
+  return isRecord(p) && typeof p.src === 'string' && typeof p.at === 'number' && Number.isFinite(p.at) ? { can: v.can, pinned: { src: p.src, at: p.at } } : null
+}
 
 /**
  * A frame's message, when it is one of FromFrame and within its limits; null otherwise (the
@@ -197,7 +265,7 @@ export function readFromFrame(data: unknown): FromFrame | null {
     }
     // Another screen of the app (settings/identity, service/carte, news), never one of the user's folders.
     case 'route':
-      return text(d.route, 200) && /^[a-z]+(?:[:/][a-z0-9-]+)?$/.test(d.route) && !/^folder\b/.test(d.route) ? { type: 'route', route: d.route } : null
+      return text(d.route, 200) && ROUTE.test(d.route) && !/^folder\b/.test(d.route) ? { type: 'route', route: d.route } : null
     case 'url':
       return text(d.url, 2000) ? { type: 'url', url: d.url } : null
     case 'copy':
@@ -214,6 +282,12 @@ export function readFromFrame(data: unknown): FromFrame | null {
     }
     case 'key':
       return typeof d.key === 'string' && FRAME_KEYS.has(d.key) ? { type: 'key', key: d.key } : null
+    case 'pin': {
+      const item = readPinned(d.item)
+      return item && typeof d.auto === 'boolean' ? { type: 'pin', item, auto: d.auto } : null
+    }
+    case 'take':
+      return https(d.src) ? { type: 'take', src: d.src } : null
     default:
       return null
   }
@@ -225,7 +299,12 @@ export function readToFrame(data: unknown): ToFrame | null {
   const d = data
   switch (d.type) {
     case 'init':
-      return isRecord(d.host) && Array.isArray(d.tabs) && typeof d.tab === 'string' && typeof d.barred === 'boolean' && isRecord(d.look)
+      return isRecord(d.host) &&
+        Array.isArray(d.tabs) &&
+        typeof d.tab === 'string' &&
+        typeof d.barred === 'boolean' &&
+        isRecord(d.look) &&
+        (d.media === undefined || readMedia(d.media))
         ? (d as unknown as ToFrame)
         : null
     case 'host':
@@ -234,12 +313,21 @@ export function readToFrame(data: unknown): ToFrame | null {
       return typeof d.tab === 'string' && typeof d.picked === 'boolean' ? { type: 'tab', tab: d.tab, picked: d.picked } : null
     case 'look':
       return isRecord(d.look) ? (d as unknown as ToFrame) : null
+    case 'media': {
+      const media = readMedia(d.media)
+      return media ? { type: 'media', media } : null
+    }
+    case 'leave':
+      return { type: 'leave' }
     case 'reply':
       return id(d.id) ? { type: 'reply', id: d.id, ...('error' in d ? { error: String(d.error) } : { ok: d.ok }) } : null
     default:
       return null
   }
 }
+
+/** Whether a pinned video brings the user back to the service's own screen: a community service's pin may lead nowhere else. */
+export const ownRoute = (code: string, route: string) => route === `service:${code}` || route === `service/${code}`
 
 /**
  * Whether a community service's screen may open a page in the system's browser: https, on one

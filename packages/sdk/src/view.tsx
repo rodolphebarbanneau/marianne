@@ -44,8 +44,13 @@ export interface ServiceHost<M extends ServiceMethods = ServiceMethods> {
   /** The user's data for this service (the same store as its main side's), in the encrypted archive. */
   load(key: string): Promise<unknown>
   save(key: string, value: unknown): Promise<void>
-  /** The app's mini-player (absent in tests and old hosts): a video keeps playing in a corner of the window. */
-  media?: { pin(item: PinnedMedia): void }
+  /**
+   * The app's mini-player (absent in tests and old hosts): a video keeps playing in a corner of the
+   * window. `pin` hands it over (`auto`: the page is leaving; the app waits a moment, in case the
+   * same video comes back at once). `take` hands it back: when the mini-player shows `src` (or is
+   * about to), the app closes it and says where it was, ms; null otherwise.
+   */
+  media?: { pin(item: PinnedMedia, opts?: { auto?: boolean }): void; take(src: string): number | null }
 }
 
 const HostContext = createContext<ServiceHost | null>(null)

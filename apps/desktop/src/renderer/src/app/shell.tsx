@@ -4,6 +4,7 @@ import { useApp } from './context'
 import { BottomBar } from './bottombar'
 import { AfterUnlock } from './after-unlock'
 import { AppGuide } from './guide'
+import { MiniArea } from './media'
 import { Palette } from './palette'
 import { Sidebar } from './sidebar'
 import { TitleBar } from './titlebar'
@@ -20,7 +21,7 @@ import { ServiceScreen } from '../host/screen'
 import { SettingsDialog } from '../settings/dialog'
 import { api } from '../lib/api'
 
-/** The open account: title bar, sidebar of folders, the screen, the browser when shown, the bottom bar. */
+/** The open account: title bar, sidebar of folders, the screen (the mini-player over it), the browser when shown, the bottom bar. */
 export function Shell() {
   const app = useApp()
   const actions = useActions()
@@ -71,6 +72,8 @@ export function Shell() {
               <HomePage />
             )}
           </Boundary>
+          {/* The video a screen handed over, in a corner, over any page. */}
+          <MiniArea />
         </main>
         {view.kind === 'folder' && app.browserOpen && <BrowserPanel folderId={view.id} />}
       </div>

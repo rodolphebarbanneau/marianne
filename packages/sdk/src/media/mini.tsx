@@ -13,8 +13,10 @@ export interface MiniPlayerProps {
   onCorner(c: MiniCorner): void
   /** Back to the video's page, from `at` (ms). */
   onExpand(at: number): void
-  /** Closed: where it was, to resume from. */
+  /** Closed: where it was. */
   onClose(at: number): void
+  /** Where it is, ms, as it plays: what the app hands back to a page that takes it. */
+  onTime?(ms: number): void
   /** Room kept free under the bottom corners, px (a folder's reply box). */
   bottom?: number
 }
@@ -29,7 +31,7 @@ const DRAG_PX = 4
  * foot and a caption under it (a click on it goes back to the page). Dragged, it snaps to the
  * nearest of the four corners. Place it in the area it floats over (position: relative).
  */
-export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, bottom }: MiniPlayerProps) {
+export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, onTime, bottom }: MiniPlayerProps) {
   useMediaStyles()
   const root = useRef<HTMLDivElement>(null)
   const video = useRef<HTMLVideoElement>(null)
@@ -51,6 +53,13 @@ export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, bottom 
     }
     if (video.current) video.current.currentTime = media.at / 1000
   }, [media.at])
+
+  const told = useRef(onTime)
+  told.current = onTime
+  // Not the 0 it has before the stream is there: the app keeps `media.at` until it plays.
+  useEffect(() => {
+    if (pb.time > 0 || !pb.paused) told.current?.(pb.time)
+  }, [pb.time, pb.paused])
 
   const live = stream.live
   const total = live ? pb.edge : pb.total
@@ -137,7 +146,7 @@ export function MiniPlayer({ media, corner, onCorner, onExpand, onClose, bottom 
                     video.current?.pause()
                     onClose(at())
                   }}
-                  title="fermer (la position est gardée)"
+                  title="fermer"
                 >
                   <Icon name="close" size={16} />
                 </button>

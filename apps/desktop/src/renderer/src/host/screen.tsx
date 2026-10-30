@@ -6,6 +6,7 @@ import { accelOf, matches, SHORTCUTS } from '@shared/shortcuts'
 import type { ServiceFileReview } from '@shared/catalogue'
 import type { PublicSourceId } from '@shared/types'
 import { useApp } from '../app/context'
+import { useMedia } from '../app/media'
 import { Boundary } from '../components/ui'
 import { api, errorText, isMac } from '../lib/api'
 import { useProfile } from '../lib/profile'
@@ -32,6 +33,7 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
   const community = !!state && !state.builtIn
   const View = community ? undefined : SERVICE_VIEWS[id]
   const { setSeed, goPage, openRoute, toast } = app
+  const { media } = useMedia()
   const paramsKey = JSON.stringify(params)
   // The list of the services comes again whenever a setting changes or a sync reports progress, each
   // time with new objects: the host follows what the manifest says, not the object that carries it.
@@ -59,7 +61,9 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
       copy: (text: string, done = 'copié') => void navigator.clipboard.writeText(text).then(() => toast(done)),
       toast,
       load: (key: string) => api.getServiceData(id, key),
-      save: (key: string, value: unknown) => api.setServiceData(id, key, value)
+      save: (key: string, value: unknown) => api.setServiceData(id, key, value),
+      // The app's mini-player; a community screen's goes through the bridge (community-screen.tsx).
+      media
     }
     // A new host only when what it carries changes: views reload their data with it.
   }, [
@@ -75,7 +79,8 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
     setSeed,
     goPage,
     openRoute,
-    toast
+    toast,
+    media
   ]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // The frame: the tabs the manifest declares (a bar of their own from two), the one shown, the view's tools and counts.
@@ -126,7 +131,7 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
     if (!barred) return
     const onKey = (e: KeyboardEvent) => {
       const n = /^F([2-9])$/.exec(e.key)
-      if (!n || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return
+      if (!n || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return
       if (palette || settingsPage || guideOpen || document.querySelector('#root > .overlay')) return
       if (SHORTCUTS.some((def) => matches(e, accelOf(def.id, isMac, config.shortcuts), isMac))) return
       const target = tabs[Number(n[1]) - 2]

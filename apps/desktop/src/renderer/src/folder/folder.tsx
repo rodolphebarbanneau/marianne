@@ -73,7 +73,7 @@ export function FolderScreen({ id }: { id: string }) {
   // ANNULATION stops Marianne, RÉPÉTITION writes the last answer again; pg↑ / pg↓ scroll the conversation, from the composer too.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (app.palette || app.settingsPage) return
+      if (app.palette || app.settingsPage || e.defaultPrevented) return
       const field = (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')
       if ((e.key === 'PageUp' || e.key === 'PageDown') && !e.ctrlKey && !e.metaKey && !e.altKey && (!field || field.closest('.composer'))) {
         const el = conv.current

@@ -27,7 +27,7 @@ import { linkProblems } from '../community/package'
 import { MAX_STORED_BYTES, sandboxBridge } from '../community/runtime/bridge'
 import { STORAGE_QUOTA } from '../community/runtime/limits'
 import { askConsent } from '../community/runtime/consent'
-import { communityHttp, servicePicture } from '../community/runtime/net'
+import { communityHttp, serviceMedia, servicePicture } from '../community/runtime/net'
 import { electronSandbox } from '../community/runtime/sandbox'
 import { listRuntime, type SchemeSource } from '../community/runtime/scheme'
 import { CommunityScreens } from '../community/runtime/screen'
@@ -129,8 +129,12 @@ class ServiceHost extends EventEmitter {
     runtimeDir: join(__dirname, '../runtime'),
     runtimeFiles: () => this.runtimeFiles
   }
-  /** Where their screens do: the same, and their declared hosts' pictures, fetched here. */
-  readonly screenSource: SchemeSource = { ...this.schemeSource, picture: (m, url) => servicePicture(m, url, userAgent) }
+  /** Where their screens do: the same, and their declared hosts' pictures and videos, fetched here. */
+  readonly screenSource: SchemeSource = {
+    ...this.schemeSource,
+    picture: (m, url) => servicePicture(m, url, userAgent),
+    media: (m, url, range) => serviceMedia(m, url, range, userAgent)
+  }
   private readonly sandboxes = electronSandbox({ preload: join(__dirname, '../preload/community.js'), source: this.schemeSource })
   private community: CommunitySources | null = null
   /** The centre of the communes the user's address was in, for community services (never the address's own place). */
