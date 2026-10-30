@@ -4076,6 +4076,7 @@ button.choice:hover {
   font-size: calc(var(--pixel-size) * 1.35);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  caret-color: transparent;
 }
 .codebar.q input {
   caret-color: var(--accent);

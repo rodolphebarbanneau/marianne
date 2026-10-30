@@ -82,7 +82,7 @@ export function Sommaire({
                   <td className="st" title={state || undefined}>
                     {line.wait && <b>{line.wait}</b>}
                     {line.wait && line.next && ' · '}
-                    {state ? line.next : 'rien en cours'}
+                    {state ? line.next : line.idle ? 'rien en cours' : 'à jour'}
                   </td>
                   {weeks.map((marks, w) => (
                     <td key={w} className={`wk${w === 0 ? ' now' : ''}`}>

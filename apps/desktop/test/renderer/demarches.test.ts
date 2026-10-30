@@ -3,6 +3,7 @@ import type { Procedure } from '@marianne/content'
 import { describe, expect, it } from 'vitest'
 import {
   aboutEntity,
+  dayLabel,
   domainByNumber,
   hourOf,
   presses,
@@ -84,6 +85,12 @@ describe('when something falls', () => {
     expect(whenOf('2026-11-01', NOW)).toEqual({ text: 'dimanche', tone: 'soon' })
     expect(whenOf('2026-11-14', NOW)).toEqual({ text: 'dans 15 j', tone: '' })
     expect(whenOf('2026-12-04', NOW)).toEqual({ text: '4 déc.', tone: '' })
+  })
+
+  it('says the year only of a day far enough to be taken for this year’s', () => {
+    expect(dayLabel('2026-11-01', NOW)).toBe('dimanche 1er nov.')
+    expect(dayLabel('2027-01-15', NOW)).toBe('vendredi 15 janv.')
+    expect(dayLabel('2027-10-30', NOW)).toBe('samedi 30 oct. 2027')
   })
 
   it('says the first of the month, and the hour of what has one', () => {

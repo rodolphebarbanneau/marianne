@@ -641,7 +641,7 @@ function Tasks({ data: { tasks, proposals, newTask, plan } }: { data: Domain }) 
     <>
       <SecHead
         label="tâches planifiées"
-        note={`${tasks.length} · Marianne vérifie, ou vous rappelle`}
+        note={`${tasks.filter((t) => t.on).length} · Marianne vérifie, ou vous rappelle`}
         tools={
           <button className="btn small" onClick={newTask}>
             + nouvelle tâche

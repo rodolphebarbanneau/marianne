@@ -1,7 +1,8 @@
 import type { PlannedTask } from '@shared/types'
 import { useApp } from '../../app/context'
 import { api } from '../../lib/api'
-import { nextTaskDay, shortDate, weekdayOf } from '../../lib/demarches'
+import { nextTaskDay } from '../../lib/demarches'
+import { nextShort } from '../tasks/model'
 import { OriginTag, RunnerTag, RunsCells } from '../tasks/task-card'
 import { DomainBadge } from './todo-row'
 
@@ -72,7 +73,7 @@ export function TasksTab({ tasks, onNew }: { tasks: PlannedTask[]; onNew: () => 
                   <td>
                     <RunsCells task={t} />
                   </td>
-                  <td className="dim">{t.on ? `${weekdayOf(t.next).slice(0, 3)}. ${shortDate(t.next)}` : '—'}</td>
+                  <td className="dim">{t.on ? nextShort(t.next) : '—'}</td>
                   <td>
                     <button
                       className={`switch${t.on ? ' on' : ''}`}

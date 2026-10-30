@@ -1,6 +1,6 @@
 import { today } from '@marianne/profile'
 import type { ChatMessage } from '@shared/types'
-import { shortDate, weekdayOf } from '../lib/demarches'
+import { dayLabel, shortDate, weekdayOf } from '../lib/demarches'
 
 /**
  * What a conversation shows of a planned task's runs. A task that finds nothing comes back again
@@ -57,4 +57,4 @@ export function runLabel(run: QuietRun): string {
 }
 
 /** A task's next day: "dimanche 1er nov."; on the day or past it, it runs as soon as it can. */
-export const nextLabel = (next: string, now = new Date()) => (next <= today(now) ? 'aujourd’hui' : `${weekdayOf(next)} ${shortDate(next)}`)
+export const nextLabel = (next: string, now = new Date()) => (next <= today(now) ? 'aujourd’hui' : dayLabel(next, now))
