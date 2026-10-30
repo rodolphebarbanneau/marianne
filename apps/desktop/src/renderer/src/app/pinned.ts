@@ -63,6 +63,15 @@ export class PinnedDesk {
     return at
   }
 
+  /**
+   * A page's `src` started playing: another video shown, or about to be, stops, one video at a
+   * time (as a page's video replaces the corner's on YouTube). The same one is the page's `take`.
+   */
+  playing(src: string): void {
+    if (this.waiting?.item.src !== src) this.cancel()
+    if (this.shown?.src !== src) this.hide()
+  }
+
   /** The mini-player's time, as it plays. */
   time(ms: number): void {
     if (this.shown && Number.isFinite(ms)) this.at = ms
@@ -70,6 +79,10 @@ export class PinnedDesk {
 
   close(): void {
     this.cancel()
+    this.hide()
+  }
+
+  private hide(): void {
     if (!this.shown) return
     this.shown = null
     this.changed(null)

@@ -40,7 +40,8 @@ const hostOf = (url: string) => {
 /**
  * The app's mini-player: a video a screen hands over (`host.media.pin`) goes on in a corner of the
  * window, over any page, until the user closes it, goes back to its page, a page takes it back
- * (`host.media.take`), or its service goes. Community screens reach it through the bridge.
+ * (`host.media.take`), another video starts playing on a page (`host.media.playing`), or its
+ * service goes. Community screens reach it through the bridge.
  */
 export function MediaProvider({ children }: { children: ReactNode }) {
   const [item, setItem] = useState<PinnedMedia | null>(null)
@@ -73,6 +74,9 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     () =>
       api.onCommunityScreen(({ code, message }) => {
         if (message.type === 'take') return void desk.take(message.src, (it) => ownRoute(code, it.route))
+        // Its video plays: the mini-player closes, whatever it shows (its own, the same, it took
+        // back just before), and the screen hears nothing of what that was.
+        if (message.type === 'playing') return desk.close()
         if (message.type !== 'pin' || !ownRoute(code, message.item.route) || !latest.current(hostOf(message.item.src))) return
         const { poster, ...rest } = message.item
         desk.pin({ ...rest, ...(poster && latest.current(hostOf(poster)) ? { poster } : {}) }, { auto: message.auto })
@@ -80,7 +84,10 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     [desk]
   )
 
-  const media = useMemo<HostMedia>(() => ({ pin: (it, opts) => desk.pin(it, opts), take: (src) => desk.take(src) }), [desk])
+  const media = useMemo<HostMedia>(
+    () => ({ pin: (it, opts) => desk.pin(it, opts), take: (src) => desk.take(src), playing: (src) => desk.playing(src) }),
+    [desk]
+  )
   const value = useMemo<MediaValue>(() => ({ item, corner, media, desk, playable }), [item, corner, media, desk, playable])
   return <MediaContext.Provider value={value}>{children}</MediaContext.Provider>
 }

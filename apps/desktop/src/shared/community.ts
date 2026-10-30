@@ -203,6 +203,8 @@ export type FromFrame =
   | { type: 'pin'; item: FramePinned; auto: boolean }
   /** host.media.take: the frame took back the video the mini-player showed. */
   | { type: 'take'; src: string }
+  /** host.media.playing: a video of the frame started playing; the mini-player closes. Which video stays in the frame. */
+  | { type: 'playing' }
 
 /** The keys a frame hands to the window: the guide, the tabs, the way back, the search field. */
 export const FRAME_KEYS: ReadonlySet<string> = new Set(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'Escape', '/'])
@@ -263,6 +265,7 @@ export function readFromFrame(data: unknown): FromFrame | null {
   switch (d.type) {
     case 'hello':
     case 'activity':
+    case 'playing':
       return { type: d.type }
     case 'call':
       return id(d.id) && typeof d.method === 'string' && IDENT.test(d.method) && Array.isArray(d.args) && d.args.length <= 16

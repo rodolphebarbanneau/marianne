@@ -52,9 +52,11 @@ export interface ServiceHost<M extends ServiceMethods = ServiceMethods> {
    * The app's mini-player (absent in tests and old hosts): a video keeps playing in a corner of the
    * window. `pin` hands it over (`auto`: the page is leaving; the app waits a moment, in case the
    * same video comes back at once). `take` hands it back: when the mini-player shows `src` (or is
-   * about to), the app closes it and says where it was, ms; null otherwise.
+   * about to), the app closes it and says where it was, ms; null otherwise. `playing`: the page's
+   * `src` started playing; the mini-player, showing another video or about to, closes (one video
+   * at a time). A `Player` calls `take` then `playing` as it plays.
    */
-  media?: { pin(item: PinnedMedia, opts?: { auto?: boolean }): void; take(src: string): number | null }
+  media?: { pin(item: PinnedMedia, opts?: { auto?: boolean }): void; take(src: string): number | null; playing(src: string): void }
 }
 
 const HostContext = createContext<ServiceHost | null>(null)
