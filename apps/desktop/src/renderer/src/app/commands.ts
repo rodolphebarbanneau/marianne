@@ -11,7 +11,6 @@ export function useActions(): Actions {
   return useMemo<Actions>(
     () => ({
       marianne: () => app.goPage('home'),
-      news: () => app.goPage('news'),
       procedures: () => app.goPage('procedures'),
       services: () => app.goPage('services'),
       next: () => app.step('next'),
@@ -58,7 +57,8 @@ export function useShortcuts(actions: Actions, recording: boolean): void {
       // keeps its keys, and so do a dashboard's and a service's forms, which would lose what was typed.
       const turning = onPage && (!field || (app.view.kind === 'page' && (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement)))
       // RETOUR: from a domain's dashboard or a service's screen, échap goes back to its page.
-      if (onPage && !typing && e.key === 'Escape' && (app.view.kind === 'domain' || app.view.kind === 'service')) {
+      // A screen that took échap for itself (closing a pane it opened) keeps it.
+      if (onPage && !typing && e.key === 'Escape' && !e.defaultPrevented && (app.view.kind === 'domain' || app.view.kind === 'service')) {
         e.preventDefault()
         app.step('prev')
         return

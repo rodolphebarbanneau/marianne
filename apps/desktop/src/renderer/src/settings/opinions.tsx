@@ -8,20 +8,15 @@ import { useServices } from '../host'
 import { api, errorText } from '../lib/api'
 import { useParliamentGroups } from '../lib/content'
 import { useProfile } from '../lib/profile'
+import { ASK_LABELS, OPINION_FIELDS, readSummary } from './readers'
+import { SourcesSection } from './sources'
 
 /**
  * What the user may say of their opinions, and who may read it: an optional leaning (real groups
- * of both chambers, never inferred), themes, and for each service that asks, accepter or refuser
- * (the gear to choose between the two). Engines never receive either; Actualités only sorts by
- * the themes, on this computer.
+ * of both chambers, never inferred), themes, the news sources they read, and for each service that
+ * asks, accepter or refuser (the gear to choose among what it asked for). Engines never receive
+ * any of them.
  */
-
-const OPINION_FIELDS: ProfileField[] = ['opinions.leaning', 'opinions.themes']
-
-const ASK_LABELS: Partial<Record<ProfileField, string>> = {
-  'opinions.leaning': 'votre sensibilité politique',
-  'opinions.themes': 'vos thèmes'
-}
 
 /** A group: its colour as a block, its acronym. */
 function GroupMark({ group }: { group: ParliamentGroup }) {
@@ -41,9 +36,9 @@ export function OpinionsSection() {
   const [senateOpen, setSenateOpen] = useState(false)
   if (!profile) return null
   const { leaning, themes } = profile.opinions
-  const save = (opinions: Opinions) =>
+  const save = (change: Partial<Opinions>) =>
     void api
-      .updateProfile({ type: 'opinions', opinions })
+      .updateProfile({ type: 'opinions', opinions: { ...profile.opinions, ...change } })
       .then(() => setError(''))
       .catch((err) => setError(errorText(err)))
   const an = groups.filter((g) => g.chamber === 'an')
@@ -59,14 +54,11 @@ export function OpinionsSection() {
     let senate = leaning.senate
     if (proposed && !on && !senate.includes(proposed)) senate = [...senate, proposed]
     if (proposed && on && !assembly.some((a) => counterpart(a) === proposed)) senate = senate.filter((s) => s !== proposed)
-    save({ leaning: { assembly, senate }, themes })
+    save({ leaning: { assembly, senate } })
   }
   const toggleSenate = (acronym: string) =>
-    save({
-      leaning: { ...leaning, senate: leaning.senate.includes(acronym) ? leaning.senate.filter((s) => s !== acronym) : [...leaning.senate, acronym] },
-      themes
-    })
-  const toggleTheme = (id: string) => save({ leaning, themes: themes.includes(id) ? themes.filter((t) => t !== id) : [...themes, id] })
+    save({ leaning: { ...leaning, senate: leaning.senate.includes(acronym) ? leaning.senate.filter((s) => s !== acronym) : [...leaning.senate, acronym] } })
+  const toggleTheme = (id: string) => save({ themes: themes.includes(id) ? themes.filter((t) => t !== id) : [...themes, id] })
 
   return (
     <>
@@ -84,7 +76,7 @@ export function OpinionsSection() {
             onChange={() => {
               setChoosing(false)
               setSenateOpen(false)
-              if (declared) save({ leaning: { assembly: [], senate: [] }, themes })
+              if (declared) save({ leaning: { assembly: [], senate: [] } })
             }}
           />{' '}
           je préfère ne pas le dire <span className="small dim">(par défaut)</span>
@@ -141,6 +133,7 @@ export function OpinionsSection() {
         </div>
         <span className="small dim">sans rien dire d’une opinion : font remonter les scrutins, vidéos et actualités de ces thèmes</span>
       </div>
+      <SourcesSection stored={profile.opinions.sources} address={profile.address} onChange={(sources) => save({ sources })} />
       <Readers declared={declared} />
       {error && <p className="bad small">{error}</p>}
     </>
@@ -160,16 +153,6 @@ function readText(day: string | undefined): string {
   return `lu le ${new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`))}`
 }
 
-/** What a service reads of the opinions, in a few words. */
-function summary(asked: ProfileField[], granted: ProfileField[] | null): { text: string; on: boolean } {
-  if (granted === null) return { text: 'pas encore demandé', on: false }
-  const items = asked.filter((f) => granted.includes(f))
-  if (!items.length) return { text: 'refusé', on: false }
-  if (items.length === 2) return { text: 'sensibilité et thèmes', on: true }
-  const word = items[0] === 'opinions.leaning' ? 'sensibilité' : 'thèmes'
-  return { text: asked.length === 2 ? `${word} seulement` : word, on: true }
-}
-
 /** "qui peut les lire": the services that ask for the opinions, accepted or refused, one by one. */
 function Readers({ declared }: { declared: boolean }) {
   const services = useServices()
@@ -187,11 +170,7 @@ function Readers({ declared }: { declared: boolean }) {
   return (
     <>
       <span className="label sub">qui peut les lire</span>
-      <div className="note">
-        Actualités se sert toujours de vos thèmes : le tri se fait sur cet ordinateur, rien n’en sort.
-        <br />
-        Les moteurs ne reçoivent jamais votre sensibilité ni vos thèmes.
-      </div>
+      <div className="note">Les moteurs ne reçoivent jamais votre sensibilité, vos thèmes ni vos sources.</div>
       <div className="perm-bar">
         {asking.length > 6 && (
           <label className="search-field framed">
@@ -212,7 +191,7 @@ function Readers({ declared }: { declared: boolean }) {
         {shown.map((s) => {
           const asked = s.access.asked.filter((f) => OPINION_FIELDS.includes(f))
           const granted = s.access.granted
-          const sum = summary(asked, granted)
+          const sum = readSummary(asked, granted)
           const tunable = asked.length > 1
           // Never opened, and asking for other fields too: those are its own consent's, at its first opening.
           const pending = granted === null && s.access.asked.some((f) => !OPINION_FIELDS.includes(f))
@@ -293,13 +272,15 @@ function Readers({ declared }: { declared: boolean }) {
           )
         })}
         {!shown.length && (
-          <p className="small dim perm-empty">{asking.length ? 'Aucun service ne correspond.' : 'Aucun service ne demande votre sensibilité ni vos thèmes.'}</p>
+          <p className="small dim perm-empty">
+            {asking.length ? 'Aucun service ne correspond.' : 'Aucun service ne demande votre sensibilité, vos thèmes ni vos sources.'}
+          </p>
         )}
       </div>
       {others.length > 0 && (
         <p className="small dim">
-          + {others.length} autre{others.length > 1 ? 's' : ''} service{others.length > 1 ? 's' : ''} ne demande{others.length > 1 ? 'nt' : ''} ni sensibilité
-          ni thèmes (
+          + {others.length} autre{others.length > 1 ? 's' : ''} service{others.length > 1 ? 's' : ''} ne demande{others.length > 1 ? 'nt' : ''} ni sensibilité,
+          ni thèmes, ni sources (
           {others
             .slice(0, 4)
             .map((s) => s.manifest.name)

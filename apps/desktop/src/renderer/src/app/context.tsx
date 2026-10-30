@@ -1,19 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { DOMAIN_IDS } from '@marianne/sdk'
 import type { AccountSettings, Attachment, DeepPartial, DeviceConfig, DomainId, EngineLight, FolderSummary, SessionState } from '@shared/types'
+import type { ServiceBar } from '../host/frame'
 import { api, useLive } from '../lib/api'
+import { PAGES, routeTarget, type PageId, type View } from './routes'
 
-/** The pages, top to bottom: SUITE goes down one, RETOUR up one. */
-export const PAGES = ['home', 'news', 'procedures', 'services'] as const
-export type PageId = (typeof PAGES)[number]
-export const PAGE_LABELS: Record<PageId, string> = { home: 'Marianne', news: 'Actualités', procedures: 'Démarches', services: 'Services' }
-
-/** A domain's dashboard belongs to Démarches; a service, opened by its code ("meteo") with what to show first, to Services. */
-export type View =
-  | { kind: 'page'; page: PageId }
-  | { kind: 'domain'; id: DomainId }
-  | { kind: 'folder'; id: string }
-  | { kind: 'service'; id: string; params?: Record<string, string | number> }
+export { PAGES, PAGE_LABELS, type PageId, type View } from './routes'
 
 export type PaletteMode = 'commands' | 'menu' | 'search'
 
@@ -71,6 +62,9 @@ interface AppValue {
   /** The keys a screen shows in the bottom bar instead of its page's (null: the page's). */
   screenKeys: ScreenKey[] | null
   setScreenKeys: (keys: ScreenKey[] | null) => void
+  /** What the service on screen adds to the bottom bar (null: no service on screen). */
+  serviceBar: ServiceBar | null
+  setServiceBar: (bar: ServiceBar | null) => void
 }
 
 const AppContext = createContext<AppValue | null>(null)
@@ -114,6 +108,7 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
   const [seed, setSeed] = useState<ComposerSeed | null>(null)
   const [toastText, setToastText] = useState('')
   const [screenKeys, setScreenKeys] = useState<ScreenKey[] | null>(null)
+  const [serviceBar, setServiceBar] = useState<ServiceBar | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const setConfig = useCallback(async (patch: DeepPartial<DeviceConfig>) => {
@@ -159,16 +154,13 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
     api.reloadWindow()
   }, [account, view, settingsPage, browserOpen])
 
-  // A route names a screen: "folder:<id>", "settings:<page>", "service:<code>", "news"… The
-  // main process sends them (a notification, the tray), and Marianne links to them (marianne:news).
+  // A route (routes.ts): a screen, or a page of the settings scrolled to one of its sections.
   const openRoute = useCallback(
     (route: string, params?: Record<string, string | number>) => {
-      const [kind, arg] = route.split(/[:/]/)
-      if (kind === 'folder' && arg) go({ kind: 'folder', id: arg })
-      else if (kind === 'settings') setSettingsPage(arg || 'identity')
-      else if (kind === 'service' && arg) go({ kind: 'service', id: arg, ...(params ? { params } : {}) })
-      else if (kind === 'domain' && (DOMAIN_IDS as readonly string[]).includes(arg)) go({ kind: 'domain', id: arg as DomainId })
-      else if ((PAGES as readonly string[]).includes(kind)) go({ kind: 'page', page: kind as PageId })
+      const target = routeTarget(route, params)
+      if (target?.kind === 'view') go(target.view)
+      // The settings dialog brings the section into view itself (« identity#sources »).
+      else if (target?.kind === 'settings') setSettingsPage(target.section ? `${target.page}#${target.section}` : target.page)
     },
     [go]
   )
@@ -208,7 +200,9 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
       toast,
       toastText,
       screenKeys,
-      setScreenKeys
+      setScreenKeys,
+      serviceBar,
+      setServiceBar
     }),
     [
       config,
@@ -232,7 +226,8 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
       seed,
       toast,
       toastText,
-      screenKeys
+      screenKeys,
+      serviceBar
     ]
   )
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

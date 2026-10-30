@@ -229,6 +229,13 @@ describe('a .3615 file', () => {
     ])
   })
 
+  it('may not ask for the headlines Marianne reads (ctx.news is for her own services)', () => {
+    expect(problems(service({ 'package.json': manifest({ news: true }) }))).toEqual([
+      '3615 PHARMAGARDE demande les titres de presse que lit Marianne (« news » dans son manifeste) : seuls ses services officiels les reçoivent.'
+    ])
+    expect(problems(service({ 'package.json': manifest({ search: { placeholder: 'chercher une pharmacie' } }) }))).toEqual([])
+  })
+
   it('is refused when it is damaged, lies about a size, or is protected', () => {
     expect(problems(strToU8('not a zip at all, not even close to one'))).toEqual(['Ce fichier n’est pas une archive .3615 lisible.'])
     expect(problems(patch(service({ 'README.md': 'hello world' }, 0), 'hello world', 'jello world'))).toEqual(['« README.md » est endommagé.'])

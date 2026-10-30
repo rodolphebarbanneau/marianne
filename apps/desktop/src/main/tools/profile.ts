@@ -28,7 +28,6 @@ const SETTINGS_PAGES: Record<string, string> = {
   privacy: 'la confidentialité',
   data: 'les données publiques',
   services: 'les services',
-  sources: 'vos sources d’actualités',
   display: 'l’affichage',
   shortcuts: 'les raccourcis clavier',
   skills: 'les compétences',
@@ -39,6 +38,8 @@ const SETTINGS_PAGES: Record<string, string> = {
 export function setupCard(target: string): { page: string; label: string } | null {
   // The source must be on (public data), then its PISTE key stored (sites and API).
   if (target === 'legifrance') return { page: isEnabled('legifrance') ? 'sites' : 'data', label: 'votre accès Légifrance' }
+  // The news sources are a section of Réglages › Identité.
+  if (target === 'sources') return { page: 'identity#sources', label: 'vos sources d’information' }
   const label = setupLabel(target, content.get().sites)
   const page = setupPage(target)
   if (label && page) return { page, label }

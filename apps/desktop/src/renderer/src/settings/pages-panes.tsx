@@ -1,10 +1,8 @@
 import { useState } from 'react'
 import { PROFILE_FIELDS, serviceCode, sortServices, type ServiceState } from '@marianne/sdk'
-import { NEWS_GROUP_LABELS, type NewsGroup } from '@shared/news'
 import { useApp } from '../app/context'
 import { Spinner } from '../components/ui'
 import { api, errorText } from '../lib/api'
-import { useNewsSources } from '../lib/content'
 import { when } from '../lib/format'
 import { useServices } from '../host'
 
@@ -147,98 +145,6 @@ function Access({ state }: { state: ServiceState }) {
           </button>
         </>
       )}
-    </>
-  )
-}
-
-/** The sources of Actualités: which ones, how many headlines each, the user's own feeds. */
-export function NewsSourcesPane() {
-  const { settings, setSettings } = useApp()
-  const catalog = useNewsSources()
-  const [name, setName] = useState('')
-  const [url, setUrl] = useState('')
-  if (!settings) return null
-  const news = settings.news
-  const toggle = (id: string, on: boolean) =>
-    void setSettings({ news: { sources: on ? [...new Set([...news.sources, id])] : news.sources.filter((x) => x !== id) } })
-  const groups = Object.keys(NEWS_GROUP_LABELS) as NewsGroup[]
-  const addFeed = () => {
-    const id = `custom-${Date.now().toString(36)}`
-    void setSettings({ news: { custom: [...news.custom, { id, name: name.trim(), url: url.trim() }], sources: [...news.sources, id] } })
-    setName('')
-    setUrl('')
-  }
-  const validFeed = name.trim() && /^https:\/\/\S+$/.test(url.trim())
-
-  return (
-    <>
-      <div className="note">
-        Choisissez vos sources. Marianne affiche le titre, l’heure et le lien de chaque article, jamais l’article entier. Pour en savoir plus, demandez-lui.
-      </div>
-      {groups.map((g) => (
-        <div key={g}>
-          <span className="label sub">{NEWS_GROUP_LABELS[g]}</span>
-          <div className="chips left">
-            {catalog
-              .filter((s) => s.group === g)
-              .map((s) => {
-                const on = news.sources.includes(s.id)
-                return (
-                  <button key={s.id} className={`chip${on ? ' on' : ''}`} onClick={() => toggle(s.id, !on)} title={s.homepage}>
-                    {on ? '✓ ' : ''}
-                    {s.name}
-                  </button>
-                )
-              })}
-          </div>
-        </div>
-      ))}
-      <span className="label sub">Vos flux</span>
-      <div className="rows">
-        {news.custom.map((c) => (
-          <div key={c.id} className="row">
-            <label>
-              <input type="checkbox" checked={news.sources.includes(c.id)} onChange={(e) => toggle(c.id, e.target.checked)} /> {c.name}
-            </label>
-            <span className="path">{c.url}</span>
-            <button
-              className="btn small danger"
-              onClick={() => void setSettings({ news: { custom: news.custom.filter((x) => x.id !== c.id), sources: news.sources.filter((x) => x !== c.id) } })}
-            >
-              retirer
-            </button>
-          </div>
-        ))}
-        <div className="row">
-          <input value={name} placeholder="nom du flux" onChange={(e) => setName(e.target.value)} />
-          <input value={url} placeholder="adresse du flux RSS ou Atom (https://…)" onChange={(e) => setUrl(e.target.value)} />
-          <button className="btn small" disabled={!validFeed} onClick={addFeed}>
-            ajouter
-          </button>
-        </div>
-      </div>
-      <span className="label sub">Affichage</span>
-      <div className="rows">
-        <div className="row">
-          <span>titres par source</span>
-          <select value={news.perSource} onChange={(e) => void setSettings({ news: { perSource: Number(e.target.value) } })}>
-            {[3, 5, 8, 12].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-          <span />
-        </div>
-        <div className="row">
-          <span>même sujet</span>
-          <label>
-            <input type="checkbox" checked={news.group} onChange={(e) => void setSettings({ news: { group: e.target.checked } })} /> regrouper les articles qui
-            parlent de la même chose, avec « aussi chez … »
-          </label>
-          <span />
-        </div>
-      </div>
     </>
   )
 }

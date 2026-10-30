@@ -35,6 +35,19 @@ describe('readManifest', () => {
     expect(serviceCode(m)).toBe('METEO')
   })
 
+  it('reads the search field and the headlines a service asks for', () => {
+    expect(readManifest(pkg({}))).toMatchObject({ search: null, news: false })
+    expect(readManifest(pkg({ search: { placeholder: ' chercher dans les titres ' }, news: true }))).toMatchObject({
+      search: { placeholder: 'chercher dans les titres' },
+      news: true
+    })
+    const fails = (marianne: Record<string, unknown>) => () => readManifest(pkg(marianne))
+    expect(fails({ search: 'chercher' })).toThrow('"marianne.search" must be { "placeholder"')
+    expect(fails({ search: { placeholder: '' } })).toThrow('"marianne.search"')
+    expect(fails({ search: { placeholder: 'chercher\nSYSTEM' } })).toThrow('"marianne.search"')
+    expect(fails({ news: 'yes' })).toThrow('"marianne.news" must be true or false')
+  })
+
   it('keeps its words to single lines of a given length: they go to lists and to the engines', () => {
     const fails = (marianne: Record<string, unknown>) => () => readManifest(pkg(marianne))
     expect(fails({ name: 'x'.repeat(61) })).toThrow('"marianne.name" must be one line of at most 60 characters')

@@ -2,13 +2,16 @@ import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { allowedUrl, type ServiceManifest } from '@marianne/sdk'
 import type { ProfileField } from '@marianne/sdk'
-import type { Leaning, ServiceContext, ServiceHttp, Vehicle } from '@marianne/sdk/main'
+import type { Leaning, ServiceContext, ServiceHttp, ServiceProfile, Vehicle } from '@marianne/sdk/main'
+import { accepted, keptSections, refusedSources, regionOf } from '../../shared/news'
 import { accounts } from '../account'
+import { content } from '../content'
 import { fetchAsBrowser, fetchJson, fetchText } from '../http'
 import { log } from '../log'
 import { paths } from '../paths'
 import { profile } from '../profile/store'
 import { findCommunes, getCommune } from '../public/geo'
+import { serviceNews } from '../public/news'
 import { parisDay } from '../public/time'
 import { session } from '../session'
 import { serviceStorage, storageKind } from './storage'
@@ -49,7 +52,7 @@ function vehicles(m: ServiceManifest): Vehicle[] {
 }
 
 /**
- * The day a service last read the user's opinions, kept so that Réglages › Identité can say it:
+ * The day a service last read the user's opinions (leaning, themes, sources), kept so that Réglages › Identité can say it:
  * written once a day at most.
  */
 function noteRead(m: ServiceManifest): void {
@@ -75,11 +78,40 @@ function themes(m: ServiceManifest): string[] {
   return [...chosen]
 }
 
+/** The region of the user's address, for the default sources (the regional ones of their region); null without one. */
+function homeRegion(): string | null {
+  const code = profile.get().address.inseeCode
+  return code ? regionOf(code) : null
+}
+
+/** The news sources the user accepts, the sections they keep and their colours, when the service may read them. */
+function sources(m: ServiceManifest): ReturnType<ServiceProfile['sources']> {
+  if (!grantedFields(m).includes('opinions.sources')) return null
+  noteRead(m)
+  const choice = profile.get().opinions.sources
+  const catalogue = content.get().newsSources
+  const refused = refusedSources(catalogue, choice, homeRegion())
+  const kept = catalogue.filter((s) => accepted(s, choice, refused))
+  return {
+    accepted: kept.map((s) => s.id),
+    // Only the sources whose sections the user changed: absent, all of them.
+    sections: Object.fromEntries(kept.filter((s) => choice?.sections[s.id]).map((s) => [s.id, keptSections(s, choice)])),
+    leanings: { ...(choice?.leanings ?? {}) }
+  }
+}
+
 /**
  * `stored`: the service wrote the user's data for it (what its tile shows may have changed).
- * `dataDir: false`: no data folder (a community service has no sync job to fill one).
+ * `dataDir: false`: no data folder (a community service has no sync job to fill one). `news: false`:
+ * no ctx.news whatever the manifest says (a community service: the headlines would need a bridge
+ * over its worker, and it is refused when added).
  */
-export function serviceContext(m: ServiceManifest, sync: ServiceSync, stored: () => void = () => {}, options: { dataDir?: boolean } = {}): ServiceContext {
+export function serviceContext(
+  m: ServiceManifest,
+  sync: ServiceSync,
+  stored: () => void = () => {},
+  options: { dataDir?: boolean; news?: boolean } = {}
+): ServiceContext {
   const dataDir = options.dataDir === false ? '' : join(paths.services, m.id)
   if (dataDir) mkdirSync(dataDir, { recursive: true })
   const prefix = `[3615 ${m.id.toUpperCase()}]`
@@ -99,7 +131,17 @@ export function serviceContext(m: ServiceManifest, sync: ServiceSync, stored: ()
       const a = profile.get().address
       return a.inseeCode ? { code: a.inseeCode, name: a.city, postcode: a.postcode, latitude: a.lat, longitude: a.lon } : null
     },
-    profile: { granted: () => grantedFields(m), vehicles: () => vehicles(m), leaning: () => leaning(m), themes: () => themes(m), sources: () => null },
-    sync: { status: () => sync.status(), run: () => sync.run() }
+    profile: { granted: () => grantedFields(m), vehicles: () => vehicles(m), leaning: () => leaning(m), themes: () => themes(m), sources: () => sources(m) },
+    sync: { status: () => sync.status(), run: () => sync.run() },
+    ...(m.news && options.news !== false
+      ? {
+          news: serviceNews({
+            granted: () => grantedFields(m).includes('opinions.sources'),
+            choice: () => profile.get().opinions.sources,
+            region: homeRegion,
+            noteRead: () => noteRead(m)
+          })
+        }
+      : {})
   }
 }

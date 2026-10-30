@@ -2,7 +2,19 @@ import { readContent, type CalendarItem } from '@marianne/content'
 import { files } from '@marianne/content/files'
 import { describe, expect, it } from 'vitest'
 import { contextView } from '../src/context'
-import { ageOf, EMPTY_PROFILE, formatNir, missingFor, monthDay, nirValid, setupLabel, sirenValid, siteReady, type Profile } from '../src/profile'
+import {
+  ageOf,
+  EMPTY_PROFILE,
+  formatNir,
+  missingFor,
+  monthDay,
+  nirValid,
+  readNewsChoice,
+  setupLabel,
+  sirenValid,
+  siteReady,
+  type Profile
+} from '../src/profile'
 import { computeDeadlines, serviceDeadlines } from '../src/rules'
 import { redact, resolve, resolveDeep, tokensOf, unknownTokens } from '../src/tokens'
 
@@ -195,12 +207,37 @@ describe('context view', () => {
     expect(view).toContain('cible « account:caf »')
   })
 
-  it('never says what the user leans to, nor their themes', () => {
+  it('never says what the user leans to, nor their themes, nor the news sources they read', () => {
     const view = (p: Profile) => contextView(p, { sites: SITES, tokens: tokensOf(p, SITES), deadlines: [], hasLogin: () => true, now: new Date(2026, 9, 28) })
     const p = sample()
     const told = structuredClone(p)
-    told.opinions = { leaning: { assembly: ['EcoS'], senate: ['GEST'] }, themes: ['housing'] }
+    told.opinions = {
+      leaning: { assembly: ['EcoS'], senate: ['GEST'] },
+      themes: ['housing'],
+      sources: { refused: ['cnews', 'le-figaro'], sections: { 'le-monde': ['politique'] }, leanings: { 'le-monde': 'gauche' } }
+    }
     expect(view(told)).toBe(view(p))
+    expect(view(told)).not.toMatch(/cnews|figaro|le-monde|gauche/i)
+  })
+})
+
+describe('news sources', () => {
+  it('keeps a choice as it was made, its shapes checked', () => {
+    expect(readNewsChoice(null)).toBeNull()
+    expect(readNewsChoice('le-monde')).toBeNull()
+    expect(readNewsChoice({})).toEqual({ refused: [], sections: {}, leanings: {} })
+    expect(
+      readNewsChoice({
+        // An id the catalogue doesn't have (any more) is kept: the list may have it again.
+        refused: ['cnews', 'une-source-partie', 'cnews', 42, 'Pas Un Id'],
+        sections: { 'le-monde': ['une', 'politique', 7], 'la-croix': 'une', '../x': ['une'] },
+        leanings: { 'le-monde': 'gauche', 'le-figaro': 'extrême', rfi: 'aucune' }
+      })
+    ).toEqual({
+      refused: ['cnews', 'une-source-partie'],
+      sections: { 'le-monde': ['une', 'politique'] },
+      leanings: { 'le-monde': 'gauche', rfi: 'aucune' }
+    })
   })
 })
 

@@ -159,12 +159,21 @@ export interface FrameMedia {
   pinned: { src: string; at: number } | null
 }
 
+/** A key the screen adds to the window's bottom bar (ServiceKey in @marianne/sdk/view). */
+export interface FrameKey {
+  key: string
+  what: string
+  shortcut: string
+}
+
 /** From the window to the frame. */
 export type ToFrame =
-  | { type: 'init'; host: FrameHost; tabs: ServiceTab[]; tab: string; barred: boolean; look: FrameLook; media?: FrameMedia }
+  | { type: 'init'; host: FrameHost; tabs: ServiceTab[]; tab: string; barred: boolean; look: FrameLook; media?: FrameMedia; query?: string }
   | { type: 'host'; host: FrameHost }
   /** The tab shown; `picked`: the user picked it (a click, its key), the one shown included. */
   | { type: 'tab'; tab: string; picked: boolean }
+  /** What the window's search field holds for the screen (useSearch): trimmed, after a pause. */
+  | { type: 'query'; query: string }
   | { type: 'look'; look: FrameLook }
   | { type: 'media'; media: FrameMedia }
   /** The screen is going: its page unmounts its view (a video playing then pins itself), and is closed a moment later. */
@@ -178,12 +187,16 @@ export type FromFrame =
   | { type: 'load'; id: number; key: string }
   | { type: 'save'; id: number; key: string; value: unknown }
   | { type: 'ask'; text: string; page?: FramePage }
-  | { type: 'route'; route: string }
+  | { type: 'route'; route: string; params?: Record<string, string | number> }
   | { type: 'url'; url: string }
   | { type: 'copy'; text: string; done?: string }
   | { type: 'toast'; text: string }
   | { type: 'open'; tab: string }
   | { type: 'badges'; badges: Record<string, string> }
+  /** Fill the window's search field (useSearch's set and clear); '' empties it. */
+  | { type: 'query'; text: string }
+  /** The screen's own keys, for the window's bottom bar (useKeys). */
+  | { type: 'keys'; keys: FrameKey[] }
   | { type: 'key'; key: string }
   | { type: 'activity' }
   /** host.media.pin: a video for the app's mini-player (`auto`: its page is leaving). */
@@ -191,8 +204,11 @@ export type FromFrame =
   /** host.media.take: the frame took back the video the mini-player showed. */
   | { type: 'take'; src: string }
 
-/** The keys a frame hands to the window: the guide, the tabs, the way back. */
-export const FRAME_KEYS: ReadonlySet<string> = new Set(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'Escape'])
+/** The keys a frame hands to the window: the guide, the tabs, the way back, the search field. */
+export const FRAME_KEYS: ReadonlySet<string> = new Set(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'Escape', '/'])
+
+/** A Minitel key's name in the bottom bar (ENVOI, SUITE, RÉPÉTITION…): capitals only, so a screen can't write a sentence there. */
+const KEY_NAME = /^[A-ZÉÈ]{2,12}$/
 
 const IDENT = /^[A-Za-z_$][\w$]{0,63}$/
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -263,9 +279,17 @@ export function readFromFrame(data: unknown): FromFrame | null {
       if (!isRecord(p) || !text(p.url, 2000) || !/^https:\/\//.test(p.url) || !text(p.title, 300) || !text(p.text, 100_000)) return null
       return { type: 'ask', text: d.text, page: { url: p.url, title: p.title, text: p.text } }
     }
-    // Another screen of the app (settings/identity, service/carte, news), never one of the user's folders.
-    case 'route':
-      return text(d.route, 200) && ROUTE.test(d.route) && !/^folder\b/.test(d.route) ? { type: 'route', route: d.route } : null
+    // Another screen of the app (settings/identity#sources, service/carte), never one of the user's folders;
+    // with what it opens with (a few short params: { search: 'budget 2027' }).
+    case 'route': {
+      if (!text(d.route, 200) || !/^[a-z]+(?:[:/][a-z0-9-]+)?(?:#[a-z0-9-]+)?$/.test(d.route) || /^folder\b/.test(d.route)) return null
+      if (d.params === undefined) return { type: 'route', route: d.route }
+      if (!isRecord(d.params)) return null
+      const entries = Object.entries(d.params)
+      const param = (v: unknown) => text(v, 200) || (typeof v === 'number' && Number.isFinite(v))
+      if (entries.length > 8 || !entries.every(([k, v]) => IDENT.test(k) && k.length <= 40 && param(v))) return null
+      return { type: 'route', route: d.route, params: Object.fromEntries(entries) as Record<string, string | number> }
+    }
     case 'url':
       return text(d.url, 2000) ? { type: 'url', url: d.url } : null
     case 'copy':
@@ -279,6 +303,17 @@ export function readFromFrame(data: unknown): FromFrame | null {
       const entries = Object.entries(d.badges)
       if (entries.length > 16 || !entries.every(([k, v]) => text(k, 40) && text(v, 24))) return null
       return { type: 'badges', badges: Object.fromEntries(entries) as Record<string, string> }
+    }
+    case 'query':
+      return text(d.text, 200) ? { type: 'query', text: d.text } : null
+    case 'keys': {
+      if (!Array.isArray(d.keys) || d.keys.length > 8) return null
+      const keys: FrameKey[] = []
+      for (const k of d.keys as unknown[]) {
+        if (!isRecord(k) || typeof k.key !== 'string' || !KEY_NAME.test(k.key) || !text(k.what, 60) || !text(k.shortcut, 24)) return null
+        keys.push({ key: k.key, what: k.what, shortcut: k.shortcut })
+      }
+      return { type: 'keys', keys }
     }
     case 'key':
       return typeof d.key === 'string' && FRAME_KEYS.has(d.key) ? { type: 'key', key: d.key } : null
@@ -304,7 +339,8 @@ export function readToFrame(data: unknown): ToFrame | null {
         typeof d.tab === 'string' &&
         typeof d.barred === 'boolean' &&
         isRecord(d.look) &&
-        (d.media === undefined || readMedia(d.media))
+        (d.media === undefined || readMedia(d.media)) &&
+        (d.query === undefined || typeof d.query === 'string')
         ? (d as unknown as ToFrame)
         : null
     case 'host':
@@ -319,6 +355,8 @@ export function readToFrame(data: unknown): ToFrame | null {
     }
     case 'leave':
       return { type: 'leave' }
+    case 'query':
+      return typeof d.query === 'string' ? { type: 'query', query: d.query } : null
     case 'reply':
       return id(d.id) ? { type: 'reply', id: d.id, ...('error' in d ? { error: String(d.error) } : { ok: d.ok }) } : null
     default:

@@ -6,7 +6,6 @@
 
 export type CommandId =
   | 'marianne'
-  | 'news'
   | 'procedures'
   | 'services'
   | 'next'
@@ -36,7 +35,7 @@ export interface ShortcutDef {
 
 export const SHORTCUTS: ShortcutDef[] = [
   { id: 'marianne', label: 'Parler à Marianne : nouveau dossier', group: 'Pages', accel: 'CommandOrControl+Enter' },
-  { id: 'news', label: 'Actualités', group: 'Pages', accel: 'CommandOrControl+1' },
+  // ctrl+1 was the Actualités page's, now 3615 INFOS: the other pages keep the keys hands already know.
   { id: 'procedures', label: 'Démarches', group: 'Pages', accel: 'CommandOrControl+2' },
   { id: 'services', label: 'Services', group: 'Pages', accel: 'CommandOrControl+3' },
   { id: 'next', label: 'Page suivante (SUITE)', group: 'Pages', accel: 'PageDown' },
@@ -89,7 +88,7 @@ const KEY_LABELS: Record<string, string> = {
 export function shortcutLabel(accel: string, mac: boolean): string {
   return accel
     .split('+')
-    .map((t) => (t === 'CommandOrControl' ? (mac ? 'cmd' : 'ctrl') : (KEY_LABELS[t] ?? (/^F\d+$/.test(t) ? t : t.toLowerCase()))))
+    .map((t) => (t === 'CommandOrControl' ? (mac ? 'cmd' : 'ctrl') : (KEY_LABELS[t] ?? (/^F\d+(?:…F\d+)?$/.test(t) ? t : t.toLowerCase()))))
     .join('+')
 }
 

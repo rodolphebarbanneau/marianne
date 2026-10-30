@@ -128,7 +128,7 @@ export function broadcast(channel: string, payload?: unknown): void {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(`marianne:${channel}`, payload)
 }
 
-/** Ask the screens to show something: "folder:<id>", "settings:identity", "news"… */
+/** Ask the screens to show something: "folder:<id>", "settings:identity", "service:infos"… */
 export function navigate(route: string): void {
   showMain(false)
   broadcast('navigate', route)

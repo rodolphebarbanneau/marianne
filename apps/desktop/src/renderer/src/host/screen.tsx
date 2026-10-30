@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PROFILE_FIELDS, serviceCode, tabKey, type ProfileField, type ServiceState, type ServiceTab } from '@marianne/sdk'
-import { Loading, LoadingGate, ServiceFrameProvider, ServiceHostProvider, type ServiceFrame, type ServiceHost, type ShownPage } from '@marianne/sdk/view'
+import { Loading, LoadingGate, ServiceFrameProvider, ServiceHostProvider, type ServiceFrame, type ServiceHost, type ServiceKey, type ShownPage } from '@marianne/sdk/view'
 import { publicSource } from '@shared/public'
 import { accelOf, matches, SHORTCUTS } from '@shared/shortcuts'
 import type { ServiceFileReview } from '@shared/catalogue'
 import type { PublicSourceId } from '@shared/types'
 import { useApp } from '../app/context'
 import { useMedia } from '../app/media'
+import { SearchIcon } from '../components/icons'
 import { Boundary } from '../components/ui'
 import { api, errorText, isMac } from '../lib/api'
 import { useProfile } from '../lib/profile'
 import { ReviewDialog } from '../pages/services/dialogs'
 import { useServices } from '.'
 import { CommunityScreen } from './community-screen'
+import { opensSearch, SEARCH_PAUSE_MS, searchOf, viewShows } from './frame'
 import { SERVICE_VIEWS } from './registry'
 
 /** The tab a screen opens on: the one its params name (a line of "Aujourd'hui"…), or the first. */
@@ -95,6 +97,22 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
   const [reviewError, setReviewError] = useState('')
   const listeners = useRef(new Set<(id: string) => void>())
   const body = useRef<HTMLDivElement>(null)
+  // The frame's search field (a manifest with `search`): what is typed, and the query the view reads,
+  // trimmed, once typing pauses. Kept across the tabs; a new screen (another service, other params) starts afresh.
+  const searchable = !!state?.manifest.search
+  const [typed, setTyped] = useState(() => searchOf(params))
+  const [query, setQueryNow] = useState(() => searchOf(params).trim())
+  const [focused, setFocused] = useState(false)
+  const [keys, setKeys] = useState<ServiceKey[]>([])
+  const field = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const timer = setTimeout(() => setQueryNow(typed.trim()), SEARCH_PAUSE_MS)
+    return () => clearTimeout(timer)
+  }, [typed])
+  const setQuery = useCallback((text: string) => {
+    setTyped(text)
+    setQueryNow(text.trim())
+  }, [])
   // The services' list may come after the screen: its first tab then.
   const shown = tabs.some((t) => t.id === tab) ? tab : firstTab(tabs, params)
   const open = useCallback(
@@ -116,11 +134,18 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
     listeners.current.add(listener)
     return () => void listeners.current.delete(listener)
   }, [])
-  const frame = useMemo<ServiceFrame>(() => ({ tabs, tab: shown, open, subscribe, setBadges, tools }), [tabs, shown, open, subscribe, tools])
+  const frameQuery = searchable ? query : ''
+  const frame = useMemo<ServiceFrame>(
+    () => ({ tabs, tab: shown, open, subscribe, setBadges, tools, query: frameQuery, setQuery, setKeys }),
+    [tabs, shown, open, subscribe, tools, frameQuery, setQuery]
+  )
   const barred = tabs.length > 1
+  const viewing = !!state && viewShows(state, (community || !!View) && !!host)
+  const searching = viewing && searchable
 
   // F2…F9: the tabs, in their order (F1 stays GUIDE), unless the key is one of the user's shortcuts or a dialog is open.
-  const { palette, settingsPage, guideOpen, config } = app
+  const { palette, settingsPage, guideOpen, config, setServiceBar } = app
+  const covered = !!palette || !!settingsPage || guideOpen
 
   // Opening a screen of one's services: the Services page says when it was last opened.
   const added = !!state?.added
@@ -132,7 +157,7 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
     const onKey = (e: KeyboardEvent) => {
       const n = /^F([2-9])$/.exec(e.key)
       if (!n || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return
-      if (palette || settingsPage || guideOpen || document.querySelector('#root > .overlay')) return
+      if (covered || document.querySelector('#root > .overlay')) return
       if (SHORTCUTS.some((def) => matches(e, accelOf(def.id, isMac, config.shortcuts), isMac))) return
       const target = tabs[Number(n[1]) - 2]
       if (!target) return
@@ -141,7 +166,33 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [barred, tabs, pick, palette, settingsPage, guideOpen, config.shortcuts])
+  }, [barred, tabs, pick, covered, config.shortcuts])
+
+  // « / »: to the search field, from anywhere on the screen but another field or a dialog.
+  useEffect(() => {
+    if (!searching) return
+    const onKey = (e: KeyboardEvent) => {
+      const typing = !!(e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')
+      if (!opensSearch(e, typing) || covered || document.querySelector('#root > .overlay')) return
+      e.preventDefault()
+      field.current?.focus()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [searching, covered])
+
+  // The bottom bar: the tabs, CHERCHER (ANNULATION while typing in the field), the screen's own keys.
+  const code = state ? serviceCode(state.manifest) : ''
+  const focusField = useCallback(() => field.current?.focus(), [])
+  const keysKey = JSON.stringify(keys)
+  useEffect(() => {
+    setServiceBar({
+      tabs: viewing ? tabs.length : 0,
+      search: searching ? { what: `dans ${code}`, focused, focus: focusField } : null,
+      keys: viewing ? (JSON.parse(keysKey) as ServiceKey[]) : []
+    })
+  }, [setServiceBar, viewing, searching, tabs.length, code, focused, focusField, keysKey])
+  useEffect(() => () => setServiceBar(null), [setServiceBar])
 
   if (!state)
     return (
@@ -152,8 +203,6 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
   const m = state.manifest
   // The star pins the service as a tile of the Services page, at the end.
   const pin = () => void api.pinService(id, !state.pinned)
-  const viewing =
-    state.available && state.on && !state.error && !(state.access.asked.length > 0 && state.access.granted === null) && (community || !!View) && !!host
 
   return (
     <div className="page service-page">
@@ -171,6 +220,30 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
         <span className="small dim">{m.name} · rattaché à aucun dossier</span>
         {/* A screen without tabs: its tools at the header's end. */}
         {viewing && !barred && <span className="service-tools" ref={setTools} />}
+        {/* The screen's one search field, Marianne's: « / » reaches it, échap empties it and leaves it. */}
+        {searching && m.search && (
+          <label className="search-field framed service-search" title="chercher (/)">
+            <SearchIcon />
+            <input
+              ref={field}
+              value={typed}
+              placeholder={m.search.placeholder}
+              spellCheck={false}
+              aria-label={m.search.placeholder}
+              onChange={(e) => setTyped(e.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') setQueryNow(typed.trim())
+                if (e.key !== 'Escape' || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return
+                // Taken here: the next échap, out of the field, is the way back.
+                e.preventDefault()
+                setQuery('')
+                e.currentTarget.blur()
+              }}
+            />
+          </label>
+        )}
         {state.added && (
           <button
             className={`star${state.pinned ? ' on' : ''}`}
@@ -295,6 +368,13 @@ function Consent({ state }: { state: ServiceState }) {
   // Opinions are sensitive (RGPD, article 9): never ticked in advance; the rest is.
   const [chosen, setChosen] = useState<ProfileField[]>(m.permissions.profile.filter((f) => !f.startsWith('opinions.')))
   const answer = (granted: ProfileField[]) => void api.setServiceAccess(m.id, granted)
+  // The news it reads come through Marianne (ctx.news), which also says what it gets without the user's sources.
+  const news = 'les journaux, Marianne les lit pour lui'
+  const reach = m.hosts.length
+    ? `il se connecte à : ${m.hosts.join(', ')}${m.news ? ` · ${news}` : ''}`
+    : `il ne se connecte à aucun site${m.news ? ` : ${news}` : ''}`
+  const withoutSources =
+    m.news && m.permissions.profile.includes('opinions.sources') ? ' Sans vos sources d’information : les titres de toutes les sources de Marianne.' : ''
   return (
     <div className="consent">
       <span>
@@ -307,10 +387,10 @@ function Consent({ state }: { state: ServiceState }) {
         </label>
       ))}
       <span className="small dim">
-        pour : {m.permissions.purpose} · {m.hosts.length ? `il se connecte à : ${m.hosts.join(', ')}` : 'il ne se connecte à aucun site'}
+        pour : {m.permissions.purpose} · {reach}
       </span>
       <span className="small dim">
-        Il ne verra rien d’autre de votre profil, ni aucun de vos identifiants. Vous pourrez changer d’avis dans Réglages › Services.
+        Il ne verra rien d’autre de votre profil, ni aucun de vos identifiants.{withoutSources} Vous pourrez changer d’avis dans Réglages › Services.
       </span>
       <span>
         <button className="btn small primary" disabled={!chosen.length} onClick={() => answer(chosen)}>

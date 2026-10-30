@@ -46,6 +46,7 @@
     "@marianne/service-annuaire": "*",
     "@marianne/service-parlement": "*",
     "@marianne/service-carte": "*",
+    "@marianne/service-infos": "*",
     "@marianne/service-meteo": "*",
     "@marianne/service-peage": "*",
     "@types/react": "^19.3.0",

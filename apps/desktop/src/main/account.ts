@@ -21,9 +21,11 @@ import { DEFAULT_ACCOUNT_SETTINGS } from '../shared/config'
 import { checkPassword, checkPin } from '../shared/password'
 import type { AccountInfo, AccountSettings, DeepPartial, SessionState, Usage } from '../shared/types'
 import { accountSettings, configStore } from './config'
+import { content } from './content'
 import { samePath } from './files'
 import { paths } from './paths'
 import { session } from './session'
+import { upgradeNews } from './upgrade-news'
 import { isLinux } from './util'
 
 /**
@@ -138,6 +140,11 @@ class Accounts extends EventEmitter {
   }
 
   private opened(archive: Archive): void {
+    // Before anyone reads or saves the settings: a save would drop what an older Marianne kept.
+    upgradeNews(
+      archive,
+      content.get().newsSources.map((s) => s.id)
+    )
     session.open(archive)
     session.setIdleMinutes(configStore.get().lockAfterMinutes)
     configStore.update({ lastAccount: archive.id })

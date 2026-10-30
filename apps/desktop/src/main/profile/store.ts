@@ -1,6 +1,17 @@
 import { EventEmitter } from 'node:events'
 import { THEMES } from '@marianne/sdk'
-import { computeDeadlines, EMPTY_PROFILE, newKey, today, tokensOf, type Deadline, type Profile, type ProfileOp, type TokenDef } from '@marianne/profile'
+import {
+  computeDeadlines,
+  EMPTY_PROFILE,
+  newKey,
+  readNewsChoice,
+  today,
+  tokensOf,
+  type Deadline,
+  type Profile,
+  type ProfileOp,
+  type TokenDef
+} from '@marianne/profile'
 import type { DomainId } from '../../shared/types'
 import { content } from '../content'
 import { session } from '../session'
@@ -27,7 +38,8 @@ export function normalize(raw: Partial<Profile>): Profile {
     procedures: raw.procedures ?? {},
     opinions: {
       leaning: { ...e.opinions.leaning, ...raw.opinions?.leaning },
-      themes: raw.opinions?.themes ?? []
+      themes: raw.opinions?.themes ?? [],
+      sources: readNewsChoice(raw.opinions?.sources)
     }
   } as Profile
 }
@@ -150,7 +162,7 @@ class ProfileStore extends EventEmitter {
         p.notes = op.notes
         break
       case 'opinions': {
-        // Acronyms as the chambers write them, at most as many as a chamber has groups; themes among the known ones.
+        // Acronyms as the chambers write them, at most as many as a chamber has groups; themes among the known ones; sources checked (readNewsChoice).
         const acronyms = (list: unknown) =>
           [
             ...new Set(
@@ -162,7 +174,9 @@ class ProfileStore extends EventEmitter {
         const themes = new Set<string>(THEMES.map((t) => t.id))
         p.opinions = {
           leaning: { assembly: acronyms(op.opinions.leaning?.assembly), senate: acronyms(op.opinions.leaning?.senate) },
-          themes: [...new Set((op.opinions.themes ?? []).filter((t) => themes.has(t)))]
+          themes: [...new Set((op.opinions.themes ?? []).filter((t) => themes.has(t)))],
+          // Left out of the change, the sources stay as they were.
+          sources: op.opinions.sources === undefined ? p.opinions.sources : readNewsChoice(op.opinions.sources)
         }
         break
       }

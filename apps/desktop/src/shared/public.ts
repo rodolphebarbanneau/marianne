@@ -3,7 +3,7 @@ import type { PublicSourceId } from './types'
 
 /**
  * Public information: the data sources Marianne draws on (the Connexions), the offline index of
- * their dumps, and what the Actualités page and the services read from them.
+ * their dumps, and what the services read from them.
  * Identifiers are in English; labels and descriptions are in French.
  */
 
@@ -147,35 +147,7 @@ export const SP_KIND_LABELS: Record<SpKind, string> = {
   other: 'autre'
 }
 
-// ---------------------------------------------------------------- news (Actualités)
-
-/** A headline: never the article, only what a feed shows. */
-export interface NewsItem {
-  id: string
-  /** A source id of the catalog (the content's news-sources.json), or of the user's own feeds. */
-  source: string
-  title: string
-  url: string
-  /** ISO. When the feed gives none: when Marianne first saw it. */
-  published: string
-  category?: string
-  /** Plain text, 200 characters at most. */
-  summary?: string
-}
-
-/** One story: its first item, and the same story at other sources ("aussi chez …"). */
-export interface NewsStory {
-  id: string
-  item: NewsItem
-  others: NewsItem[]
-}
-
-export interface NewsDigest {
-  stories: NewsStory[]
-  /** Feeds that didn't answer (their last items are still shown when Marianne has them). */
-  failed: Array<{ source: string; message: string }>
-  fetchedAt: string
-}
+// ---------------------------------------------------------------- public life (the start of 3615 CALENDRIER)
 
 /** "Aujourd'hui": what happens today in public life. */
 export type TodayKind = 'holiday' | 'school' | 'clock' | 'change' | 'service'

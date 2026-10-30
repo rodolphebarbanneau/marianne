@@ -1,15 +1,14 @@
 import { useLayoutEffect, useRef } from 'react'
 import { ENGINE_BADGES, ENGINE_LABELS } from '@shared/config'
 import { LockIcon } from '../components/icons'
+import { serviceKeys, type BarKey as Key } from '../host/frame'
 import { api } from '../lib/api'
 import { useShortcutLabel, type Actions } from './commands'
 import { PAGES, PAGE_LABELS, useApp } from './context'
 
-type Key = [string, string, string, keyof Actions | (() => void) | null]
-
 /** The Minitel keys of the screen: [key, shortcut, what it does, command when clicked]. */
 function useKeys(): Key[] {
-  const { view, settingsPage, screenKeys } = useApp()
+  const { view, settingsPage, screenKeys, serviceBar } = useApp()
   const menu: Key[] = [
     ['SOMMAIRE', 'menu', 'menu', 'menu'],
     ['GUIDE', 'guide', 'aide', 'guide']
@@ -30,7 +29,7 @@ function useKeys(): Key[] {
       ['RÉPÉTITION', 'retry', 'refaire', null],
       ['GUIDE', 'guide', 'aide', 'guide']
     ]
-  if (view.kind === 'service') return [['RETOUR', 'Escape', 'Services', 'prev'], ...menu]
+  if (view.kind === 'service') return serviceKeys(serviceBar, menu)
   if (view.kind === 'domain') return [['RETOUR', 'Escape', 'Démarches', 'prev'], ...menu]
   const i = PAGES.indexOf(view.page)
   const keys: Key[] = []
@@ -86,7 +85,7 @@ export function BottomBar({ actions }: { actions: Actions }) {
       <div className="keys" ref={ref}>
         {keys.map(([key, shortcut, what, command]) => (
           <span
-            key={key}
+            key={`${key} ${what}`}
             className={command ? 'clickable' : ''}
             onClick={command ? () => (typeof command === 'function' ? command() : actions[command]?.()) : undefined}
           >

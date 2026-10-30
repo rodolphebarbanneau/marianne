@@ -28,10 +28,7 @@ export const SETTINGS_GROUPS: Array<{ label: string; pages: Array<{ id: string; 
   },
   {
     label: 'PAGES',
-    pages: [
-      { id: 'services', label: 'Services' },
-      { id: 'sources', label: 'Actualités' }
-    ]
+    pages: [{ id: 'services', label: 'Services' }]
   },
   {
     label: 'APPLICATION',

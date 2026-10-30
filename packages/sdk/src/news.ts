@@ -81,6 +81,10 @@ export interface NewsSourceInfo {
   sections?: Array<{ id: string; label: string }>
   /** Set aside by the user: only for a service that may read opinions.sources. */
   setAside?: boolean
+  /** A regional source of the region of the user's address. */
+  home?: boolean
+  /** Titles a day, over the history Marianne keeps (absent until she has read it). */
+  perDay?: number
 }
 
 /** A reading of the feeds, for the last 24 hours (or a day of the 7-day history). */
@@ -109,7 +113,9 @@ const NOISE = new Set(
   'direct live video videos replay podcast info infos reportage entretien interview tribune analyse recit chronique edito photos'.split(' ')
 )
 /** Headline small talk: never what a title alone says. */
-const SMALL_TALK = new Set('faut retenir savoir pourquoi comment change premier premiere nouveau nouvelle apres voici'.split(' '))
+const SMALL_TALK = new Set(
+  'faut retenir savoir pourquoi comment change premier premiere nouveau nouvelle apres voici avoir etait aussi encore deja toujours plusieurs'.split(' ')
+)
 
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
@@ -219,20 +225,33 @@ export const withoutLive = (title: string) => title.trim().replace(/^(EN )?DIREC
 export function groupSubjects(items: NewsHeadline[]): { subjects: NewsSubject[]; single: NewsHeadline[] } {
   const oldest = [...items].sort((a, b) => Date.parse(a.published) - Date.parse(b.published) || a.id.localeCompare(b.id))
   const groups: Array<{ items: NewsHeadline[]; words: Array<Set<string>>; sources: Set<string> }> = []
+  // The groups each word is in: a title is only compared with the groups it shares a word with
+  // (the others score 0), so a whole catalogue's day groups in a moment.
+  const having = new Map<string, number[]>()
   for (const item of oldest) {
     const words = titleWords(item.title)
-    let best: (typeof groups)[number] | undefined
+    const near = new Set<number>()
+    for (const w of words) for (const i of having.get(w) ?? []) near.add(i)
+    let best: number | undefined
     let bestScore = 0
-    for (const g of groups) {
+    // In the order the groups were made: of two as close, the older one takes the title.
+    for (const i of [...near].sort((a, b) => a - b)) {
+      const g = groups[i]
       if (g.sources.has(item.source)) continue
       const score = Math.max(...g.words.map((w) => similarity(words, w)))
-      if (score > bestScore) [best, bestScore] = [g, score]
+      if (score > bestScore) [best, bestScore] = [i, score]
     }
-    if (best && bestScore >= SAME_SUBJECT) {
-      best.items.push(item)
-      best.words.push(words)
-      best.sources.add(item.source)
-    } else groups.push({ items: [item], words: [words], sources: new Set([item.source]) })
+    const at = best !== undefined && bestScore >= SAME_SUBJECT ? best : groups.length
+    if (at === groups.length) groups.push({ items: [item], words: [words], sources: new Set([item.source]) })
+    else {
+      groups[at].items.push(item)
+      groups[at].words.push(words)
+      groups[at].sources.add(item.source)
+    }
+    for (const w of words) {
+      const list = having.get(w) ?? having.set(w, []).get(w)!
+      if (list[list.length - 1] !== at) list.push(at)
+    }
   }
   const newestFirst = (list: NewsHeadline[]) => [...list].sort((a, b) => Date.parse(b.published) - Date.parse(a.published))
   const subjects = groups

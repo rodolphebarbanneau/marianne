@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { Boundary, SearchField } from '../components/ui'
 import { AccountsPane, SecurityPane, SpacePane } from './archive'
 import { BrowserPane, DataPane, EnginesPane, PrivacyPane, SitesPane } from './connections'
 import { AboutPane, DisplayPane, ShortcutsPane, SkillsPane } from './application'
 import { DocumentsPane, HouseholdPane, IdentityPane } from './me'
-import { NewsSourcesPane, ServicesPane } from './pages-panes'
+import { ServicesPane } from './pages-panes'
 import { SETTINGS_GROUPS, SETTINGS_PAGES } from './pages'
 
 const PANES: Record<string, () => React.ReactNode> = {
@@ -21,7 +21,6 @@ const PANES: Record<string, () => React.ReactNode> = {
   privacy: () => <PrivacyPane />,
   data: () => <DataPane />,
   services: () => <ServicesPane />,
-  sources: () => <NewsSourcesPane />,
   display: () => <DisplayPane />,
   shortcuts: () => <ShortcutsPane />,
   skills: () => <SkillsPane />,
@@ -34,12 +33,41 @@ const norm = (s: string) =>
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
 
-/** Settings, a dialog over the application: the sections on the left, the page on the right. */
+/** Pages that went, and where what they had is now: an old link (an engine's answer kept in a folder) still lands there. */
+const MOVED: Record<string, string> = { sources: 'identity#sources' }
+
+/** Settings, a dialog over the application: the sections on the left, the page on the right; « page#section » opens a page at a section. */
 export function SettingsDialog() {
   const app = useApp()
-  const page = app.settingsPage ?? 'identity'
+  const [page, section] = (MOVED[app.settingsPage ?? ''] ?? app.settingsPage ?? 'identity').split('#')
   const [query, setQuery] = useState('')
+  const pageRef = useRef<HTMLDivElement>(null)
   const close = () => app.openSettings(null)
+
+  // The section may come after the first drawing, and what is above it too (the profile, the catalogue are asked
+  // for): it is kept at the top while the page settles, until the user scrolls or the page has been still a moment.
+  useEffect(() => {
+    const root = pageRef.current
+    if (!section || !root) return
+    const show = () => root.querySelector(`#${CSS.escape(section)}`)?.scrollIntoView({ block: 'start' })
+    let settle = setTimeout(() => stop(), 3000)
+    const watch = new MutationObserver(() => {
+      show()
+      clearTimeout(settle)
+      settle = setTimeout(() => stop(), 600)
+    })
+    const stop = () => {
+      watch.disconnect()
+      clearTimeout(settle)
+      root.removeEventListener('wheel', stop)
+      root.removeEventListener('keydown', stop)
+    }
+    show()
+    watch.observe(root, { childList: true, subtree: true })
+    root.addEventListener('wheel', stop, { passive: true })
+    root.addEventListener('keydown', stop)
+    return stop
+  }, [page, section])
 
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -73,7 +101,7 @@ export function SettingsDialog() {
             )
           })}
         </nav>
-        <div className="settings-page">
+        <div className="settings-page" ref={pageRef}>
           <button className="btn small close" onClick={close}>
             fermer ✕
           </button>

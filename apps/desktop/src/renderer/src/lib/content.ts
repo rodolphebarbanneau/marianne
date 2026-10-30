@@ -12,7 +12,7 @@ const onContent =
 /** The catalog of public-service websites. */
 export const useSites = (): Site[] => useLive(api.listSites, onContent(api.listSites)) ?? []
 
-/** The news sources of Actualités. */
+/** The news sources Marianne reads (Réglages › Identité › sources d’information). */
 export const useNewsSources = (): NewsSource[] => useLive(api.newsSources, onContent(api.newsSources)) ?? []
 
 /** The parliamentary groups of both chambers, for the leaning. */

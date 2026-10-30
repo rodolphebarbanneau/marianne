@@ -13,7 +13,6 @@ import { Boundary } from '../components/ui'
 import { FolderScreen } from '../folder/folder'
 import { DomainPage } from '../pages/domain'
 import { HomePage } from '../pages/home'
-import { NewsPage } from '../pages/news'
 import { ProceduresPage } from '../pages/procedures'
 import { ServicesPage } from '../pages/services'
 import { offerFileReview } from '../pages/services/pending'
@@ -62,8 +61,6 @@ export function Shell() {
               <DomainPage id={view.id} />
             ) : view.kind === 'service' ? (
               <ServiceScreen id={view.id} params={view.params ?? {}} />
-            ) : view.page === 'news' ? (
-              <NewsPage />
             ) : view.page === 'procedures' ? (
               <ProceduresPage />
             ) : view.page === 'services' ? (

@@ -36,10 +36,8 @@ import { openedServiceFiles } from './opened-service-files'
 import { paths } from './paths'
 import { documents, type DocumentPatch } from './profile/documents'
 import { profile } from './profile/store'
-import { franceDigest } from './public/france'
-import { fetchNews } from './public/news'
+import { news } from './public/news'
 import { sync } from './public/sync'
-import { todayEvents } from './public/today'
 import { REVIEWED_TICKET, screens, services } from './host'
 import { session } from './session'
 import { applyLoginItem } from './tray'
@@ -279,14 +277,9 @@ export function registerIpc(): void {
   // ---------- public information ----------
   handle('listPublicSources', () => sync.status())
   handle('syncPublicSource', (id: PublicSourceId) => sync.sync(id))
-  handle('news', () => {
-    const { news } = accounts.settings()
-    return fetchNews({ sources: news.sources, perSource: news.perSource, group: news.group, custom: news.custom })
-  })
-  handle('todayEvents', () => todayEvents())
-  handle('franceDigest', () => franceDigest())
   handle('listSites', () => content.get().sites)
   handle('newsSources', () => content.get().newsSources)
+  handle('newsStats', () => news.stats())
   handle('parliamentGroups', () => content.get().parliament)
 
   // ---------- services ----------

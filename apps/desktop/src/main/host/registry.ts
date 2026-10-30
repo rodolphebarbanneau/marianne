@@ -5,6 +5,8 @@ import parlement from '@marianne/service-parlement/package.json'
 import { service as parlementMain } from '@marianne/service-parlement/main'
 import carte from '@marianne/service-carte/package.json'
 import { service as carteMain } from '@marianne/service-carte/main'
+import infos from '@marianne/service-infos/package.json'
+import { service as infosMain } from '@marianne/service-infos/main'
 import meteo from '@marianne/service-meteo/package.json'
 import { service as meteoMain } from '@marianne/service-meteo/main'
 import peage from '@marianne/service-peage/package.json'
@@ -35,5 +37,6 @@ export const BUILTIN_SERVICES: BuiltInService[] = [
   { pkg: annuaire, module: annuaireMain, starter: true },
   { pkg: parlement, module: parlementMain, starter: true },
   { pkg: carte, module: carteMain, starter: true },
+  { pkg: infos, module: infosMain, starter: true },
   { pkg: peage, module: peageMain, starter: true }
 ]

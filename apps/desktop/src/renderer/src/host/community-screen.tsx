@@ -39,8 +39,9 @@ function useFullscreenOn(): boolean {
  * process draws over this box (main/community/runtime/screen.ts), as the built-in browser is: here
  * is the box, where it goes (none while a dialog, the palette or the settings cover it), and the
  * window's part of the bridge: what the screen is opened with (its params, its tabs, the window's
- * look) and what it asks of the window — a question for Marianne, another screen, a tab, a toast,
- * a key, and a link, which opens only once the user agrees. Its calls and data never come here:
+ * look, what the frame's search field holds) and what it asks of the window — a question for
+ * Marianne, another screen, a tab, a toast, a key, its keys for the bottom bar, the search field
+ * filled, and a link, which opens only once the user agrees. Its calls and data never come here:
  * the main process answers them. The app's mini-player is drawn in the window, so the box stops
  * short of it, and the screen hears what it shows (its pins and takes go to app/media.tsx).
  */
@@ -72,7 +73,7 @@ export function CommunityScreen({ host, frame, barred }: { host: ServiceHost; fr
   useEffect(() => {
     api.communityScreenOpen(code)
     const { frameHost: h, frame: f, look: l, barred: b, mediaOf: m } = latest.current
-    api.communityScreenPost(code, { type: 'init', host: h, tabs: f.tabs, tab: f.tab, barred: b, look: l, media: m() })
+    api.communityScreenPost(code, { type: 'init', host: h, tabs: f.tabs, tab: f.tab, barred: b, look: l, media: m(), query: f.query })
     return () => api.communityScreenClose(code)
   }, [code])
   useEffect(() => {
@@ -106,6 +107,7 @@ export function CommunityScreen({ host, frame, barred }: { host: ServiceHost; fr
   useEffect(() => post({ type: 'host', host: frameHost }), [frameHost]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => post({ type: 'look', look }), [look]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => post({ type: 'tab', tab: frame.tab, picked: false }), [frame.tab]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => post({ type: 'query', query: frame.query }), [frame.query]) // eslint-disable-line react-hooks/exhaustive-deps
   const { subscribe } = frame
   useEffect(() => subscribe((tab) => post({ type: 'tab', tab, picked: true })), [subscribe]) // eslint-disable-line react-hooks/exhaustive-deps
   // The window's toasts would be under the screen: drawn over the bottom bar while it shows (styles.css), never in it.
@@ -124,7 +126,7 @@ export function CommunityScreen({ host, frame, barred }: { host: ServiceHost; fr
           case 'ask':
             return h.ask(message.text, message.page && { url: message.page.url, title: message.page.title, text: message.page.text })
           case 'route':
-            return h.openRoute(message.route)
+            return h.openRoute(message.route, message.params)
           case 'url':
             return setOpening(message.url)
           case 'toast':
@@ -133,6 +135,11 @@ export function CommunityScreen({ host, frame, barred }: { host: ServiceHost; fr
             return f.open(message.tab)
           case 'badges':
             return f.setBadges(Object.fromEntries(Object.entries(message.badges).filter(([tab]) => f.tabs.some((t) => t.id === tab))))
+          // Its search field is the frame's, in the window: only a manifest that declares it has one.
+          case 'query':
+            return h.manifest.search ? f.setQuery(message.text) : undefined
+          case 'keys':
+            return f.setKeys(message.keys)
           case 'key':
             // As if pressed here: the guide, the tabs, the way back answer as on any screen.
             window.dispatchEvent(new KeyboardEvent('keydown', { key: message.key, bubbles: true, cancelable: true }))

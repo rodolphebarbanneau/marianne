@@ -72,7 +72,6 @@ export function Palette({ actions }: { actions: Actions }) {
   const menu = useMemo<Node[]>(
     () => [
       { label: 'Marianne · nouvelle conversation', key: 'marianne', run: actions.marianne },
-      { label: 'Actualités', key: 'news', run: actions.news },
       {
         label: 'Démarches',
         children: () =>
@@ -122,7 +121,6 @@ export function Palette({ actions }: { actions: Actions }) {
       })
       return [
         cmd('marianne', 'Parler à Marianne : nouveau dossier'),
-        cmd('news', 'Aller aux Actualités'),
         cmd('procedures', 'Aller aux Démarches'),
         cmd('services', 'Aller aux Services'),
         cmd('next', 'Page suivante'),

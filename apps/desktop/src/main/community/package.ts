@@ -263,6 +263,10 @@ function manifestOf(bytes: Uint8Array, reserved: ReadonlySet<string>, protectedH
   const problems: string[] = []
   if (!SERVICE_VERSION.test(manifest.version)) problems.push(`Sa version, « ${manifest.version.slice(0, 40)} », ne se lit pas comme 1.2.3.`)
   if (reserved.has(manifest.id)) problems.push(`3615 ${serviceCode(manifest)} est un service officiel de Marianne : un fichier ne peut pas le remplacer.`)
+  if (manifest.news)
+    problems.push(
+      `3615 ${serviceCode(manifest)} demande les titres de presse que lit Marianne (« news » dans son manifeste) : seuls ses services officiels les reçoivent.`
+    )
   problems.push(...linkProblems(manifest, protectedHosts))
   if (problems.length) throw new PackageRefused(problems)
   return manifest

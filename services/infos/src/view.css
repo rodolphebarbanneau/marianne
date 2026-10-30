@@ -1,0 +1,1571 @@
+/* 3615 INFOS: its own blocks, on top of Marianne's classes (.btn, .chip, .seg, .label, .link…), on the app's
+   spacing scale (--s1…--s6). Colour means one thing: a source's editorial line (--lean-<position>, from
+   Marianne's tokens); the accent stays for what isn't a source (numbers, highlighted words, ◆, NOUVEAU).
+   Laid out by the column's width: @container service, at 1000px (one column) and 760px (small screens). */
+
+.infos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+.infos-body {
+  min-width: 0;
+}
+.infos-back {
+  margin-bottom: var(--s4);
+}
+.infos-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.infos-shared {
+  margin: 0 0 var(--s4);
+}
+.infos-failed {
+  margin: var(--s5) 0 0;
+}
+.infos-empty {
+  margin: var(--s2) 0;
+  color: var(--dim);
+  font-size: 0.92em;
+}
+
+/* ---------------------------------------------------------------- the small marks */
+
+/* A source: its name in a block of its line's colour; set aside, an outline. */
+.infos-src {
+  display: inline-block;
+  font-size: 10px;
+  line-height: 15px;
+  padding: 0 5px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  vertical-align: 1px;
+}
+.infos-src.off {
+  background: transparent;
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+.infos-off {
+  font-size: 0.78em;
+  color: var(--muted);
+  border: 1px dashed var(--muted);
+  padding: 0 var(--s1);
+  white-space: nowrap;
+}
+.infos-th {
+  color: var(--accent);
+  font-size: 0.84em;
+  white-space: nowrap;
+}
+.infos-direct {
+  font-size: 0.78em;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--fg);
+  color: var(--fg);
+  padding: 0 var(--s1);
+  white-space: nowrap;
+}
+.infos-new {
+  font-size: 0.74em;
+  background: var(--accent);
+  color: var(--noir);
+  padding: 0 var(--s1);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.infos-chk {
+  font-size: 0.78em;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--dim);
+  color: var(--dim);
+  padding: 0 var(--s1);
+  white-space: nowrap;
+}
+.infos-paid {
+  font-size: 0.78em;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--muted);
+  color: var(--muted);
+  padding: 0 var(--s1);
+}
+/* A subject's number, as a Minitel sommaire numbers its lines: type it, then ENVOI. */
+.infos-num {
+  display: inline-block;
+  min-width: 24px;
+  padding: 0 5px;
+  text-align: center;
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 0.95);
+  line-height: 1.15;
+  background: var(--fg);
+  color: var(--noir);
+  flex: none;
+}
+.infos-num.lead {
+  background: var(--accent);
+}
+.infos-num.sm {
+  min-width: 18px;
+  font-size: calc(var(--pixel-size) * 0.75);
+  margin-right: var(--s1);
+}
+/* What a subject is about: the words its titles share (Marianne writes nothing of her own). */
+.infos-words {
+  color: var(--dim);
+  font-size: 0.86em;
+  letter-spacing: 0.02em;
+  min-width: 0;
+}
+.infos-words b {
+  font-weight: 400;
+  color: var(--fg);
+}
+mark.infos-own {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--hi);
+  padding: 0 1px;
+}
+mark.infos-q {
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  color: var(--hi);
+}
+.infos-keys {
+  display: flex;
+  gap: var(--s1) var(--s3);
+  font-size: 0.82em;
+  color: var(--dim);
+  flex-wrap: wrap;
+}
+.infos-keys i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  vertical-align: -1px;
+}
+.infos-cells {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+  flex: none;
+}
+.infos-cells i {
+  width: 6px;
+  height: 10px;
+  background: var(--accent);
+}
+/* Who tells a subject: one cell a source shown, lit in its colour. */
+.infos-spec {
+  display: inline-flex;
+  gap: 2px;
+  flex: none;
+  vertical-align: middle;
+}
+.infos-spec i {
+  width: 6px;
+  height: 10px;
+  background: color-mix(in srgb, var(--rule) 70%, transparent);
+}
+.infos-spec i.off {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+.infos-cov {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 0 var(--s2);
+  border: 1px solid var(--rule);
+  color: var(--dim);
+  font-size: 0.86em;
+  white-space: nowrap;
+}
+.infos-cov:hover {
+  border-color: var(--bleu);
+  color: var(--hi);
+}
+.infos-chapo {
+  margin: 0;
+  color: var(--fg);
+  line-height: 1.5;
+}
+.infos-by {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: 0.86em;
+  color: var(--dim);
+}
+.infos-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+.infos-kick {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-width: 0;
+}
+.infos-clamp3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* A section's heading: 24 above, 8 below, a rule under it. */
+.infos-h {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  margin: var(--s5) 0 var(--s2);
+  padding-bottom: var(--s1);
+  border-bottom: 1px solid var(--rule);
+}
+.infos-h.infos-first,
+.infos-side > .infos-h:first-child,
+.infos-a > div > .infos-h:first-child,
+.infos-section > .infos-h:first-child {
+  margin-top: 0;
+}
+.infos-h .label {
+  display: inline;
+  white-space: nowrap;
+}
+.infos-h .more {
+  margin-left: auto;
+  font-size: 0.88em;
+}
+.infos-section {
+  margin-top: var(--s6);
+}
+
+/* Where a source stands: five positions, a gap, « sans classement »; a dotted guide per position, so the
+   squares line up from line to line. */
+.infos-trk {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) 10px minmax(0, 1fr);
+  height: 18px;
+  align-items: stretch;
+}
+.infos-trk > span {
+  position: relative;
+}
+.infos-trk > span::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -5px;
+  bottom: -5px;
+  border-left: 1px dotted var(--rule);
+}
+.infos-trk > span.gap::before {
+  display: none;
+}
+.infos-trk i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  transform: translate(-50%, -50%);
+}
+.infos-trk i.off {
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1.5px var(--muted);
+}
+.infos-trk.axis {
+  height: auto;
+  font-size: 0.7em;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.infos-trk.axis > span::before {
+  display: none;
+}
+.infos-trk.axis .l {
+  grid-column: 1 / span 2;
+  text-align: left;
+}
+.infos-trk.axis .r {
+  grid-column: 4 / span 2;
+  text-align: right;
+}
+.infos-trk.axis .n {
+  grid-column: 7;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- F2 · à la une */
+
+/* The band above: « EN DIRECT », the hour, the counts on one line; under it, the live titles. */
+.infos-top {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s2);
+  padding-bottom: var(--s4);
+  margin-bottom: var(--s5);
+  border-bottom: 3px double var(--rule);
+}
+.infos-top .hd {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+.infos-top .lab {
+  white-space: nowrap;
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 0.85);
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  color: var(--fg);
+  padding: 0 var(--s2);
+  border: 1px solid var(--fg);
+}
+.infos-top .day {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 0.8);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.infos-top .stats {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  margin-left: auto;
+}
+.infos-top .stat {
+  color: var(--dim);
+  font-size: 0.86em;
+  white-space: nowrap;
+}
+.infos-top .stat b {
+  font-family: var(--retro);
+  font-weight: 400;
+  font-size: calc(var(--pixel-size) * 1.05);
+  color: var(--accent);
+  margin-right: var(--s1);
+}
+.infos-top .lvs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s3);
+}
+.infos-top .lv {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-width: 0;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--rule);
+  cursor: pointer;
+}
+.infos-top .lv:hover {
+  border-color: var(--bleu);
+}
+.infos-top .lv .by {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: 0.82em;
+  min-width: 0;
+}
+.infos-top .lv .tm {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.infos-top .lv .go {
+  margin-left: auto;
+  display: inline-flex;
+}
+.infos-top .lv .go .infos-num {
+  margin: 0;
+}
+.infos-top .lv .go:hover .infos-num {
+  background: var(--accent);
+}
+.infos-top .lv .t {
+  font-size: 0.9em;
+  color: var(--fg);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.infos-top .lv:hover .t {
+  color: var(--hi);
+}
+.infos-top .lv-more {
+  display: none;
+  align-self: center;
+}
+
+/* Two columns: the list on the left, narrow; the chosen subject on the right, sticky. */
+.infos-dash {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(0, 1.9fr);
+  gap: var(--s5);
+  align-items: start;
+}
+.infos-side {
+  min-width: 0;
+}
+.infos-cur {
+  position: sticky;
+  top: var(--s3);
+  min-width: 0;
+}
+.infos-side .seg button {
+  padding: 0 var(--s2);
+}
+.infos-side .infos-h .label {
+  white-space: nowrap;
+}
+
+/* The list: a row is its number, its words, what its titles say and its latest title, then a flat bar of its
+   sources; the chosen row is raised, an accent edge on its left. */
+.infos-list {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+.infos-list td {
+  border-top: 1px dashed var(--rule);
+  vertical-align: top;
+}
+.infos-list tr.row {
+  cursor: pointer;
+}
+.infos-list tr.row:hover td {
+  background: var(--hover);
+}
+.infos-list tr.row.sel td {
+  background: var(--bg-raised);
+  border-top-color: var(--rule);
+}
+.infos-list tr.row.sel td.num {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.infos-list td.num {
+  width: 46px;
+  padding: var(--s2) 0 0 var(--s3);
+}
+.infos-list td.lbl {
+  padding: var(--s2) var(--s2) var(--s2) 0;
+}
+.infos-list td.lbl .w {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  min-width: 0;
+  color: var(--hi);
+}
+.infos-list td.lbl .ws {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.infos-list tr.row:hover td.lbl .ws,
+.infos-list tr.row.sel td.lbl .ws {
+  color: var(--accent);
+}
+.infos-list td.lbl .t {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dim);
+  font-size: 0.82em;
+  margin-top: 2px;
+}
+.infos-list td.lbl .t > span:not(.lst) {
+  flex: none;
+}
+.infos-list td.lbl .lst {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The bar: one cell a source, in the order of the colours, a small gap between two sides; never wider than its row. */
+.infos-list .bar {
+  display: flex;
+  gap: 1px;
+  margin-top: var(--s2);
+  height: 6px;
+}
+.infos-list .bar .cell {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  background: color-mix(in srgb, var(--rule) 40%, transparent);
+}
+.infos-list .bar .cell.gs {
+  margin-left: 3px;
+}
+.infos-list .bar .cell.on:hover {
+  outline: 1px solid var(--hi);
+}
+.infos-list .bar .cell.offon {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+.infos-list td.n {
+  width: 40px;
+  padding: var(--s2) var(--s3) 0 var(--s2);
+  text-align: right;
+  white-space: nowrap;
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1.05);
+  color: var(--hi);
+}
+.infos-list td.n .small {
+  font-family: var(--sharp, inherit);
+  margin-left: 2px;
+}
+.infos-list tr.open > td {
+  border-top: 0;
+  padding: var(--s3) 0 var(--s4) 46px;
+}
+.infos-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s3);
+  margin-top: var(--s2);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--rule);
+}
+.infos-legend .infos-keys {
+  font-size: 0.76em;
+}
+.infos-legend .link {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* The chosen subject: its head, its title across the column, the media at the left of its text. */
+.infos-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.infos-detail .infos-kick .infos-words {
+  font-size: 0.92em;
+}
+.infos-detail .big {
+  font-size: 1.45em;
+  line-height: 1.25;
+  color: var(--hi);
+  text-align: left;
+  white-space: normal;
+}
+.infos-detail .big:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.infos-detail .dt-art {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s4);
+  align-items: start;
+}
+.infos-detail .dt-art.has-media {
+  grid-template-columns: 200px minmax(0, 1fr);
+}
+.infos-detail .dt-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+}
+.infos-detail .dt-start {
+  margin: 0;
+  color: var(--dim);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.infos-detail .dt-start .tx {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+.infos-detail .dt-start .link {
+  display: inline-block;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+.infos-detail .dt-start.paid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+  font-size: 0.86em;
+}
+.infos-detail .infos-foot {
+  margin-top: var(--s2);
+}
+.infos-detail .dt-media {
+  margin: 3px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.infos-detail .dt-media .ph {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  color: var(--dim);
+}
+.infos-detail .dt-media .ph:hover {
+  border-color: var(--bleu);
+}
+.infos-detail .dt-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.infos-detail .dt-media .play {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  background: var(--bg);
+  font-size: 16px;
+}
+.infos-detail .dt-media .kind {
+  position: absolute;
+  left: var(--s1);
+  bottom: var(--s1);
+  font-size: 0.7em;
+  letter-spacing: 0.04em;
+  padding: 0 var(--s1);
+  background: var(--bg);
+  color: var(--dim);
+}
+.infos-detail .dt-media figcaption {
+  font-size: 0.74em;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.infos-detail .dt-media .cr {
+  display: block;
+  margin-top: 2px;
+  opacity: 0.8;
+}
+
+/* « qui en parle »: one head line (with what is set aside at its right), then the four sides, close. */
+.infos-detail .dt-sides {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--rule);
+  background: var(--bg);
+}
+.infos-detail .dt-hd {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+}
+.infos-detail .dt-more {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+}
+.infos-detail .sds {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s3);
+}
+.infos-detail .sd {
+  display: grid;
+  /* The cells take what the count leaves, and wrap: a side may have a dozen sources (sans classement). */
+  grid-template-columns: minmax(0, auto) auto;
+  justify-content: start;
+  align-items: center;
+  column-gap: var(--s3);
+  row-gap: 2px;
+  font-size: 0.88em;
+}
+.infos-detail .sd .l {
+  grid-column: 1 / -1;
+  white-space: nowrap;
+}
+.infos-detail .sd.none .l {
+  color: var(--muted);
+}
+.infos-detail .sd .cl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  min-width: 0;
+}
+.infos-detail .sd .cl i {
+  width: 12px;
+  height: 12px;
+  background: color-mix(in srgb, var(--rule) 70%, transparent);
+}
+.infos-detail .sd .cl i.off {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+.infos-detail .sd .c {
+  color: var(--dim);
+  white-space: nowrap;
+}
+.infos-detail .sd .c b {
+  font-family: var(--retro);
+  font-weight: 400;
+  font-size: calc(var(--pixel-size) * 0.95);
+  color: var(--hi);
+}
+
+/* « le fil du sujet »: a line a title, newest first, the source's place on the spectrum beside it. */
+.infos-sub {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  margin-top: var(--s4);
+}
+.infos-sub .label {
+  display: inline;
+  white-space: nowrap;
+}
+.infos-snip {
+  display: flex;
+  flex-direction: column;
+}
+.infos-snip .sn {
+  display: grid;
+  grid-template-columns: 42px 104px 100px minmax(0, 1fr) auto;
+  gap: var(--s3);
+  align-items: start;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--rule);
+}
+.infos-snip .sn > :not(.t) {
+  margin-top: 2px;
+}
+.infos-snip .sn:not(.head):hover {
+  background: var(--hover);
+}
+.infos-snip .sn.head {
+  align-items: end;
+  padding: 0 0 var(--s1);
+  border-bottom: 1px solid var(--rule);
+}
+.infos-snip .tm {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 0.85);
+  color: var(--dim);
+}
+.infos-snip .t {
+  text-align: left;
+  white-space: normal;
+  line-height: 1.3;
+  font-size: 0.94em;
+  color: var(--fg);
+}
+.infos-snip .t:hover {
+  color: var(--hi);
+}
+.infos-snip .sn.dim .t {
+  color: var(--muted);
+}
+
+/* « une seule source », and the search's results: one line each, two columns (one for the search). */
+.infos-brief {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--s6);
+}
+.infos-brief.one {
+  grid-template-columns: minmax(0, 1fr);
+}
+.infos-bl {
+  display: grid;
+  grid-template-columns: 40px 104px minmax(0, 1fr) auto;
+  gap: var(--s3);
+  align-items: start;
+  padding: var(--s2) 0;
+  border-bottom: 1px dashed var(--rule);
+  font-size: 0.9em;
+}
+.infos-bl .tm {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.infos-bl .infos-src {
+  margin-top: 2px;
+}
+.infos-bl .t {
+  text-align: left;
+  white-space: normal;
+  color: var(--fg);
+}
+.infos-bl .t:hover {
+  color: var(--hi);
+}
+.infos-bl.dim .t {
+  color: var(--muted);
+}
+.infos-hit {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+/* ---------------------------------------------------------------- a subject opened */
+
+/* Two columns: the content, the rail. */
+.infos-a {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: var(--s6);
+  align-items: start;
+}
+.infos-pane h2 {
+  margin: var(--s2) 0;
+  font-weight: 400;
+  font-size: 1.6em;
+  line-height: 1.28;
+  color: var(--hi);
+}
+.infos-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s4) var(--s6);
+  margin: var(--s4) 0 0;
+  padding: var(--s3) 0;
+  border-top: 3px double var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+.infos-stats span {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  font-size: 0.82em;
+  color: var(--dim);
+}
+.infos-stats b {
+  font-family: var(--retro);
+  font-weight: 400;
+  font-size: calc(var(--pixel-size) * 1.6);
+  line-height: 1;
+  color: var(--hi);
+}
+.infos-ctable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.infos-ctable td {
+  padding: var(--s2) var(--s3) var(--s2) 0;
+  border-bottom: 1px dashed var(--rule);
+  vertical-align: top;
+}
+.infos-ctable td .infos-src {
+  margin-top: 3px;
+}
+.infos-ctable td.tm {
+  color: var(--muted);
+  white-space: nowrap;
+  padding-top: calc(var(--s2) + 1px);
+}
+.infos-ctable td.tt {
+  position: relative;
+  width: 100%;
+  padding-right: 0;
+}
+.infos-ctable .t {
+  text-align: left;
+  white-space: normal;
+  color: var(--hi);
+  font-size: 1.02em;
+}
+.infos-ctable tr.off .t {
+  color: var(--dim);
+}
+.infos-ctable tr.first td.tm {
+  color: var(--accent);
+}
+.infos-ctable tr.sidehead td {
+  border-bottom: 0;
+  padding: var(--s4) 0 var(--s1);
+}
+.infos-ctable .sh {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  padding-bottom: var(--s1);
+  border-bottom: 3px solid var(--side);
+  font-size: 0.78em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+/* Over the row's end, on hover: copy its link, ask Marianne about it. */
+.infos-acts {
+  position: absolute;
+  right: 0;
+  bottom: var(--s1);
+  display: flex;
+  gap: var(--s1);
+  padding-left: var(--s3);
+  background: var(--bg);
+  opacity: 0;
+  pointer-events: none;
+}
+.infos-ctable tr:hover .infos-acts,
+.infos-ctable tr:focus-within .infos-acts {
+  opacity: 1;
+  pointer-events: auto;
+}
+.infos-more {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  padding: var(--s3) 0 0;
+  color: var(--dim);
+  font-size: 0.9em;
+}
+.infos-two {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s6);
+}
+/* « les mots »: in how many titles each comes, as cells; a word one title alone has, in accent. */
+.infos-wbars {
+  display: grid;
+  grid-template-columns: minmax(0, 140px) minmax(0, 1fr) 40px;
+  gap: var(--s1) var(--s3);
+  align-items: center;
+  font-size: 0.92em;
+}
+.infos-wbars .w {
+  text-align: right;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.infos-wbars .w.own {
+  color: var(--accent);
+}
+.infos-wbars .bar {
+  display: flex;
+  gap: 2px;
+}
+.infos-wbars .bar i {
+  width: 14px;
+  height: 11px;
+  background: var(--fg);
+}
+.infos-wbars .bar i.own {
+  background: var(--accent);
+}
+.infos-wbars .n {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+/* « la matinée »: a bar a title on an hour axis, in its source's colour. */
+.infos-time {
+  position: relative;
+  height: 64px;
+  border-bottom: 1px solid var(--rule);
+  margin: var(--s5) 0;
+}
+.infos-time i {
+  position: absolute;
+  bottom: 0;
+  width: 8px;
+  transform: translateX(-50%);
+}
+.infos-time i.off {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+.infos-time .h {
+  position: absolute;
+  bottom: -20px;
+  font-size: 0.76em;
+  color: var(--muted);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.infos-time .tn {
+  position: absolute;
+  top: -20px;
+  font-size: 0.8em;
+  color: var(--dim);
+  white-space: nowrap;
+}
+.infos-days {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) auto;
+  gap: var(--s2) var(--s3);
+  align-items: baseline;
+}
+.infos-days .d {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 0.85);
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+.infos-days .d.today {
+  color: var(--accent);
+}
+.infos-days .t {
+  color: var(--fg);
+}
+.infos-qs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  align-items: stretch;
+}
+.infos-qs .btn {
+  text-align: left;
+  white-space: normal;
+}
+.infos-rl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  width: 100%;
+  padding: var(--s2) 0;
+  border-bottom: 1px dashed var(--rule);
+  text-align: left;
+  white-space: normal;
+  font-size: 0.92em;
+}
+.infos-rl .by {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: 0.86em;
+}
+.infos-rl .tm {
+  color: var(--muted);
+}
+.infos-rl .t {
+  color: var(--fg);
+}
+.infos-rl:hover .t {
+  color: var(--hi);
+}
+
+/* ---------------------------------------------------------------- F3 · fil */
+
+/* The morning's flow: a column an hour, a cell a title, stacked from the left (bottom) to the right (top). */
+.infos-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s6);
+  align-items: end;
+}
+.infos-hist {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s4);
+  min-width: 0;
+  overflow: hidden;
+}
+.infos-hist button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+}
+.infos-hist .stk {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--cell-gap, 1px);
+}
+.infos-hist .stk i {
+  width: 30px;
+  height: var(--cell, 4px);
+}
+.infos-hist .h {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 0.8);
+  color: var(--dim);
+}
+.infos-hist .c {
+  font-size: 0.78em;
+  color: var(--muted);
+}
+.infos-hist button:hover:not(:disabled) .h {
+  color: var(--accent);
+}
+.infos-flow .sum {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s1);
+}
+.infos-flow .sum b {
+  font-family: var(--retro);
+  font-weight: 400;
+  font-size: calc(var(--pixel-size) * 1.15);
+  color: var(--accent);
+  margin-right: var(--s1);
+}
+.infos-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+  margin: var(--s4) 0 var(--s2);
+}
+.infos-bar .chips {
+  width: auto;
+  justify-content: flex-start;
+}
+.infos-bar .chip .n {
+  margin-left: var(--s2);
+  color: var(--muted);
+}
+.infos-hour {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 1.05);
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin: var(--s4) 0 var(--s1);
+}
+.infos-hour::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--rule);
+}
+.infos-hour span {
+  font-family: var(--sharp, inherit);
+  font-size: 0.6em;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+.infos-w {
+  display: grid;
+  grid-template-columns: 52px 104px minmax(0, 1fr) auto;
+  gap: var(--s3);
+  align-items: center;
+  padding: var(--s1) 0;
+}
+.infos-w:hover {
+  background: var(--hover);
+}
+.infos-w .tm {
+  font-family: var(--retro);
+  font-size: calc(var(--pixel-size) * 0.85);
+  color: var(--dim);
+}
+.infos-w .t {
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg);
+}
+.infos-w .t:hover {
+  color: var(--hi);
+}
+.infos-w.dim .t {
+  color: var(--muted);
+}
+.infos-w .r {
+  display: flex;
+  gap: var(--s2);
+  align-items: center;
+}
+
+/* ---------------------------------------------------------------- F4 · kiosque */
+
+.infos-kbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+  padding-bottom: var(--s2);
+  border-bottom: 1px solid var(--rule);
+}
+.infos-kbar .label {
+  display: inline;
+}
+/* Three columns, densely packed: a normal card may fill the hole a large one leaves. */
+.infos-kiosk {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  gap: var(--s3);
+  align-items: start;
+}
+.infos-kcard {
+  position: relative;
+  border: 1px solid var(--rule);
+  border-top: 5px solid var(--grp);
+  background: var(--bg-raised);
+  padding: var(--s3) var(--s3) var(--s2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+}
+.infos-kcard.large {
+  grid-column: span 2;
+}
+.infos-kcard.off {
+  background: transparent;
+  border-style: dashed;
+}
+.infos-kcard .mast {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding-right: 60px;
+}
+.infos-kcard .mast b {
+  font-family: var(--retro);
+  font-weight: 400;
+  font-size: calc(var(--pixel-size) * 1.2);
+  letter-spacing: 0.08em;
+  color: var(--hi);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.infos-kcard.large .mast b {
+  font-size: calc(var(--pixel-size) * 1.5);
+}
+.infos-kcard.off .mast b {
+  color: var(--muted);
+}
+.infos-kcard .mast .sub {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+}
+.infos-kcard .mast .lean {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: 0.78em;
+  color: var(--dim);
+  white-space: nowrap;
+}
+.infos-kcard .mast .lean i {
+  width: 8px;
+  height: 8px;
+}
+.infos-kcard .mast .r {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.infos-kcard .une {
+  text-align: left;
+  white-space: normal;
+  font-size: 1.04em;
+  line-height: 1.32;
+  color: var(--hi);
+  padding-top: var(--s2);
+  border-top: 3px double var(--rule);
+}
+.infos-kcard.large .une {
+  font-size: 1.3em;
+}
+.infos-kcard .une:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.infos-kcard .infos-chapo {
+  font-size: 0.86em;
+  color: var(--dim);
+}
+.infos-kcard .kl-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.infos-kcard.large .kl-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--s5);
+}
+.infos-kl {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: var(--s2);
+  padding-top: var(--s1);
+  border-top: 1px dashed var(--rule);
+  font-size: 0.88em;
+  text-align: left;
+  white-space: normal;
+  width: 100%;
+}
+.infos-kl:hover {
+  color: var(--hi);
+}
+.infos-kl .tm {
+  color: var(--muted);
+}
+.infos-kcov {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: 0.8em;
+  color: var(--dim);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--rule);
+}
+.infos-kcov .cl {
+  display: inline-flex;
+  gap: 2px;
+}
+.infos-kcov .cl button {
+  width: 13px;
+  height: 13px;
+  font-size: 8px;
+  line-height: 13px;
+  text-align: center;
+  background: var(--rule);
+  color: var(--muted);
+}
+.infos-kcov .cl button.on {
+  background: var(--accent);
+  color: var(--noir);
+}
+.infos-kcov .cl button:hover {
+  outline: 1px solid var(--hi);
+}
+.infos-kcard .solo {
+  font-size: 0.84em;
+  color: var(--dim);
+  text-align: left;
+  white-space: normal;
+}
+.infos-kcard .solo:hover {
+  color: var(--hi);
+}
+.infos-kcard .solo b {
+  font-weight: 400;
+  color: var(--accent);
+}
+.infos-kcard .kf {
+  display: flex;
+  gap: var(--s2);
+  font-size: 0.8em;
+  color: var(--muted);
+}
+.infos-kcard .kf .site:hover {
+  color: var(--hi);
+}
+.infos-kcard .kf .r {
+  margin-left: auto;
+}
+/* The size and the grip, top right, on hover; over the grip, the card turns ghost. */
+.infos-kcard .kctl {
+  position: absolute;
+  top: var(--s2);
+  right: var(--s2);
+  display: flex;
+  gap: var(--s1);
+  opacity: 0;
+}
+.infos-kcard:hover .kctl,
+.infos-kcard .kctl:focus-within {
+  opacity: 1;
+}
+.infos-kcard .ksize,
+.infos-kcard .grip {
+  width: 24px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--rule);
+  background: var(--bg);
+  color: var(--dim);
+}
+.infos-kcard .grip {
+  cursor: grab;
+}
+.infos-kcard .grip i {
+  display: grid;
+  grid-template-columns: repeat(2, 3px);
+  gap: 2px;
+}
+.infos-kcard .grip b {
+  width: 3px;
+  height: 3px;
+  background: var(--dim);
+}
+.infos-kcard .ksize:hover,
+.infos-kcard .grip:hover,
+.infos-kcard .grip:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.infos-kcard .grip:hover b {
+  background: var(--accent);
+}
+.infos-kcard:has(.grip:hover),
+.infos-kcard.dragging {
+  border-style: dashed;
+  border-color: var(--accent);
+  background: transparent;
+}
+.infos-kcard:has(.grip:hover) > :not(.kctl) {
+  opacity: 0.55;
+}
+.infos-kcard.dragging > * {
+  opacity: 0.2;
+}
+
+/* ---------------------------------------------------------------- widths */
+
+/* Narrower (PARLEMENT's own break): « à la une » is the list, the chosen row opening its subject under itself;
+   the live cards two by two; the kiosk two across, a large card the whole row. */
+@container service (max-width: 1000px) {
+  .infos-dash {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .infos-top .lvs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .infos-brief {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .infos-detail .dt-art.has-media {
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+  .infos-detail .sds {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .infos-kiosk {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .infos-a {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: var(--s5);
+  }
+}
+
+/* Small: one live card then « +2 »; the media above its text; the subject's fil without the source's block (its
+   colour is on the track); the fil without its flow; the kiosk one across, every card normal; the subject's page
+   in one column. */
+@container service (max-width: 760px) {
+  /* One card shows, with « +N » after it: the count of the others says it already. */
+  .infos-top .lv-count {
+    display: none;
+  }
+  /* The media across the column, but not taller than a third of a small screen. */
+  .infos-detail .dt-art.has-media .dt-media .ph {
+    aspect-ratio: auto;
+    height: 200px;
+  }
+  .infos-top .lvs {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .infos-top .lv:not(:first-child) {
+    display: none;
+  }
+  .infos-top .lv-more {
+    display: inline;
+  }
+  .infos-list td.num {
+    width: 38px;
+    padding-left: var(--s2);
+  }
+  .infos-list .bar {
+    gap: 0;
+  }
+  .infos-list .bar .cell.gs {
+    margin-left: 2px;
+  }
+  .infos-list tr.open > td {
+    padding-left: var(--s2);
+  }
+  .infos-detail .dt-art.has-media {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .infos-snip .sn {
+    grid-template-columns: 42px 90px minmax(0, 1fr) auto;
+  }
+  .infos-snip .sn > .src,
+  .infos-snip .sn.head > :nth-child(3) {
+    display: none;
+  }
+  .infos-bl {
+    grid-template-columns: 40px 90px minmax(0, 1fr);
+  }
+  .infos-bl > :nth-child(4) {
+    grid-column: 3;
+    justify-self: start;
+  }
+  .infos-bl > :nth-child(4):empty {
+    display: none;
+  }
+  .infos-trk.axis .r {
+    display: none;
+  }
+  .infos-flow {
+    display: none;
+  }
+  .infos-w {
+    grid-template-columns: 44px 90px minmax(0, 1fr);
+  }
+  .infos-w .r {
+    grid-column: 3;
+  }
+  .infos-w .r:empty {
+    display: none;
+  }
+  .infos-kiosk {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .infos-kcard.large {
+    grid-column: auto;
+  }
+  .infos-kcard.large .kl-list {
+    display: flex;
+  }
+  .infos-kcard.large .infos-kl:nth-child(n + 5) {
+    display: none;
+  }
+  .infos-a,
+  .infos-two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -128,13 +128,12 @@ export interface SessionState {
 /** Preferences of the account, inside its archive. */
 export interface AccountSettings {
   display: DisplayChoice
-  news: { sources: string[]; perSource: number; group: boolean; custom: Array<{ id: string; name: string; url: string }> }
   /**
    * Services by id. `pinned`: the tiles of the Services page, in their order. `added`: the user's
    * services (« mes services »); `offered`: the built-in services this account was offered, added
    * or not (a newer Marianne's new service shows in « découvrir »). `disabled`: switched off, with
    * their tools. `access`: the profile fields each was granted (absent: not asked yet). `reads`:
-   * the day each last read the user's opinions (leaning, themes), YYYY-MM-DD. `opened`: when the
+   * the day each last read the user's opinions (leaning, themes, sources), YYYY-MM-DD. `opened`: when the
    * user last opened each one's screen (ISO). `reviewed`: the file of each community service this
    * account reviewed (its SHA-256, its version): another one on this computer (another account
    * updated it) waits for this account's review.

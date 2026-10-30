@@ -89,6 +89,51 @@ export async function fetchAsBrowser(url: string, opts: { timeoutMs?: number; ac
   return text
 }
 
+/**
+ * A page or a picture read the way a reader view reads it: through Chromium's stack (the CDNs that
+ * only serve a browser), but without the session's cookies (nothing of a visit the user made), a
+ * short wait and a size cap. Past `maxBytes` the answer is cut, and `whole` says so: a reader needs
+ * a page's head and its first paragraphs, never a picture in part.
+ */
+export async function fetchCapped(
+  url: string,
+  opts: { timeoutMs: number; maxBytes: number; accept: string }
+): Promise<{ bytes: Buffer; type: string; whole: boolean }> {
+  const host = new URL(url).host
+  let res: Response
+  try {
+    res = await net.fetch(url, { headers: { Accept: opts.accept }, credentials: 'omit', redirect: 'follow', signal: AbortSignal.timeout(opts.timeoutMs) })
+  } catch (err) {
+    const e = err as Error
+    throw new Error(e.name === 'TimeoutError' ? `Pas de réponse de ${host} (délai dépassé)` : `${host} injoignable : ${e.message}`)
+  }
+  if (!res.ok) {
+    await res.body?.cancel().catch(() => {})
+    throw new HttpError(`HTTP ${res.status} de ${host}`, res.status)
+  }
+  const chunks: Buffer[] = []
+  let size = 0
+  let whole = true
+  const reader = res.body?.getReader()
+  try {
+    while (reader) {
+      const { done, value } = await reader.read()
+      if (done) break
+      chunks.push(Buffer.from(value))
+      size += value.byteLength
+      if (size >= opts.maxBytes) {
+        whole = false
+        await reader.cancel().catch(() => {})
+        break
+      }
+    }
+  } catch (err) {
+    const e = err as Error
+    throw new Error(e.name === 'TimeoutError' ? `Pas de réponse de ${host} (délai dépassé)` : `${host} injoignable : ${e.message}`)
+  }
+  return { bytes: Buffer.concat(chunks).subarray(0, opts.maxBytes), type: res.headers.get('content-type') ?? '', whole }
+}
+
 /** Query string from defined, non-empty values. */
 export function query(params: Record<string, string | number | boolean | undefined | null>): string {
   const q = new URLSearchParams()
