@@ -14,7 +14,7 @@ import {
   type ServiceSummary,
   type ServiceTrust
 } from '@marianne/sdk'
-import type { HomeCommune, ServiceModule, ServiceRuntime } from '@marianne/sdk/main'
+import { forgetCached, type HomeCommune, type ServiceModule, type ServiceRuntime } from '@marianne/sdk/main'
 import type { ServiceFileReview } from '../../shared/catalogue'
 import type { TodayEvent } from '../../shared/public'
 import { accelOf } from '../../shared/shortcuts'
@@ -112,6 +112,9 @@ const UNREVIEWED_DESCRIPTION = 600
 
 const SYNC_CHECK_MS = 3600_000
 
+/** A service's call longer than this is said in the log: a screen is waiting on it. */
+const SLOW_CALL_MS = 1000
+
 const RENAMED = RENAMED_SERVICES
 
 class ServiceHost extends EventEmitter {
@@ -184,6 +187,8 @@ class ServiceHost extends EventEmitter {
     session.on('unlocked', () => setTimeout(() => void this.syncDue(), 10_000).unref())
     session.on('locked', () => {
       this.tileHost.clear()
+      // What the built-in services kept with cached() came from this account: the next one starts without it.
+      forgetCached()
       this.profileSeen = ''
       this.reconcileCommunity()
       // The next account has its own records: the quotas' tallies are read again.
@@ -609,7 +614,14 @@ class ServiceHost extends EventEmitter {
     if (!this.active().includes(entry)) throw new Error(`Le service ${entry.manifest.name} est désactivé.`)
     const fn = (entry.runtime!.methods as Record<string, (...a: unknown[]) => unknown>)[method]
     if (typeof fn !== 'function') throw new Error(`${entry.manifest.name} : méthode inconnue (${method})`)
-    return fn(...args)
+    const started = Date.now()
+    try {
+      return await fn(...args)
+    } finally {
+      // A screen waits on its calls: one that is slow is said in the log, by its name only (never its arguments).
+      const ms = Date.now() - started
+      if (ms > SLOW_CALL_MS) log.warn(`Service call ${entry.manifest.id}.${logLine(method, 80)} took ${ms} ms`)
+    }
   }
 
   /** The tools of the services that are on, as the app's MCP server serves them. */

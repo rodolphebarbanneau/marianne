@@ -29,6 +29,7 @@ import type {
  */
 
 export * from './index'
+export { cached, forgetCached, type Cached, type CachedOptions } from './cache'
 
 export interface RequestOptions {
   method?: 'GET' | 'POST'

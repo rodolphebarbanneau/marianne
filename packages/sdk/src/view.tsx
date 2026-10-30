@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { CallCache, callKey } from './calls'
 import type { ServiceManifest, ServiceMethods } from './index'
 import type { PinnedMedia } from './media/types'
 import { WaitContext } from './ui'
@@ -62,8 +63,16 @@ export interface ServiceHost<M extends ServiceMethods = ServiceMethods> {
 const HostContext = createContext<ServiceHost | null>(null)
 
 /** Marianne's side: gives a view its host. */
+/** What the screen's calls answered (calls.ts): one per screen, and anew when its host changes (an access given or taken back). */
+const CallsContext = createContext<CallCache | null>(null)
+
 export function ServiceHostProvider({ host, children }: { host: ServiceHost; children: ReactNode }) {
-  return <HostContext.Provider value={host}>{children}</HostContext.Provider>
+  const calls = useMemo(() => new CallCache(), [host])
+  return (
+    <HostContext.Provider value={host}>
+      <CallsContext.Provider value={calls}>{children}</CallsContext.Provider>
+    </HostContext.Provider>
+  )
 }
 
 export function useHost<M extends ServiceMethods>(): ServiceHost<M> {
@@ -93,38 +102,63 @@ export interface Loaded<T> {
 /**
  * The result of a method, loaded again when its arguments change (the previous one is dropped
  * meanwhile); null arguments: nothing to load yet. Loaded again with the same arguments (`reload`,
- * a new host), it keeps showing the previous result until the new one comes.
+ * a new host), it keeps showing the previous result until the new one comes, without holding the
+ * tab back. A call the screen already made (a tab picked again) shows its last answer from the first
+ * paint, and is asked again behind it.
  */
 export function useCall<M extends ServiceMethods, K extends keyof M & string>(method: K, args: Parameters<M[K]> | null): Loaded<Awaited<ReturnType<M[K]>>> {
   const host = useHost<M>()
   const waits = useContext(WaitContext)
-  const [data, setData] = useState<Awaited<ReturnType<M[K]>> | null>(null)
+  const calls = useContext(CallsContext)
+  const key = args ? JSON.stringify(args) : null
+  // What the screen had for this call is there from the first paint: a tab picked again doesn't flash empty.
+  const [data, setData] = useState(() => (key === null ? null : ((calls?.get(callKey(method, key))?.value ?? null) as Awaited<ReturnType<M[K]>> | null)))
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [round, setRound] = useState(0)
-  const key = args ? JSON.stringify(args) : null
-  const shown = useRef<string | null>(null)
+  /** The call whose answer is on screen. */
+  const answered = useRef<string | null>(null)
+  const rounds = useRef(round)
   useEffect(() => {
     if (key === null) return
     let alive = true
-    if (shown.current !== `${method}:${key}`) setData(null)
-    shown.current = `${method}:${key}`
-    setLoading(true)
+    const id = callKey(method, key)
+    // A part that mounts again (its tab picked again) shows what the screen had at once, and asks
+    // again behind it. A reload asks and waits, as the first time, its answer kept meanwhile.
+    const reloading = rounds.current !== round
+    rounds.current = round
+    const kept = reloading ? null : (calls?.get(id) ?? null)
+    if (kept) {
+      setData(kept.value as Awaited<ReturnType<M[K]>>)
+      setLoading(false)
+      answered.current = id
+    } else {
+      if (answered.current !== id) setData(null)
+      setLoading(true)
+    }
     setError('')
-    const came = waits?.hold()
+    // Only a call with nothing on screen holds the tab back: one asked again behind its answer (a
+    // reload every few minutes) doesn't keep a tab the user picks meanwhile waiting.
+    const came = answered.current === id ? undefined : waits?.hold()
     host
       .call(method, ...(JSON.parse(key) as Parameters<M[K]>))
-      .then((v) => alive && setData(v))
-      .catch((err: unknown) => alive && setError(errorText(err)))
+      .then((v) => {
+        calls?.set(id, v)
+        if (!alive) return
+        answered.current = id
+        setData(v)
+      })
+      // Asked again behind what it showed: a failure then leaves it shown.
+      .catch((err: unknown) => alive && !kept && setError(errorText(err)))
       .finally(() => {
-        if (alive) setLoading(false)
+        if (alive && !kept) setLoading(false)
         came?.()
       })
     return () => {
       alive = false
       came?.()
     }
-  }, [host, method, key, round, waits])
+  }, [host, method, key, round, waits, calls])
   const reload = useCallback(() => setRound((n) => n + 1), [])
   return { data, error, loading, reload }
 }

@@ -42,6 +42,12 @@ export { decodeEntities, plainText }
  */
 
 const FEED_TTL = 5 * 60_000
+/**
+ * How long a read waits for the feeds once some titles are kept: the catalogue's dozens of feeds
+ * take as long as the slowest one, and a page shouldn't. Past it the kept titles answer, the
+ * feeds go on, and the next read (a screen asks again every few minutes) has what came.
+ */
+const FRESH_WAIT_MS = 1500
 const DAY_MS = 86_400_000
 /** Feeds read at once: the catalogue has dozens. */
 const AT_ONCE = 8
@@ -518,7 +524,7 @@ export class NewsReader {
   private last: { at: number; readAt: string; failed: string[]; offline: boolean } | null = null
   private reading: Promise<void> | null = null
   /** Subjects grouped from the history, kept until its titles change (a title in, changed or gone). */
-  private grouped = new Map<string, { version: number; subjects: Array<{ id: string; items: StoredItem[] }>; single: StoredItem[] }>()
+  private grouped = new Map<string, { version: string | number; subjects: Array<{ id: string; items: StoredItem[] }>; single: StoredItem[] }>()
   /** The stats of Réglages, kept until the history changes or the 24-hour window moves on. */
   private counted: { key: string; stats: NewsStats } | null = null
   /** Articles being read. */
@@ -551,12 +557,28 @@ export class NewsReader {
     return this.reading
   }
 
-  private group(key: string, items: StoredItem[]) {
+  /**
+   * The feeds read again when due, for a read that wants today's titles: for FRESH_WAIT_MS at most
+   * once they were read this session (the titles of that reading then answer, with its hour). The
+   * session's first reading is waited for in full: the titles kept on disk can't say when they were
+   * read, and would be shown as offline.
+   */
+  private fresh(): Promise<void> {
+    const reading = this.refresh()
+    if (!this.last) return reading
+    return Promise.race([reading, new Promise<void>((done) => setTimeout(done, FRESH_WAIT_MS).unref?.())])
+  }
+
+  /**
+   * The subjects of a set of titles, kept while they are the same: for the 24-hour window, until the
+   * history changes; for a past day, until that day's own titles do (`stamp`), not whenever new ones come in.
+   */
+  private group(key: string, items: StoredItem[], stamp: string | number = this.history.version) {
     const hit = this.grouped.get(key)
-    if (hit && hit.version === this.history.version) return hit
+    if (hit && hit.version === stamp) return hit
     // groupSubjects takes headlines and gives the same objects back: the stored items keep their media.
     const { subjects, single } = groupSubjects(items) as unknown as { subjects: Array<{ id: string; items: StoredItem[] }>; single: StoredItem[] }
-    const result = { version: this.history.version, subjects, single }
+    const result = { version: stamp, subjects, single }
     if (this.grouped.size > 16) this.grouped.clear()
     this.grouped.set(key, result)
     return result
@@ -569,11 +591,13 @@ export class NewsReader {
    */
   async whole(day?: string): Promise<WholeReading> {
     if (day !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(day)) day = undefined
-    if (!day || day === parisDay()) await this.refresh()
+    if (!day || day === parisDay()) await this.fresh()
     const all = this.history.all()
     if (day) {
       const items = all.filter((i) => parisDay(new Date(i.published)) === day)
-      return { items, subjects: this.group(day, items).subjects, failed: [], readAt: this.last?.readAt || new Date().toISOString() }
+      // A past day's titles hardly change: its subjects are kept while its own titles are the same.
+      const stamp = `${items.length} ${items.map((i) => i.id + i.title.length).join(',')}`
+      return { items, subjects: this.group(day, items, stamp).subjects, failed: [], readAt: this.last?.readAt || new Date().toISOString() }
     }
     const offline = this.last?.offline ?? true
     // Offline, the window ends with the newest title kept (« hors ligne · titres de 9 h 12 »), never past now.
@@ -602,7 +626,7 @@ export class NewsReader {
   async search(words: string, opts: { since?: string; limit?: number }, see: (i: StoredItem) => NewsHeadline | null): Promise<NewsHeadline[]> {
     const match = matcher(words)
     if (!match) return []
-    await this.refresh()
+    await this.fresh()
     const since = opts.since ? Date.parse(opts.since) : NaN
     const limit = Math.min(Math.max(1, Math.floor(opts.limit ?? 50)), 200)
     const out: NewsHeadline[] = []

@@ -139,6 +139,16 @@ The context is all a service gets of Marianne:
 
 `ctx.http` keeps a GET's answer 5 minutes, unless the request's `cacheMs` says otherwise (0: not at all).
 
+A method that does more than one request (reading several pages, grouping what came) keeps its own answers with `cached(fn, { ttlMs, staleMs, key })` from `@marianne/sdk/main`: answered from memory for `ttlMs`, then for `staleMs` more answered at once while it is asked again behind (a failure then keeps the old answer), then asked and waited for; calls that come while one is asked share it. Each answer goes when it is past both, and every cache is emptied when the account locks: what a method answers often comes from the user's choices. INFOS keeps a subject's past days this way, a minute fresh and ten more stale, keyed by the subject, the scope and the day:
+
+```ts
+const days = cached((id: string, all: boolean) => daysBefore(ctx, id, all), {
+  ttlMs: 60_000,
+  staleMs: 10 * 60_000,
+  key: (id, all) => `${parisDay()} ${id} ${all}`
+})
+```
+
 `activate` returns the runtime:
 
 - `methods`: what its view calls. Declare them as a `type` (an `interface` lacks the index signature `ServiceMethods` needs) in the package (`{ forecast(code: string): Forecast }`) and pass it to `defineService`: the view's calls are checked against it. Arguments and results cross processes: plain data only.
@@ -270,7 +280,7 @@ export function View() {
 
 - `useHost()`: the manifest, `call(method, …args)`, `params` (what it was opened with), `home`, `ask(text, page?)` (hand a question to Marianne: a new folder, the question in the composer), `openRoute(route, params?)` (another screen: `settings/identity`, `service/carte`; with what it opens with, `openRoute('service/infos', { search: 'budget 2027' })`; a settings page's section, `settings/identity#sources`), `openUrl`, `copy`, `toast`, `load(key)`/`save(key, value)` (the same storage as `ctx.storage`).
 - `useHostOptional()`: the same host, or `null` outside a service's screen, where `useHost()` throws: for a block that also works elsewhere. The media player is one: with a host it copies and opens links through Marianne and has the mini-player (`host.media`), without one it copies to the clipboard itself, opens links in a new window and has no mini-player key.
-- `useCall(method, args)`: a method's result, loaded again when the arguments change (the previous result is dropped meanwhile); `null` arguments wait. Loaded again with the same arguments (`reload()`, or Marianne giving the screen a new host when what it may read changes), it keeps the previous result until the new one comes: a player or a list stays on screen.
+- `useCall(method, args)`: a method's result, loaded again when the arguments change (the previous result is dropped meanwhile); `null` arguments wait. Loaded again with the same arguments (`reload()`, or Marianne giving the screen a new host when what it may read changes), it keeps the previous result until the new one comes: a player or a list stays on screen, and a tab picked meanwhile doesn't wait for it. The screen remembers what its calls answered while it is open: a call it already made (a tab picked again, a pane opened again) shows that answer from the first paint, without holding the tab, and is asked again behind it; a failure then leaves the answer shown. `reload()` asks and waits, as the first time. The memory goes with the screen and with its host.
 - `useStored(key, defaults)`: stored data with defaults, and a function that merges, shows and stores.
 - `useTab(onPick?)`: `{ tab, tabs, open(id) }`, the tab shown (`''` without tabs) and a way to show another; `onPick` runs whenever the user picks a tab, the one shown included (a screen with panes over its tabs closes them). Marianne scrolls back to the top on a new tab. The screen opens on the tab its `params.tab` names, else the first.
 - `useTabBadges({ members: '3' })`: a short count beside tabs. `<ServiceTools>`: a few controls of the whole screen at the end of the tab bar (of the header, without tabs).
