@@ -408,6 +408,9 @@ describe('today’s lines', () => {
   it('fall back on the Assemblée’s broadcasts without its agenda', () => {
     expect(todayItems('2026-10-28', [], [live]).map((i) => [i.id, i.title, i.live, i.params])).toEqual([['S1', 'Séance publique', true, { meeting: 'S1' }]])
     expect(todayItems('2026-10-28', [meeting({})], [live]).map((i) => i.id)).toEqual(['M1'])
+    // Its video on the portal: the line opens it, the whole sitting so far.
+    expect(todayItems('2026-10-28', [], [{ ...live, video: '19655971_6ae44b8fc51ef', meeting: 'M2' }])[0].params).toEqual({ video: '19655971_6ae44b8fc51ef' })
+    expect(todayItems('2026-10-28', [], [{ ...live, meeting: 'M2' }])[0].params).toEqual({ meeting: 'M2' })
   })
 
   it('cut a long agenda', () => {

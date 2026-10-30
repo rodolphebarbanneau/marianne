@@ -1,9 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  chapterIndexAt,
+  clockTime,
+  onMediaPrefs,
+  Player,
+  readMediaPrefs,
+  timeWriter,
+  videoTime,
+  type MediaClip,
+  type PlayerHandle,
+  type TimeMode
+} from '@marianne/sdk/media'
 import { Field, Modal, useHost } from '@marianne/sdk/view'
 import { PORTAL, SENATE_PORTAL, videoKey, videoPage } from '../links'
-import { addDays, clock, parisDay, parseClock } from '../time'
+import { addDays, clock, parisDay } from '../time'
 import type { Chamber, Clip, LiveStream, MemberCard, Passage, VideoItem, VideoOpen, VideoQuery, VideoType } from '../types'
-import { CHAMBER_NAMES } from '../types'
 import {
   ChamberCode,
   dateTime,
@@ -24,8 +35,8 @@ import {
   yourTitle
 } from './common'
 import { Thumb } from './home'
+import { clipOf, keptOf, mediaChapters, shareLine, shareLink, snapAt, streamOf, streamTarget, suspensions, type AgendaLine } from './media'
 import { videoRef } from './members'
-import { Player, type PlayerHandle } from './player'
 
 /**
  * The videos of both chambers: shelves before the list (live, pinned to watch with where the user
@@ -67,9 +78,8 @@ export function PinIcon() {
   return <span className="parlement-pin" aria-hidden />
 }
 
-/** Pin, star, cut: what a video's line offers. */
+/** Pin and star: what a video's line offers. */
 function VideoActions({ video }: { video: VideoItem }) {
-  const nav = useNav()
   const { pinned, starred, togglePin, toggleStar } = useShelf()
   const key = videoKey(video.chamber, video.id)
   return (
@@ -87,13 +97,6 @@ function VideoActions({ video }: { video: VideoItem }) {
         title={starred(key) ? 'retirer des favoris' : 'mettre en favori'}
       >
         {starred(key) ? '★' : '☆'}
-      </button>
-      <button
-        className="parlement-vbtn"
-        onClick={() => nav.open({ kind: 'video', ref: videoRef(video), ...(video.timecode ? { start: video.timecode } : {}), clip: 'new' })}
-        title="garder un extrait"
-      >
-        ✂
       </button>
     </span>
   )
@@ -439,7 +442,7 @@ function LiveShelf({ streams }: { streams: LiveStream[] }) {
       </div>
       <div className="parlement-shelf" style={{ ['--n' as string]: Math.max(streams.length, 2) }}>
         {streams.map((s) => (
-          <div key={`${s.chamber}:${s.id}`} className="parlement-vcard onair wide">
+          <div key={`${s.chamber}:${s.video ?? s.id}`} className="parlement-vcard onair wide">
             <Thumb chamber={s.chamber} src={s.poster} live large />
             <span className="parlement-stack">
               <span className="parlement-row small">
@@ -449,11 +452,11 @@ function LiveShelf({ streams }: { streams: LiveStream[] }) {
               <span className="hi parlement-clamp">{s.title || s.subject || s.organ}</span>
               <span className="small dim">{s.organ}</span>
               <span className="parlement-row parlement-push">
-                <button className="btn small primary" onClick={() => nav.open({ kind: 'live', chamber: s.chamber, id: s.id })}>
+                <button className="btn small primary" onClick={() => nav.open(streamTarget(s))}>
                   regarder
                 </button>
-                {s.chamber === 'an' && (
-                  <button className="btn small" onClick={() => nav.open({ kind: 'meeting', id: s.id })}>
+                {s.meeting && (
+                  <button className="btn small" onClick={() => nav.open({ kind: 'meeting', id: s.meeting! })}>
                     ordre du jour
                   </button>
                 )}
@@ -565,12 +568,13 @@ function ClipsShelf() {
   const nav = useNav()
   const { clips, setClips } = useStore()
   const [removing, setRemoving] = useState<Clip | null>(null)
+  const [renaming, setRenaming] = useState<{ clip: Clip; title: string } | null>(null)
   const shown = clips.filter((c) => nav.shows(c.chamber ?? 'an'))
   if (!shown.length)
     return (
       <div className="box-note">
-        Aucun extrait pour l’instant. Dans une vidéo, ✂ garde un passage ici, privé, dans votre archive : pour le revoir, le partager ou en parler avec
-        Marianne.
+        Aucun extrait pour l’instant. Dans une vidéo, « garder un extrait » (dans les options du lecteur, ou la touche X) garde un passage ici, privé, dans
+        votre archive : pour le revoir, le partager ou en parler avec Marianne.
       </div>
     )
   return (
@@ -597,8 +601,8 @@ function ClipsShelf() {
                 <button className="btn small" onClick={() => nav.open({ kind: 'video', ref, start: c.start, stopAt: c.end })}>
                   regarder
                 </button>
-                <button className="btn small" onClick={() => nav.open({ kind: 'video', ref, start: c.start, clip: c.id })}>
-                  modifier
+                <button className="btn small" onClick={() => setRenaming({ clip: c, title: c.title })}>
+                  renommer
                 </button>
                 <button className="btn small" onClick={() => host.copy(videoPage(chamber, c.video, c.start), 'lien copié')}>
                   copier le lien
@@ -621,6 +625,31 @@ function ClipsShelf() {
           )
         })}
       </div>
+      {renaming && (
+        <Modal onClose={() => setRenaming(null)}>
+          <div className="in">
+            <span className="label">renommer l’extrait</span>
+            <Field label="titre de l’extrait" wide>
+              <input autoFocus value={renaming.title} onChange={(e) => setRenaming({ ...renaming, title: e.target.value })} />
+            </Field>
+          </div>
+          <div className="foot">
+            <button className="btn" onClick={() => setRenaming(null)}>
+              annuler
+            </button>
+            <button
+              className="btn primary"
+              disabled={!renaming.title.trim()}
+              onClick={() => {
+                setClips(clips.map((c) => (c.id === renaming.clip.id ? { ...c, title: renaming.title.trim() } : c)))
+                setRenaming(null)
+              }}
+            >
+              renommer
+            </button>
+          </div>
+        </Modal>
+      )}
       {removing && (
         <Modal onClose={() => setRemoving(null)}>
           <div className="in">
@@ -652,28 +681,103 @@ function ClipsShelf() {
 
 // ---------------------------------------------------------------- watching
 
-/** A broadcast, from the list of what is live. */
+/** A broadcast is asked again this often: its chapters grow, it ends (the main side keeps its answers 20 s). */
+const POLL_MS = 30_000
+const DAY_MS = 86_400_000
+
+const badgeOf = (chamber: Chamber) => (chamber === 'an' ? 'AN' : 'SÉNAT')
+const theChamber = (chamber: Chamber) => (chamber === 'an' ? 'l’Assemblée' : 'le Sénat')
+
+/** The time's mode the user chose in a player (« temps » in its options), for the agenda beside it. */
+function useTimeMode(): TimeMode {
+  const [mode, setMode] = useState(() => readMediaPrefs().time)
+  useEffect(() => onMediaPrefs((p) => setMode(p.time)), [])
+  return mode
+}
+
+/** A method asked again every 30 s while `on`. */
+function usePolling(reload: () => void, on: boolean) {
+  useEffect(() => {
+    if (!on) return
+    const t = setInterval(reload, POLL_MS)
+    return () => clearInterval(t)
+  }, [reload, on])
+}
+
+/**
+ * The stream to play: the first of the playlists that answers (a live's mirror when its origin
+ * doesn't); null while trying them. A single one is played as it is.
+ */
+function usePlayable(urls: string[]): string | null {
+  const key = urls.join('\n')
+  const [found, setFound] = useState<{ key: string; src: string } | null>(null)
+  useEffect(() => {
+    const list = key ? key.split('\n') : []
+    if (list.length < 2) return
+    let alive = true
+    void (async () => {
+      for (const url of list) {
+        const ok = await fetch(url, { signal: AbortSignal.timeout(8000) }).then(
+          (r) => r.ok,
+          () => false
+        )
+        if (ok || !alive) return alive && setFound({ key, src: url })
+      }
+      // None answers: the first, and the player says it can't play it.
+      if (alive) setFound({ key, src: list[0] })
+    })()
+    return () => {
+      alive = false
+    }
+  }, [key])
+  if (urls.length < 2) return urls[0] ?? ''
+  return found?.key === key ? found.src : null
+}
+
+/**
+ * A broadcast the portal doesn't have the video of yet: the Assemblée's live stream, its last
+ * seconds only. Asked again every 30 s: once the portal has its video, that video, the whole sitting.
+ */
 export function LivePane({ chamber, id }: { chamber: Chamber; id: string }) {
   const host = useHost()
   const nav = useNav()
   const live = useMethod('live', [])
-  if (live.error) return <Failure error={live.error} retry={live.reload} />
+  usePolling(live.reload, true)
+  const stream = live.data?.find((s) => s.chamber === chamber && (s.id === id || s.video === id))
+  const src = usePlayable(stream?.hls ? [stream.hls, ...stream.mirrors] : [])
+  if (live.error && !live.data) return <Failure error={live.error} retry={live.reload} />
   if (!live.data) return <Loading label="le direct" />
-  const stream = live.data.find((s) => s.chamber === chamber && s.id === id)
-  if (!stream) return <p className="dim">Cette diffusion n’est plus en direct : la vidéo sera sur le portail un peu après la réunion.</p>
+  if (stream?.video) return <VideoPane refId={videoKey(chamber, stream.video)} />
+  if (!stream)
+    return (
+      <div className="box-note">
+        Cette diffusion ne figure plus parmi les directs de {theChamber(chamber)}. Sa vidéo sera dans les vidéos du jour une fois publiée sur le portail.{' '}
+        <button className="link" onClick={() => nav.tab('videos')}>
+          voir les vidéos
+        </button>
+      </div>
+    )
+  const title = stream.title || stream.subject || stream.organ
+  const items = stream.items ?? []
   return (
     <>
       <p className="parlement-row small">
         <ChamberCode chamber={chamber} />
         <span className="parlement-live">● en direct</span>
-        <span className="dim">
-          · {stream.organ} · depuis {hour(stream.startAt)}
-        </span>
+        <span className="dim">· {[stream.organ, `depuis ${hour(stream.startAt)}`].filter(Boolean).join(' · ')}</span>
       </p>
-      <h3 className="hi parlement-title">{stream.title || stream.subject}</h3>
-      <div className="parlement-watch">
+      <h3 className="hi parlement-title">{title}</h3>
+      <div className={`parlement-watch${items.length ? '' : ' solo'}`}>
         <div className="parlement-stack">
-          <Player src={stream.hls} poster={stream.poster} autoPlay />
+          {src === null ? (
+            <Loading inline label="le direct" />
+          ) : (
+            <Player src={src} poster={stream.poster} live autoPlay title={title} badge={badgeOf(chamber)} />
+          )}
+          <p className="small dim">
+            Le portail ne propose pas encore la vidéo de ce direct : on n’en voit ici que les dernières secondes, sans retour en arrière. Dès qu’il la propose,
+            la séance entière s’ouvre ici.
+          </p>
           <p className="parlement-actions">
             {stream.meeting && (
               <button className="btn small" onClick={() => nav.open({ kind: 'meeting', id: stream.meeting! })}>
@@ -683,9 +787,7 @@ export function LivePane({ chamber, id }: { chamber: Chamber; id: string }) {
             <button
               className="btn small"
               onClick={() =>
-                host.ask(
-                  `Que se passe-t-il en ce moment ${chamber === 'an' ? 'à l’Assemblée nationale' : 'au Sénat'} (${stream.organ}) ? ${stream.title || stream.subject}`
-                )
+                host.ask(`Que se passe-t-il en ce moment ${chamber === 'an' ? 'à l’Assemblée nationale' : 'au Sénat'} (${stream.organ}) ? ${title}`)
               }
             >
               demander à Marianne
@@ -695,90 +797,133 @@ export function LivePane({ chamber, id }: { chamber: Chamber; id: string }) {
             </button>
           </p>
         </div>
-        <LiveAgenda stream={stream} />
+        {items.length > 0 && <LiveAgenda items={items} />}
       </div>
     </>
   )
 }
 
-/**
- * Beside a broadcast, what it is about: at the Sénat, its video's chapters (the portal names them
- * before their times, at the end of the sitting); otherwise the agenda of the meeting it shows.
- */
-export function LiveAgenda({ stream }: { stream: LiveStream }) {
-  const video = useMethod('video', stream.chamber === 'se' ? [`se:${stream.id}`] : null)
-  const chapters = video.data?.chapters ?? []
-  const items = stream.items ?? []
-  if (stream.chamber === 'se' && !video.data && !video.error) return <Loading inline />
-  if (!chapters.length && !items.length) return <p className="small dim">L’ordre du jour n’est pas publié pour cette diffusion.</p>
+/** Beside a broadcast without its video: the agenda of the meeting it shows (no times: they come with the video). */
+export function LiveAgenda({ items }: { items: string[] }) {
   return (
     <div className="parlement-chapters">
-      <span className="label">ordre du jour</span>
-      {chapters.length
-        ? chapters.map((c) => (
-            <span key={c.id} className={`parlement-chapter${c.depth === 0 ? ' hi' : ''}`} style={{ paddingLeft: 8 + c.depth * 14 }}>
-              {c.title}
-            </span>
-          ))
-        : items.map((item, i) => (
-            <span key={i} className="parlement-chapter">
-              {item}
-            </span>
-          ))}
-      <span className="small dim parlement-chapter-note">Les horaires des interventions arrivent avec la vidéo, après la séance.</span>
+      <span className="parlement-chapters-h">
+        <span className="label">ordre du jour</span>
+      </span>
+      {items.map((item, i) => (
+        <span key={i} className="parlement-chapter">
+          {item}
+        </span>
+      ))}
     </div>
   )
 }
 
+/** A video's detail; asked again every 30 s while it is broadcast (its chapters grow), or, a day at most, until the portal has processed it. */
+export function useVideo(ref: string | null) {
+  const video = useMethod('video', ref ? [ref] : null)
+  const v = video.data
+  usePolling(video.reload, !!v && (v.live || (!v.hls && Date.now() - Date.parse(v.date) < DAY_MS)))
+  return video
+}
+
+/** A video as a line of the lists (its pin and star keep it so). */
+function itemOf(v: VideoOpen): VideoItem {
+  return {
+    id: v.id,
+    chamber: v.chamber,
+    title: v.title,
+    description: '',
+    date: v.date,
+    type: v.type,
+    kind: kindOf(v.type),
+    commission: v.organ,
+    thumbnail: v.thumbnail,
+    durationMs: Math.max(0, v.durationMs - v.offsetMs),
+    url: v.url
+  }
+}
+
 /**
- * A video: the player (at a passage, or where the user stopped), its chapters, pin and star, and the
- * passage kept as a clip. Positions are the portal's (a link's timecode); the Sénat's streams start
- * later than its recordings, by offsetMs.
+ * A video: the player (at a passage, where the user stopped, or `t`, the mini-player's position),
+ * pin and star, the agenda beside it. A broadcast is the same page, live: its agenda grows, and it
+ * becomes the recording under the same id.
  */
-export function VideoPane({ refId, start, stopAt, clip }: { refId: string; start?: number; stopAt?: number; clip?: string }) {
+export function VideoPane({ refId, start, t, stopAt }: { refId: string; start?: number; t?: number; stopAt?: number }) {
+  const { pinned, starred, togglePin, toggleStar } = useShelf()
+  const video = useVideo(refId)
+  const v = video.data
+  if (video.error && !v) return <Failure error={video.error} retry={video.reload} />
+  if (!v) return <Loading label="la vidéo" />
+  const item = itemOf(v)
+  const key = videoKey(v.chamber, v.id)
+  const length = item.durationMs ?? 0
+  return (
+    <>
+      <p className="parlement-row small">
+        <ChamberCode chamber={v.chamber} />
+        {v.live ? (
+          <>
+            <span className="parlement-live">● en direct</span>
+            <span className="dim">· {[v.type, v.organ, `depuis ${hour(v.date)}`].filter(Boolean).join(' · ')}</span>
+          </>
+        ) : (
+          <>
+            <span className="dim">{[v.type, v.organ, dateTime(v.date), length ? `durée ${clock(length)}` : ''].filter(Boolean).join(' · ')}</span>
+            <span className="parlement-grow" />
+            <button
+              className={`parlement-vbtn${pinned(key) ? ' on' : ''}`}
+              onClick={() => togglePin(item)}
+              title={pinned(key) ? 'retirer de « à voir »' : 'épingler : à voir'}
+            >
+              <PinIcon />
+            </button>
+            <button
+              className={`parlement-vbtn${starred(key) ? ' on' : ''}`}
+              onClick={() => toggleStar(item)}
+              title={starred(key) ? 'retirer des favoris' : 'mettre en favori'}
+            >
+              {starred(key) ? '★' : '☆'}
+            </button>
+          </>
+        )}
+      </p>
+      <h3 className="hi parlement-title">{v.title || v.organ || v.type}</h3>
+      <VideoWatch v={v} start={start} t={t} stopAt={stopAt} />
+    </>
+  )
+}
+
+/**
+ * The player and the agenda beside it. Positions: the player's are the stream's (`t`, the track,
+ * the agenda shown); the portal's (links' timecodes, `start`, `stopAt`, clips) are later by
+ * offsetMs at the Sénat. `inMeeting`: shown in its meeting's page (no "la réunion").
+ */
+export function VideoWatch({ v, start, t, stopAt, inMeeting }: { v: VideoOpen; start?: number; t?: number; stopAt?: number; inMeeting?: boolean }) {
   const host = useHost()
   const nav = useNav()
-  const { clips, shelf, setShelf } = useStore()
-  const { pinned, starred, togglePin, toggleStar } = useShelf()
-  const video = useMethod('video', [refId])
-  // A video still being processed: what its chamber broadcasts now, to watch it live meanwhile.
-  const live = useMethod('live', video.data && !video.data.hls ? [] : null)
+  const { clips, setClips, shelf, setShelf } = useStore()
   const player = useRef<PlayerHandle>(null)
+  const agenda = useRef<HTMLDivElement>(null)
   const [time, setTime] = useState(0)
-  const [editing, setEditing] = useState<Clip | null>(() => clips.find((c) => c.id === clip) ?? null)
-  const saved = useRef({ at: 0, written: 0 })
-
-  const v = video.data
-  const offset = v?.offsetMs ?? 0
-  const key = v ? videoKey(v.chamber, v.id) : ''
-  const timed = useMemo(() => v?.chapters.filter((c) => c.timecode !== null) ?? [], [v])
-  const current = useMemo(() => [...timed].reverse().find((c) => (c.timecode ?? 0) <= time)?.id, [timed, time])
-  const item = useMemo(
-    (): VideoItem | null =>
-      v
-        ? {
-            id: v.id,
-            chamber: v.chamber,
-            title: v.title,
-            description: '',
-            date: v.date,
-            type: v.type,
-            kind: kindOf(v.type),
-            commission: v.organ,
-            thumbnail: v.thumbnail,
-            durationMs: Math.max(0, v.durationMs - v.offsetMs),
-            url: v.url
-          }
-        : null,
-    [v]
-  )
+  const mode = useTimeMode()
+  const offset = v.offsetMs
+  const key = videoKey(v.chamber, v.id)
+  const length = Math.max(0, v.durationMs - offset)
+  const lines = useMemo(() => mediaChapters(v), [v])
+  // A live's last suspension lasts up to its edge: the track cuts what goes past it.
+  const gaps = useMemo(() => suspensions(lines, v.live ? Number.MAX_SAFE_INTEGER : length), [lines, v.live, length])
+  const kept = useMemo(() => keptOf(clips, v), [clips, v])
+  const clockStart = v.clockStart || undefined
+  const title = v.title || v.organ || v.type
+  const badge = badgeOf(v.chamber)
+  const live = useMethod('live', !v.hls && !v.live ? [] : null)
 
   /**
-   * Where the user stopped, in the stream's own time (as the player counts, and the lists' lengths
-   * are): kept every 15 seconds of watching and when the pane closes. A pinned video seen to the
-   * end leaves "à voir".
+   * Where the user stopped, in the player's time (as the lists' lengths are): kept every 15
+   * seconds of watching and when the page closes. A pinned video seen to the end leaves "à voir".
    */
-  const length = item?.durationMs ?? 0
+  const saved = useRef({ at: 0, written: 0 })
   const latest = useRef({ shelf, setShelf, key, length })
   latest.current = { shelf, setShelf, key, length }
   const keep = (final: boolean) => {
@@ -795,130 +940,174 @@ export function VideoPane({ refId, start, stopAt, clip }: { refId: string; start
   const keepRef = useRef(keep)
   keepRef.current = keep
   useEffect(() => () => keepRef.current(true), [])
+
+  // Where to start, at the player's time: the mini-player's position, a passage, where the user stopped (not in a live: at its edge).
+  const [first] = useState(() => {
+    const resume = shelf.progress[key] ?? 0
+    const resumable = !v.live && resume > 0 && (!length || resume < length * 0.95)
+    const at = t ?? (start !== undefined ? start - offset : v.timecode !== undefined ? v.timecode - offset : resumable ? resume : undefined)
+    return { at: at !== undefined ? Math.max(0, at) : undefined, resumed: t === undefined && start === undefined && v.timecode === undefined && resumable }
+  })
+
+  /**
+   * The stream: a live's first playlist that answers. The broadcast over, it is kept until the
+   * recording comes (the same timeline), which then plays from where the user is.
+   */
+  const picked = usePlayable(v.hls ? [v.hls, ...v.mirrors] : [])
+  const [src, setSrc] = useState<{ url: string; at?: number }>(() => ({ url: picked ?? '', at: first.at }))
+  useEffect(() => {
+    if (picked) setSrc((s) => (s.url === picked ? s : { url: picked, at: s.url ? (player.current?.time() ?? 0) : first.at }))
+  }, [picked, first.at])
+
+  // The agenda follows the player: its line in view, unless the user is reading it (the pointer over it).
+  const current = lines[chapterIndexAt(lines, time)]?.id
+  const [shown, setShown] = useState<string | null>(null)
+  const reading = useRef(false)
+  const bringIntoView = (id: string | undefined, always = false) => {
+    const list = agenda.current
+    const el = id ? list?.querySelector<HTMLElement>(`[data-id="${CSS.escape(id)}"]`) : null
+    if (!list || !el || (reading.current && !always)) return
+    const top = el.offsetTop - list.clientHeight / 3
+    if (always || el.offsetTop < list.scrollTop || el.offsetTop + el.offsetHeight > list.scrollTop + list.clientHeight)
+      list.scrollTo({ top, behavior: 'smooth' })
+  }
+  useEffect(() => bringIntoView(current), [current]) // eslint-disable-line react-hooks/exhaustive-deps
+  const showLine = (id: string) => {
+    bringIntoView(id, true)
+    setShown(id)
+  }
+  useEffect(() => {
+    if (!shown) return
+    const timer = setTimeout(() => setShown(null), 1600)
+    return () => clearTimeout(timer)
+  }, [shown])
+
   const onTime = (ms: number) => {
-    setTime(ms + offset)
+    setTime(ms)
     saved.current.at = Math.round(ms)
     keep(false)
   }
-
-  const resume = shelf.progress[key] ?? 0
-  // A new clip starts where the user is: the passage asked for, or where they stopped; never before the stream.
-  useEffect(() => {
-    if (clip === 'new' && v && !editing) setEditing(newClip(v, Math.max(v.offsetMs, start ?? v.timecode ?? resume + v.offsetMs)))
-  }, [clip, v]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (video.error) return <Failure error={video.error} retry={video.reload} />
-  if (!v || !item) return <Loading label="la vidéo" />
-  const resumable = resume > 0 && (!length || resume < length * 0.95)
-  const at = start ?? v.timecode ?? (resumable ? resume + offset : undefined)
-  const link = (ms: number) => videoPage(v.chamber, v.id, ms)
-  const now = () => (player.current?.time() ?? 0) + offset
-  const seek = (ms: number) => player.current?.seek(Math.max(0, ms - offset))
+  const seek = (at: number) => player.current?.seek(at)
+  const when = timeWriter(mode, clockStart, length)
+  // The agenda's times: the video's, or the hémicycle's clock to the minute.
+  const lineTime = (ms: number) => (mode === 'heure' && clockStart !== undefined ? clockTime(clockStart + ms, false) : videoTime(ms, length))
+  const share = (ms: number) => timeWriter(readMediaPrefs().time, clockStart, length)(ms)
+  const keepClip = (clip: MediaClip) => {
+    setClips([clipOf(v, clip, crypto.randomUUID(), new Date()), ...clips])
+    host.toast('extrait gardé dans « vidéos › extraits »')
+  }
+  const pin = useMemo(() => ({ title, badge, route: 'service/parlement', params: { video: key } }), [title, badge, key])
+  const timed = v.chapters.some((c) => c.timecode !== null)
+  const last = lines.at(-1)?.id
+  const onAir = !v.hls && !v.live ? streamOf(live.data ?? [], v) : null
 
   return (
-    <>
-      <p className="parlement-row small">
-        <ChamberCode chamber={v.chamber} />
-        <span className="dim">{[v.type, v.organ, dateTime(v.date), length ? `durée ${clock(length)}` : ''].filter(Boolean).join(' · ')}</span>
-        <span className="parlement-grow" />
-        <button
-          className={`parlement-vbtn${pinned(key) ? ' on' : ''}`}
-          onClick={() => togglePin(item)}
-          title={pinned(key) ? 'retirer de « à voir »' : 'épingler : à voir'}
-        >
-          <PinIcon />
-        </button>
-        <button
-          className={`parlement-vbtn${starred(key) ? ' on' : ''}`}
-          onClick={() => toggleStar(item)}
-          title={starred(key) ? 'retirer des favoris' : 'mettre en favori'}
-        >
-          {starred(key) ? '★' : '☆'}
-        </button>
-      </p>
-      <h3 className="hi parlement-title">{v.title}</h3>
-      <div className={`parlement-watch${v.chapters.length ? '' : ' solo'}`}>
-        <div className="parlement-stack">
-          {v.hls ? (
-            <Player
-              ref={player}
-              src={v.hls}
-              poster={v.thumbnail}
-              start={at !== undefined ? Math.max(0, at - offset) : undefined}
-              stopAt={stopAt !== undefined ? stopAt - offset : undefined}
-              autoPlay={at !== undefined}
-              onTime={onTime}
-            />
-          ) : (
-            <div className="box-note">
-              La vidéo est en cours de traitement par {CHAMBER_NAMES[v.chamber] === 'Sénat' ? 'le Sénat' : 'l’Assemblée'} : elle sera visible un peu plus tard.
-              {(() => {
-                // The same kind of meeting broadcast now by its chamber: the sitting, or the committee.
-                const now = (live.data ?? []).find((s) => s.chamber === v.chamber && (s.organ === 'Séance publique') === /s[ée]ance/i.test(v.type))
-                return now ? (
-                  <>
-                    {' '}
-                    Elle est diffusée en direct :{' '}
-                    <button className="link" onClick={() => nav.open({ kind: 'live', chamber: now.chamber, id: now.id })}>
-                      ▶ la regarder en direct
-                    </button>
-                  </>
-                ) : null
-              })()}
-            </div>
-          )}
-          {resumable && start === undefined && v.timecode === undefined && (
-            <span className="small dim">reprise à {clock(resume)}, là où vous vous étiez arrêté</span>
-          )}
-          <p className="parlement-actions">
-            {v.hls && !editing && (
-              <button className="btn small" onClick={() => setEditing(newClip(v, now()))}>
-                ✂ garder un extrait
-              </button>
+    <div className={`parlement-watch${v.chapters.length ? '' : ' solo'}`}>
+      <div className="parlement-stack">
+        {src.url ? (
+          <Player
+            ref={player}
+            src={src.url}
+            poster={v.thumbnail}
+            live={v.live}
+            start={src.at}
+            stopAt={stopAt !== undefined ? stopAt - offset : undefined}
+            autoPlay={src.at !== undefined || v.live}
+            chapters={lines}
+            gaps={gaps}
+            kept={kept}
+            clockStart={clockStart}
+            title={title}
+            badge={badge}
+            onTime={onTime}
+            onChapter={(c) => showLine((c as AgendaLine).id)}
+            onAgenda={() => {
+              const list = agenda.current
+              void (document.fullscreenElement ? document.exitFullscreen() : Promise.resolve())
+                .catch(() => undefined)
+                .then(() => {
+                  list?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+                  if (current) showLine(current)
+                })
+            }}
+            shareUrl={(at, clip) => shareLink(v, at, clip)}
+            shareText={(url, at, clip) => shareLine(v, lines, url, at, clip, share)}
+            onKeepClip={keepClip}
+            snapClip={(ms) => snapAt(lines, ms, v.live ? Math.max(ms, player.current?.time() ?? ms) : length || ms + 60_000)}
+            pin={pin}
+          />
+        ) : picked === null ? (
+          <Loading inline label="la vidéo" />
+        ) : (
+          <div className="box-note">
+            {v.live
+              ? 'Le portail ne donne pas encore le flux de ce direct : la page le prendra dès qu’il le donnera.'
+              : `La vidéo est en cours de traitement par ${theChamber(v.chamber)} : elle s’ouvrira ici dès qu’elle sera prête.`}
+            {onAir && (
+              <>
+                {' '}
+                En ce moment, {onAir.title || onAir.subject || onAir.organ} est en direct sur la même chaîne :{' '}
+                <button className="link" onClick={() => nav.open(streamTarget(onAir))}>
+                  ▶ regarder le direct
+                </button>
+              </>
             )}
-            <button className="btn small" onClick={() => host.copy(link(now()), 'lien copié')}>
-              copier le lien
-            </button>
-            <button
-              className="btn small"
-              onClick={() =>
-                host.ask(
-                  `Résume ce qui s’est dit dans cette vidéo ${v.chamber === 'an' ? 'de l’Assemblée nationale' : 'du Sénat'} (ordre du jour, positions des orateurs, décisions), avec des liens vers les passages clés : ${v.url}`
-                )
-              }
-            >
-              demander à Marianne
-            </button>
-            <button className="btn small" onClick={() => host.openUrl(link(now()))}>
-              page officielle
-            </button>
-          </p>
-          {editing && <ClipEditor clip={editing} video={v} now={now} seek={seek} onDone={() => setEditing(null)} />}
-        </div>
-        {v.chapters.length > 0 && (
-          <div className="parlement-chapters">
-            <span className="label">ordre du jour et interventions</span>
-            {!v.chapters.some((c) => c.timecode !== null) && (
-              <span className="small dim parlement-chapter-note">
-                Les horaires des interventions arrivent à la fin de la séance : la vidéo est encore en cours.
-              </span>
-            )}
-            {v.chapters.map((c) => (
-              <button
-                key={c.id}
-                className={c.id === current ? 'on' : ''}
-                disabled={c.timecode === null || !v.hls}
-                onClick={() => c.timecode !== null && seek(c.timecode)}
-                style={{ paddingLeft: 8 + c.depth * 14 }}
-              >
-                <span className="parlement-tc">{c.timecode !== null ? clock(c.timecode) : ''}</span>
-                <span className={c.depth === 0 ? 'hi' : ''}>{c.title}</span>
-              </button>
-            ))}
           </div>
         )}
+        {src.url && !v.live && !v.hls && (
+          <span className="small dim">La séance est terminée : le portail prépare la vidéo enregistrée, qui reprendra ici au même endroit.</span>
+        )}
+        {first.resumed && <span className="small dim">reprise à {when(first.at ?? 0)}, là où vous vous étiez arrêté</span>}
+        <p className="parlement-actions">
+          <button
+            className="btn small"
+            onClick={() =>
+              host.ask(
+                v.live
+                  ? `Que se passe-t-il en ce moment ${v.chamber === 'an' ? 'à l’Assemblée nationale' : 'au Sénat'} (${title}) ? ${v.url}`
+                  : `Résume ce qui s’est dit dans cette vidéo ${v.chamber === 'an' ? 'de l’Assemblée nationale' : 'du Sénat'} (ordre du jour, positions des orateurs, décisions), avec des liens vers les passages clés : ${v.url}`
+              )
+            }
+          >
+            demander à Marianne
+          </button>
+          {!inMeeting && v.meetingIds[0] && (
+            <button className="btn small" onClick={() => nav.open({ kind: 'meeting', id: v.meetingIds[0] })}>
+              la réunion
+            </button>
+          )}
+          <button className="btn small" onClick={() => host.openUrl(shareLink(v, src.url && !v.live ? (player.current?.time() ?? null) : null))}>
+            page officielle
+          </button>
+        </p>
       </div>
-    </>
+      {v.chapters.length > 0 && (
+        <div ref={agenda} className="parlement-chapters" onPointerEnter={() => (reading.current = true)} onPointerLeave={() => (reading.current = false)}>
+          <span className="parlement-chapters-h">
+            <span className="label">ordre du jour et interventions</span>
+            <span className="small dim">{timed ? lines.length : v.chapters.length}</span>
+          </span>
+          {!timed && <span className="small dim parlement-chapter-note">Le portail ne donne pas encore les horaires de ces points.</span>}
+          {v.chapters.map((c) => {
+            const line = c.timecode !== null ? lines.find((l) => l.id === c.id) : undefined
+            return (
+              <button
+                key={c.id}
+                data-id={c.id}
+                className={[c.id === current ? 'on' : '', c.id === shown ? 'shown' : ''].filter(Boolean).join(' ')}
+                disabled={!line || !src.url}
+                onClick={() => line && seek(line.at)}
+                style={{ paddingLeft: 8 + c.depth * 14 }}
+              >
+                <span className="parlement-tc">{line ? lineTime(line.at) : ''}</span>
+                <span className={c.depth === 0 ? 'hi' : ''}>{c.title}</span>
+                {v.live && c.id === last && <span className="parlement-now">● en cours</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -931,82 +1120,3 @@ const kindOf = (type: string): VideoType =>
       : /commission|audition|d[ée]l[ée]gation|mission/i.test(type)
         ? 'commission'
         : 'autre'
-
-function newClip(v: VideoOpen, from: number): Clip {
-  const chapter = [...v.chapters].reverse().find((c) => c.timecode !== null && c.timecode <= from)
-  return {
-    id: crypto.randomUUID(),
-    video: v.id,
-    chamber: v.chamber,
-    title: chapter?.title ?? v.title,
-    videoTitle: v.title,
-    date: v.date,
-    start: Math.round(from),
-    end: Math.round(Math.min(from + 60_000, v.durationMs || from + 60_000)),
-    thumbnail: v.thumbnail,
-    createdAt: new Date().toISOString()
-  }
-}
-
-/** A passage being cut: its bounds (typed, or taken from the player) and its title. */
-function ClipEditor({ clip, video, now, seek, onDone }: { clip: Clip; video: VideoOpen; now: () => number; seek: (ms: number) => void; onDone: () => void }) {
-  const host = useHost()
-  const { clips, setClips } = useStore()
-  const [title, setTitle] = useState(clip.title)
-  const [start, setStart] = useState(clock(clip.start))
-  const [end, setEnd] = useState(clock(clip.end))
-  const from = parseClock(start)
-  const to = parseClock(end)
-  const error =
-    Number.isNaN(from) || Number.isNaN(to)
-      ? 'positions attendues en minutes:secondes (12:04) ou heures:minutes:secondes'
-      : to <= from
-        ? 'la fin doit venir après le début'
-        : ''
-  const known = clips.some((c) => c.id === clip.id)
-  const here = (set: (value: string) => void) => set(clock(now()))
-
-  const save = () => {
-    const kept: Clip = { ...clip, title: title.trim() || video.title, start: from, end: to }
-    setClips(known ? clips.map((c) => (c.id === clip.id ? kept : c)) : [kept, ...clips])
-    host.toast(known ? 'extrait mis à jour' : 'extrait gardé dans « extraits »')
-    onDone()
-  }
-
-  return (
-    <div className="box-note parlement-editor">
-      <Field label="titre de l’extrait" wide>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} />
-      </Field>
-      <div className="parlement-fields">
-        <Field label="début">
-          <span className="parlement-inline">
-            <input value={start} onChange={(e) => setStart(e.target.value)} />
-            <button className="btn small" onClick={() => here(setStart)}>
-              position actuelle
-            </button>
-          </span>
-        </Field>
-        <Field label="fin" error={error}>
-          <span className="parlement-inline">
-            <input value={end} onChange={(e) => setEnd(e.target.value)} />
-            <button className="btn small" onClick={() => here(setEnd)}>
-              position actuelle
-            </button>
-          </span>
-        </Field>
-      </div>
-      <p className="parlement-actions">
-        <button className="btn small" disabled={!!error} onClick={() => seek(from)}>
-          revoir depuis le début
-        </button>
-        <button className="btn small primary" disabled={!!error} onClick={save}>
-          {known ? 'mettre à jour l’extrait' : 'garder l’extrait'}
-        </button>
-        <button className="btn small" onClick={onDone}>
-          annuler
-        </button>
-      </p>
-    </div>
-  )
-}

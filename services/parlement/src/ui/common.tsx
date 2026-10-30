@@ -37,7 +37,8 @@ export type Target =
   | { kind: 'ballot'; chamber: Chamber; id: string }
   | { kind: 'meeting'; id: string }
   | { kind: 'live'; chamber: Chamber; id: string }
-  | { kind: 'video'; ref: string; start?: number; stopAt?: number; clip?: string }
+  /** `start`, `stopAt`: the portal's positions (a link's timecode, a clip's); `t`: the player's (the mini-player's), ms. */
+  | { kind: 'video'; ref: string; start?: number; stopAt?: number; t?: number }
   /** A ballot in its hemicycle, with its card beside it. */
   | { kind: 'vote'; chamber: Chamber; id: string }
 

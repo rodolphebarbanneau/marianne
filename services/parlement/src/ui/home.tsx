@@ -29,6 +29,7 @@ import {
   yourTitle
 } from './common'
 import { NeedsData } from './data'
+import { streamTarget } from './media'
 
 /**
  * The home screen: the user's members first (from their address), what happens now beside them
@@ -418,7 +419,7 @@ function Live({ streams }: { streams: LiveStream[] }) {
       </div>
       <div className="parlement-shelf" style={{ ['--n' as string]: Math.min(streams.length, 2) }}>
         {streams.map((s) => (
-          <button key={`${s.chamber}:${s.id}`} className="parlement-vcard onair" onClick={() => nav.open({ kind: 'live', chamber: s.chamber, id: s.id })}>
+          <button key={`${s.chamber}:${s.video ?? s.id}`} className="parlement-vcard onair" onClick={() => nav.open(streamTarget(s))}>
             <Thumb chamber={s.chamber} src={s.poster} live large />
             <span className="parlement-row small">
               <ChamberCode chamber={s.chamber} />
