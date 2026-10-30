@@ -63,7 +63,7 @@ export function useServiceHelp(state: ServiceState): string {
   return (builtIn ? SERVICE_HELP[id] : community)?.trim() ?? ''
 }
 
-/** How the conversation names a service's tool ("assemblée · scrutins"). */
+/** How the conversation names a service's tool ("parlement · scrutins"). */
 export function serviceToolLabel(services: ServiceState[], name: string): string | undefined {
   for (const s of services) {
     const tool = s.tools.find((t) => t.name === name)

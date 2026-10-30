@@ -174,7 +174,7 @@ export function registerIpc(): void {
   handle('removePin', () => accounts.removePin())
   handle('changePassword', (current: string, next: string) => accounts.changePassword(current, next, ownWords()))
   handle('resetPassword', (next: string) => accounts.resetPassword(next, ownWords()))
-  handle('renewRecoveryKey', () => accounts.renewRecoveryKey())
+  handle('renewRecoveryKey', (password: string) => accounts.renewRecoveryKey(password))
   handle('setDisplay', (choice: DisplayChoice) => accounts.setDisplay(displayLabel(choice)))
   handle('getUsage', () => accounts.usage())
   handle('backupArchive', async () => {

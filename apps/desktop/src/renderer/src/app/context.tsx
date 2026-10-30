@@ -95,7 +95,9 @@ export function useApp(): AppValue {
 }
 
 export function AppProvider({ config, session, children }: { config: DeviceConfig; session: SessionState; children: ReactNode }) {
-  const folders = useLive(api.listFolders, api.onFolders) ?? []
+  // Undefined until the list comes, then the list: none left is not the same as not there yet.
+  const listed = useLive(api.listFolders, api.onFolders)
+  const folders = listed ?? []
   const lights = useLive(api.engineLights, api.onEngineLights) ?? []
   const settings = useLive(api.getAccountSettings, api.onAccountSettings)
   // Back from a reload: the same screen, for the same account only.
@@ -185,10 +187,10 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
   useEffect(() => reveals.listen(api), [reveals])
   useEffect(() => reveals.visit(view), [reveals, view])
 
-  // A deleted folder can't stay on screen.
+  // A deleted folder can't stay on screen, the last one included.
   useEffect(() => {
-    if (view.kind === 'folder' && folders.length && !folders.some((f) => f.id === view.id)) setView({ kind: 'page', page: 'home' })
-  }, [folders, view])
+    if (listed && view.kind === 'folder' && !listed.some((f) => f.id === view.id)) setView({ kind: 'page', page: 'home' })
+  }, [listed, view])
 
   const value = useMemo<AppValue>(
     () => ({

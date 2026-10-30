@@ -24,7 +24,7 @@ import { api } from '../lib/api'
 export function Shell() {
   const app = useApp()
   const actions = useActions()
-  useShortcuts(actions, false)
+  useShortcuts(actions)
   const { view } = app
   const folded = !app.config.ui.sidebarOpen
   // A narrow window: the sidebar, over the screen (styles.css), goes away once a screen is chosen.
@@ -85,7 +85,11 @@ export function Shell() {
           <SettingsDialog />
         </Boundary>
       )}
-      {app.guideOpen && <AppGuide />}
+      {app.guideOpen && (
+        <Boundary label="le guide">
+          <AppGuide />
+        </Boundary>
+      )}
       <AfterUnlock />
       {app.toastText && <div className="toast">{app.toastText}</div>}
     </div>
