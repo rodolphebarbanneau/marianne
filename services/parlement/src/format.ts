@@ -2,7 +2,20 @@ import { formatNumber } from '@marianne/sdk'
 import { clip, plural, table } from '@marianne/sdk/main'
 import { videoPage } from './links'
 import { clock, parisDay, parisTime } from './time'
-import type { AgendaMeeting, BallotDetail, BallotLine, MemberCard, MemberProfile, MemberVote, LiveStream, Position, VideoDetail, VideoItem } from './types'
+import type {
+  Agenda,
+  AgendaMeeting,
+  BallotDetail,
+  Chamber,
+  BallotLine,
+  MemberCard,
+  MemberProfile,
+  MemberVote,
+  LiveStream,
+  Position,
+  VideoDetail,
+  VideoItem
+} from './types'
 
 /** The tools' results: compact Markdown in English, for the model, with the links and ids it needs to cite. */
 
@@ -100,9 +113,29 @@ export function formatBallot(b: BallotDetail): string {
   return lines.join('\n')
 }
 
-export function formatAgenda(from: string, to: string, meetings: AgendaMeeting[]): string {
-  if (!meetings.length) return `Nothing on the agenda of either chamber ${from === to ? `on ${from}` : `from ${from} to ${to}`}.`
-  return clip(
+/**
+ * The meetings of an agenda, for the chambers asked (`wanted`, or both). A chamber whose agenda
+ * didn't come is said to be missing, never to have nothing on: the Assemblée's before the first sync,
+ * the Sénat's when senat.fr doesn't answer.
+ */
+export function formatAgenda(agenda: Agenda, meetings: AgendaMeeting[], wanted?: Chamber): string {
+  const { from, to } = agenda
+  const span = from === to ? `on ${from}` : `from ${from} to ${to}`
+  const asked: Chamber[] = wanted ? [wanted] : ['an', 'se']
+  const missing = asked.filter((c) => (c === 'an' ? !agenda.indexed : !agenda.senateComplete))
+  const answered = asked.filter((c) => !missing.includes(c))
+  const gaps = missing.map((c) =>
+    c === 'an'
+      ? "The Assemblée nationale's agenda is missing: its open data isn't downloaded yet (the user can download it with « mettre à jour », on the 3615 PARLEMENT screen or in Réglages › Services)."
+      : "The Sénat's agenda is missing, in part or whole: senat.fr didn't answer. Try again later."
+  )
+  if (!meetings.length) {
+    const nothing = answered.length
+      ? `Nothing on the agenda of ${answered.length > 1 ? 'either chamber' : `the ${CHAMBER[answered[0]]}`} ${span}.`
+      : `No agenda ${span}.`
+    return [nothing, ...gaps].join(' ')
+  }
+  const list = clip(
     meetings
       .map((m) => {
         const state = [m.live ? 'LIVE NOW' : '', m.state === 'cancelled' ? 'cancelled' : m.state === 'tentative' ? 'tentative' : '', m.video ? 'filmed' : '']
@@ -114,6 +147,8 @@ export function formatAgenda(from: string, to: string, meetings: AgendaMeeting[]
     9000,
     'Ask for one day, or one chamber, for the rest.'
   )
+  // Before the list: cut, it still says what is missing.
+  return gaps.length ? `${gaps.join(' ')}\n\n${list}` : list
 }
 
 export function formatVideos(videos: VideoItem[], limit: number): string {

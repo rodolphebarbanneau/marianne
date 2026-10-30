@@ -41,10 +41,31 @@ interface PinFile {
 }
 
 export class PinStore {
+  /** The last operation on each account's PIN, which the next one waits for. */
+  private readonly queues = new Map<string, Promise<unknown>>()
+
   constructor(
     private readonly dir: string,
     private readonly keystore: Keystore
   ) {}
+
+  /**
+   * One operation at a time on an account's PIN. An unlock reads the count of wrong tries, stretches
+   * the PIN, then writes the count: in parallel, every try would read the same count, and five at once
+   * would cost one.
+   */
+  private serial<T>(accountId: string, fn: () => Promise<T>): Promise<T> {
+    const run = (this.queues.get(accountId) ?? Promise.resolve()).then(fn)
+    const settled = run.then(
+      () => undefined,
+      () => undefined
+    )
+    this.queues.set(accountId, settled)
+    void settled.then(() => {
+      if (this.queues.get(accountId) === settled) this.queues.delete(accountId)
+    })
+    return run
+  }
 
   private file(accountId: string): string {
     if (!/^[\da-f]{8}$/.test(accountId)) throw new Error('Identifiant de compte invalide')
@@ -75,36 +96,40 @@ export class PinStore {
     return deriveKey(`${pin}:${secret.toString('base64')}`, salt, LIGHT_KDF)
   }
 
-  async set(accountId: string, pin: string, dataKey: Buffer): Promise<void> {
-    if (!this.available()) throw new Error('Le trousseau du système n’est pas disponible sur cet ordinateur.')
-    const secret = randomBytes(32)
-    const salt = randomBytes(16)
-    const key = await this.key(pin, salt, secret)
-    this.write(accountId, {
-      version: 1,
-      secret: (await this.keystore.encrypt(secret.toString('base64'))).toString('base64'),
-      salt: salt.toString('base64'),
-      wrapped: seal(key, dataKey, `pin/${accountId}`).toString('base64'),
-      attempts: 0
+  set(accountId: string, pin: string, dataKey: Buffer): Promise<void> {
+    return this.serial(accountId, async () => {
+      if (!this.available()) throw new Error('Le trousseau du système n’est pas disponible sur cet ordinateur.')
+      const secret = randomBytes(32)
+      const salt = randomBytes(16)
+      const key = await this.key(pin, salt, secret)
+      this.write(accountId, {
+        version: 1,
+        secret: (await this.keystore.encrypt(secret.toString('base64'))).toString('base64'),
+        salt: salt.toString('base64'),
+        wrapped: seal(key, dataKey, `pin/${accountId}`).toString('base64'),
+        attempts: 0
+      })
     })
   }
 
   /** The data key, or WrongPinError; after PIN_ATTEMPTS failures the PIN is erased. */
-  async unlock(accountId: string, pin: string): Promise<Buffer> {
-    const data = this.read(accountId)
-    if (!data) throw new WrongPinError(0)
-    const secret = Buffer.from(await this.keystore.decrypt(Buffer.from(data.secret, 'base64')), 'base64')
-    const key = await this.key(pin, Buffer.from(data.salt, 'base64'), secret)
-    try {
-      const dataKey = unseal(key, Buffer.from(data.wrapped, 'base64'), `pin/${accountId}`)
-      if (data.attempts) this.write(accountId, { ...data, attempts: 0 })
-      return dataKey
-    } catch {
-      const attempts = data.attempts + 1
-      if (attempts >= PIN_ATTEMPTS) this.remove(accountId)
-      else this.write(accountId, { ...data, attempts })
-      throw new WrongPinError(PIN_ATTEMPTS - attempts)
-    }
+  unlock(accountId: string, pin: string): Promise<Buffer> {
+    return this.serial(accountId, async () => {
+      const data = this.read(accountId)
+      if (!data) throw new WrongPinError(0)
+      const secret = Buffer.from(await this.keystore.decrypt(Buffer.from(data.secret, 'base64')), 'base64')
+      const key = await this.key(pin, Buffer.from(data.salt, 'base64'), secret)
+      try {
+        const dataKey = unseal(key, Buffer.from(data.wrapped, 'base64'), `pin/${accountId}`)
+        if (data.attempts) this.write(accountId, { ...data, attempts: 0 })
+        return dataKey
+      } catch {
+        const attempts = data.attempts + 1
+        if (attempts >= PIN_ATTEMPTS) this.remove(accountId)
+        else this.write(accountId, { ...data, attempts })
+        throw new WrongPinError(PIN_ATTEMPTS - attempts)
+      }
+    })
   }
 
   remove(accountId: string): void {

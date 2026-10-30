@@ -85,7 +85,8 @@ export type Target =
   | { kind: 'member'; chamber: Chamber; id: string }
   | { kind: 'group'; chamber: Chamber; id: string }
   | { kind: 'ballot'; chamber: Chamber; id: string }
-  | { kind: 'meeting'; id: string }
+  /** `day`: the meeting's (YYYY-MM-DD), when known: the Sénat's agenda is read by week. */
+  | { kind: 'meeting'; id: string; day?: string }
   | { kind: 'live'; chamber: Chamber; id: string }
   /** `start`, `stopAt`: the portal's positions (a link's timecode, a clip's); `t`: the player's (the mini-player's), ms. */
   | { kind: 'video'; ref: string; start?: number; stopAt?: number; t?: number }

@@ -176,7 +176,8 @@ export const NEARBY_KINDS = ['mairie', 'france_services', 'caf', 'cpam', 'france
 
 /**
  * The usual offices near a commune, a few of each kind, searched at once. A kind whose search
- * fails comes back empty; when they all fail, the directory is out of reach: that error.
+ * fails comes back with its error, so that it reads as unanswered rather than as none; when they
+ * all fail, the directory is out of reach: that error.
  */
 export async function officesNear(http: DirectoryContext['http'], commune: Commune, kinds = NEARBY_KINDS, perKind = 2): Promise<NearbyOffices[]> {
   const results = await Promise.allSettled(kinds.map((kind) => searchOffices(http, { kind, limit: perKind }, [commune])))
@@ -184,6 +185,8 @@ export async function officesNear(http: DirectoryContext['http'], commune: Commu
   if (failed.length && failed.length === results.length) throw failed[0].reason
   return kinds.map((kind, i) => {
     const r = results[i]
-    return { kind, label: OFFICE_KINDS.find((k) => k.id === kind)?.label ?? kind, offices: r.status === 'fulfilled' ? r.value.offices : [] }
+    const label = OFFICE_KINDS.find((k) => k.id === kind)?.label ?? kind
+    if (r.status === 'fulfilled') return { kind, label, offices: r.value.offices }
+    return { kind, label, offices: [], error: r.reason instanceof Error ? r.reason.message : String(r.reason) }
   })
 }

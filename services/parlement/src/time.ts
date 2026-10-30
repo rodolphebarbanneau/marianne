@@ -37,6 +37,13 @@ export function parisDateTime(iso: string): string {
   return `${day} à ${parisTime(iso).replace(':', 'h')}`
 }
 
+/**
+ * Whether a moment is still to come. Compared as instants: the agenda's times carry the Paris
+ * offset ("15:00:00+01:00") and the clock's are UTC ("14:30:00.000Z"), and as text they don't sort
+ * by time.
+ */
+export const isAhead = (iso: string, now = Date.now()): boolean => Date.parse(iso) > now
+
 /** A day (YYYY-MM-DD) moved by a number of days. */
 export function addDays(day: string, days: number): string {
   const d = new Date(`${day}T12:00:00Z`)

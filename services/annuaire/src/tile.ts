@@ -124,12 +124,17 @@ export function officeTile(commune: string, mairie: PublicOffice | undefined, ot
   return { title: cutText(`Mairie ${ofPlace(commune)}`, TILE_LIMITS.title), ...(visual ? { visual } : {}), lines }
 }
 
-/** The tile of the user's commune; a commune Marianne doesn't know: the default tile. Fails when the directory can't be reached. */
+/**
+ * The tile of the user's commune; a commune Marianne doesn't know: the default tile. Fails when the
+ * directory can't be reached, or doesn't answer for the mairie: « introuvable » would be untrue, and
+ * Marianne keeps the last tile.
+ */
 export async function annuaireTile(ctx: DirectoryContext & { home(): HomeCommune | null }, now = new Date()): Promise<ServiceTile | null> {
   const home = ctx.home()
   if (!home) return NO_HOME_TILE
   const commune = await ctx.geo.getCommune(home.code)
   if (!commune) return null
   const [mairie, other] = await officesNear(ctx.http, commune, TILE_KINDS, PER_KIND)
+  if (mairie.error) throw new Error(mairie.error)
   return officeTile(commune.name, mairie.offices[0], other.offices[0], now)
 }

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useHost } from '@marianne/sdk/view'
 import { FIND_DEPUTY } from '../links'
-import { parisDay } from '../time'
+import { isAhead, parisDay } from '../time'
 import type { AgendaMeeting, DayBallots, LiveStream, MemberCard, Suggestion } from '../types'
 import { BallotTable, DayTiles, dayMosaic, useDayVotes, useGroups } from './ballots'
 import {
@@ -34,8 +34,8 @@ import { streamTarget } from './media'
 
 /**
  * The home screen: the user's members first (from their address), what happens now beside them
- * (live, members to follow, what comes next), then the day at the Parlement as Actualités frames
- * its news. No hemicycle and no video shelf: their tabs have them.
+ * (live, members to follow, what comes next), then the day at the Parlement in a double frame. No
+ * hemicycle and no video shelf: their tabs have them.
  */
 
 export function HomeTab() {
@@ -60,7 +60,7 @@ function Home() {
   const streams = (live.data ?? []).filter((s) => nav.shows(s.chamber))
   const now = new Date().toISOString()
   const sitting = (agenda.data?.meetings ?? []).filter((m) => m.kind === 'sitting' && m.start.slice(0, 10) === parisDay() && m.state !== 'cancelled')
-  const big = (agenda.data?.meetings ?? []).find((m) => m.start > now && BIG.test(m.items.join(' ')) && nav.shows(m.chamber))
+  const big = (agenda.data?.meetings ?? []).find((m) => isAhead(m.start) && BIG.test(m.items.join(' ')) && nav.shows(m.chamber))
 
   return (
     <>
@@ -75,7 +75,7 @@ function Home() {
         {big && (
           <span className="small dim">
             prochain grand rendez-vous :{' '}
-            <button className="link hi parlement-left" onClick={() => nav.open({ kind: 'meeting', id: big.id })}>
+            <button className="link hi parlement-left" onClick={() => nav.open({ kind: 'meeting', id: big.id, day: big.start.slice(0, 10) })}>
               {bigText(big)}, {dateTime(big.start)}
             </button>
           </span>
@@ -529,9 +529,8 @@ function Coming({ meetings, error }: { meetings: AgendaMeeting[] | null; error: 
   const nav = useNav()
   const { mine } = useFollowed()
   const organs = new Set(mine.flatMap((m) => m.organs))
-  const now = new Date().toISOString()
   const next = (meetings ?? [])
-    .filter((m) => m.start > now && m.state !== 'cancelled' && nav.shows(m.chamber))
+    .filter((m) => isAhead(m.start) && m.state !== 'cancelled' && nav.shows(m.chamber))
     .filter((m) => m.kind === 'sitting' || BIG.test(m.items.join(' ')) || organs.has(m.organId))
   // A sitting a day per chamber, the rest as they come.
   const seen = new Set<string>()
@@ -561,7 +560,7 @@ function Coming({ meetings, error }: { meetings: AgendaMeeting[] | null; error: 
         shown.map((m) => {
           const isBig = BIG.test(m.items.join(' '))
           return (
-            <button key={m.id} className="parlement-ev" onClick={() => nav.open({ kind: 'meeting', id: m.id })}>
+            <button key={m.id} className="parlement-ev" onClick={() => nav.open({ kind: 'meeting', id: m.id, day: m.start.slice(0, 10) })}>
               <span className={isBig ? 'accent' : 'dim'}>{dateTime(m.start)}</span>
               <span className="parlement-ell">
                 <ChamberCode chamber={m.chamber} />{' '}
@@ -582,7 +581,7 @@ function Coming({ meetings, error }: { meetings: AgendaMeeting[] | null; error: 
   )
 }
 
-/** "le jour au Parlement": the day's figures, then its ballots by bill, in Actualités' double frame. */
+/** "le jour au Parlement": the day's figures, then its ballots by bill, in a double frame. */
 function Bulletin({ day }: { day: DayBallots }) {
   const nav = useNav()
   const lines = day.bills.filter((b) => nav.shows(b.chamber)).flatMap((b) => b.ballots)

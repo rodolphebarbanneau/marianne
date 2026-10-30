@@ -25,7 +25,7 @@ export function notSynced(status: ReturnType<ServiceContext['sync']['status']>):
   return [
     "Parliament's open data (deputies, senators, ballots, agenda) is not downloaded yet.",
     status.error ? `The last attempt failed: ${status.error}.` : '',
-    'Tell the user they can download it from the 3615 PARLEMENT service (Services page, « mettre à jour »). Videos (parlement_videos, parlement_video) and live streams (parlement_live) work meanwhile.'
+    'Tell the user they can download it with « mettre à jour », on the 3615 PARLEMENT screen or in Réglages › Services. Videos (parlement_videos, parlement_video) and live streams (parlement_live) work meanwhile.'
   ]
     .filter(Boolean)
     .join(' ')
@@ -187,7 +187,7 @@ export function createTools(ctx: ServiceContext, index: ParliamentIndex, methods
             (!kind || m.kind === kind) &&
             words.every((w) => searchKey(`${m.organ ?? ''} ${m.items.join(' ')}`).includes(w))
         )
-        return formatAgenda(agenda.from, agenda.to, meetings)
+        return formatAgenda(agenda, meetings, wanted)
       }
     }),
 

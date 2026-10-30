@@ -15,7 +15,6 @@ import { deriveKey, LIGHT_KDF, newRecoveryKey, normalizeRecoveryKey, PASSWORD_KD
 
 export const ARCHIVE_EXT = '.marianne'
 export const CAPACITY = 1024 ** 3
-export const WARN_AT = 0.8
 const CHUNK = 1024 * 1024
 const FORMAT = 1
 
@@ -75,6 +74,8 @@ const SCHEMA = `
 `
 
 const CHECK = Buffer.from('marianne', 'utf8')
+/** The key derivations every vault row records, the only ones `vaultKdf` takes back. */
+const VAULT_KDF = JSON.stringify({ password: PASSWORD_KDF, recovery: LIGHT_KDF })
 
 function connect(path: string): DatabaseSync {
   const db = new DatabaseSync(path)
@@ -124,7 +125,7 @@ export async function createArchive(
     header.id,
     header.display,
     header.created,
-    JSON.stringify({ password: PASSWORD_KDF, recovery: LIGHT_KDF }),
+    VAULT_KDF,
     salt,
     seal(passwordKey, dek, 'vault/password'),
     recoverySalt,
@@ -141,11 +142,33 @@ function vaultRow(db: DatabaseSync): VaultRow {
   return row
 }
 
+const sameKdf = (a: unknown, b: KdfParams) => {
+  const x = a as Partial<KdfParams> | null
+  return !!x && typeof x === 'object' && x.N === b.N && x.r === b.r && x.p === b.p
+}
+
+/**
+ * The key derivations of the vault row, which is plaintext: anyone can write a `.marianne` file whose
+ * scrypt asks for gigabytes (N = 2²⁴) and hand it over. Only the parameters Marianne writes are taken.
+ */
+function vaultKdf(row: VaultRow): { password: KdfParams; recovery: KdfParams } {
+  let kdf: { password?: unknown; recovery?: unknown } | null
+  try {
+    kdf = JSON.parse(row.kdf) as { password?: unknown; recovery?: unknown } | null
+  } catch {
+    // Unreadable: refused below, like unknown parameters.
+    kdf = null
+  }
+  if (!kdf || typeof kdf !== 'object' || !sameKdf(kdf.password, PASSWORD_KDF) || !sameKdf(kdf.recovery, LIGHT_KDF))
+    throw new Error('Cette archive n’est pas chiffrée comme Marianne le fait : elle est peut-être abîmée.')
+  return { password: PASSWORD_KDF, recovery: LIGHT_KDF }
+}
+
 async function unwrap(path: string, secret: string, which: 'password' | 'recovery'): Promise<Archive> {
   const db = connect(path)
   try {
     const row = vaultRow(db)
-    const kdf = JSON.parse(row.kdf) as { password: KdfParams; recovery: KdfParams }
+    const kdf = vaultKdf(row)
     const key =
       which === 'password' ? await deriveKey(secret, row.salt, kdf.password) : await deriveKey(normalizeRecoveryKey(secret), row.recovery_salt, kdf.recovery)
     let dek: Buffer
@@ -292,10 +315,10 @@ export class Archive {
   }
 
   async verifyPassword(password: string): Promise<boolean> {
+    if (!password) return false
     const row = vaultRow(this.db)
-    const kdf = JSON.parse(row.kdf) as { password: KdfParams }
     try {
-      unseal(await deriveKey(password, row.salt, kdf.password), row.password_key, 'vault/password')
+      unseal(await deriveKey(password, row.salt, vaultKdf(row).password), row.password_key, 'vault/password')
       return true
     } catch {
       return false
@@ -305,18 +328,20 @@ export class Archive {
   async changePassword(next: string): Promise<void> {
     const salt = randomBytes(16)
     const key = await deriveKey(next, salt, PASSWORD_KDF)
-    const kdf = JSON.parse(vaultRow(this.db).kdf) as { recovery: KdfParams }
-    this.db
-      .prepare('UPDATE vault SET salt = ?, password_key = ?, kdf = ?')
-      .run(salt, seal(key, this.dek, 'vault/password'), JSON.stringify({ password: PASSWORD_KDF, recovery: kdf.recovery }))
+    this.db.prepare('UPDATE vault SET salt = ?, password_key = ?, kdf = ?').run(salt, seal(key, this.dek, 'vault/password'), VAULT_KDF)
   }
 
-  /** A new recovery key; the previous one stops working. */
-  async renewRecoveryKey(): Promise<string> {
+  /**
+   * A new recovery key; the previous one stops working. It opens the archive for good, so the
+   * password is asked again: an open session, or a PIN, isn't enough to mint one.
+   */
+  async renewRecoveryKey(password: string): Promise<string> {
+    if (!(await this.verifyPassword(password))) throw new WrongSecretError('password')
     const recoveryKey = newRecoveryKey()
     const salt = randomBytes(16)
     const key = await deriveKey(normalizeRecoveryKey(recoveryKey), salt, LIGHT_KDF)
-    this.db.prepare('UPDATE vault SET recovery_salt = ?, recovery_key = ?').run(salt, seal(key, this.dek, 'vault/recovery'))
+    // The parameters the key was wrapped with go in the same statement: a recovery key and its kdf never disagree.
+    this.db.prepare('UPDATE vault SET recovery_salt = ?, recovery_key = ?, kdf = ?').run(salt, seal(key, this.dek, 'vault/recovery'), VAULT_KDF)
     return recoveryKey
   }
 

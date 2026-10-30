@@ -530,15 +530,6 @@ export function sirenValid(siren: string): boolean {
   return sum % 10 === 0
 }
 
-/** "Prénom Nom", from the used name or the birth name. */
-export function fullName(p: Person): string {
-  return [p.firstNames.split(/\s+/)[0], p.usedName || p.birthName].filter(Boolean).join(' ')
-}
-
-export function formatAddress(a: Address): string {
-  return [a.street, a.complement, [a.postcode, a.city].filter(Boolean).join(' ')].filter((x) => x.trim()).join(', ')
-}
-
 /** Day in French: "lundi 4 janvier 2027". */
 export function longDate(iso: string): string {
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/)

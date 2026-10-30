@@ -124,6 +124,9 @@ export function SecurityPane() {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [recovery, setRecovery] = useState('')
+  const [renewWith, setRenewWith] = useState('')
+  const [renewing, setRenewing] = useState(false)
+  const [renewMessage, setRenewMessage] = useState('')
   const [pin, setPin] = useState(false)
   const change = async () => {
     if (!current) return setMessage('Indiquez d’abord la phrase de passe actuelle.')
@@ -137,6 +140,22 @@ export function SecurityPane() {
       setMessage(errorText(err))
     } finally {
       setBusy(false)
+    }
+  }
+  // A recovery key opens the archive for good: the main process makes one only with the passphrase.
+  const renew = async () => {
+    if (!renewWith) return setRenewMessage('Indiquez d’abord votre phrase de passe.')
+    setRenewing(true)
+    try {
+      // Typed here with the passphrase it sends, which `MarianneApi` doesn't declare yet.
+      const renewRecoveryKey: (password: string) => Promise<string> = api.renewRecoveryKey
+      setRecovery(await renewRecoveryKey(renewWith))
+      setRenewWith('')
+      setRenewMessage('')
+    } catch (err) {
+      setRenewMessage(errorText(err))
+    } finally {
+      setRenewing(false)
     }
   }
   return (
@@ -163,10 +182,26 @@ export function SecurityPane() {
         </button>
       </p>
       <span className="label sub">Clé de secours</span>
-      <p className="dim small">Si vous refaites la clé de secours, l’ancienne cesse aussitôt de marcher.</p>
-      <button className="btn" onClick={() => void api.renewRecoveryKey().then(setRecovery)}>
-        refaire la clé de secours
-      </button>
+      <p className="dim small">Si vous refaites la clé de secours, l’ancienne cesse aussitôt de marcher. Votre phrase de passe vous est demandée d’abord.</p>
+      <div className="form-grid">
+        <Field label="phrase de passe" wide>
+          <PasswordInput
+            value={renewWith}
+            onChange={(e) => {
+              setRenewWith(e.target.value)
+              setRenewMessage('')
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && void renew()}
+          />
+        </Field>
+      </div>
+      <p>
+        <button className="btn" disabled={renewing} aria-busy={renewing} onClick={() => void renew()}>
+          {renewing && <Spinner />}
+          refaire la clé de secours
+        </button>
+      </p>
+      {renewMessage && <p className="small dim">{renewMessage}</p>}
       <span className="label sub">Code sur cet ordinateur</span>
       {!app.session.pinAvailable ? (
         <p className="dim small">

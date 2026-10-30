@@ -2,7 +2,10 @@ import { createPrivateKey, createPublicKey, sign, verify } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { BUNDLE_FILE, CONTENT_FILES, ContentError, readContent, SIGNATURE_FILE, writeBundle } from '@marianne/content'
+import './typescript.mjs'
+
+// Imported once the hook above is in place: the content is TypeScript, and so is the SDK it imports.
+const { BUNDLE_FILE, CONTENT_FILES, ContentError, readContent, SIGNATURE_FILE, writeBundle } = await import('@marianne/content')
 
 /**
  * Builds the content bundle: packages/content/dist/content.json, every file of the package

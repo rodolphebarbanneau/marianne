@@ -270,7 +270,16 @@ describe('reading the content', () => {
     files['sites.json'] = JSON.stringify({
       updated: '2026-10-01',
       sites: [
-        { id: 'antai', name: 'ANTAI', url: 'https://www.antai.gouv.fr', domain: 'mobility', login: 'none', description: 'amendes' },
+        {
+          id: 'antai',
+          name: 'ANTAI',
+          url: 'https://www.antai.gouv.fr',
+          domain: 'mobility',
+          login: 'none',
+          description: 'amendes',
+          // The profile's own token: [[email]] would stand for both.
+          fields: [{ key: 'email', label: 'courriel' }]
+        },
         {
           id: 'antai',
           name: '',
@@ -287,6 +296,7 @@ describe('reading the content', () => {
       sources: [{ id: 'press', name: 'La Presse', group: 'local', feed: 'http://www.presse.example/rss', homepage: 'https://www.presse.example' }]
     })
     expect(problems(files)).toEqual([
+      'sites.json: sites[0] (antai).fields[0].key: "email" is the token of the profile\'s own email: name the site\'s identifier otherwise',
       'sites.json: sites[1] (antai).name: must be text',
       'sites.json: sites[1] (antai).url: "https://www.antai.example" is not on an official site (gouv.fr, or a domain of OFFICIAL_DOMAINS)',
       'sites.json: sites[1] (antai).login: "sso" is not one of franceconnect, account, none',

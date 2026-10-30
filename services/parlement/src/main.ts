@@ -23,7 +23,7 @@ export const INSTRUCTIONS = `- Deputies (Assemblée nationale) and senators (Sé
 export const service = defineService<ParlementMethods>({
   sync: { everyHours: 24 },
   // Broadcasts start and end through the day, and the tile says what is live: asked again as often as
-  // Marianne allows. The portals' answers are kept a minute; the rest is read from the index.
+  // Marianne allows. The portals' live answers are kept 20 seconds (LIVE_CACHE_MS); the rest is read from the index.
   tile: { everyMinutes: 5 },
 
   activate(ctx) {

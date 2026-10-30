@@ -79,36 +79,104 @@ export function tokensOf(p: Profile, sites: Site[]): TokenDef[] {
     add(`employer.${i + 1}.siren`, `siren (${ENTITY_LABELS.employers.one} ${i + 1})`, e.siren, 'id')
   })
   p.vehicles.forEach((v, i) => add(`vehicle.${i + 1}.plate`, `immatriculation (${ENTITY_LABELS.vehicles.one} ${i + 1})`, v.plate, 'id'))
-  p.properties.forEach((x, i) => add(`property.${i + 1}.address`, `adresse (${ENTITY_LABELS.properties.one} ${i + 1})`, x.address, 'text'))
+  p.properties.forEach((x, i) =>
+    add(`property.${i + 1}.address`, `adresse (${ENTITY_LABELS.properties.one} ${i + 1})`, x.address, 'text', false, streetsOf(x.address))
+  )
   return out
+}
+
+/**
+ * The street of an address typed in one line ("12 avenue des Tilleuls, bât. C, 69003 Lyon"), the way
+ * a lease or a tax notice often shows it: without the postcode and the city, and without what follows
+ * the number and street. Only parts with a number and a word, so that "12" alone never becomes a pattern.
+ */
+function streetsOf(address: string): string[] {
+  const head = address.split(/[\s,]*(?<!\d)\d{5}(?!\d)/u)[0]
+  const first = head.split(',')[0]
+  return [...new Set([head, first].map((x) => x.trim().replace(/[\s,]+$/, '')))].filter((x) => /\d.*\p{L}{3}/u.test(x))
 }
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-/** Lower case, without accents or ligatures: "Lefèvre" → "lefevre". */
+/** Lower case, without accents or ligatures: "Lefèvre" → "lefevre", "Lætitia" → "laetitia". */
 const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').replace(/œ/gi, 'oe').replace(/æ/gi, 'ae').toLowerCase()
 
 const VARIANTS: Record<string, string> = { a: 'aàâäáãå', c: 'cç', e: 'eéèêë', i: 'iîïíì', n: 'nñ', o: 'oôöóòõ', u: 'uùûüú', y: 'yÿý' }
+/** The ligatures `fold` unties: the text may keep them ("Cœur") where the value is folded ("coeur"). */
+const LIGATURES: Record<string, string> = { oe: 'œ', ae: 'æ' }
 /** Between the words of a name or a street: spaces, hyphens, apostrophes, commas. */
 const SEP = "[\\s\\-'’,.]+"
+/** Between the characters of a number: a space, a dot or a dash, doubled or around a dash ("FR76 - 3000"). */
+const GAP = '[\\s.\\-]{0,3}'
 const WORD = '[\\p{L}\\p{N}@]'
 const DIGIT = '[\\p{L}\\p{N}]'
 const bounded = (p: string, b = DIGIT) => `(?<!${b})(?:${p})(?!${b})`
 
-/** A name or a street as it may be written: any case, accents or not, hyphens or spaces between words. */
-function loose(value: string): string {
+/**
+ * The words of a street written in full or shortened, both ways: a lease says "av." where the profile
+ * says "avenue", or the other way round. Folded, as `loose` compares them.
+ */
+const STREET_WORDS = [
+  ['avenue', 'av', 'ave'],
+  ['boulevard', 'bd', 'bld', 'blvd', 'boul'],
+  ['rue', 'r'],
+  ['place', 'pl'],
+  ['chemin', 'chem', 'ch'],
+  ['impasse', 'imp'],
+  ['allee', 'all'],
+  ['route', 'rte'],
+  ['faubourg', 'fg', 'fbg'],
+  ['square', 'sq'],
+  ['cours', 'crs'],
+  ['quai', 'qu'],
+  ['residence', 'res'],
+  ['lotissement', 'lot'],
+  ['passage', 'pass'],
+  ['hameau', 'ham'],
+  ['saint', 'st'],
+  ['sainte', 'ste']
+]
+const STREET_FORMS = new Map(STREET_WORDS.flatMap((forms) => forms.map((form) => [form, forms] as const)))
+
+/** One folded word, each letter with its accented forms and each "oe" or "ae" with its ligature. */
+function letters(word: string): string {
+  const chars = [...word]
+  let out = ''
+  for (let i = 0; i < chars.length; i++) {
+    const ch = chars[i]
+    const pair = LIGATURES[ch + (chars[i + 1] ?? '')]
+    const one = (c: string) => (VARIANTS[c] ? `[${VARIANTS[c]}]` : escape(c))
+    if (pair) {
+      out += `(?:${one(ch)}${one('e')}|${pair})`
+      i++
+    } else out += one(ch)
+  }
+  return out
+}
+
+/**
+ * A name or a street as it may be written: any case, accents or not, ligatures or not, hyphens or
+ * spaces between words; for a street, its words shortened or not.
+ */
+function loose(value: string, street = false): string {
   return fold(value)
     .trim()
     .split(/[\s\-'’,.]+/)
     .filter(Boolean)
-    .map((word) => [...word].map((ch) => (VARIANTS[ch] ? `[${VARIANTS[ch]}]` : escape(ch))).join(''))
+    .map((word) => {
+      const forms = street ? STREET_FORMS.get(word) : undefined
+      return forms ? `(?:${forms.map(letters).join('|')})` : letters(word)
+    })
     .join(SEP)
 }
 
 /** "2880344109123 47" matches with any spacing, dots or dashes between its characters. */
 function spaced(value: string): string {
-  return [...value.replace(/[\s.-]/g, '')].map(escape).join('[\\s.\\-]?')
+  return [...value.replace(/[\s.-]/g, '')].map(escape).join(GAP)
 }
+
+/** The tokens whose values are addresses, written with the street's words in full or shortened. */
+const isAddress = (t: TokenDef) => t.token === 'address' || /^property\.\d+\.address$/.test(t.token)
 
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
 
@@ -124,15 +192,17 @@ function patterns(t: TokenDef): string[] {
       if (t.token === 'nir' && compact.length === 15) out.push(bounded(spaced(compact.slice(0, 13))))
       // A SIREN inside a SIRET (SIREN + 5 digits) or a VAT number (FR + 2 digits + SIREN).
       if (t.token.endsWith('.siren') && /^\d{9}$/.test(compact)) {
-        out.push(`(?<!${DIGIT})${spaced(compact)}(?=[\\s.]?\\d{3}[\\s.]?\\d{2}(?!${DIGIT}))`)
-        out.push(`(?<=FR[\\s.]?\\d{2}[\\s.]?)${spaced(compact)}(?!${DIGIT})`)
+        out.push(`(?<!${DIGIT})${spaced(compact)}(?=${GAP}\\d{3}${GAP}\\d{2}(?!${DIGIT}))`)
+        out.push(`(?<=FR${GAP}\\d{2}${GAP})${spaced(compact)}(?!${DIGIT})`)
       }
       return out
     }
     case 'phone': {
       const digits = t.value.replace(/\D/g, '')
       const national = digits.startsWith('33') ? `0${digits.slice(2)}` : digits
-      return national.length >= 6 ? [bounded(spaced(national)), bounded(`\\+33[\\s.\\-]?(?:\\(0\\)[\\s.\\-]?)?${spaced(national.slice(1))}`)] : []
+      // From abroad: +33 or 0033, the 0 of the national number dropped or kept in brackets.
+      const international = `(?:\\+|00${GAP})33${GAP}(?:\\(0\\)${GAP})?${spaced(national.slice(1))}`
+      return national.length >= 6 ? [bounded(spaced(national)), bounded(international)] : []
     }
     case 'date': {
       const m = t.value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
@@ -151,19 +221,21 @@ function patterns(t: TokenDef): string[] {
       return [bounded(escape(t.value), WORD)]
     case 'text':
       // Short words ("Lo", "Ba") would erase too much: see the surname rule in redact.
-      return [t.value, ...(t.alt ?? [])].filter((v) => fold(v).replace(/[^\p{L}\p{N}]/gu, '').length >= 3).map((v) => bounded(loose(v), WORD))
+      return [t.value, ...(t.alt ?? [])].filter((v) => fold(v).replace(/[^\p{L}\p{N}]/gu, '').length >= 3).map((v) => bounded(loose(v, isAddress(t)), WORD))
   }
 }
 
 /** A NIR anywhere in the text, someone else's included (a spouse on a joint tax notice). */
-const ANY_NIR = /(?<![\p{L}\p{N}])[1-478][\s.]?\d{2}[\s.]?\d{2}[\s.]?(?:\d{2}|2[AB])[\s.]?\d{3}[\s.]?\d{3}[\s.]?\d{2}(?![\p{L}\p{N}])/giu
+const ANY_NIR = new RegExp(`(?<!${DIGIT})[1-478]${GAP}\\d{2}${GAP}\\d{2}${GAP}(?:\\d{2}|2[AB])${GAP}\\d{3}${GAP}\\d{3}${GAP}\\d{2}(?!${DIGIT})`, 'giu')
 
 /** Replace every identifier of `defs` in `text` by its token. */
 export function redact(text: string, defs: TokenDef[]): string {
   if (!text) return text
   // Longest values first: "Marie Claire" before "Marie".
   const sorted = defs.filter((t) => !t.keep).sort((a, b) => b.value.length - a.value.length)
-  let out = text
+  // The patterns are written for composed letters: a name from a macOS file name or a PDF may come
+  // decomposed ("e" then a combining accent), and would slip between them.
+  let out = text.normalize('NFC')
   for (const t of sorted) for (const p of patterns(t)) out = out.replace(new RegExp(p, 'giu'), `[[${t.token}]]`)
 
   // A short surname ("Ly") only next to the first names or a title.
@@ -174,7 +246,7 @@ export function redact(text: string, defs: TokenDef[]): string {
       .replace(new RegExp(`(\\[\\[first_names?\\]\\]|(?<!${WORD})(?:M\\.|Mme|Madame|Monsieur))${SEP}${n}(?!${WORD})`, 'giu'), '$1 [[last_name]]')
       .replace(new RegExp(`(?<!${WORD})${n}${SEP}(\\[\\[first_names?\\]\\])`, 'giu'), '[[last_name]] $1')
   }
-  return out.replace(ANY_NIR, (m) => (nirValid(m.replace(/[\s.]/g, '')) ? '[[nir.other]]' : m))
+  return out.replace(ANY_NIR, (m) => (nirValid(m.replace(/[\s.-]/g, '')) ? '[[nir.other]]' : m))
 }
 
 /** The display form of a value: dates as dd/mm/yyyy, the rest as stored. */
@@ -199,10 +271,4 @@ export function resolveDeep<T>(value: T, defs: TokenDef[]): T {
   if (Array.isArray(value)) return value.map((v) => resolveDeep(v, defs)) as T
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, resolveDeep(v, defs)])) as T
   return value
-}
-
-/** Tokens a text refers to that the profile doesn't have. */
-export function unknownTokens(text: string, defs: TokenDef[]): string[] {
-  const known = new Set(defs.map((t) => t.token))
-  return [...new Set([...text.matchAll(/\[\[([a-z0-9_.]+)\]\]/gi)].map((m) => m[1].toLowerCase()))].filter((t) => !known.has(t))
 }

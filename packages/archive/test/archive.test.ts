@@ -1,12 +1,14 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 import { accountFile, archivesIn, cloudSynced, defaultArchiveFolder, listAccounts, newAccountId, type Places } from '../src/accounts'
 import { createArchive, openArchive, readHeader, recoverArchive, unlockArchive, WrongSecretError } from '../src/archive'
-import { normalizeRecoveryKey } from '../src/crypto'
+import { LIGHT_KDF, normalizeRecoveryKey, PASSWORD_KDF } from '../src/crypto'
 import { PIN_ATTEMPTS, PinStore, WrongPinError, type Keystore } from '../src/pin'
+import { Session } from '../src/session'
 
 const dir = mkdtempSync(join(tmpdir(), 'marianne-archive-'))
 afterAll(() => rmSync(dir, { recursive: true, force: true }))
@@ -48,12 +50,45 @@ describe('archive', () => {
     const file = accountFile(dir, id)
     const { archive, recoveryKey } = await createArchive(file, { id, display: '', password: PASSWORD })
     await archive.changePassword('Bb8&-cC9*-dD2+-eE3=-fF4?-gG5@')
-    const renewed = await archive.renewRecoveryKey()
+    const renewed = await archive.renewRecoveryKey('Bb8&-cC9*-dD2+-eE3=-fF4?-gG5@')
     archive.close()
     await expect(unlockArchive(file, PASSWORD)).rejects.toBeInstanceOf(WrongSecretError)
     await expect(recoverArchive(file, recoveryKey)).rejects.toBeInstanceOf(WrongSecretError)
     ;(await unlockArchive(file, 'Bb8&-cC9*-dD2+-eE3=-fF4?-gG5@')).close()
     ;(await recoverArchive(file, renewed)).close()
+    // The vault row says how each key was wrapped, the renewed recovery key's included.
+    const db = new DatabaseSync(file, { readOnly: true })
+    expect(JSON.parse((db.prepare('SELECT kdf FROM vault').get() as { kdf: string }).kdf)).toEqual({ password: PASSWORD_KDF, recovery: LIGHT_KDF })
+    db.close()
+  }, 30_000)
+
+  it('renews the recovery key only with the password', async () => {
+    const id = newAccountId(dir)
+    const file = accountFile(dir, id)
+    const { archive, recoveryKey } = await createArchive(file, { id, display: '', password: PASSWORD })
+    await expect(archive.renewRecoveryKey('')).rejects.toBeInstanceOf(WrongSecretError)
+    await expect(archive.renewRecoveryKey('not the password')).rejects.toBeInstanceOf(WrongSecretError)
+    archive.close()
+    // Refused, the old one still opens the archive.
+    ;(await recoverArchive(file, recoveryKey)).close()
+  }, 30_000)
+
+  it('refuses key derivations it did not write, before stretching anything', async () => {
+    const id = newAccountId(dir)
+    const file = accountFile(dir, id)
+    const { archive, recoveryKey } = await createArchive(file, { id, display: '', password: PASSWORD })
+    archive.close()
+    // A crafted file: scrypt with N = 2²⁴ would ask for 16 GiB.
+    const huge = { N: 2 ** 24, r: 8, p: 1 }
+    const crafted = new DatabaseSync(file)
+    crafted.prepare('UPDATE vault SET kdf = ?').run(JSON.stringify({ password: huge, recovery: huge }))
+    crafted.close()
+    await expect(unlockArchive(file, PASSWORD)).rejects.toThrow('pas chiffrée comme Marianne')
+    await expect(recoverArchive(file, recoveryKey)).rejects.toThrow('pas chiffrée comme Marianne')
+    const broken = new DatabaseSync(file)
+    broken.prepare('UPDATE vault SET kdf = ?').run('not json')
+    broken.close()
+    await expect(unlockArchive(file, PASSWORD)).rejects.toThrow('pas chiffrée comme Marianne')
   }, 30_000)
 
   it('gives space back when a file is removed', async () => {
@@ -82,6 +117,41 @@ describe('archive', () => {
   })
 })
 
+describe('session', () => {
+  it('closes the archive and calls every listener even when one throws', async () => {
+    const id = newAccountId(dir)
+    const file = accountFile(dir, id)
+    const { archive } = await createArchive(file, { id, display: '', password: PASSWORD })
+    const key = archive.dataKey()
+    const session = new Session()
+    const called: string[] = []
+    session.on('locked', () => called.push('first'))
+    session.on('locked', () => {
+      throw new Error('a store failed to clean up')
+    })
+    session.once('locked', () => called.push('once'))
+    session.on('locked', () => called.push('last'))
+    session.open(archive, 'recovery')
+    expect(session.unlockedWith).toBe('recovery')
+    expect(() => session.lock('user')).toThrow('a store failed to clean up')
+    expect(called).toEqual(['first', 'once', 'last'])
+    expect(session.unlocked).toBe(false)
+    expect(session.unlockedWith).toBeNull()
+    // The once listener is gone, as after an emit.
+    expect(session.listenerCount('locked')).toBe(3)
+    // The data key is wiped and the database closed.
+    expect(archive.dataKey().every((b) => b === 0)).toBe(true)
+    expect(() => archive.get('profile', 'me')).toThrow()
+    const again = openArchive(file, key)
+    // A recovery key unlock counts as one by the password once the new password is set.
+    session.open(again, 'recovery')
+    session.passwordReset()
+    expect(session.unlockedWith).toBe('password')
+    session.removeAllListeners('locked')
+    session.lock()
+  }, 30_000)
+})
+
 describe('pin', () => {
   it('unlocks with the PIN and erases it after too many wrong tries', async () => {
     const pins = new PinStore(join(dir, 'devices'), fakeKeystore)
@@ -94,6 +164,15 @@ describe('pin', () => {
     }
     await expect(pins.unlock('0a1b2c3d', '000000')).rejects.toBeInstanceOf(WrongPinError)
     expect(pins.has('0a1b2c3d')).toBe(false)
+  }, 30_000)
+
+  it('counts wrong tries made at the same time one by one', async () => {
+    const pins = new PinStore(join(dir, 'devices'), fakeKeystore)
+    await pins.set('2b3c4d5e', '731904', Buffer.alloc(32, 5))
+    const tries = await Promise.allSettled(Array.from({ length: PIN_ATTEMPTS }, () => pins.unlock('2b3c4d5e', '000000')))
+    const remaining = tries.map((t) => (t.status === 'rejected' ? (t.reason as WrongPinError).remaining : 'opened'))
+    expect(remaining).toEqual(Array.from({ length: PIN_ATTEMPTS }, (_, i) => PIN_ATTEMPTS - 1 - i))
+    expect(pins.has('2b3c4d5e')).toBe(false)
   }, 30_000)
 
   it('is useless without the keystore that sealed the device secret', async () => {

@@ -226,8 +226,6 @@ export function GroupLegend({ groups, compact }: { groups: GroupInfo[]; compact?
   )
 }
 
-export const groupFill: Fill = (_member, group) => group
-
 /** The fill of a reading from its data: the groups' colours, the votes, the presence, a share of agreement. */
 export function readingFill(
   data: HemicycleData,

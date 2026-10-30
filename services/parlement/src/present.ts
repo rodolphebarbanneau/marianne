@@ -2,7 +2,7 @@ import { COMMITTEE, GOVERNMENT } from './authors'
 import { ballotPage, deputyPage, deputyPhoto } from './links'
 import type { BallotRecord, GroupRecord, MemberRow, VoteRow } from './queries'
 import type { Senator } from './senate'
-import type { Author, BallotLine, Chamber, Deputy, GroupCount, GroupInfo, MemberCard, Position } from './types'
+import type { Author, BallotLine, Deputy, GroupCount, GroupInfo, MemberCard, Position } from './types'
 
 /** What the view and the tools show of the index: members' cards, ballots' lines with their author, how groups voted. */
 
@@ -69,15 +69,6 @@ export function memberCard(row: MemberRow): MemberCard {
     organs: s.organs.map((o) => o.code)
   }
 }
-
-export const groupInfo = (g: GroupRecord, members = 0): GroupInfo => ({
-  chamber: g.chamber,
-  id: g.id,
-  name: g.name,
-  shortName: g.short_name,
-  color: visibleColor(g.color),
-  members
-})
 
 /** Who tabled a ballot's amendment, with their group's colour; null when the subject doesn't say. */
 export function authorOf(
@@ -175,5 +166,3 @@ export const voteCode = (position: Position, proxy: boolean) => {
   const code = { for: 'p', against: 'c', abstention: 'a', nonVoting: 'n' }[position]
   return proxy ? code.toUpperCase() : code
 }
-
-export const memberKeyOf = (chamber: Chamber, id: string) => `${chamber}:${id}`

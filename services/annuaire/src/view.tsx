@@ -130,10 +130,12 @@ export function View() {
   )
 }
 
-function Nearby({ state, place, now }: { state: Loaded<NearbyOffices[]>; place: string; now: Date }) {
+/** The usual offices near the user's commune; the kinds the directory didn't answer for are said apart from the ones it has none of. */
+export function Nearby({ state, place, now }: { state: Loaded<NearbyOffices[]>; place: string; now: Date }) {
   if (state.error) return <Failure title="Annuaire indisponible" error={state.error} retry={state.reload} />
   if (!state.data) return <Loading label={`les services publics de ${place}`} />
-  const empty = state.data.filter((g) => !g.offices.length)
+  const unanswered = state.data.filter((g) => g.error)
+  const empty = state.data.filter((g) => !g.offices.length && !g.error)
   return (
     <div className={`annuaire-results${state.loading ? ' annuaire-stale' : ''}`}>
       <span className="dim">Les services publics de {place} et les plus proches.</span>
@@ -143,6 +145,14 @@ function Nearby({ state, place, now }: { state: Loaded<NearbyOffices[]>; place: 
           <Group key={g.kind} label={g.label} offices={g.offices} now={now} />
         ))}
       {empty.length > 0 && <span className="small dim">Rien trouvé pour : {empty.map((g) => g.label).join(', ')}.</span>}
+      {unanswered.length > 0 && (
+        <Failure
+          inline
+          title={`L’annuaire n’a pas répondu pour ${unanswered.map((g) => g.label).join(', ')}`}
+          error={[...new Set(unanswered.map((g) => g.error))].join(' · ')}
+          retry={state.reload}
+        />
+      )}
     </div>
   )
 }

@@ -17,7 +17,6 @@ import {
   getBallot,
   getBallots,
   getMeeting,
-  getMember,
   getOrgans,
   groupRecords,
   listGroups,
@@ -49,7 +48,6 @@ import type {
   LiveStream,
   Meeting,
   MeetingDetail,
-  MemberCard,
   MemberProfile,
   MemberVote,
   Mine,
@@ -74,10 +72,15 @@ export async function todayStreams(ctx: Pick<ServiceContext, 'http' | 'log'>): P
 
 /** The Sénat's agenda of some days (its API, a week at a time); none when its site doesn't answer. */
 export async function senateMeetings(ctx: Pick<ServiceContext, 'http' | 'log'>, from: string, to: string): Promise<Meeting[]> {
+  return (await senateAgenda(ctx, from, to)).meetings
+}
+
+/** The Sénat's agenda over some days, read by week; `complete` is false when a week didn't come (senat.fr down). */
+export async function senateAgenda(ctx: Pick<ServiceContext, 'http' | 'log'>, from: string, to: string): Promise<{ meetings: Meeting[]; complete: boolean }> {
   const mondays: string[] = []
   for (let monday = mondayOf(from); monday <= to; monday = addDays(monday, 7)) mondays.push(monday)
   const weeks = await Promise.allSettled(mondays.map((m) => ctx.http.json<unknown>(senateAgendaUrl(m, true), { cacheMs: 600_000 })))
-  return weeks
+  const meetings = weeks
     .flatMap((w) => (w.status === 'fulfilled' ? parseSenateAgenda(w.value) : (ctx.log.warn('Sénat agenda:', (w.reason as Error).message), [])))
     .filter((e) => e.day >= from && e.day <= to)
     .map((e): Meeting => ({
@@ -92,6 +95,7 @@ export async function senateMeetings(ctx: Pick<ServiceContext, 'http' | 'log'>, 
       items: [e.title].filter(Boolean),
       video: e.sitting || e.public
     }))
+  return { meetings, complete: weeks.every((w) => w.status === 'fulfilled') }
 }
 
 /**
@@ -139,12 +143,15 @@ export function liveMeetings(meetings: Meeting[], streams: LiveStream[], now = D
   return found
 }
 
-/** The agenda of some days in both chambers, with the broadcasts of today; `db` null: the Assemblée's isn't synced yet. */
-export function agendaOf(db: DatabaseSync | null, from: string, to: string, senate: Meeting[], streams: LiveStream[]): Agenda {
+/**
+ * The agenda of some days in both chambers, with the broadcasts of today; `db` null: the Assemblée's
+ * isn't synced yet; `senateComplete` false: senat.fr didn't give all of the Sénat's.
+ */
+export function agendaOf(db: DatabaseSync | null, from: string, to: string, senate: Meeting[], streams: LiveStream[], senateComplete = true): Agenda {
   const assembly = db ? meetingsBetween(db, from, to) : []
   const live = liveMeetings([...assembly, ...senate], streams)
   const meetings: AgendaMeeting[] = [...assembly, ...senate].map((m) => ({ ...m, live: live.has(m.id) })).sort((a, b) => a.start.localeCompare(b.start))
-  return { from, to, indexed: !!db, meetings }
+  return { from, to, indexed: !!db, senateComplete, meetings }
 }
 
 /** A meeting known only from its broadcast (the agenda isn't synced yet). */
@@ -630,8 +637,7 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
         }),
         dissidents: dissidents.slice(0, 40),
         dissidentCount: dissidents.length,
-        proxies: votes.filter((v) => v.proxy).length,
-        video: null
+        proxies: votes.filter((v) => v.proxy).length
       }
     },
 
@@ -686,15 +692,17 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
     async agenda(from, days) {
       const to = addDays(from, Math.max(0, days - 1))
       const today = parisDay()
-      const [senate, streams] = await Promise.all([senateMeetings(ctx, from, to), from <= today && today <= to ? todayStreams(ctx) : Promise.resolve([])])
-      return agendaOf(index.open(), from, to, senate, streams)
+      const [senate, streams] = await Promise.all([senateAgenda(ctx, from, to), from <= today && today <= to ? todayStreams(ctx) : Promise.resolve([])])
+      return agendaOf(index.open(), from, to, senate.meetings, streams, senate.complete)
     },
 
-    async meeting(id): Promise<MeetingDetail> {
+    async meeting(id, day): Promise<MeetingDetail> {
       const streams = await todayStreams(ctx)
-      const day = parisDay()
+      const today = parisDay()
       if (/^SE-/i.test(id)) {
-        const around = await senateMeetings(ctx, addDays(day, -30), addDays(day, 30))
+        // Its id doesn't say its week: the week of the day it comes with, or a month around today.
+        const known = typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : ''
+        const around = await senateMeetings(ctx, known || addDays(today, -30), known || addDays(today, 30))
         const found = around.find((m) => m.id === id)
         if (!found) throw new Error(`Réunion introuvable : ${id}`)
         const stream = liveMeetings(around, streams).get(id) ?? null
@@ -705,7 +713,8 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
       const indexed = opened ? getMeeting(opened, id) : null
       // Known only from its broadcast (the agenda isn't synced): the broadcast that names it.
       const stream =
-        (opened ? liveMeetings(meetingsBetween(opened, day, day), streams).get(id) : streams.find((s) => (s.id === id || s.meeting === id) && s.live)) ?? null
+        (opened ? liveMeetings(meetingsBetween(opened, today, today), streams).get(id) : streams.find((s) => (s.id === id || s.meeting === id) && s.live)) ??
+        null
       const meeting = indexed ?? (stream ? streamMeeting(stream) : null)
       if (!meeting) throw new Error(opened ? `Réunion introuvable : ${id}` : NOT_SYNCED)
       const code = opened ? (getOrgans(opened, [meeting.organId]).get(meeting.organId)?.code ?? '') : ''
@@ -785,9 +794,3 @@ const ROLE_TYPES = [
   'GE',
   'API'
 ]
-
-/** A member card from either chamber's id, for the tools. */
-export function cardOf(db: DatabaseSync, chamber: Chamber, id: string): MemberCard | null {
-  const row = getMember(db, chamber, id)
-  return row ? memberCard(row) : null
-}

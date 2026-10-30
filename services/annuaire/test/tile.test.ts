@@ -163,6 +163,30 @@ describe('the tile', () => {
     await expect(service.activate(offline.ctx).tile!()).rejects.toThrow('HTTP 503')
   })
 
+  it('fails when the directory doesn’t answer for the mairie, rather than saying it isn’t listed', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(wednesday(10))
+    const noMairie = fakeContext(pkg, {
+      answer: (url) => {
+        if (whereOf(url).includes('"mairie"')) throw new Error('HTTP 502')
+        return directory(url)
+      },
+      communes: [BORDEAUX],
+      home: HOME
+    })
+    await expect(service.activate(noMairie.ctx).tile!()).rejects.toThrow('HTTP 502')
+    // Without the Caf, the mairie's tile still comes, without its line.
+    const noCaf = fakeContext(pkg, {
+      answer: (url) => {
+        if (whereOf(url).includes('"caf"')) throw new Error('HTTP 502')
+        return directory(url)
+      },
+      communes: [BORDEAUX],
+      home: HOME
+    })
+    expect(checkTile(await service.activate(noCaf.ctx).tile!())).toEqual(checkTile(officeTile('Bordeaux', MAIRIE, undefined, wednesday(10))))
+  })
+
   it('is asked every 5 minutes', () => {
     expect(service.tile).toEqual({ everyMinutes: 5 })
   })
