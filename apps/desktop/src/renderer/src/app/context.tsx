@@ -4,7 +4,7 @@ import type { ServiceBar } from '../host/frame'
 import { api, useLive } from '../lib/api'
 import { PAGES, routeTarget, type PageId, type View } from './routes'
 
-export { PAGES, PAGE_LABELS, type PageId, type View } from './routes'
+export { PAGES, PAGE_LABELS, type DomainTab, type PageId, type View } from './routes'
 
 export type PaletteMode = 'commands' | 'menu' | 'search'
 

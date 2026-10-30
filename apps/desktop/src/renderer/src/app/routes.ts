@@ -9,9 +9,12 @@ export const PAGE_LABELS: Record<PageId, string> = { home: 'Marianne', procedure
 /** A domain's dashboard belongs to Démarches; a service, opened by its code ("meteo") with what to show first, to Services. */
 export type View =
   | { kind: 'page'; page: PageId }
-  | { kind: 'domain'; id: DomainId }
+  | { kind: 'domain'; id: DomainId; tab?: DomainTab }
   | { kind: 'folder'; id: string }
   | { kind: 'service'; id: string; params?: Record<string, string | number> }
+
+/** A domain's tabs. */
+export type DomainTab = 'apercu' | 'taches' | 'dossiers' | 'ressources'
 
 /** Where a route leads: a screen, or a page of the settings (and a section of it); null: nowhere known. */
 export type RouteTarget = { kind: 'view'; view: View } | { kind: 'settings'; page: string; section: string } | null
