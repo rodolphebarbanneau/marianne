@@ -28,7 +28,7 @@ What a tab shows is yours, from `@marianne/sdk/view` and Marianne's classes:
 | what couldn't come                               | `<Failure title="Prévisions indisponibles" error={…} retry={…} />` (`inline` for a part)                   |
 | something to do first (an address, a permission) | `<Notice action={{ label: 'renseigner mon adresse', onClick }}>…</Notice>`                                 |
 | a form                                           | `<Field label hint error>`, Marianne's inputs and `.btn`                                                   |
-| a dialog                                         | `<Modal>` (over the window, échap closes it)                                                               |
+| a dialog                                         | `<Modal>` (over the window; échap closes it, and goes no further even without `onClose`)                   |
 | a filter all tabs follow                         | `<ServiceTools>`: at the tab bar's end; one or two small groups                                            |
 | a count beside a tab                             | `useTabBadges({ members: '3' })`                                                                           |
 | a search of the screen                           | `"search": { "placeholder": "…" }` in the manifest, then `useSearch()`: never a search field of your own   |
