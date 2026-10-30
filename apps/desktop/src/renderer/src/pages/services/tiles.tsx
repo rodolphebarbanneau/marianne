@@ -3,6 +3,7 @@ import { paletteValue, type ServiceState, type ServiceTile, type TileVisual } fr
 import { Pixels, ServiceIcon } from '@marianne/sdk/view'
 import type { TileState } from '@shared/types'
 import { freshness } from '../../lib/format'
+import { plainKey } from '../../lib/keys'
 import { Code, Community } from './parts'
 
 /**
@@ -154,7 +155,8 @@ function Tile({
       {...drag}
       onClick={() => onOpen(tile?.params ?? {})}
       onKeyDown={(e) => {
-        if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return
+        // Entrée or Espace alone: with ctrl they are the app's (a new folder, SOMMAIRE).
+        if (e.target !== e.currentTarget || !plainKey(e, 'Enter', ' ')) return
         e.preventDefault()
         onOpen(tile?.params ?? {})
       }}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import { useApp, type ScreenKey } from '../../app/context'
 import { api } from '../../lib/api'
 import { useCatalogue, useServices, useServiceTiles } from '../../host'
+import { plainKey } from '../../lib/keys'
 import { CATALOGUE_PAGE, CatalogueNote, CatalogueTable, catalogueRows, RecommendedCards, recommended, TRUST_FILTERS, type TrustFilter } from './discover'
 import { FileDialog, PinsDialog, ReviewDialog, type ReviewSubject } from './dialogs'
 import { ServicesHead } from './kiosk'
@@ -99,7 +100,8 @@ export function ServicesPage() {
   }
   const step = (by: number) => setSelected((i) => Math.max(0, Math.min(results.length - 1, i + by)))
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    // Entrée alone: ctrl+entrée stays the app's (a new folder).
+    if (plainKey(e, 'Enter')) {
       e.preventDefault()
       envoi()
     } else if (e.key === 'Escape' && query) {

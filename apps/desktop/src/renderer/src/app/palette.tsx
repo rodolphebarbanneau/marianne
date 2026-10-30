@@ -3,6 +3,7 @@ import type { Procedure } from '@marianne/content'
 import { DOMAINS } from '@marianne/profile'
 import { foldText, serviceCode, serviceMatches } from '@marianne/sdk'
 import { api } from '../lib/api'
+import { plainKey } from '../lib/keys'
 import { useServices } from '../host'
 import { SETTINGS_PAGES } from '../settings/pages'
 import { useShortcutLabel, type Actions } from './commands'
@@ -210,7 +211,7 @@ export function Palette({ actions }: { actions: Actions }) {
     if (e.key === 'Escape') return (e.preventDefault(), e.stopPropagation(), close())
     if (e.key === 'ArrowDown') return (e.preventDefault(), setSel(Math.min(at + 1, shown.length - 1)))
     if (e.key === 'ArrowUp') return (e.preventDefault(), setSel(Math.max(at - 1, 0)))
-    if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.shiftKey) return (e.preventDefault(), shown[at] && open(shown[at]))
+    if (plainKey(e, 'Enter')) return (e.preventDefault(), shown[at] && open(shown[at]))
     if (e.key === 'Backspace' && mode === 'menu' && !query && path.length) return (e.preventDefault(), setPath(path.slice(0, -1)), setSel(0))
   }
 
