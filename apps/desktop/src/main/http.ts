@@ -21,20 +21,23 @@ interface Options {
   /** Form body (POST, application/x-www-form-urlencoded). */
   form?: Record<string, string>
   timeoutMs?: number
-  /** Cache GET responses this long (default 5 min; 0 = no cache). */
+  /** A GET's cached answer is taken while younger than this (default 5 min; 0 = no cache). */
   cacheMs?: number
 }
 
 const CACHE_MAX = 200
-const cache = new Map<string, { at: number; ttl: number; text: string }>()
+/** GET answers by URL, with the time they came: each read decides by its own `cacheMs` whether one is recent enough. */
+const cache = new Map<string, { at: number; text: string }>()
 
 export const userAgent = () => `Marianne/${app.getVersion()} (+${REPO_URL})`
 
 export async function fetchText(url: string, opts: Options = {}): Promise<string> {
   const method = opts.method ?? (opts.json !== undefined || opts.form ? 'POST' : 'GET')
   const ttl = method === 'GET' ? (opts.cacheMs ?? 300_000) : 0
+  // The answer's age against this read's lifetime, not the first reader's: a source one caller asks
+  // every 20 seconds and another every 2 minutes isn't held to the slower one's pace.
   const hit = ttl ? cache.get(url) : undefined
-  if (hit && Date.now() - hit.at < hit.ttl) return hit.text
+  if (hit && Date.now() - hit.at < ttl) return hit.text
 
   const headers: Record<string, string> = { 'User-Agent': userAgent(), Accept: 'application/json, text/plain, */*', ...opts.headers }
   let body: string | undefined
@@ -55,8 +58,10 @@ export async function fetchText(url: string, opts: Options = {}): Promise<string
   const text = await res.text()
   if (!res.ok) throw new HttpError(`HTTP ${res.status} de ${new URL(url).host}${text ? ` : ${text.replace(/\s+/g, ' ').slice(0, 300)}` : ''}`, res.status)
   if (ttl) {
+    // Taken out first: a Map keeps a key it sets again in its old place, and the oldest answer is the one dropped.
+    cache.delete(url)
     if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value!)
-    cache.set(url, { at: Date.now(), ttl, text })
+    cache.set(url, { at: Date.now(), text })
   }
   return text
 }
