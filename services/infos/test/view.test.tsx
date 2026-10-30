@@ -113,10 +113,15 @@ describe('« à la une »', () => {
     expect(html).toMatch(/data-subject="b1".*?<\/tr><tr class="open"><td colSpan="3"><div class="infos-detail">/)
   })
 
-  it('says when no subject is told, and lists the single titles', () => {
+  it('says when no subject is told by two sources, and lists the single titles', () => {
     const html = front({ ...readingFor(), subjects: [] })
-    expect(html).toContain('Aucun titre de vos sources ce matin.')
+    // Not « aucun titre »: the titles of one source are just below.
+    expect(html).toContain('Aucun sujet repris par deux sources pour le moment.')
+    expect(html).not.toContain('Aucun titre')
     expect(html).toContain('4 titres que les autres ne reprennent pas')
+    const none = front({ ...readingFor(), subjects: [], single: [], items: [] })
+    expect(none).toContain('Aucun titre de vos sources pour le moment.')
+    expect(none).not.toContain('une seule source')
   })
 
   it('puts in « le fil du sujet » each title’s square at its source’s position, newest first', () => {

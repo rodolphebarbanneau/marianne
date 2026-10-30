@@ -349,11 +349,6 @@ export function memberVotes(db: DatabaseSync, chamber: Chamber, member: number, 
   ).map((r) => ({ ...r, position: POSITION_CODES[r.position], proxy: !!r.proxy }))
 }
 
-/** A member's vote in each of some ballots matching a search: what the tools show. */
-export function memberVoteIn(db: DatabaseSync, chamber: Chamber, member: number, ballots: number[]): Map<number, { position: Position; proxy: boolean }> {
-  return new Map(votesOf(db, chamber, ballots, [member]).map((v) => [v.ballot, { position: v.position, proxy: v.proxy }]))
-}
-
 // ---------------------------------------------------------------- the agenda
 
 const toMeeting = (r: { data: string; organ: string | null }): Meeting => ({ ...(JSON.parse(r.data) as Meeting), chamber: 'an', organ: r.organ ?? '' })
@@ -445,6 +440,3 @@ export function constituencyAt(
   }
   return null
 }
-
-/** Whether the index has rows in a table. */
-export const hasRows = (db: DatabaseSync, table: string) => !!one(db, `select 1 from ${table} limit 1`)

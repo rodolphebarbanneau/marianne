@@ -7,7 +7,7 @@ import { fill, Marked, Num, SourceTag, Spectrum, useInfos, Words } from './commo
 
 /**
  * A subject opened over the tab: how each source titles it (by hour, or by side), the words its
- * titles share and the ones a title alone has, who said it when over the morning, the days before.
+ * titles share and the ones a title alone has, who said it when from its first title to its last, the days before.
  * Its rail: questions for Marianne (the titles and their links only), the fact-checks the grouping
  * put in it.
  */
@@ -43,7 +43,7 @@ export function SubjectPane({ subject: s }: { subject: Subject }) {
         })
       : rows.map((h) => ({ h, head: null }))
 
-  // The morning's axis: from the first title's hour to the hour after the last.
+  // The axis of « dans la journée »: from the first title's hour to the hour after the last.
   const h0 = Date.parse(first.published) - (Date.parse(first.published) % 3_600_000)
   const h1 = Date.parse(last.published) - (Date.parse(last.published) % 3_600_000) + 3_600_000
   const x = (iso: string) => `${(((Date.parse(iso) - h0) / (h1 - h0)) * 94 + 3).toFixed(1)}%`
@@ -184,7 +184,7 @@ export function SubjectPane({ subject: s }: { subject: Subject }) {
             </div>
             <div>
               <div className="infos-h">
-                <span className="label">la matinée</span>
+                <span className="label">dans la journée</span>
                 <span className="small dim">qui l’a dit quand</span>
               </div>
               <div className="infos-time">

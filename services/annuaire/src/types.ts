@@ -106,6 +106,8 @@ export interface NearbyOffices {
   kind: string
   label: string
   offices: PublicOffice[]
+  /** Why the directory didn't answer for this kind: its offices are then unknown, not none. */
+  error?: string
 }
 
 /** What the view calls. */

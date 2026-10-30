@@ -263,7 +263,7 @@ function Pane({ target }: { target: Target }) {
     case 'vote':
       return <VotePane chamber={target.chamber} id={target.id} />
     case 'meeting':
-      return <MeetingPane id={target.id} />
+      return <MeetingPane id={target.id} day={target.day} />
     case 'live':
       return <LivePane chamber={target.chamber} id={target.id} />
     case 'video':

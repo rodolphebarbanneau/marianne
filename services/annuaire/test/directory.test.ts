@@ -137,7 +137,7 @@ describe('search', () => {
     expect(results).toEqual({ total: 0, offices: [], place: '', scope: 'national' })
   })
 
-  it('lists the usual offices near a commune, a kind that fails empty', async () => {
+  it('lists the usual offices near a commune, a kind that fails with its error', async () => {
     const { ctx, urls } = fakeContext(pkg, {
       answer: (url) => {
         if (whereOf(url).includes('"caf"')) throw new Error('HTTP 500')
@@ -149,6 +149,9 @@ describe('search', () => {
     expect(near[0]).toMatchObject({ kind: 'mairie', label: 'Mairie' })
     expect(near[0].offices.map((o) => o.name)).toEqual(['Mairie - Bordeaux'])
     expect(near.filter((g) => g.offices.length)).toHaveLength(1)
+    // The Caf didn't answer: unknown, not none; the kinds that answered nothing have no error.
+    expect(near.find((g) => g.kind === 'caf')).toMatchObject({ offices: [], error: expect.stringContaining('HTTP 500') })
+    expect(near.filter((g) => g.error).map((g) => g.kind)).toEqual(['caf'])
     // The local search for each kind, then the département's for those the commune doesn't list.
     expect(urls.filter((u) => whereOf(u).includes('startswith'))).toHaveLength(NEARBY_KINDS.length - 2)
   })

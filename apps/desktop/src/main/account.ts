@@ -14,7 +14,8 @@ import {
   unlockArchive,
   type Archive,
   type Keystore,
-  type LockReason
+  type LockReason,
+  type UnlockedWith
 } from '@marianne/archive'
 import { safeStorage } from 'electron'
 import { DEFAULT_ACCOUNT_SETTINGS } from '../shared/config'
@@ -117,7 +118,7 @@ class Accounts extends EventEmitter {
     const id = newAccountId(folder)
     const { archive, recoveryKey } = await createArchive(accountFile(folder, id), { id, display: options.display, password: options.password })
     archive.put(SETTINGS, 'account', DEFAULT_ACCOUNT_SETTINGS)
-    this.opened(archive)
+    this.opened(archive, 'created')
     return { recoveryKey, state: this.state() }
   }
 
@@ -135,17 +136,18 @@ class Accounts extends EventEmitter {
         key.fill(0)
       }
     }
-    this.opened(archive)
+    // What opened it decides what the session may do: only the recovery key lets a new password be set without the old one.
+    this.opened(archive, 'password' in secret ? 'password' : 'recoveryKey' in secret ? 'recovery' : 'pin')
     return this.state()
   }
 
-  private opened(archive: Archive): void {
+  private opened(archive: Archive, via: UnlockedWith): void {
     // Before anyone reads or saves the settings: a save would drop what an older Marianne kept.
     upgradeNews(
       archive,
       content.get().newsSources.map((s) => s.id)
     )
-    session.open(archive)
+    session.open(archive, via)
     session.setIdleMinutes(configStore.get().lockAfterMinutes)
     configStore.update({ lastAccount: archive.id })
   }
@@ -175,16 +177,27 @@ class Accounts extends EventEmitter {
     if (!(await session.archive.verifyPassword(current))) throw new Error('Phrase de passe actuelle incorrecte.')
     if (!checkPassword(next, avoid).ok) throw new Error('Cette phrase de passe n’est pas assez solide.')
     await session.archive.changePassword(next)
+    session.passwordReset()
   }
 
-  /** After unlocking with the recovery key: a new password without the old one. */
+  /**
+   * After unlocking with the recovery key: a new password without the old one. Only then: in a session
+   * opened otherwise, by the password or a PIN, it would let anyone at the computer take the account over.
+   */
   async resetPassword(next: string, avoid: string[] = []): Promise<void> {
+    if (session.unlockedWith !== 'recovery')
+      throw new Error('Une nouvelle phrase de passe sans l’ancienne ne se choisit qu’après avoir ouvert l’archive avec la clé de secours.')
     if (!checkPassword(next, avoid).ok) throw new Error('Cette phrase de passe n’est pas assez solide.')
     await session.archive.changePassword(next)
+    session.passwordReset()
   }
 
-  renewRecoveryKey(): Promise<string> {
-    return session.archive.renewRecoveryKey()
+  /**
+   * A new recovery key opens the archive for good: the password is asked again, so that someone at an
+   * unlocked session, or who knows the PIN, can't mint one. Without it, refused like a wrong one.
+   */
+  renewRecoveryKey(password = ''): Promise<string> {
+    return session.archive.renewRecoveryKey(password)
   }
 
   setDisplay(display: string): void {

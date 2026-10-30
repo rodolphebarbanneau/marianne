@@ -152,6 +152,25 @@ export const LOGIN_KINDS = ['franceconnect', 'account', 'none'] as const
 /** franceconnect: through FranceConnect · account: the site's own account · none: no sign-in. */
 export type LoginKind = (typeof LOGIN_KINDS)[number]
 
+/**
+ * The tokens of the profile's own identifiers (@marianne/profile's tokensOf), which a site's field
+ * key may not take: `[[email]]` would then stand for that field as well, and resolve to either.
+ * The others have a dot (`household.1.first_name`), which a key can't.
+ */
+export const PROFILE_TOKENS = [
+  'last_name',
+  'birth_name',
+  'first_names',
+  'first_name',
+  'birth_date',
+  'birth_place',
+  'nir',
+  'iban',
+  'phone',
+  'email',
+  'address'
+] as const
+
 /** An identifier a site needs, kept in the profile (and reached by the engines as [[key]]). */
 export interface SiteField {
   key: string
@@ -556,7 +575,11 @@ function readSites(file: string, report: Report): { updated: string; sites: Site
       if (!Array.isArray(o.fields)) report(`${where}.fields`, 'must be a list')
       else
         site.fields = [...entries(o.fields, `${where}.fields`, SITE_FIELD_KEYS, report)].map(({ o: f, where: at }) => {
-          const key = field(f, 'key', at, report, like(FIELD_KEY, 'a key (lowercase letters, digits and _)'))
+          const key = field(f, 'key', at, report, (v) =>
+            (PROFILE_TOKENS as readonly string[]).includes(v)
+              ? `"${v}" is the token of the profile's own ${v}: name the site's identifier otherwise`
+              : like(FIELD_KEY, 'a key (lowercase letters, digits and _)')(v)
+          )
           const label = field(f, 'label', at, report)
           const hint = optionalField(f, 'hint', at, report)
           const pattern = optionalField(f, 'pattern', at, report, validPattern)

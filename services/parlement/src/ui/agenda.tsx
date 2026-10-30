@@ -130,7 +130,7 @@ export function AgendaTab() {
           {big.map((m, i) => (
             <span key={m.id}>
               {i > 0 && ' · '}
-              <button className="link" onClick={() => nav.open({ kind: 'meeting', id: m.id })}>
+              <button className="link" onClick={() => nav.open({ kind: 'meeting', id: m.id, day: m.start.slice(0, 10) })}>
                 {dateTime(m.start)}
               </button>{' '}
               {m.items.find((x) => BIG.test(x)) ?? m.items[0]} ({m.chamber === 'an' ? 'AN' : 'Sénat'})
@@ -175,7 +175,7 @@ function Column({ chamber, meetings, indexed }: { chamber: Chamber; meetings: Ag
             <button
               key={m.id}
               className={`parlement-ev agenda${m.state === 'cancelled' ? ' cancelled' : ''}`}
-              onClick={() => nav.open({ kind: 'meeting', id: m.id })}
+              onClick={() => nav.open({ kind: 'meeting', id: m.id, day: m.start.slice(0, 10) })}
             >
               <span className={m.live ? 'bad' : 'dim'}>{hour(m.start)}</span>
               <span className="parlement-stack">
@@ -208,10 +208,10 @@ function Column({ chamber, meetings, indexed }: { chamber: Chamber; meetings: Ag
 }
 
 /** A meeting: its agenda, its broadcast when live (its video, the whole sitting so far), its recordings once on the portal. */
-export function MeetingPane({ id }: { id: string }) {
+export function MeetingPane({ id, day }: { id: string; day?: string }) {
   const host = useHost()
   const nav = useNav()
-  const detail = useMethod('meeting', [id])
+  const detail = useMethod('meeting', day ? [id, day] : [id])
   // On air without its video on the portal: asked again, to open the video once there.
   const waiting = !!detail.data?.stream?.live && !detail.data.stream.video
   usePolling(detail, 30_000, waiting)

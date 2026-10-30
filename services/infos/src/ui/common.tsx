@@ -266,7 +266,7 @@ export function GearIcon() {
   )
 }
 
-/** The page's last line, as Actualités had it: the sources whose feed didn't answer (their last titles still shown). */
+/** The page's last line: the sources whose feed didn't answer (their last titles still shown). */
 export function FailedLine() {
   const { reading } = useInfos()
   if (!reading.failed.length || reading.offline) return null

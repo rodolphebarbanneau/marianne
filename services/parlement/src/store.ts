@@ -6,18 +6,8 @@ import { DatabaseSync } from 'node:sqlite'
  * it, a source at a time, each in one transaction (WAL: the main side keeps reading meanwhile);
  * the main side opens it read-only. It is a cache: a new schema version drops it, and the next
  * sync fills it again.
- */
-
-export const DB_FILE = 'parlement.db'
-
-/**
- * 3: amendments' authors read again (sub-amendments, "de suppression"…), their names kept with the
- * ballots; 4: the legislature's deputies who left office (former), their amendments' authors.
- */
-export const SCHEMA_VERSION = 4
-
-/**
- * The sources of the index, each refilling its own rows:
+ *
+ * Its sources, each refilling its own rows:
  * - deputies: the Assemblée's deputies, its groups and organs (AMO dump);
  * - former: the deputies of the legislature, those who left office too, and their groups over time (AMO history);
  * - ballots: its public ballots and every deputy's vote (Scrutins dump);
@@ -27,9 +17,14 @@ export const SCHEMA_VERSION = 4
  * - senators: the Sénat's senators and groups;
  * - senateBallots: its public ballots and every senator's vote (added as they come, never rebuilt).
  */
-export type Source = 'deputies' | 'former' | 'ballots' | 'meetings' | 'bills' | 'constituencies' | 'senators' | 'senateBallots'
 
-export const SOURCES: Source[] = ['deputies', 'former', 'senators', 'ballots', 'senateBallots', 'meetings', 'bills', 'constituencies']
+export const DB_FILE = 'parlement.db'
+
+/**
+ * 3: amendments' authors read again (sub-amendments, "de suppression"…), their names kept with the
+ * ballots; 4: the legislature's deputies who left office (former), their amendments' authors.
+ */
+export const SCHEMA_VERSION = 4
 
 /**
  * The tables, created once per schema. Members and ballots of both chambers share a table (a few
@@ -93,8 +88,9 @@ export function openWriter(file: string): { db: DatabaseSync; current: boolean }
 
 /**
  * Drop whatever schema the file has, create the current one and mark its version, before every
- * source fills it again; inside the sync's transaction, so readers see the old index or the new
- * one, never an empty one. Tables are dropped rather than the file deleted: the main side may have it open.
+ * source fills it again. It commits in a transaction of its own: until each source has filled its
+ * rows, readers see a partly filled index. Tables are dropped rather than the file deleted: the main
+ * side may have it open.
  */
 export function resetSchema(db: DatabaseSync): void {
   const tables = (where: string) =>

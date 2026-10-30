@@ -994,7 +994,7 @@ mark.infos-q {
   color: var(--muted);
   font-size: 0.9em;
 }
-/* « la matinée »: a bar a title on an hour axis, in its source's colour. */
+/* « dans la journée »: a bar a title on an hour axis, in its source's colour. */
 .infos-time {
   position: relative;
   height: 64px;

@@ -1,4 +1,4 @@
-import { readContent, type CalendarItem } from '@marianne/content'
+import { PROFILE_TOKENS, readContent, type CalendarItem } from '@marianne/content'
 import { files } from '@marianne/content/files'
 import { describe, expect, it } from 'vitest'
 import { contextView } from '../src/context'
@@ -17,7 +17,7 @@ import {
   type Profile
 } from '../src/profile'
 import { computeDeadlines, serviceDeadlines } from '../src/rules'
-import { redact, resolve, resolveDeep, tokensOf, unknownTokens } from '../src/tokens'
+import { redact, resolve, resolveDeep, tokensOf } from '../src/tokens'
 
 /** The catalog of sites built into the app. */
 const SITES = readContent(files).sites
@@ -111,6 +111,16 @@ describe('tokens', () => {
       expect(names).toContain(t)
   })
 
+  it('names its own identifiers as the content keeps them from the sites’ fields', () => {
+    const married = structuredClone(p)
+    married.person.usedName = 'Durand'
+    const own = tokensOf(married, SITES)
+      .map((t) => t.token)
+      .filter((t) => !t.includes('.') && !SITES.some((s) => s.fields?.some((f) => f.key === t)))
+    expect(own).toContain('birth_name')
+    expect([...PROFILE_TOKENS].sort()).toEqual([...new Set(own)].sort())
+  })
+
   it('redacts identifiers in any spacing or format', () => {
     const text =
       'Mme Camille Anne MARTIN, née le 14/03/1988, NIR 2 88 03 44 109 123 76, tél. +33 6 12 34 56 78, camille.martin@example.fr, 12 rue des Olivettes. Numéro fiscal : 30 12 345 678 901. IBAN FR76 3000 6000 0112 3456 7890 189. SIREN 356 000 000, véhicule GH-482-KX, Studio Martin. Léo.'
@@ -182,10 +192,72 @@ describe('tokens', () => {
     expect(redact('Le marteau de Nantes coûte 12 euros.', defs)).toBe('Le marteau de Nantes coûte 12 euros.')
   })
 
+  it('redacts names and streets written with or without their ligatures', () => {
+    const lig = structuredClone(p)
+    lig.person.firstNames = 'Lætitia'
+    lig.address = { ...lig.address, street: '12 rue du Sacré-Cœur' }
+    const defs4 = tokensOf(lig, SITES)
+    expect(redact('Lætitia, LÆTITIA, Laetitia', defs4)).toBe('[[first_names]], [[first_names]], [[first_names]]')
+    expect(redact('12 rue du Sacré-Cœur, 12 RUE DU SACRE COEUR', defs4)).toBe('[[address]], [[address]]')
+  })
+
+  it('redacts a name whose accents come decomposed', () => {
+    const accents = structuredClone(p)
+    accents.person.birthName = 'Lefèvre'
+    const defs5 = tokensOf(accents, SITES)
+    // "Lefèvre" as a macOS file name or a PDF gives it: an "e" and a combining grave accent.
+    const decomposed = 'Lefèvre'
+    expect(decomposed).not.toBe('Lefèvre')
+    expect(redact(`Mme ${decomposed}`, defs5)).toBe('Mme [[last_name]]')
+  })
+
+  it('redacts numbers with doubled spaces or dashes between their groups', () => {
+    const text = [
+      'IBAN FR76  3000  6000  0112  3456  7890  189',
+      'IBAN FR76 - 3000 - 6000 - 0112 - 3456 - 7890 - 189',
+      'NIR 2  88  03  44  109  123  76',
+      'SIREN 356 - 000 - 000, SIRET 356  000  000  00012',
+      'véhicule GH - 482 - KX',
+      'tél. 06  12  34  56  78'
+    ].join('\n')
+    expect(redact(text, defs)).toBe(
+      [
+        'IBAN [[iban]]',
+        'IBAN [[iban]]',
+        'NIR [[nir]]',
+        'SIREN [[company.1.siren]], SIRET [[company.1.siren]]  00012',
+        'véhicule [[vehicle.1.plate]]',
+        'tél. [[phone]]'
+      ].join('\n')
+    )
+    // Someone else's NIR, spaced the same way.
+    expect(redact('Déclarant 2 : 1  86  07  75  112  345  12', defs)).toBe('Déclarant 2 : [[nir.other]]')
+  })
+
+  it('redacts a phone number dialled from abroad', () => {
+    for (const phone of ['+33 6 12 34 56 78', '+33 (0)6 12 34 56 78', '0033 6 12 34 56 78', '00 33 6 12 34 56 78'])
+      expect(redact(phone, defs)).toBe('[[phone]]')
+  })
+
+  it("redacts a home's street without its postcode, and street words shortened either way", () => {
+    const homes = structuredClone(p)
+    homes.properties = [
+      { id: 'h1', address: '8 boulevard des Tilleuls, 69003 Lyon', inseeCode: '', use: 'rental', status: 'owner', rent: '', leaseStart: '', landlord: '' },
+      { id: 'h2', address: '3 av. des Acacias 33000 Bordeaux', inseeCode: '', use: 'second_home', status: 'owner', rent: '', leaseStart: '', landlord: '' }
+    ]
+    const defs6 = tokensOf(homes, SITES)
+    const text = 'Bail : 8 boulevard des Tilleuls. Quittance : 8 bd des Tilleuls. Maison : 3 avenue des Acacias. Domicile : 12 r. des Olivettes.'
+    expect(redact(text, defs6)).toBe(
+      'Bail : [[property.1.address]]. Quittance : [[property.1.address]]. Maison : [[property.2.address]]. Domicile : [[address]].'
+    )
+    // Whole addresses still go to one token, and a lone number never becomes a pattern.
+    expect(redact('8 boulevard des Tilleuls, 69003 Lyon', defs6)).toBe('[[property.1.address]]')
+    expect(redact('Il reste 8 places.', defs6)).toBe('Il reste 8 places.')
+  })
+
   it('resolves tokens locally, leaves unknown ones', () => {
     expect(resolve('NIR [[nir]], né le [[birth_date]], [[caf_number]]', defs)).toBe('NIR 288034410912376, né le 14/03/1988, [[caf_number]]')
     expect(resolveDeep({ a: ['[[last_name]]'], b: 3 }, defs)).toEqual({ a: ['Martin'], b: 3 })
-    expect(unknownTokens('[[nir]] [[caf_number]]', defs)).toEqual(['caf_number'])
   })
 })
 

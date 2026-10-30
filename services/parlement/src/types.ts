@@ -3,16 +3,12 @@ import type { SyncStatus } from '@marianne/sdk'
 /** The two chambers: the Assemblée nationale and the Sénat. */
 export type Chamber = 'an' | 'se'
 
-export const CHAMBERS: Chamber[] = ['an', 'se']
-
 export const CHAMBER_NAMES: Record<Chamber, string> = { an: 'Assemblée nationale', se: 'Sénat' }
 
 /** What a ballot decides: an amendment (or sub-amendment), an article, a whole text, a motion, something else. */
 export type BallotKind = 'amendment' | 'article' | 'text' | 'motion' | 'other'
 
 export type Position = 'for' | 'against' | 'abstention' | 'nonVoting'
-
-export const POSITION_LABELS: Record<Position, string> = { for: 'pour', against: 'contre', abstention: 'abstention', nonVoting: 'non-votant' }
 
 /** Committee attendance, as the Assemblée's minutes record it. */
 export type Attendance = 'present' | 'excused' | 'absent'
@@ -361,8 +357,6 @@ export interface BallotDetail extends BallotLine {
   dissidents: Array<{ member: MemberCard; position: Position }>
   dissidentCount: number
   proxies: number
-  /** The recording of its sitting, when the portal has it. */
-  video: { id: string; url: string } | null
 }
 
 /** Votes in compact form, for a hemicycle: member id → "p" pour, "c" contre, "a" abstention, "n" non-votant; capitals: by proxy. */
@@ -514,6 +508,8 @@ export interface Agenda {
   to: string
   /** The Assemblée's open data is there. */
   indexed: boolean
+  /** senat.fr gave the Sénat's agenda for every week asked. */
+  senateComplete: boolean
   meetings: AgendaMeeting[]
 }
 
@@ -565,7 +561,11 @@ export type ParlementMethods = {
   analysis(chamber: Chamber, members: string[], from: string, to: string): Analysis
   suggestions(): Suggestion[]
   agenda(from: string, days: number): Agenda
-  meeting(id: string): MeetingDetail
+  /**
+   * A meeting, with its day (YYYY-MM-DD) when the caller knows it: the Sénat's agenda is read by
+   * week, and a Sénat id alone is looked for a month around today.
+   */
+  meeting(id: string, day?: string): MeetingDetail
   videos(query: VideoQuery): VideoItem[]
   /** An id or a portal link of either chamber. */
   video(ref: string): VideoOpen

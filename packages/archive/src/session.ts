@@ -16,13 +16,22 @@ export class LockedError extends Error {
 
 export type LockReason = 'user' | 'idle' | 'system' | 'quit' | 'switch'
 
+/** What opened the archive: some acts are allowed only after one of them (a new password after the recovery key). */
+export type UnlockedWith = 'password' | 'recovery' | 'pin' | 'created'
+
 export class Session extends EventEmitter {
   private current: Archive | null = null
+  private via: UnlockedWith | null = null
   private idleTimer: NodeJS.Timeout | null = null
   private idleMinutes = 15
 
   get unlocked(): boolean {
     return this.current !== null
+  }
+
+  /** How the open archive was unlocked; null while locked. */
+  get unlockedWith(): UnlockedWith | null {
+    return this.via
   }
 
   get archive(): Archive {
@@ -35,21 +44,54 @@ export class Session extends EventEmitter {
     return this.current
   }
 
-  open(archive: Archive): void {
-    if (this.current) this.lock('switch')
+  open(archive: Archive, via: UnlockedWith = 'password'): void {
+    if (this.current) {
+      try {
+        this.lock('switch')
+      } catch (err) {
+        // The previous one is closed, but not cleaned up after: this one isn't opened over it, nor left open.
+        archive.close()
+        throw err
+      }
+    }
     this.current = archive
+    this.via = via
     this.touch()
     this.emit('unlocked', archive)
   }
 
+  /** The recovery key did what it opened the session for: from now on, it counts as opened by the new password. */
+  passwordReset(): void {
+    if (this.via === 'recovery') this.via = 'password'
+  }
+
+  /**
+   * Drop the data key and close the file, whatever the listeners do: each is called on its own, so
+   * one that throws neither stops the others nor leaves the key in memory and the file locked. Their
+   * errors come out afterwards.
+   */
   lock(reason: LockReason = 'user'): void {
     if (!this.current) return
     const archive = this.current
     this.current = null
+    this.via = null
     if (this.idleTimer) clearTimeout(this.idleTimer)
     this.idleTimer = null
-    this.emit('locked', reason)
-    archive.close()
+    const errors: unknown[] = []
+    try {
+      // The raw listeners, so that a `once` one is removed as `emit` would.
+      for (const listener of this.rawListeners('locked')) {
+        try {
+          ;(listener as (reason: LockReason) => void).call(this, reason)
+        } catch (err) {
+          errors.push(err)
+        }
+      }
+    } finally {
+      archive.close()
+    }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length) throw new AggregateError(errors, 'Several listeners failed while locking.')
   }
 
   /** The user did something: postpone the automatic lock. */

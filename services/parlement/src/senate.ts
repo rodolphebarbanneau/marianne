@@ -248,7 +248,7 @@ export function senateBillTitle(title: string): string {
 
 export interface SenateEvent {
   id: string
-  /** ISO, with the Paris offset (filled in by the caller). */
+  /** YYYY-MM-DD; the caller makes it a time with the Paris offset (parisIso). */
   day: string
   hour: string
   title: string

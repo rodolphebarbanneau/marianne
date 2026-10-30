@@ -148,7 +148,10 @@ export function FrontTab(props: FrontProps) {
           {props.wide && <div className="infos-cur">{props.chosen && <Chosen subject={props.chosen} onOpen={() => openSubject(props.chosen!.id)} />}</div>}
         </div>
       ) : (
-        <p className="infos-empty">Aucun titre de vos sources ce matin.</p>
+        // Whatever the hour: titles told by one source only are listed just below.
+        <p className="infos-empty">
+          {reading.items.length ? 'Aucun sujet repris par deux sources pour le moment.' : 'Aucun titre de vos sources pour le moment.'}
+        </p>
       )}
       {reading.single.length > 0 && (
         <div className="infos-section">

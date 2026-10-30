@@ -51,6 +51,22 @@ const SITES = {
   [`https://videos.assemblee-nationale.fr/Datas/an/${VIDEO}/meta-files/vodalys.smil`]:
     '<smil><body><video src="mp4/ida/mp4:domain1/2026/10/debr_1.mp4"/></body></smil>',
   [SENATE_SEARCH]: JSON.stringify([]),
+  // Five weeks back, the week of 21 September: a committee's hearing. Before the agenda's other weeks, which all answer the same.
+  [`${SENATE_AGENDA}?date=2026-09-21&week=1`]: JSON.stringify({
+    '2026-09-23': {
+      events: [
+        {
+          id: 558001,
+          date: '2026-09-23',
+          hour: '9h30',
+          title: 'Audition de la ministre',
+          place: 'Salle Médicis',
+          instances: ['Commission des lois'],
+          public: true
+        }
+      ]
+    }
+  }),
   [SENATE_AGENDA]: JSON.stringify({
     '2026-10-28': {
       events: [
@@ -216,6 +232,40 @@ describe('before the first sync', () => {
     // A meeting known only from its broadcast still opens.
     expect((await methods.meeting(SITTING)).meeting).toMatchObject({ kind: 'sitting', organ: 'Séance publique', items: ['Questions au Gouvernement'] })
     expect((await methods.agenda('2026-10-28', 1)).indexed).toBe(false)
+  })
+
+  it('says which chamber’s agenda is missing rather than an empty agenda', async () => {
+    // Not synced: the Sénat's sitting, and the Assemblée's agenda said to be missing.
+    const before = await call('agenda', { day: '2026-10-28' })
+    expect(before).toContain('Sénat · public sitting')
+    expect(before).toContain("The Assemblée nationale's agenda is missing")
+    expect(await call('agenda', { day: '2026-10-28', chamber: 'assemblee' })).toMatch(/^No agenda on 2026-10-28\. The Assemblée nationale's agenda is missing/)
+    // senat.fr down as well: neither chamber is said to have nothing on.
+    const down = context()
+    const offline = service.activate({
+      ...down,
+      http: {
+        ...down.http,
+        json: async () => {
+          throw new Error('HTTP 503 de www.senat.fr')
+        }
+      }
+    })
+    const agenda = await offline.tools!.find((t) => t.name === 'agenda')!.run({ day: '2026-10-28' } as never, {})
+    expect(agenda).not.toContain('Nothing on the agenda')
+    expect(agenda).toContain("The Assemblée nationale's agenda is missing")
+    expect(agenda).toContain("The Sénat's agenda is missing")
+    offline.synced?.()
+  })
+
+  it('opens a Sénat meeting weeks back from the day it comes with', async () => {
+    // Five weeks back: further than the month around today where an id alone is looked for.
+    await expect(methods.meeting('SE-558001')).rejects.toThrow('Réunion introuvable')
+    expect((await methods.meeting('SE-558001', '2026-09-23')).meeting).toMatchObject({
+      chamber: 'se',
+      organ: 'Commission des lois',
+      start: '2026-09-23T09:30:00+02:00'
+    })
   })
 })
 
