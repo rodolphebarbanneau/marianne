@@ -27,7 +27,9 @@ export function LockScreens({
   opened: string | null
   onOpened: () => void
 }) {
-  const accounts = useLive(api.listAccounts, api.onAccounts, [config.archiveFolder]) ?? []
+  // null until listed: the first-run screen is for no account at all, not for accounts still on their way.
+  const listed = useLive(api.listAccounts, api.onAccounts, [config.archiveFolder])
+  const accounts = listed ?? []
   // '' = the list of accounts ("changer de compte"), null = the last account opened here.
   const [chosen, setChosen] = useState<string | null>(() => {
     const { list, account } = lockIntent
@@ -39,6 +41,9 @@ export function LockScreens({
   const [guide, setGuide] = useState(false)
   const last = accounts.find((a) => a.id === (chosen ?? config.lastAccount))
   const account = chosen === '' ? undefined : last
+
+  // Locked: nothing the last account had to show on opening (its recovery key above all) waits for the next one.
+  useEffect(() => afterUnlock.reset(), [])
 
   useEffect(() => {
     if (!opened) return
@@ -75,7 +80,9 @@ export function LockScreens({
           </button>
         </div>
       </header>
-      {account && !creating ? (
+      {!listed ? (
+        <main className="lock-screen" aria-busy />
+      ) : account && !creating ? (
         <Unlock
           key={account.id}
           account={account}

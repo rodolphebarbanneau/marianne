@@ -13,9 +13,9 @@ function useKeys(): Key[] {
     ['SOMMAIRE', 'menu', 'menu', 'menu'],
     ['GUIDE', 'guide', 'aide', 'guide']
   ]
+  // No ENVOI: Réglages saves as the user types.
   if (settingsPage)
     return [
-      ['ENVOI', 'CommandOrControl+S', 'enregistrer', null],
       ['ANNULATION', 'Escape', 'fermer', null],
       ['GUIDE', 'guide', 'aide', 'guide']
     ]

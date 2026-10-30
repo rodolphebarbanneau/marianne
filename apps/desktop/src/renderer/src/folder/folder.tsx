@@ -3,6 +3,7 @@ import type { Procedure, ProcedureAction } from '@marianne/content'
 import { DOMAINS, setupPage } from '@marianne/profile'
 import { serviceCode, type ServiceState } from '@marianne/sdk'
 import { ENGINE_LABELS } from '@shared/config'
+import { accelOf, matches } from '@shared/shortcuts'
 import type { Site } from '@shared/sites'
 import type { DomainId, EngineId, Folder, FolderView } from '@shared/types'
 import { useApp } from '../app/context'
@@ -10,7 +11,7 @@ import { Popover, SnoozeMenu } from '../app/sidebar'
 import { MoreIcon } from '../components/icons'
 import { Loading } from '../components/ui'
 import { useServices } from '../host'
-import { api, errorText } from '../lib/api'
+import { api, errorText, isMac } from '../lib/api'
 import { useSites } from '../lib/content'
 import { shortDate } from '../lib/format'
 import { plainKey } from '../lib/keys'
@@ -74,10 +75,12 @@ export function FolderScreen({ id }: { id: string }) {
     if (lastUserId) toEnd()
   }, [lastUserId])
 
-  // ANNULATION stops Marianne, RÉPÉTITION writes the last answer again; pg↑ / pg↓ scroll the conversation, from the composer too.
+  // ANNULATION stops Marianne, RÉPÉTITION writes the last answer again, on the keys Réglages gives them; pg↑ / pg↓
+  // scroll the conversation, from the composer too. A dialog over the folder keeps its keys.
+  const shortcuts = app.config.shortcuts
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (app.palette || app.settingsPage || e.defaultPrevented) return
+      if (app.palette || app.settingsPage || app.guideOpen || e.defaultPrevented || document.querySelector('#root > .overlay')) return
       const field = (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')
       if ((e.key === 'PageUp' || e.key === 'PageDown') && !e.ctrlKey && !e.metaKey && !e.altKey && (!field || field.closest('.composer'))) {
         const el = conv.current
@@ -85,15 +88,18 @@ export function FolderScreen({ id }: { id: string }) {
         e.preventDefault()
         el.scrollBy({ top: (e.key === 'PageDown' ? 1 : -1) * el.clientHeight * 0.9 })
       }
-      if (e.key === 'Escape' && view?.running) api.cancel(id)
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r' && !view?.running) {
+      if (view?.running && matches(e, accelOf('stop', isMac, shortcuts), isMac)) {
+        e.preventDefault()
+        api.cancel(id)
+      }
+      if (!view?.running && matches(e, accelOf('retry', isMac, shortcuts), isMac)) {
         e.preventDefault()
         void api.regenerate(id)
       }
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
-  }, [id, view?.running, app.palette, app.settingsPage])
+  }, [id, view?.running, app.palette, app.settingsPage, app.guideOpen, shortcuts])
 
   if (!view) return <Loading label="le dossier" />
   const { folder, messages, running } = view
@@ -210,7 +216,7 @@ function FolderHead({ view, procedure }: { view: FolderView; procedure: Procedur
         {menu === 'more' && (
           <Popover onClose={() => setMenu(null)} style={{ top: 44, right: 20, width: 240 }}>
             <button onClick={() => (setMenu(null), void api.pinFolder(folder.id, !folder.pinned))}>{folder.pinned ? 'désépingler' : 'épingler'}</button>
-            <button onClick={() => setMenu('snooze')}>mettre en veille jusqu’au…</button>
+            <button onClick={() => setMenu('snooze')}>mettre en veille…</button>
             <button onClick={() => (setMenu(null), void api.settleFolder(folder.id, !folder.settledAt))}>
               {folder.settledAt ? 'ressortir des classés' : 'classer'}
             </button>
@@ -244,17 +250,18 @@ function FolderHead({ view, procedure }: { view: FolderView; procedure: Procedur
             const done = folder.stepsDone.includes(i)
             const current = !done && procedure.steps.findIndex((_, j) => !folder.stepsDone.includes(j)) === i
             return (
-              <span key={i} style={{ display: 'contents' }}>
-                {i > 0 && <i>—</i>}
-                <span
+              <Fragment key={i}>
+                {i > 0 && <i aria-hidden>—</i>}
+                <button
                   className={done ? 'done' : current ? 'cur' : ''}
                   title={done ? 'marquer comme à faire' : 'marquer comme fait'}
-                  style={{ cursor: 'pointer' }}
+                  aria-pressed={done}
+                  aria-current={current ? 'step' : undefined}
                   onClick={() => void api.setFolderStep(folder.id, i, !done)}
                 >
                   {done ? '✓' : current ? '●' : '○'} {s.title}
-                </span>
-              </span>
+                </button>
+              </Fragment>
             )
           })}
         </div>

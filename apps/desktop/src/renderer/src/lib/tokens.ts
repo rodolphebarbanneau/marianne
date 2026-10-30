@@ -1,29 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import type { TokenValue } from '@shared/api'
 import { api } from './api'
+import { TokenStore } from './token-store'
 
-let cache: TokenValue[] = []
-const listeners = new Set<(t: TokenValue[]) => void>()
-let loaded = false
+const store = new TokenStore(api)
 
-function refresh(): void {
-  void api.tokenValues().then((t) => {
-    cache = t
-    for (const l of listeners) l(t)
-  })
-}
-
-/** The profile's values by token, to show the engine's [[tokens]] as the user's own values. */
+/** The open account's values by token, to show the engine's [[tokens]] as the user's own values; none while locked. */
 export function useTokens(): TokenValue[] {
-  const [tokens, setTokens] = useState(cache)
-  useEffect(() => {
-    listeners.add(setTokens)
-    if (!loaded) {
-      loaded = true
-      refresh()
-      api.onProfile(() => refresh())
-    }
-    return () => void listeners.delete(setTokens)
-  }, [])
-  return tokens
+  return useSyncExternalStore(store.subscribe, store.get)
 }

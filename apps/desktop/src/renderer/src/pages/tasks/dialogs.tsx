@@ -7,29 +7,16 @@ import { useApp } from '../../app/context'
 import { useServices } from '../../host'
 import { api, errorText } from '../../lib/api'
 import { proposed } from '../../lib/demarches'
-import { plainKey } from '../../lib/keys'
+import { plainKey, useDialogEnter } from '../../lib/keys'
 import { useTasks, useTaskTemplates } from '../../lib/tasks'
 import { DomainBadge, SourceChip } from '../demarches/todo-row'
 import { hostParts, nextShort, RHYTHMS, rhythmChoices, sameEvery, withEntity } from './model'
 
 /**
  * The planned tasks' dialogs: how a task starts (in words, from a service's template, as a reminder),
- * the sheet the user says yes on, and changing a task. Nothing runs without that yes.
+ * the sheet the user says yes on, and changing a task. Nothing runs without that yes: a sheet's
+ * Entrée (useDialogEnter) is never the one that opened it.
  */
-
-/** Enter in a dialog: its main button, unless the focus is on another button. */
-function useEnter(run: (() => void) | null) {
-  useEffect(() => {
-    if (!run) return
-    const key = (e: KeyboardEvent) => {
-      if (!plainKey(e, 'Enter') || (e.target as HTMLElement | null)?.closest?.('button, a, textarea')) return
-      e.preventDefault()
-      run()
-    }
-    window.addEventListener('keydown', key)
-    return () => window.removeEventListener('keydown', key)
-  }, [run])
-}
 
 /**
  * The bottom bar while a dialog is open: its keys, as on the Services page. The dialog sets them
@@ -267,7 +254,7 @@ export function TaskSheet({ template, onClose }: { template: TaskTemplate; onClo
         setBusy(false)
       })
   }
-  useEnter(plan)
+  useDialogEnter(plan)
   return (
     <TaskModal title={NEW_TASK} chip={<SourceChip text={`3615 ${template.service.toUpperCase()}`} />} onClose={onClose}>
       <div className="in">
@@ -359,7 +346,7 @@ function ReminderSheet({ domain, onClose }: { domain?: DomainId; onClose: () => 
         setBusy(false)
       })
   }
-  useEnter(plan)
+  useDialogEnter(plan)
   return (
     <TaskModal title={NEW_TASK} chip={domain && <DomainBadge domain={domain} />} onClose={onClose}>
       <div className="in">
@@ -423,7 +410,7 @@ export function TaskEditDialog({ task, onClose }: { task: PlannedTask; onClose: 
       })
       .catch(fail)
   }
-  useEnter(save)
+  useDialogEnter(save)
   const remove = () => {
     if (busy || !confirm(`Supprimer la tâche « ${withEntity(task)} » ? Son dossier reste, avec sa conversation.`)) return
     setBusy(true)

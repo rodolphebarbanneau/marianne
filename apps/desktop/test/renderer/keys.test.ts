@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { plainKey } from '../../src/renderer/src/lib/keys'
+import { dialogEnter, plainKey, type DialogKey } from '../../src/renderer/src/lib/keys'
 import { accelOf, matches, SHORTCUTS, type KeyLike } from '../../src/shared/shortcuts'
 
 /** A page's own Enter and Space, and the app's shortcuts made of them: each its own. */
@@ -42,5 +42,50 @@ describe('a page’s Enter and Space', () => {
         expect(plainKey(e, 'Enter', ' ')).toBe(false)
       }
     }
+  })
+})
+
+describe('a dialog’s Entrée', () => {
+  const at = (timeStamp: number, more: Partial<DialogKey> = {}): DialogKey => ({
+    ...press('Enter'),
+    timeStamp,
+    defaultPrevented: false,
+    repeat: false,
+    ...more
+  })
+  const opened = 1000
+
+  it('is not the Entrée that opened the dialog, which reaches the window after the dialog is drawn', () => {
+    // The page's keydown drew the dialog in its microtask: the event is older than the dialog.
+    expect(dialogEnter(at(999.5), opened)).toBe(false)
+    // performance.now() is coarse: the same instant is still the key that opened it.
+    expect(dialogEnter(at(opened), opened)).toBe(false)
+    expect(dialogEnter(at(1250), opened)).toBe(true)
+    // That Entrée held down: its repeats, after the dialog opened, are not a press of its button.
+    expect(dialogEnter(at(1500, { repeat: true }), opened)).toBe(false)
+  })
+
+  it('leaves an Entrée a field took, and ctrl+entrée to the app', () => {
+    expect(dialogEnter(at(1250, { defaultPrevented: true }), opened)).toBe(false)
+    expect(dialogEnter(at(1250, { ctrlKey: true }), opened)).toBe(false)
+    expect(dialogEnter({ ...at(1250), key: 'a' }, opened)).toBe(false)
+  })
+})
+
+describe('the conversation’s keys', () => {
+  it('keep RÉPÉTITION off ctrl+maj+R, which reloads the window', () => {
+    for (const mac of [false, true]) {
+      const reload = eventOf(accelOf('reload', mac), mac)
+      expect(matches(reload, accelOf('retry', mac), mac)).toBe(false)
+      expect(matches(eventOf(accelOf('retry', mac), mac), accelOf('retry', mac), mac)).toBe(true)
+    }
+  })
+
+  it('follow the keys the user chose in Réglages', () => {
+    const custom = { send: 'CommandOrControl+Enter', stop: 'F8' }
+    expect(matches(press('Enter'), accelOf('send', false, custom), false)).toBe(false)
+    expect(matches(press('Enter', { ctrlKey: true }), accelOf('send', false, custom), false)).toBe(true)
+    expect(matches(press('Escape'), accelOf('stop', false, custom), false)).toBe(false)
+    expect(matches(press('F8'), accelOf('stop', false, custom), false)).toBe(true)
   })
 })

@@ -212,7 +212,7 @@ export function SourcesSection({ stored, address, onChange }: { stored: NewsChoi
       <div className="space opinions">
         <span>
           Les journaux, radios et télévisions que Marianne lit pour vous : leur titre, leur heure, leur lien et le début de l’article, jamais l’article entier.
-          Ceux que vous écartez ne s’affichent plus, ni dans 3615 INFOS, ni dans les services à qui vous partagez vos sources. Leur couleur dit leur ligne
+          Ceux que vous écartez ne s’affichent plus, ni dans 3615 INFOS, ni dans les services avec qui vous partagez vos sources. Leur couleur dit leur ligne
           éditoriale : celle que propose Marianne, ou celle que vous leur donnez.
         </span>
         {catalog.length > 0 && (

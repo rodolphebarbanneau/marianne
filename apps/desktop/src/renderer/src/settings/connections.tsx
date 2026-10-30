@@ -70,7 +70,12 @@ export function SitesPane() {
           <div key={e.id} className="row">
             <span>{e.label}</span>
             <span className="dim small">{e.url}</span>
-            <button className="btn small danger" onClick={() => void api.deleteKeychain(e.id)}>
+            <button
+              className="btn small danger"
+              aria-label={`supprimer la clé d’API ${e.label}`}
+              title="supprimer la clé"
+              onClick={() => confirm(`Supprimer la clé d’API « ${e.label} » de l’archive ?`) && void api.deleteKeychain(e.id)}
+            >
               ✕
             </button>
           </div>
@@ -146,12 +151,35 @@ function SiteEditor({ site, entry, onClose }: { site: Site; entry?: KeychainEntr
   )
 }
 
+const API_KEY_DEFAULTS = { label: 'Légifrance (PISTE)', url: 'https://piste.gouv.fr' }
+
 function ApiKeyForm() {
   const [open, setOpen] = useState(false)
-  const [label, setLabel] = useState('Légifrance (PISTE)')
-  const [url, setUrl] = useState('https://piste.gouv.fr')
+  const [label, setLabel] = useState(API_KEY_DEFAULTS.label)
+  const [url, setUrl] = useState(API_KEY_DEFAULTS.url)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  // Saved or given up, the form starts again empty: the secret doesn't stay in it, and opening it again doesn't add the same key twice.
+  const done = () => {
+    setLabel(API_KEY_DEFAULTS.label)
+    setUrl(API_KEY_DEFAULTS.url)
+    setUsername('')
+    setPassword('')
+    setError('')
+    setOpen(false)
+  }
+  const save = () => {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    api
+      .saveKeychain({ kind: 'api', label, url, username, password })
+      .then(done)
+      .catch((err: unknown) => setError(errorText(err)))
+      .finally(() => setBusy(false))
+  }
   if (!open)
     return (
       <button className="btn small" onClick={() => setOpen(true)}>
@@ -175,15 +203,13 @@ function ApiKeyForm() {
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </Field>
         </div>
+        {error && <p className="bad small">{error}</p>}
         <div className="acts">
-          <button
-            className="btn primary"
-            disabled={!username || !password}
-            onClick={() => void api.saveKeychain({ kind: 'api', label, url, username, password }).then(() => setOpen(false))}
-          >
+          <button className="btn primary" disabled={!username || !password || busy} aria-busy={busy} onClick={save}>
+            {busy && <Spinner />}
             enregistrer
           </button>
-          <button className="btn" onClick={() => setOpen(false)}>
+          <button className="btn" disabled={busy} onClick={done}>
             annuler
           </button>
         </div>

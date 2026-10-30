@@ -1,7 +1,7 @@
 import { PAGES, PAGE_LABELS, useApp, type PageId } from '../app/context'
 import { useShortcutLabel } from '../app/commands'
 
-/** The way down to the next page, at the bottom of each one (none on the last). */
+/** The way down to the next page, at the bottom of the Marianne page. */
 export function NextArrow({ page }: { page: PageId }) {
   const app = useApp()
   const label = useShortcutLabel()

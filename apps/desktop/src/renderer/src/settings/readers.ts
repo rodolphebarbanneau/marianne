@@ -1,4 +1,4 @@
-import { PROFILE_FIELD_SHORT, type ProfileField } from '@marianne/sdk'
+import { PROFILE_FIELD_SHORT, type ProfileField, type ServiceState } from '@marianne/sdk'
 
 /** The opinions a service may ask to read: the leaning, the themes, the news sources. */
 export const OPINION_FIELDS: ProfileField[] = ['opinions.leaning', 'opinions.themes', 'opinions.sources']
@@ -23,4 +23,14 @@ export function readSummary(asked: ProfileField[], granted: ProfileField[] | nul
   if (!items.length) return { text: 'refusé', on: false }
   const words = list(items.map((f) => PROFILE_FIELD_SHORT[f]))
   return { text: items.length < asked.length ? `${words} seulement` : words, on: true }
+}
+
+/**
+ * « qui peut les lire »: the user's services (added ones), those that ask for the opinions and the
+ * others. A service not added (a removed 3615 INFOS) reads nothing: there is nothing to accept or refuse for it.
+ */
+export function opinionReaders(services: ServiceState[]): { asking: ServiceState[]; others: ServiceState[] } {
+  const mine = services.filter((s) => s.added)
+  const asking = mine.filter((s) => s.access.asked.some((f) => OPINION_FIELDS.includes(f)))
+  return { asking, others: mine.filter((s) => !asking.includes(s)) }
 }
