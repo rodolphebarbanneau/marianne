@@ -3,6 +3,7 @@ import { NETWORKS } from './networks'
 import { tripDeadlines, tripSummary } from './schedule'
 import guide from './skills/free-flow-tolls.md?raw'
 import { checkTrip, TripStore, type TripProblem } from './store'
+import { tollTasks } from './tasks'
 import { tripTile } from './tile'
 import { createTools } from './tools'
 import type { PeageMethods, Vehicles } from './types'
@@ -53,6 +54,7 @@ export const service = defineService<PeageMethods>({
       instructions: INSTRUCTIONS,
       summary: async (domain) => (domain === 'mobility' ? tripSummary(store.list(), new Date()) : null),
       deadlines: () => tripDeadlines(store.list()),
+      tasks: () => tollTasks(vehicles().list),
       tile: async () => tripTile(store.list(), vehicles().granted, new Date())
     }
   },

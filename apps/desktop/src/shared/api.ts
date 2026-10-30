@@ -21,8 +21,12 @@ import type {
   EngineLight,
   EngineModel,
   EngineStatus,
+  CreateTask,
   FolderSummary,
   FolderView,
+  PlannedTask,
+  TaskEvery,
+  TaskTemplate,
   KeychainEntry,
   KeychainInput,
   PublicSourceId,
@@ -181,6 +185,18 @@ export interface MarianneApi {
   updateProfile(op: ProfileOp): Promise<Profile>
   tokenValues(): Promise<TokenValue[]>
   getDeadlines(days?: number): Promise<Deadline[]>
+
+  // ---------- planned tasks ----------
+  listTasks(): Promise<PlannedTask[]>
+  onTasks(cb: (list: PlannedTask[]) => void): () => void
+  /** What the services that are on propose. */
+  taskTemplates(): Promise<TaskTemplate[]>
+  createTask(request: CreateTask): Promise<PlannedTask>
+  updateTask(id: string, patch: { every?: TaskEvery; notify?: PlannedTask['notify'] }): Promise<void>
+  setTaskOn(id: string, on: boolean): Promise<void>
+  /** Now, whatever its day; refused while Marianne is at work. */
+  runTask(id: string): Promise<void>
+  removeTask(id: string): Promise<void>
   listProcedures(): Promise<Procedure[]>
   listDocuments(): Promise<DocumentMeta[]>
   onDocuments(cb: (list: DocumentMeta[]) => void): () => void

@@ -1,4 +1,5 @@
 import { daysUntil, frDate, type Deadline } from '@marianne/profile'
+import type { PlannedTask, TaskRun } from '../shared/types'
 import { app, Menu, nativeImage, Notification, Tray } from 'electron'
 import { configStore } from './config'
 import { log } from './log'
@@ -6,6 +7,7 @@ import { resource } from './paths'
 import { deadlines } from './deadlines'
 import { profile } from './profile/store'
 import { session } from './session'
+import { tasks } from './tasks'
 import { isMac, isWin } from './util'
 import { navigate, setKeepInTray, showMain } from './windows'
 
@@ -15,6 +17,14 @@ import { navigate, setKeepInTray, showMain } from './windows'
  */
 
 const REMIND_AT = [30, 7, 1, 0]
+/** What a run tells: its title alone, a notification stays on the screen of whoever is there. */
+const RUN_TITLES = {
+  nothing: 'Rien à signaler',
+  found: 'Une tâche a trouvé quelque chose',
+  waiting: 'Une tâche attend votre réponse',
+  failed: 'Une tâche n’a pas abouti',
+  done: 'Rappel'
+}
 const CHECK_EVERY_MS = 3600_000
 
 let tray: Tray | null = null
@@ -121,6 +131,12 @@ export function startBackground(): void {
     setTimeout(check, 10_000).unref()
   })
   session.on('locked', safeRefresh)
+  tasks.on('run', (task: PlannedTask, run: TaskRun) => {
+    if (!Notification.isSupported()) return
+    const n = new Notification({ title: RUN_TITLES[run.outcome], body: task.title, silent: run.outcome === 'nothing' })
+    n.on('click', () => navigate(`folder:${task.folderId}`))
+    n.show()
+  })
   applyLoginItem()
   setInterval(() => {
     safeRefresh()

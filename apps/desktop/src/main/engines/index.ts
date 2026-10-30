@@ -20,7 +20,7 @@ import { vibe } from './vibe'
 
 export type { EngineEvent } from './events'
 export type { Turn } from './types'
-export { recap, systemPrompt, userMessage } from './prompt'
+export { recap, systemPrompt, taskMessage, userMessage } from './prompt'
 export { listSkills, readSkill } from './skills'
 export { forgetTranscripts } from './transcripts'
 
