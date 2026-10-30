@@ -50,7 +50,11 @@ app.commandLine.appendSwitch('blink-settings', 'dnsPrefetchingEnabled=false')
 
 // Community services' pages (main/community/runtime/scheme.ts): a scheme of their own, secure and
 // standard (an origin per service), whose module scripts load in a frame without an origin of its own.
-protocol.registerSchemesAsPrivileged([{ scheme: SERVICE_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }])
+// `stream`: a <video> reads a file of its declared hosts (~media/) by ranges, and so can seek in it;
+// what the scheme serves, and to whom, is still the handler's and the session's to say.
+protocol.registerSchemesAsPrivileged([
+  { scheme: SERVICE_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }
+])
 
 // Dev runs keep their own Electron data (and so their own single-instance lock): they never
 // collide with an installed Marianne. An explicit --user-data-dir still wins.
