@@ -482,6 +482,25 @@ describe('a live at the Assemblée', () => {
     expect(await liveStreams(over, false, ON_AIR)).toEqual([])
   })
 
+  it('finds the hémicycle’s live from the portal’s live page while the search doesn’t list it yet', async () => {
+    const http = fakeHttp({
+      'https://www.assemblee-nationale.fr/dyn/api/live/streams': '{"diffusions":[]}',
+      'https://videos.assemblee-nationale.fr/php/eventsearch.php': '[]',
+      // direct.php leads to "direct.<id>", whose page names the video.
+      'https://videos.assemblee-nationale.fr/direct.php': `<html><a href="/video.${LIVE_ID}">la vidéo</a></html>`,
+      [`${LIVE_ROOT}/content/data.nvs`]: liveData('live'),
+      [`${LIVE_ROOT}/meta-files/vodalys.smil`]: LIVE_SMIL
+    })
+    const [s] = await liveStreams(http, false, ON_AIR)
+    expect(s).toMatchObject({
+      live: true,
+      video: LIVE_ID,
+      organ: 'Séance publique',
+      title: '1ère séance : Projet de loi de finances pour 2027 (suite)',
+      hls: 'https://anorigin.vodalys.com/live/live36/index36_19655971.m3u8'
+    })
+  })
+
   it('looks at yesterday’s videos too after midnight', async () => {
     const http = portalToday({ diffusions: [] })
     await liveStreams(http, false, Date.parse('2026-10-31T00:30:00+01:00'))
