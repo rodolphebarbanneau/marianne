@@ -506,7 +506,7 @@ function DayBallotsView({ day }: { day: string }) {
           onSelect={(line) => (nav.wide ? setSelected(line) : nav.open({ kind: 'ballot', chamber: line.chamber, id: line.id }))}
         />
         {nav.wide && (
-          <StickyPanel className="parlement-bt-detail">
+          <StickyPanel at={current.id}>
             <BallotCard key={current.id} chamber={current.chamber} id={current.id} />
           </StickyPanel>
         )}
@@ -1054,7 +1054,7 @@ function SearchView() {
             ))}
           </div>
           {nav.wide && (
-            <StickyPanel className="parlement-bt-detail">
+            <StickyPanel at={selected?.id}>
               {selected ? (
                 <BallotCard key={selected.id} chamber={selected.chamber} id={selected.id} />
               ) : (

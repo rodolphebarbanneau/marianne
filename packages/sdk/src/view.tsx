@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { ServiceManifest, ServiceMethods } from './index'
+import { WaitContext } from './ui'
 
 /**
  * @marianne/sdk/view: a service's screen. The package exports `View`, a React component that
@@ -13,7 +14,7 @@ import type { ServiceManifest, ServiceMethods } from './index'
 
 export * from './index'
 export { ServiceFrameProvider, ServiceTools, useTab, useTabBadges, type ServiceFrame } from './frame'
-export { Failure, Field, floating, Loading, Meter, Modal, Notice, Spinner } from './ui'
+export { Failure, Field, floating, Loading, LoadingGate, Meter, Modal, Notice, Spinner, StickyPanel } from './ui'
 export { ICON_CELLS, Pixels, ServiceIcon, usePixelRatio } from './pixels'
 
 /** Something a service hands to Marianne with a question: a page it shows. */
@@ -77,6 +78,7 @@ export interface Loaded<T> {
  */
 export function useCall<M extends ServiceMethods, K extends keyof M & string>(method: K, args: Parameters<M[K]> | null): Loaded<Awaited<ReturnType<M[K]>>> {
   const host = useHost<M>()
+  const waits = useContext(WaitContext)
   const [data, setData] = useState<Awaited<ReturnType<M[K]>> | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -90,15 +92,20 @@ export function useCall<M extends ServiceMethods, K extends keyof M & string>(me
     shown.current = `${method}:${key}`
     setLoading(true)
     setError('')
+    const came = waits?.hold()
     host
       .call(method, ...(JSON.parse(key) as Parameters<M[K]>))
       .then((v) => alive && setData(v))
       .catch((err: unknown) => alive && setError(errorText(err)))
-      .finally(() => alive && setLoading(false))
+      .finally(() => {
+        if (alive) setLoading(false)
+        came?.()
+      })
     return () => {
       alive = false
+      came?.()
     }
-  }, [host, method, key, round])
+  }, [host, method, key, round, waits])
   const reload = useCallback(() => setRound((n) => n + 1), [])
   return { data, error, loading, reload }
 }
@@ -106,17 +113,23 @@ export function useCall<M extends ServiceMethods, K extends keyof M & string>(me
 /** Stored data with defaults until it is loaded; `update` merges, shows and stores. */
 export function useStored<T extends object>(key: string, defaults: T): [T, (patch: Partial<T>) => void] {
   const host = useHost()
+  const waits = useContext(WaitContext)
   const [value, setValue] = useState<T>(defaults)
   const current = useRef(value)
   const initial = useRef(defaults)
   useEffect(() => {
     let alive = true
-    void host.load(key).then((stored) => {
-      if (!alive || !stored || typeof stored !== 'object') return
-      current.current = { ...initial.current, ...(stored as Partial<T>) }
-      setValue(current.current)
-    })
+    const came = waits?.hold()
+    void host
+      .load(key)
+      .then((stored) => {
+        if (!alive || !stored || typeof stored !== 'object') return
+        current.current = { ...initial.current, ...(stored as Partial<T>) }
+        setValue(current.current)
+      })
+      .finally(() => came?.())
     return () => {
+      came?.()
       alive = false
     }
   }, [host, key])

@@ -31,7 +31,7 @@ export function VoteView({ ballot, onPick }: { ballot: BallotRef | null; onPick:
           reading="vote"
           ballot={shown.id}
           aside={
-            <StickyPanel className="parlement-bt-detail">
+            <StickyPanel at={`${shown.chamber}:${shown.id}`}>
               <BallotCard key={`${shown.chamber}:${shown.id}`} chamber={shown.chamber} id={shown.id} inHemicycle />
             </StickyPanel>
           }

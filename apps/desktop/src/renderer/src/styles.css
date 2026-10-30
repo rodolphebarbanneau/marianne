@@ -484,6 +484,19 @@ textarea.notes {
   min-height: clamp(160px, 64vh, 640px);
   padding: var(--s5) 0;
 }
+/* A side panel kept in view (StickyPanel, which moves its top), as tall as what it holds. */
+.sticky-panel {
+  position: sticky;
+  top: 10px;
+  align-self: start;
+  min-width: 0;
+}
+/* A screen held back until all it loads has come (LoadingGate): laid out at its width, neither seen nor taking room. */
+.load-gate.waiting {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+}
 .state-box {
   width: min(380px, 100%);
   display: flex;
