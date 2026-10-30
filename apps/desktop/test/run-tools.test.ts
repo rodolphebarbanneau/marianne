@@ -83,6 +83,8 @@ import { session } from '../src/main/session'
 import { siteAllowed, tasks, type NewTask } from '../src/main/tasks'
 import { ALL_TOOLS } from '../src/main/tools'
 import { browserTools } from '../src/main/tools/browser'
+import { taskTools } from '../src/main/tools/tasks'
+import { folders } from '../src/main/folders'
 import { reading } from '../src/main/tools/online'
 import type { Tool } from '../src/main/tools/tool'
 
@@ -196,7 +198,8 @@ describe('a run’s page, held to its sites before a request leaves (the browser
 
   it('takes https only, on a listed host or under it', () => {
     expect(siteAllowed(SHEET, 'http://www.sanef.com/')).toBe(false)
-    expect(siteAllowed(SHEET, 'https://autoroutes.sanef.com/')).toBe(true)
+    expect(siteAllowed(SHEET, 'https://sanef.com/')).toBe(true)
+    expect(siteAllowed(SHEET, 'https://autoroutes.sanef.com/')).toBe(false)
     expect(siteAllowed({ sites: ['mairie.github.io'] }, 'https://evil.github.io/')).toBe(false)
     expect(siteAllowed(SHEET, 'https://www.sanef.com@evil.example/')).toBe(false)
   })
@@ -390,7 +393,7 @@ describe('type_text in a run', () => {
 describe('the gate, in a run', () => {
   it('lets no other tool carry an identifier out', async () => {
     const lookup: Tool = {
-      name: 'lookup_test',
+      name: 'skill',
       title: 'Lookup',
       description: 'A reading tool of the app, for this test.',
       readOnly: true,
@@ -400,8 +403,8 @@ describe('the gate, in a run', () => {
     ALL_TOOLS.push(lookup)
     try {
       const { result } = await during(async (f) => [
-        await call(f, 'lookup_test', { q: '[[vehicle.1.plate]]' }, lookup),
-        await call(f, 'lookup_test', { q: 'Bordeaux' }, lookup)
+        await call(f, 'skill', { q: '[[vehicle.1.plate]]' }, lookup),
+        await call(f, 'skill', { q: 'Bordeaux' }, lookup)
       ])
       expect(result[0]).toMatch(/^refused:.*identifiers/)
       expect(result[1]).toBe('found')
@@ -416,5 +419,22 @@ describe('the gate, in a run', () => {
     const { result } = await during((f) => call(f, 'click', { element: 'e1', ...CLICK }, fake))
     expect(result).toMatch(/^refused:/)
     expect(fake.run).not.toHaveBeenCalled()
+  })
+})
+
+describe('a task proposed in a conversation', () => {
+  const propose = (sites: string[]) => {
+    const folder = folders.create({ title: 'Mairie', engine: 'claude' })
+    const t = taskTools.find((x) => x.name === 'task_propose')!
+    const args = { title: 'Les arrêtés', runner: 'marianne', every: { unit: 'week', n: 1 }, instruction: 'Regarder les nouveaux arrêtés.', sites }
+    return call(folder.id, 'task_propose', args, t)
+  }
+
+  it('names one site, never a whole hosting service: its run could reach any page there', async () => {
+    expect(await propose(['github.io'])).toMatch(/^refused:.*whole hosting service/)
+    expect(await propose(['www.github.io'])).toMatch(/^refused:/)
+    expect(request).not.toHaveBeenCalled()
+    await propose(['mairie.github.io'])
+    expect(request).toHaveBeenCalledOnce()
   })
 })

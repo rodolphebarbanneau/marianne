@@ -35,8 +35,15 @@ const MAX_RUNS_A_DAY = 12
 const BACK_TO_SLEEP_MS = 86_400_000
 /** What a run may do beyond reading: move through a page and say how it went. */
 const RUN_TOOLS = new Set(['open_site', 'click', 'type_text', 'task_progress', 'task_report'])
-/** Reading tools a run has no need of: the user's documents have no business near a page nobody watches. */
-const NOT_IN_A_RUN = new Set(['documents', 'read_document'])
+/**
+ * The app's reading tools a run may use, by name: its page, and what stays on this computer without
+ * the user's data. Not their profile, deadlines or documents, which have no business near a page
+ * nobody watches, nor a tool that asks a service elsewhere: its query would leave by a host the sheet
+ * doesn't list. A new tool stays out of runs until it is named here.
+ */
+const RUN_READS = new Set(['read_page', 'read_form', 'skill', 'procedure', 'procedures', 'public_sites', 'compute_deadline'])
+/** Where the day's runs are counted, interrupted ones included: a restart doesn't give the day new ones. */
+const TRIES = 'task-tries'
 
 /** The user's turn took over: the run leaves no trace, and stays due. */
 export class RunInterrupted extends Error {
@@ -86,8 +93,9 @@ export function siteAllowed(task: Pick<PlannedTask, 'sites'>, url: string): bool
   if (u.protocol !== 'https:') return false
   const host = u.hostname.toLowerCase()
   return task.sites.some((site) => {
-    const listed = site.toLowerCase().replace(/^www\./, '')
-    return host === listed || host.endsWith(`.${listed}`)
+    const listed = site.toLowerCase()
+    // « www.x » on a sheet is that site, with or without its www: not every other host under x.
+    return host === listed || host === listed.replace(/^www\./, '') || host.endsWith(`.${listed}`)
   })
 }
 
@@ -108,7 +116,6 @@ class Tasks extends EventEmitter {
   private ticking = false
   private started = false
   /** Runs started today by this account, recorded or not: a run the lock cut short still spent the engine. */
-  private tries: { archive: unknown; day: string; count: number } = { archive: null, day: '', count: 0 }
 
   get(id: string): PlannedTask | null {
     return session.unlocked ? session.archive.get<PlannedTask>(KIND, id) : null
@@ -236,7 +243,7 @@ class Tasks extends EventEmitter {
   mayUse(folderId: string | undefined, tool: { name: string; readOnly?: boolean }, own: boolean): boolean {
     const task = this.runningIn(folderId)
     if (!task) return true
-    if (own) return RUN_TOOLS.has(tool.name) || (!!tool.readOnly && !NOT_IN_A_RUN.has(tool.name))
+    if (own) return RUN_TOOLS.has(tool.name) || RUN_READS.has(tool.name)
     return task.origin.kind === 'service' && tool.name.startsWith(`${task.origin.service}_`)
   }
 
@@ -268,7 +275,7 @@ class Tasks extends EventEmitter {
     const line = `${started.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} · tâche planifiée`
     this.current = task
     this.report = null
-    if (task.runner === 'marianne') this.tries = { archive: session.maybe, day: today, count: this.triesToday(today) + 1 }
+    if (task.runner === 'marianne') session.archive.put(TRIES, 'day', { day: today, count: this.triesToday(today) + 1 })
     this.emit('change')
     let end: TaskTurnEnd
     try {
@@ -312,7 +319,8 @@ class Tasks extends EventEmitter {
   }
 
   private triesToday(today: string): number {
-    return this.tries.day === today && this.tries.archive === session.maybe ? this.tries.count : 0
+    const tries = session.unlocked ? session.archive.get<{ day: string; count: number }>(TRIES, 'day') : null
+    return tries?.day === today ? tries.count : 0
   }
 
   /** Task folders the user has read go back to sleep rather than stay in the way until the next run. */

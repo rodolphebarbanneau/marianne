@@ -13,6 +13,29 @@ import { tool, ToolError } from './tool'
  */
 
 const HOST = /^(?:[a-z0-9-]+\.)+[a-z]{2,}$/
+/**
+ * Hosts under which anyone may publish a site: a task's sheet names one of their sites
+ * (mairie.github.io), never all of them, or its run could reach any page there.
+ */
+const SHARED = new Set([
+  'github.io',
+  'gitlab.io',
+  'netlify.app',
+  'vercel.app',
+  'pages.dev',
+  'web.app',
+  'firebaseapp.com',
+  'herokuapp.com',
+  'appspot.com',
+  'azurewebsites.net',
+  'cloudfront.net',
+  'blogspot.com',
+  'wordpress.com',
+  'wixsite.com',
+  'free.fr',
+  'ovh.net'
+])
+const ownSite = (host: string) => !SHARED.has(host.toLowerCase().replace(/^www\./, ''))
 const NEVER = 'payer, signer ou envoyer : une tâche regarde et vous le dit'
 
 const EVERY = z.object({ unit: z.enum(['day', 'week', 'month', 'year']), n: z.number().int().min(1).max(366) })
@@ -47,6 +70,8 @@ export const taskTools = [
       if (tasks.runningIn(folder.id)) throw new ToolError('A planned task cannot plan another one.')
       if (folder.task) throw new ToolError('This folder already comes back with a planned task: one task a folder.')
       if (runner === 'marianne' && !instruction) throw new ToolError('A task Marianne carries out needs its instruction.')
+      const shared = sites.find((site) => !ownSite(site))
+      if (shared) throw new ToolError(`${shared} is a whole hosting service: list the one site the task needs (mairie.github.io, not github.io).`)
       const label = everyLabel(every)
       const decision = await approvals.request(folder.id, {
         kind: 'proposal',
