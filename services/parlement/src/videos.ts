@@ -187,6 +187,7 @@ export async function videoDetail(http: Http, id: string): Promise<VideoDetail> 
     // A live's while on air, then the recording's; missing while the portal is still processing it.
     http.text(`${root}/meta-files/vodalys.smil`, { cacheMs: LIVE_CACHE_MS }).catch(() => '')
   ])
+  noteRecording(http, id, readSmil(smil))
   return readVideo('an', id, data, player, smil, player ? null : await livePlayer(http, root))
 }
 
@@ -218,6 +219,24 @@ export function readSmil(smil: string): StreamInfo {
   // "mp4/ida/mp4:domain1/2026/10/x_1.mp4" → the multi-bitrate playlist next to it.
   const src = smil.match(/src="([^"]+\.mp4)"/)?.[1]?.replace('mp4:', '')
   return src ? { ...NO_STREAM, hls: `${CDN}/${src.replace(/_\d+\.mp4$/, '.smil')}/master.m3u8` } : NO_STREAM
+}
+
+/**
+ * The Assemblée's videos known to be recordings (their smil plays an mp4), for each Http: the
+ * service's own, for as long as it runs. Over for good, they aren't asked again whether they are
+ * live. A day has a few dozen videos: past RECORDINGS_MAX, the first known are forgotten.
+ */
+const recordings = new WeakMap<Http, Set<string>>()
+const RECORDINGS_MAX = 1000
+
+const recordingsOf = (http: Http) => recordings.get(http) ?? recordings.set(http, new Set()).get(http)!
+
+/** Notes a video whose smil is a recording's. */
+function noteRecording(http: Http, id: string, stream: StreamInfo): void {
+  const known = recordingsOf(http)
+  if (stream.live || !stream.hls || known.has(id)) return
+  known.add(id)
+  if (known.size > RECORDINGS_MAX) known.delete(known.values().next().value!)
 }
 
 /** A live's DVR playlist from a URL to it (data.nvs' "live" file: ".../live/live36/index36_19655971.m3u8?DVR"). */
@@ -397,10 +416,14 @@ export async function portalLives(http: Http, now = Date.now()): Promise<PortalL
   // Not those announced for much later (the portal lists a video a little before its live starts).
   const started = items.filter((v) => !v.date || Date.parse(v.date) <= now + 30 * 60_000)
   if (main && !started.some((v) => v.id === main)) started.push(liveItem(main))
+  // A recording doesn't go live again: its smil, asked once, isn't asked again.
+  const recorded = recordingsOf(http)
+  const unknown = started.filter((v) => !recorded.has(v.id))
   const found = await Promise.all(
-    started.map(async (item): Promise<PortalLive[]> => {
+    unknown.map(async (item): Promise<PortalLive[]> => {
       const root = `${PORTAL}/Datas/an/${item.id}`
       const stream = readSmil(await http.text(`${root}/meta-files/vodalys.smil`, { cacheMs: LIVE_CACHE_MS }).catch(() => ''))
+      noteRecording(http, item.id, stream)
       if (!stream.live) return []
       const data = await http
         .text(`${root}/content/data.nvs`, { cacheMs: LIVE_CACHE_MS })
