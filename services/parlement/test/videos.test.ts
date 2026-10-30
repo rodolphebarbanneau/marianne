@@ -525,6 +525,20 @@ describe('a live at the Assemblée', () => {
     expect(http.asked.find((u) => u.includes('eventsearch'))).toContain('Date=30%2F10%2F2026-31%2F10%2F2026')
   })
 
+  it('asks whether a video is live until it is known to be a recording: it won’t be live again', async () => {
+    const http = portalToday({ diffusions: [] })
+    const smils = (root: string) => http.asked.filter((u) => u === `${root}/meta-files/vodalys.smil`).length
+    await liveStreams(http, false, ON_AIR)
+    await liveStreams(http, false, ON_AIR)
+    // The morning's hearing, recorded: once. The sitting on air: at each look.
+    expect([smils(ROOT), smils(LIVE_ROOT)]).toEqual([1, 2])
+    // A recording seen in its page isn't asked by the look for lives either.
+    const opened = portalToday({ diffusions: [] })
+    await videoDetail(opened, ID)
+    await liveStreams(opened, false, ON_AIR)
+    expect(opened.asked.filter((u) => u === `${ROOT}/meta-files/vodalys.smil`)).toHaveLength(1)
+  })
+
   it('asks the portal’s live page along with its search, not once the search has answered', async () => {
     const portal = portalToday({ diffusions: [] })
     let answer = () => {}
