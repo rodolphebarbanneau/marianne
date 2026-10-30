@@ -3,7 +3,7 @@ import { ftsQuery } from './db'
 import type { SpDocument } from './service-public'
 import { sync } from './sync'
 
-/** Queries on the local Service-Public index, for the assistant's tools and the fiche reader. */
+/** Queries on the local Service-Public index, for the assistant's tools (tools/service-public.ts). */
 
 export interface SpHit {
   id: string
@@ -38,15 +38,4 @@ export function searchSp(text: string, limit = 8, kind?: SpKind): { hits: SpHit[
 export function getSpDocument(id: string): SpDocument | null {
   if (!sync.ready('service-public')) return null
   return (sync.db.prepare('select * from sp_documents where id = ?').get(id.toUpperCase()) as SpDocument | undefined) ?? null
-}
-
-/** Titles of several documents at once (the key fiches of a domain page), in the order asked. */
-export function spTitles(ids: string[]): Array<{ id: string; title: string; kind: SpKind }> {
-  if (!ids.length || !sync.ready('service-public')) return []
-  const rows = sync.db.prepare(`select id, title, kind from sp_documents where id in (${ids.map(() => '?').join(',')})`).all(...ids) as Array<{
-    id: string
-    title: string
-    kind: SpKind
-  }>
-  return ids.flatMap((id) => rows.filter((r) => r.id === id))
 }

@@ -1,5 +1,22 @@
-import { renameSync, writeFileSync, type WriteFileOptions } from 'node:fs'
-import { resolve } from 'node:path'
+import { readdirSync, renameSync, rmSync, writeFileSync, type WriteFileOptions } from 'node:fs'
+import { join, resolve } from 'node:path'
+
+/** Removes what a folder holds, the folder kept; a missing one holds nothing. */
+export function emptyDir(dir: string): void {
+  let names: string[]
+  try {
+    names = readdirSync(dir)
+  } catch {
+    return
+  }
+  for (const name of names) {
+    try {
+      rmSync(join(dir, name), { recursive: true, force: true })
+    } catch {
+      // Still open in a program, on Windows: removed next time.
+    }
+  }
+}
 
 /** Whether two paths name the same file: on Windows, whatever their case and slashes. */
 export function samePath(a: string, b: string): boolean {

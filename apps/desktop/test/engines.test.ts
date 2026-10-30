@@ -21,6 +21,7 @@ import {
 import { projectFiles } from '../src/main/engines/vibe'
 import { paths } from '../src/main/paths'
 import { session } from '../src/main/session'
+import { run } from '../src/main/util'
 import type { ChatMessage } from '../src/shared/types'
 
 // ~/.marianne points at a temporary folder, before paths.ts reads it.
@@ -275,17 +276,15 @@ describe('prompt', () => {
     expect(without).not.toContain('use the Légifrance tools')
   })
 
-  it('lists the skills and adds the user’s notes and instructions', () => {
+  it('lists the skills and adds the user’s notes', () => {
     const p = systemPrompt({
       ...base,
       legifrance: false,
       skills: [{ name: 'taxes', title: 'Impôts', description: 'déclaration de revenus', builtin: true, path: '' }],
-      notes: 'Je suis apprenti.',
-      custom: ''
+      notes: 'Je suis apprenti.'
     })
     expect(p).toContain('- taxes: déclaration de revenus')
     expect(p).toContain('# What the user says about themselves\n\nJe suis apprenti.')
-    expect(p).not.toContain("# The user's instructions")
   })
 
   it('puts the date, attachments and text in the user message', () => {
@@ -333,6 +332,38 @@ describe('scratch folders', () => {
     const b = scratchDir('f1')
     expect(b).not.toBe(a)
     expect(existsSync(b)).toBe(true)
+  })
+})
+
+describe('a CLI stopped', () => {
+  const alive = (pid: number) => {
+    try {
+      process.kill(pid, 0)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  it('is said stopped once it is gone: until then it may still write its transcript', async () => {
+    const controller = new AbortController()
+    let pid = 0
+    const running = run(process.execPath, ['-e', 'console.log(process.pid); setInterval(() => {}, 1000)'], {
+      signal: controller.signal,
+      onLine: (line) => {
+        pid = Number(line)
+        controller.abort()
+      }
+    })
+    await expect(running).rejects.toThrow('Cancelled')
+    expect(pid).toBeGreaterThan(0)
+    expect(alive(pid)).toBe(false)
+  })
+
+  it('stopped before it started, still waits for it to go', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    await expect(run(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { signal: controller.signal })).rejects.toThrow('Cancelled')
   })
 })
 

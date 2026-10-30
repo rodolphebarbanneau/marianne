@@ -28,7 +28,10 @@ export const paths = {
   /** The user's own skills, next to the built-in ones. */
   skills: join(home, 'skills'),
   logs: join(home, 'logs'),
-  tmp: join(home, 'tmp')
+  /** Downloads under way (Service-Public's dumps, each service's sync), emptied at start and at quit. */
+  tmp: join(home, 'tmp'),
+  /** The decrypted copies opened in a viewer: emptied on lock too, without the downloads beside them. */
+  opened: join(home, 'tmp', 'opened')
 }
 
 export function ensureDirs(): void {

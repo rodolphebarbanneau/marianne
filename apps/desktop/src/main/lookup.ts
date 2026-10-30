@@ -1,11 +1,17 @@
 import type { AddressSuggestion, CommuneSuggestion, CompanyLookup } from '../shared/api'
 import { fetchJson, query } from './http'
+import { ensureEnabled } from './public/sources'
 import { base } from './tools/tool'
 
-/** Lookups for the settings forms: an address (Base Adresse Nationale), a commune, a company by SIREN. */
+/**
+ * Lookups for the settings forms: an address (Base Adresse Nationale), a commune, a company by SIREN.
+ * What the user types goes to the source only while it is on: turned off in Réglages, a lookup asks
+ * nothing and says so.
+ */
 
 export async function searchAddress(q: string): Promise<AddressSuggestion[]> {
   if (q.trim().length < 4) return []
+  ensureEnabled('adresse')
   const data = await fetchJson<{ features: Array<{ properties: Record<string, string>; geometry: { coordinates: [number, number] } }> }>(
     `${base('adresse')}/search${query({ q, limit: 6, autocomplete: 1 })}`,
     { cacheMs: 600_000 }
@@ -24,6 +30,7 @@ export async function searchAddress(q: string): Promise<AddressSuggestion[]> {
 export async function searchCommunes(term: string, limit = 6): Promise<CommuneSuggestion[]> {
   const t = term.trim()
   if (t.length < 2) return []
+  ensureEnabled('geo')
   const get = (params: Record<string, string | number>) =>
     fetchJson<Array<{ nom: string; code: string; codesPostaux: string[]; codeDepartement: string }>>(
       `${base('geo')}/communes${query({ ...params, fields: 'nom,code,codesPostaux,codeDepartement', limit, boost: 'population' })}`,
@@ -58,6 +65,7 @@ const FORMS: Record<string, string> = {
 /** A company's public details from its SIREN (the user types their own). */
 export async function lookupSiren(siren: string): Promise<CompanyLookup | null> {
   const s = siren.replace(/\s+/g, '')
+  ensureEnabled('entreprises')
   const data = await fetchJson<{
     results: Array<{
       siren: string

@@ -3,7 +3,7 @@ import { Archive } from '@marianne/archive'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { folders, redoFrom } from '../src/main/folders'
 import { session } from '../src/main/session'
-import { RunInterrupted, tasks, type NewTask, type TaskTurnEnd } from '../src/main/tasks'
+import { RunInterrupted, siteAllowed, tasks, type NewTask, type TaskTurnEnd } from '../src/main/tasks'
 import { recap, runsSince, taskMessage, userMessage } from '../src/main/engines/prompt'
 import { addEvery, dayOf, dayStart, everyLabel, nextDay } from '../src/shared/tasks'
 import type { ChatMessage, PlannedTask } from '../src/shared/types'
@@ -411,38 +411,38 @@ describe('what a run may reach', () => {
     return result
   }
 
-  it('its own hosts and what is under them, in its own folder, during its run only', async () => {
-    const seen = await during((t) => [
-      tasks.allows(t.folderId, 'https://www.sanef.com/paiement'),
-      tasks.allows(t.folderId, 'https://sanef.com/'),
-      tasks.allows(t.folderId, 'https://paiement.aliae.com/fr/'),
-      tasks.allows(t.folderId, 'https://fr.paiement.aliae.com/'),
-      tasks.allows('other', 'https://www.sanef.com/')
+  const sheet = { sites: TOLLS.sites ?? [] }
+
+  it('its own hosts and what is under them', () => {
+    expect(
+      ['https://www.sanef.com/paiement', 'https://sanef.com/', 'https://paiement.aliae.com/fr/', 'https://fr.paiement.aliae.com/'].map((url) =>
+        siteAllowed(sheet, url)
+      )
+    ).toEqual([true, true, true, true])
+  })
+
+  it('is the folder’s run, during the run only', async () => {
+    const seen = await during((t) => [tasks.runningIn(t.folderId)?.id === t.id, tasks.runningIn('other')])
+    expect(seen).toEqual([true, null])
+    expect(tasks.runningIn(tasks.list()[0].folderId)).toBeNull()
+  })
+
+  it('« www.x » is that site, not every host under x: the sheet says what a run reaches', () => {
+    expect([siteAllowed(sheet, 'https://autoroutes.sanef.com/'), siteAllowed(sheet, 'http://www.sanef.com/')]).toEqual([false, false])
+  })
+
+  it('not a site that merely ends the same, nor its neighbours', () => {
+    expect(['https://evil-sanef.com/', 'https://sanef.com.evil.example/', 'https://aliae.com/', 'not a url'].map((url) => siteAllowed(sheet, url))).toEqual([
+      false,
+      false,
+      false,
+      false
     ])
-    expect(seen).toEqual([true, true, true, true, false])
-    expect(tasks.allows(tasks.list()[0].folderId, 'https://www.sanef.com/')).toBe(false)
   })
 
-  it('« www.x » is that site, not every host under x: the sheet says what a run reaches', async () => {
-    const seen = await during((t) => [tasks.allows(t.folderId, 'https://autoroutes.sanef.com/'), tasks.allows(t.folderId, 'http://www.sanef.com/')])
-    expect(seen).toEqual([false, false])
-  })
-
-  it('not a site that merely ends the same, nor its neighbours', async () => {
-    const seen = await during((t) => [
-      tasks.allows(t.folderId, 'https://evil-sanef.com/'),
-      tasks.allows(t.folderId, 'https://sanef.com.evil.example/'),
-      tasks.allows(t.folderId, 'https://aliae.com/'),
-      tasks.allows(t.folderId, 'not a url')
-    ])
-    expect(seen).toEqual([false, false, false, false])
-  })
-
-  it('a listed host, not its whole registrable domain', async () => {
-    const seen = await during((t) => [tasks.allows(t.folderId, 'https://mairie.github.io/'), tasks.allows(t.folderId, 'https://evil.github.io/')], {
-      sites: ['mairie.github.io']
-    })
-    expect(seen).toEqual([true, false])
+  it('a listed host, not its whole registrable domain', () => {
+    const pages = { sites: ['mairie.github.io'] }
+    expect([siteAllowed(pages, 'https://mairie.github.io/'), siteAllowed(pages, 'https://evil.github.io/')]).toEqual([true, false])
   })
 
   it('reading tools and what moves through a page, not what acts or what holds the user’s papers', async () => {
@@ -574,6 +574,13 @@ describe('the message of a run', () => {
 
   it('says when it has no site of its own', () => {
     expect(taskMessage(task({ sites: [] }))).toContain('it can open none')
+  })
+
+  it('says what it is about by the identifier type_text takes, never the entity’s id', () => {
+    const text = taskMessage(task({ entity: { id: 'v1', label: 'AB-123-CD' } }))
+    expect(text).toContain('It is about: AB-123-CD.')
+    expect(text).not.toContain('v1')
+    expect(taskMessage(task())).not.toContain('It is about')
   })
 
   it('keeps the task’s words inside its frame', () => {

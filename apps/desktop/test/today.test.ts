@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { parsePeriod, parseSpCards, selectChanges } from '../src/main/public/france'
-import { clockEvents, schoolEvents } from '../src/main/public/today'
+import { changesOn, clockEvents, parsePeriod, parseSpCards, schoolEvents } from '../src/main/public/today'
 
-/** What public life holds today and in the coming weeks: the start of 3615 CALENDRIER. */
+/** What public life holds today: the start of 3615 CALENDRIER. */
 
-describe('En France', () => {
+describe('Service-Public’s agenda', () => {
   it('reads the periods of Service-Public badges', () => {
     expect(parsePeriod('À partir du 1 nov. 2026')).toEqual({ from: '2026-11-01' })
     expect(parsePeriod('Jusqu’au 31 déc. 2026')).toEqual({ until: '2026-12-31' })
@@ -18,7 +17,7 @@ describe('En France', () => {
   const card = (id: string, title: string, published: string, badge = '') =>
     `<li><div class="fr-card" data-test="carte"><div class="fr-card__body"><H4 class="fr-card__title" data-test="carte-titre"><a href="https://www.service-public.gouv.fr/particuliers/actualites/${id}" data-test="cards-private" >${title}</a></H4><p class="fr-card__desc" data-test="carte-description">Publié le ${published}</p><div class="fr-card__start">${badge ? `<p class="fr-badge fr-badge--green-emeraude fr-mb-1w">${badge}</p>` : ''}<p class="fr-card__detail fr-mb-0" data-test="carte-badge">Sécurité routière</p></div></div></div></li>`
 
-  it('reads Service-Public cards and keeps what concerns the coming weeks', () => {
+  it('reads Service-Public cards, and the changes that start on a day', () => {
     const agenda = parseSpCards(
       card('A14389', 'Pneus hiver, chaînes : quelles sont vos obligations ?', '20 octobre 2026', 'À partir du 1 nov. 2026') +
         card('A18926', 'Prime de transport : le plafond d&#39;exonération', '24 octobre 2026', 'Jusqu&#39;au 31 déc. 2026') +
@@ -26,7 +25,6 @@ describe('En France', () => {
     )
     expect(agenda[0]).toEqual({
       id: 'A14389',
-      source: 'service-public',
       title: 'Pneus hiver, chaînes : quelles sont vos obligations ?',
       url: 'https://www.service-public.gouv.fr/particuliers/actualites/A14389',
       published: '2026-10-20',
@@ -35,10 +33,20 @@ describe('En France', () => {
       from: '2026-11-01'
     })
     expect(agenda[1]).toMatchObject({ title: 'Prime de transport : le plafond d’exonération', when: 'Jusqu’au 31 déc. 2026', until: '2026-12-31' })
-    const news = parseSpCards(card('A17785', 'Ce qui change en novembre 2026', '28 octobre 2026'))
-    const changes = selectChanges(agenda, news, '2026-10-28')
-    expect(changes.map((c) => c.id)).toEqual(['A17785', 'A14389'])
-    expect(selectChanges(agenda, [], '2026-12-15').map((c) => c.id)).toEqual(['A18926'])
+    expect(changesOn(agenda, '2026-11-01')).toEqual([
+      {
+        id: 'change-A14389',
+        kind: 'change',
+        title: 'Pneus hiver, chaînes : quelles sont vos obligations ?',
+        detail: 'À partir du 1 nov. 2026',
+        start: '2026-11-01',
+        url: 'https://www.service-public.gouv.fr/particuliers/actualites/A14389',
+        source: 'Service public'
+      }
+    ])
+    // A deadline isn't a change that starts, and a day without one has none.
+    expect(changesOn(agenda, '2026-12-31')).toEqual([])
+    expect(changesOn(agenda, '2026-10-28')).toEqual([])
   })
 })
 

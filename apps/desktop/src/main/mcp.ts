@@ -83,7 +83,7 @@ export async function callTool(t: Tool, args: unknown, ctx: ToolContext): Promis
       throw new ToolError('Tokens [[…]] are not accepted here: the user’s identifiers never leave the app through an address.')
     const resolved = resolveDeep(args, tokens)
     const replaced = JSON.stringify(resolved ?? {}) !== raw
-    // A run's one identifier goes into the field its sheet says (type_text checks which), nowhere else.
+    // A run's one identifier, its entity's, goes through type_text only, which checks it is exactly that one.
     if (run && replaced && t.name !== 'type_text')
       throw new ToolError(`A planned task's run cannot send the user's identifiers through ${t.name}. Stop here and report "waiting" with task_report.`)
     const text = await t.run(resolved as never, { ...ctx, run, resolved: replaced })

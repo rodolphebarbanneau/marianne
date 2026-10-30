@@ -108,11 +108,21 @@ export async function engineLights(): Promise<EngineLight[]> {
   return enabled.map((id, i) => ({ id, ok: statuses[i].found && statuses[i].loggedIn !== false, busy: now.has(id), label: ENGINE_LABELS[id] }))
 }
 
+/** The turns under way: a lock wipes again once they are over (below). */
+const turns = new Set<Promise<void>>()
+
 /**
  * Run one turn with an engine, in the folder's scratch folder. The session's transcript comes
  * back from the archive before resuming and goes back into it afterwards, whatever the outcome.
  */
-export async function runTurn(id: EngineId, turn: Turn): Promise<void> {
+export function runTurn(id: EngineId, turn: Turn): Promise<void> {
+  const job = engineTurn(id, turn)
+  turns.add(job)
+  void job.catch(() => undefined).finally(() => turns.delete(job))
+  return job
+}
+
+async function engineTurn(id: EngineId, turn: Turn): Promise<void> {
   const engine = ENGINES[id]
   const cli = cliPath(id)
   if (!cli) throw new Error(`${ENGINE_LABELS[id]} introuvable. Installez-le depuis ${engine.site}, ou choisissez un autre moteur.`)
@@ -177,4 +187,13 @@ export function wipeScratch(): void {
   }
 }
 
-session.on('locked', wipeScratch)
+// The turns running at the lock are being stopped (chat.ts): until their CLI is gone it may write
+// its transcript, in clear, and Windows won't remove the folder it works in. So once they are over,
+// everything is wiped again; unless the account was opened meanwhile, whose turns have folders there.
+session.on('locked', () => {
+  wipeScratch()
+  if (!turns.size) return
+  void Promise.allSettled([...turns]).then(() => {
+    if (!session.unlocked) wipeScratch()
+  })
+})

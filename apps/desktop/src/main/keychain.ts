@@ -16,21 +16,37 @@ interface StoredEntry extends KeychainEntry {
   createdAt: string
 }
 
+/** A URL's host, lower case; '' for what isn't one. */
+function hostOf(url: string): string {
+  try {
+    return new URL(/^[a-z]+:\/\//i.test(url) ? url : `https://${url}`).hostname.toLowerCase()
+  } catch {
+    return ''
+  }
+}
+
 /**
  * The site a URL belongs to: login pages often live on another subdomain than the home page
  * (www.impots.gouv.fr → cfspart.impots.gouv.fr). gouv.fr is a public suffix.
  */
 export function siteOf(url: string): string {
-  let host: string
-  try {
-    host = new URL(/^[a-z]+:\/\//i.test(url) ? url : `https://${url}`).hostname.toLowerCase()
-  } catch {
-    return ''
-  }
+  const host = hostOf(url)
   return host
     .split('.')
     .slice(host.endsWith('.gouv.fr') ? -3 : -2)
     .join('.')
+}
+
+/**
+ * Whether a login saved for `saved` may fill a form on `url`: on its own host or under it, « www.x »
+ * standing for x, as its sign-in often lives beside the home page (www.impots.gouv.fr →
+ * cfspart.impots.gouv.fr). Never on the rest of its registrable domain, which others may own:
+ * x.asso.fr's login doesn't fill on evil.asso.fr, nor one github.io site's on another's.
+ */
+export function loginFits(saved: string, url: string): boolean {
+  const own = hostOf(saved).replace(/^www\./, '')
+  const host = hostOf(url)
+  return !!own && !!host && (host === own || host.endsWith(`.${own}`))
 }
 
 const view = ({ password: _password, createdAt: _createdAt, ...entry }: StoredEntry): KeychainEntry => entry
@@ -74,8 +90,15 @@ class Keychain extends EventEmitter {
     return entry ? { username: entry.username, password: entry.password } : null
   }
 
-  /** Logins for the site of `url`, for autofill. */
+  /** Logins that may fill a form on `url`, for autofill (loginFits). */
   forUrl(url: string): KeychainEntry[] {
+    return this.all()
+      .filter((e) => e.kind === 'login' && loginFits(e.url, url))
+      .map(view)
+  }
+
+  /** Logins of the site of `url` as siteOf groups them: wider than where they fill, for masking their passwords on its pages. */
+  ofSite(url: string): KeychainEntry[] {
     const site = siteOf(url)
     return site
       ? this.all()

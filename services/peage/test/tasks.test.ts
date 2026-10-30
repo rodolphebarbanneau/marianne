@@ -39,4 +39,11 @@ describe('the tasks 3615 PEAGE proposes', () => {
     expect(task.instruction).not.toContain(KANGOO.plate!)
     expect(task.instruction).toMatch(/without paying/)
   })
+
+  it('has the run type the plate the task gives, as its token: a run can’t read the profile', () => {
+    const [task] = tollTasks([KANGOO])
+    expect(task.instruction).toContain('Type the plate this task is about with type_text, its token exactly as the task gives it')
+    expect(task.instruction).not.toMatch(/profile/)
+    expect(task.entity).toEqual({ id: 'v2', label: KANGOO.plate })
+  })
 })

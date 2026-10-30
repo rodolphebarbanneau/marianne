@@ -11,7 +11,7 @@ import { session } from './session'
  * Lifecycle, after T3 Code: pinned folders stay on top and are never settled automatically;
  * a snoozed folder ("en veille") comes back on its date; a folder is settled ("classé") by hand,
  * when its procedure's last step is done, or after AUTO_SETTLE_DAYS without activity if it
- * follows no procedure. A new message reopens it.
+ * follows no procedure and holds no planned task. A new message reopens it.
  */
 
 export const AUTO_SETTLE_DAYS = 7

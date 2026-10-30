@@ -1,5 +1,5 @@
 import type { ServiceTaskTemplate, Vehicle } from '@marianne/sdk/main'
-import { NETWORKS } from './networks'
+import { hostOf, NETWORKS } from './networks'
 
 /**
  * The task 3615 PEAGE proposes, vehicle by vehicle: looking for unpaid passages on the operators'
@@ -7,8 +7,6 @@ import { NETWORKS } from './networks'
  * leaves at least a day to pay, provided the user opens Marianne: a task only runs unlocked. The
  * service never pays: the run looks, records the passage, and leaves paying to the user.
  */
-
-const hostOf = (url: string) => new URL(url).hostname
 
 /** Each operator's payment page, once. */
 const SITES = [...new Set(NETWORKS.map((n) => hostOf(n.payUrl)))]
@@ -42,9 +40,11 @@ const ALLOWS = (plate: string) => [
 
 const NEVER = 'Marianne ne paie jamais : elle vous montre le passage, vous validez, et vous saisissez votre carte vous-même.'
 
+// A run can't read the profile: its plate comes with the task (« It is about »), as a token, the one
+// value type_text lets it type.
 const instruction = (vehicle: string) =>
-  `Look for unpaid free-flow toll passages of vehicle ${vehicle}, on each operator's official payment page. Read the free-flow-tolls guide first. peage_networks gives the pages, peage_trips what is already recorded. Get the plate's token from the profile tool, type it with type_text, and read what the site shows, without paying and without going further than the list of passages.
-For each passage the site shows that peage_trips doesn't have, record it with peage_add_trip. Report "found" with the motorway and the date, and say the user can ask you to pay it: paying happens in a conversation, on a card, and they type their card themselves. If no site shows a passage to pay, report "nothing".`
+  `Look for unpaid free-flow toll passages of vehicle ${vehicle}, on each operator's official payment page. Read the free-flow-tolls guide first. peage_networks gives the pages, peage_trips what is already recorded. Type the plate this task is about with type_text, its token exactly as the task gives it, and read what the site shows, without paying and without going further than the list of passages.
+For each passage the site shows that peage_trips doesn't have, record it with peage_add_trip for vehicle ${vehicle}. Report "found" with the motorway and the date, and say the user can ask you to pay it: paying happens in a conversation, on a card, and they type their card themselves. If no site shows a passage to pay, report "nothing".`
 
 /** One task per vehicle whose plate the service was given: without it, there is nothing to look for. */
 export function tollTasks(vehicles: Vehicle[]): ServiceTaskTemplate[] {

@@ -157,25 +157,3 @@ export interface TodayEvent extends TodayItem {
   /** kind 'service': the service that tells it, opened with the item's params. */
   service?: string
 }
-
-/** "En France": what changes, and the news of public services. */
-export interface FranceItem {
-  id: string
-  source: 'service-public' | 'gouvernement'
-  title: string
-  url: string
-  /** ISO date of publication. */
-  published?: string
-  category?: string
-  /** As Service-Public words it: "À partir du 1 nov. 2026", "Jusqu'au 31 déc. 2026". */
-  when?: string
-  /** The dates of the change or of the deadline, YYYY-MM-DD. */
-  from?: string
-  until?: string
-}
-
-export interface FranceDigest {
-  /** What changes this month, and the deadlines of the coming weeks. */
-  changes: FranceItem[]
-  news: FranceItem[]
-}
