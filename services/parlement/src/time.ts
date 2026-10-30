@@ -24,6 +24,19 @@ export function parisIso(local: string): string {
   return `${day}T${hms}${offset}`
 }
 
+/** A moment as an ISO date with the Paris offset: "2026-10-30T08:47:27+01:00". */
+export function toParis(date: Date): string {
+  const hms = new Intl.DateTimeFormat('en-GB', { timeZone: PARIS, hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).format(date)
+  return `${parisDay(date)}T${hms}${parisOffset(date)}`
+}
+
+/** "vendredi 30 octobre 2026 à 08h47", as the Assemblée writes when a broadcast starts. */
+export function parisDateTime(iso: string): string {
+  const date = new Date(iso)
+  const day = new Intl.DateTimeFormat('fr-FR', { timeZone: PARIS, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date)
+  return `${day} à ${parisTime(iso).replace(':', 'h')}`
+}
+
 /** A day (YYYY-MM-DD) moved by a number of days. */
 export function addDays(day: string, days: number): string {
   const d = new Date(`${day}T12:00:00Z`)

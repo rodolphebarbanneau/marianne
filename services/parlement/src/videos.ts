@@ -1,8 +1,8 @@
 import { foldText } from '@marianne/sdk'
 import { query, type ServiceHttp } from '@marianne/sdk/main'
-import { parseVideoRef, PORTAL, SENATE_PORTAL, videoPage } from './links'
+import { LIVE_PAGE, parseVideoRef, PORTAL, SENATE_PORTAL, videoPage } from './links'
 import { decodeHtml } from './senate'
-import { parisIso } from './time'
+import { addDays, parisDateTime, parisDay, parisIso, parisTime, toParis } from './time'
 import type { Chamber, LiveStream, VideoDetail, VideoItem, VideoQuery, VideoType } from './types'
 import { child, children, isElement, parseXml, textOf, type XmlElement } from './xml'
 
@@ -17,8 +17,15 @@ import { child, children, isElement, parseXml, textOf, type XmlElement } from '.
 export type Http = Pick<ServiceHttp, 'text'>
 
 const CDN = 'https://videos-an.vodalys.com/videos/definst'
+/** The Assemblée's live streams: its origin, and the CDN that mirrors it. */
+const LIVE_HOSTS = ['https://anorigin.vodalys.com/live', 'https://assemblee-nationale.akamaized.net/live']
 const LIVE_API = 'https://www.assemblee-nationale.fr/dyn/api/live/streams'
 const SENATE_SEARCH = `${SENATE_PORTAL}/senat_function.php`
+
+/** What changes during a live (the stream's files, its chapters, what is on air): asked again this often. */
+export const LIVE_CACHE_MS = 20_000
+/** A finished video's files. */
+const VIDEO_CACHE_MS = 600_000
 
 /** The Assemblée portal's video types, by code, in French. */
 export const VIDEO_TYPES: Record<string, string> = {
@@ -123,7 +130,7 @@ export interface RawItem {
 }
 
 /** The Assemblée's videos between two dates (YYYY-MM-DD), newest first; the portal returns at most 120. */
-export async function searchVideos(http: Http, q: VideoQuery): Promise<VideoItem[]> {
+export async function searchVideos(http: Http, q: VideoQuery, cacheMs = 120_000): Promise<VideoItem[]> {
   const raw = await json<RawItem[]>(
     http,
     `${PORTAL}/php/eventsearch.php${query({
@@ -134,7 +141,7 @@ export async function searchVideos(http: Http, q: VideoQuery): Promise<VideoItem
       TypeVideo: q.type ? VIDEO_TYPE_FILTERS[q.type] : '',
       Rubrique: ''
     })}`,
-    120_000
+    cacheMs
   )
   const words = wordsOf(q.text)
   const seen = new Set<string>()
@@ -166,26 +173,96 @@ export async function searchVideos(http: Http, q: VideoQuery): Promise<VideoItem
   })
 }
 
-/** Title, chapters with timecodes, speakers and the stream of one of the Assemblée's videos. */
+/** Title, chapters with timecodes, speakers and the stream of one of the Assemblée's videos, live or recorded. */
 export async function videoDetail(http: Http, id: string): Promise<VideoDetail> {
   const root = `${PORTAL}/Datas/an/${id}`
   const [data, player, smil] = await Promise.all([
-    http.text(`${root}/content/data.nvs`, { cacheMs: 600_000 }).then(parseXml),
+    // Its status and chapters change during a live.
+    http.text(`${root}/content/data.nvs`, { cacheMs: LIVE_CACHE_MS }).then(parseXml),
+    // Missing until the recording is ready.
     http
-      .text(`${root}/content/finalplayer.nvs`, { cacheMs: 600_000 })
+      .text(`${root}/content/finalplayer.nvs`, { cacheMs: VIDEO_CACHE_MS })
       .then(parseXml)
       .catch(() => null),
-    // Missing while the portal is still processing the recording.
-    http.text(`${root}/meta-files/vodalys.smil`, { cacheMs: 600_000 }).catch(() => '')
+    // A live's while on air, then the recording's; missing while the portal is still processing it.
+    http.text(`${root}/meta-files/vodalys.smil`, { cacheMs: LIVE_CACHE_MS }).catch(() => '')
   ])
-  return readVideo('an', id, data, player, smil)
+  return readVideo('an', id, data, player, smil, player ? null : await livePlayer(http, root))
 }
 
-/** A video from its files: data.nvs (chapters, speakers, metadata), finalplayer.nvs (timecodes), and, at the Assemblée, vodalys.smil (the stream). */
-export function readVideo(chamber: Chamber, id: string, data: XmlElement, player: XmlElement | null, stream: string): VideoDetail {
-  const metadata = children(child(data, 'metadatas') ?? data, 'metadata').map((m) => m.attrs)
+/** The times of a live's chapters so far, as the portal's live player reads them; null when it has none. */
+const livePlayer = (http: Http, root: string) =>
+  http
+    .text(`${root}/content/liveplayer.nvs`, { cacheMs: LIVE_CACHE_MS })
+    .then(parseXml)
+    .catch(() => null)
+
+/** What a stream plays: a playlist, others of the same stream to try when it fails, a live or not, its channel. */
+export interface StreamInfo {
+  hls: string
+  mirrors: string[]
+  live: boolean
+  channel: string
+}
+
+const NO_STREAM: StreamInfo = { hls: '', mirrors: [], live: false, channel: '' }
+
+/**
+ * The stream of an Assemblée's vodalys.smil. A recording: its multi-bitrate playlist on the CDN. A
+ * live: the whole sitting so far (DVR, growing), on the origin it names and the CDN that mirrors it.
+ */
+export function readSmil(smil: string): StreamInfo {
+  // base "http://anorigin.vodalys.com/live", src "live36/index36_19655971.m3u8?DVR".
+  const live = smil.match(/src="(live\d+\/[^"?]+\.m3u8)/)?.[1]
+  if (live) return dvr(live, smil.match(/base="https?:\/\/([^/"]+)/)?.[1])
+  // "mp4/ida/mp4:domain1/2026/10/x_1.mp4" → the multi-bitrate playlist next to it.
+  const src = smil.match(/src="([^"]+\.mp4)"/)?.[1]?.replace('mp4:', '')
+  return src ? { ...NO_STREAM, hls: `${CDN}/${src.replace(/_\d+\.mp4$/, '.smil')}/master.m3u8` } : NO_STREAM
+}
+
+/** A live's DVR playlist from a URL to it (data.nvs' "live" file: ".../live/live36/index36_19655971.m3u8?DVR"). */
+export function dvrOf(url: string): StreamInfo {
+  const found = url.match(/^https?:\/\/([^/]+)\/live\/(live\d+\/[^?#]+\.m3u8)/)
+  return found ? dvr(found[2], found[1]) : NO_STREAM
+}
+
+/** "live36/index36_19655971.m3u8" on the host given first (over https), the other as a mirror. */
+function dvr(path: string, host = ''): StreamInfo {
+  const first = LIVE_HOSTS.find((h) => new URL(h).host === host) ?? LIVE_HOSTS[0]
+  const urls = [first, ...LIVE_HOSTS.filter((h) => h !== first)].map((h) => `${h}/${path}`)
+  return { hls: urls[0], mirrors: urls.slice(1), live: true, channel: path.match(/^live(\d+)\//)?.[1] ?? '' }
+}
+
+/** A data.nvs' metadata, in order. */
+const metadataOf = (data: XmlElement) => children(child(data, 'metadatas') ?? data, 'metadata').map((m) => m.attrs)
+
+/** The open-data meetings (réunions) a video covers. */
+const meetingIdsOf = (data: XmlElement) =>
+  metadataOf(data)
+    .filter((m) => m.name === 'meeting_id' && m.value)
+    .map((m) => m.value)
+
+/** A number from an attribute (unix seconds, ms); 0 when absent. */
+const num = (value: string | undefined) => Number(value) || 0
+
+/**
+ * A video from its files: data.nvs (status, chapters, speakers, metadata), finalplayer.nvs
+ * (timecodes, once recorded) or else liveplayer.nvs (those of a live so far: only the chapters it
+ * times are kept), and the stream: at the Assemblée its vodalys.smil, at the Sénat its playlist.
+ */
+export function readVideo(
+  chamber: Chamber,
+  id: string,
+  data: XmlElement,
+  player: XmlElement | null,
+  stream: string,
+  live: XmlElement | null = null
+): VideoDetail {
+  const metadata = metadataOf(data)
   const meta = (name: string) => metadata.find((m) => m.name === name)
-  const timecodes = new Map((player ? children(player, 'synchro') : []).map((s) => [s.attrs.id, Number(s.attrs.timecode)]))
+  const timing = player ?? live
+  const timedOnly = !player && !!live
+  const timecodes = new Map((timing ? children(timing, 'synchro') : []).map((s) => [s.attrs.id, Number(s.attrs.timecode)]))
   // A speaker's url is their id: the Assemblée's actor number, the Sénat's matricule.
   const speakers = new Map(
     children(child(data, 'speakers') ?? data, 'speaker').map((s) => {
@@ -199,14 +276,16 @@ export function readVideo(chamber: Chamber, id: string, data: XmlElement, player
     for (const c of el.children.filter(isElement).filter((x) => x.tag === 'chapter')) {
       const speaker = speakers.get(child(c, 'speaker')?.attrs.id ?? '')
       const timecode = timecodes.get(c.attrs.id)
-      chapters.push({
-        id: c.attrs.id,
-        title: (c.attrs.label ?? '').replace(/\s*\n\s*/g, ' · ').trim(),
-        depth,
-        timecode: timecode !== undefined && Number.isFinite(timecode) ? timecode : null,
-        ...(speaker ? { speaker: speaker.name } : {}),
-        ...(speaker?.member ? { member: speaker.member } : {})
-      })
+      const timed = timecode !== undefined && Number.isFinite(timecode)
+      if (timed || !timedOnly)
+        chapters.push({
+          id: c.attrs.id,
+          title: (c.attrs.label ?? '').replace(/\s*\n\s*/g, ' · ').trim(),
+          depth,
+          timecode: timed ? timecode : null,
+          ...(speaker ? { speaker: speaker.name } : {}),
+          ...(speaker?.member ? { member: speaker.member } : {})
+        })
       walk(c, depth + 1)
     }
   }
@@ -215,38 +294,79 @@ export function readVideo(chamber: Chamber, id: string, data: XmlElement, player
   const thumbnail = meta('Thumbnail')?.value?.match(/^mediafiles:\/\/this\/(.+)$/)?.[1]
   const portal = chamber === 'se' ? SENATE_PORTAL : PORTAL
   const folder = chamber === 'se' ? 'senat' : 'an'
-  const hls =
-    chamber === 'se'
-      ? stream
-      : (() => {
-          // "mp4/ida/mp4:domain1/2026/10/x_1.mp4" → the multi-bitrate playlist next to it.
-          const src = stream.match(/src="([^"]+\.mp4)"/)?.[1]?.replace('mp4:', '')
-          return src ? `${CDN}/${src.replace(/_\d+\.mp4$/, '.smil')}/master.m3u8` : ''
-        })()
+  // "live" while on air, "vod" after; a video that doesn't say: its stream tells.
+  const status = data.attrs.status ?? ''
+  const liveFile = children(child(data, 'files') ?? data, 'file').find((f) => f.attrs.title === 'live')?.attrs.url ?? ''
+  const media = chamber === 'se' ? senateMedia(stream, liveFile, status, player, live) : anMedia(stream, liveFile, status)
+  const channel = media.channel || (chamber === 'an' ? (meta('stream')?.label?.match(/(\d+)$/)?.[1] ?? dvrOf(liveFile).channel) : senateChannel(liveFile))
+  // Where the recording's timeline starts, unix s: at the Assemblée its live player or its date (the same), at the Sénat its players.
+  const origin = chamber === 'se' ? num(player?.attrs.sessionstart) || num(live?.attrs.starttime) : num(live?.attrs.starttime) || num(meta('date')?.value)
   return {
     id,
     chamber,
     title: decodeHtml(data.attrs.mediatitle ?? '').trim(),
-    date: fromUnix(meta('date')?.value ?? player?.attrs.sessionstart),
+    date: fromUnix(meta('date')?.value ?? player?.attrs.sessionstart ?? live?.attrs.starttime),
     type:
       chamber === 'se'
         ? (SENATE_TYPES[type?.value ?? '']?.[0] ?? type?.label?.toLowerCase() ?? '')
         : (VIDEO_TYPES[type?.value ?? ''] ?? type?.label?.toLowerCase() ?? ''),
     organ: meta('commission')?.label ?? '',
-    meetingIds: metadata.filter((m) => m.name === 'meeting_id' && m.value).map((m) => m.value),
-    durationMs: Number(player?.attrs.endtime) || 0,
+    meetingIds: meetingIdsOf(data),
+    durationMs: num(player?.attrs.endtime),
     chapters,
     speakers: [...speakers.values()],
-    hls,
-    // The Sénat's streams start where the sitting does: its timecodes count from the recording's start.
-    offsetMs: chamber === 'se' ? Number(player?.attrs.starttime) || 0 : 0,
+    hls: media.hls,
+    mirrors: media.mirrors,
+    live: media.live,
+    offsetMs: media.offsetMs,
+    clockStart: media.clockStart || (origin ? origin * 1000 + media.offsetMs : 0),
+    channel,
     thumbnail: thumbnail ? `${portal}${encodePath(`/Datas/${folder}/${id}/files/${thumbnail}`)}` : '',
     url: videoPage(chamber, id)
   }
 }
 
+type Media = StreamInfo & { offsetMs: number; clockStart: number }
+
+/** The Assemblée's: its smil's stream, or data.nvs' live file while on air; a live's DVR is gone once the sitting is over. */
+function anMedia(smil: string, liveFile: string, status: string): Media {
+  let s = readSmil(smil)
+  const live = status ? status === 'live' : s.live
+  if (live && !s.hls) s = dvrOf(liveFile)
+  // Over, and the recording not ready yet: nothing to play (the view says it is being processed).
+  if (!live && s.live) s = { ...NO_STREAM, channel: s.channel }
+  return { ...s, live, offsetMs: 0, clockStart: 0 }
+}
+
+/**
+ * The Sénat's: its player's playlist (data.nvs' live file while on air, when the player page
+ * doesn't answer). A recording's starts where the sitting does (its finalplayer's starttime, or the
+ * playlist's wowzaplaystart); a live's at its startTime, a little after the moment its live
+ * player's times count from (inferred: no live to check it against).
+ */
+function senateMedia(stream: string, liveFile: string, status: string, player: XmlElement | null, live: XmlElement | null): Media {
+  const url = stream || (status === 'live' ? liveFile.replace(/^http:/, 'https:') : '')
+  const isLive = status ? status === 'live' : /\/hls\/live\//.test(url)
+  const startTime = num(url.match(/[?&]startTime=(\d+)/)?.[1])
+  const liveOffset = isLive && startTime && num(live?.attrs.starttime) ? Math.max(0, (startTime - num(live?.attrs.starttime)) * 1000) : 0
+  const offsetMs = num(player?.attrs.starttime) || num(url.match(/[?&]wowzaplaystart=(\d+)/)?.[1]) || liveOffset
+  return {
+    hls: url,
+    mirrors: [],
+    live: isLive,
+    channel: senateChannel(url),
+    offsetMs,
+    clockStart: isLive && startTime ? startTime * 1000 : 0
+  }
+}
+
+/** The Sénat's channel, from a live playlist ("…/hls/live/2036979/senat1/playlist-archive.m3u8"): "senat1". */
+const senateChannel = (url: string) => url.match(/\/hls\/live\/\d+\/([^/]+)\//)?.[1] ?? ''
+
 export interface RawStream {
   isLive: boolean
+  /** The channel: "36", the hémicycle's. */
+  flux?: string
   reunionUid: string
   organeLibelle: string
   debutDateTime: string
@@ -258,14 +378,69 @@ export interface RawStream {
   posterUrl: string
 }
 
-/** The Assemblée's broadcasts of today: what is live now and, with `upcoming`, what is announced for later today. */
-export async function liveStreams(http: Http, upcoming = false): Promise<LiveStream[]> {
-  const data = await json<{ diffusions?: RawStream[] }>(http, LIVE_API, 60_000)
-  return (data.diffusions ?? []).filter((d) => (d.isLive || upcoming) && d.liveUrl).map(readStream)
+/** A video of the Assemblée's portal on air: found among today's, its stream, its data.nvs. */
+export interface PortalLive {
+  item: VideoItem
+  stream: StreamInfo
+  data: XmlElement
 }
 
-export function readStream(d: RawStream): LiveStream {
-  return {
+/**
+ * The Assemblée's portal videos on air now: today's whose smil plays a live and whose data.nvs says
+ * so (early in the morning, yesterday's too: a night sitting goes on past midnight).
+ */
+export async function portalLives(http: Http, now = Date.now()): Promise<PortalLive[]> {
+  const today = parisDay(new Date(now))
+  const early = Number(parisTime(new Date(now).toISOString()).slice(0, 2)) < 6
+  const items = await searchVideos(http, { from: early ? addDays(today, -1) : today, to: today }, LIVE_CACHE_MS)
+  // Not those announced for much later (the portal lists a video a little before its live starts).
+  const started = items.filter((v) => !v.date || Date.parse(v.date) <= now + 30 * 60_000)
+  const found = await Promise.all(
+    started.map(async (item): Promise<PortalLive[]> => {
+      const root = `${PORTAL}/Datas/an/${item.id}`
+      const stream = readSmil(await http.text(`${root}/meta-files/vodalys.smil`, { cacheMs: LIVE_CACHE_MS }).catch(() => ''))
+      if (!stream.live) return []
+      const data = await http
+        .text(`${root}/content/data.nvs`, { cacheMs: LIVE_CACHE_MS })
+        .then(parseXml)
+        .catch(() => null)
+      if (!data || (data.attrs.status && data.attrs.status !== 'live')) return []
+      return [{ item, stream, data }]
+    })
+  )
+  return found.flat()
+}
+
+/** The channel of a broadcast of the Assemblée's API: its "flux", or its playlist's ".../live36/playlist36.m3u8". */
+const channelOf = (d: RawStream) => (d.flux ?? '').trim() || (d.liveUrl ?? '').match(/\/live(\d+)\//)?.[1] || ''
+
+/**
+ * The Assemblée's broadcasts of today: what is live now and, with `upcoming`, what is announced for
+ * later today. Each live is matched to its portal video by channel (the API names the day's first
+ * sitting all day, not the one on air), to play the whole sitting so far; one the API doesn't list
+ * (at times it lists nothing while on air) comes from the portal alone.
+ */
+export async function liveStreams(http: Http, upcoming = false, now = Date.now()): Promise<LiveStream[]> {
+  const [api, portal] = await Promise.allSettled([json<{ diffusions?: RawStream[] }>(http, LIVE_API, LIVE_CACHE_MS), portalLives(http, now)])
+  if (api.status === 'rejected' && portal.status === 'rejected') throw api.reason
+  const diffusions = api.status === 'fulfilled' ? (api.value.diffusions ?? []).filter((d) => d.liveUrl) : []
+  const lives = portal.status === 'fulfilled' ? portal.value : []
+  const taken = new Set<PortalLive>()
+  const streams = diffusions.map((d) => {
+    const free = lives.filter((l) => !taken.has(l)).sort((a, b) => b.item.date.localeCompare(a.item.date))
+    const named = free.find((l) => meetingIdsOf(l.data).includes(d.reunionUid))
+    // On air: the portal's live on its channel. Announced: a live that names its meeting (started early).
+    const video = d.isLive ? (free.find((l) => l.stream.channel === channelOf(d)) ?? named) : named
+    if (video) taken.add(video)
+    return readStream(d, video)
+  })
+  streams.push(...lives.filter((l) => !taken.has(l)).map(portalStream))
+  return streams.filter((s) => s.live || upcoming)
+}
+
+/** A broadcast of the Assemblée's API, with its portal video when found (its whole stream so far, its page, its meeting). */
+export function readStream(d: RawStream, video?: PortalLive): LiveStream {
+  const stream: LiveStream = {
     id: d.reunionUid ?? '',
     chamber: 'an',
     organ: d.organeLibelle ?? '',
@@ -274,10 +449,51 @@ export function readStream(d: RawStream): LiveStream {
     title: htmlLines(d.titre).join(' ; '),
     subject: htmlLines(d.sujet).join(' ; '),
     place: d.lieu ?? '',
-    live: !!d.isLive,
+    live: !!d.isLive || !!video,
+    // Without its video, the API's stream: a window of the last 30 seconds.
     hls: d.liveUrl.replace(/^http:/, 'https:'),
+    mirrors: [],
     poster: portalImage(d.posterUrl),
-    url: 'https://www.assemblee-nationale.fr/dyn/direct-video'
+    url: LIVE_PAGE,
+    channel: channelOf(d)
+  }
+  return video ? { ...stream, ...onPortal(video) } : stream
+}
+
+/** What a broadcast takes from its portal video. */
+function onPortal(l: PortalLive): Partial<LiveStream> {
+  const meeting = meetingIdsOf(l.data)[0]
+  return {
+    video: l.item.id,
+    hls: l.stream.hls,
+    mirrors: l.stream.mirrors,
+    channel: l.stream.channel,
+    url: l.item.url,
+    ...(meeting ? { meeting } : {})
+  }
+}
+
+/** A live known from the portal alone. */
+function portalStream(l: PortalLive): LiveStream {
+  const { item } = l
+  const meta = metadataOf(l.data)
+  const meeting = meetingIdsOf(l.data)[0]
+  const sitting = item.kind === 'seance' || item.kind === 'questions'
+  return {
+    id: meeting ?? item.id,
+    chamber: 'an',
+    organ: sitting ? 'Séance publique' : meta.find((m) => m.name === 'commission')?.label || item.commission || item.type,
+    start: item.date ? parisDateTime(item.date) : '',
+    startAt: item.date ? toParis(new Date(item.date)) : '',
+    title: item.title,
+    subject: item.description.split('\n').join(' ; '),
+    place: decodeHtml(meta.find((m) => m.name === 'place')?.value ?? ''),
+    live: true,
+    hls: '',
+    mirrors: [],
+    poster: item.thumbnail,
+    url: item.url,
+    ...onPortal(l)
   }
 }
 
@@ -347,10 +563,11 @@ export async function searchSenateVideos(http: Http, q: VideoQuery): Promise<Vid
 
 /** What the Sénat broadcasts now (its portal flags it live among its latest videos). */
 export async function senateLive(http: Http): Promise<LiveStream[]> {
-  const raw = await json<RawSenateItem[]>(http, `${SENATE_SEARCH}${query({ method: 'senat_main.search', limit: 12, live: 'true' })}`, 60_000)
+  const raw = await json<RawSenateItem[]>(http, `${SENATE_SEARCH}${query({ method: 'senat_main.search', limit: 12, live: 'true' })}`, LIVE_CACHE_MS)
   const live = (Array.isArray(raw) ? raw : []).filter((v) => v.live).flatMap((v) => senateItem(v) ?? [])
   return Promise.all(
     live.map(async (item): Promise<LiveStream> => {
+      const hls = await senateStream(http, item.id).catch(() => '')
       return {
         id: item.id,
         chamber: 'se',
@@ -361,9 +578,12 @@ export async function senateLive(http: Http): Promise<LiveStream[]> {
         subject: item.description,
         place: '',
         live: true,
-        hls: await senateStream(http, item.id).catch(() => ''),
+        hls,
+        mirrors: [],
         poster: item.thumbnail,
-        url: item.url
+        url: item.url,
+        video: item.id,
+        channel: senateChannel(hls)
       }
     })
   )
@@ -371,22 +591,22 @@ export async function senateLive(http: Http): Promise<LiveStream[]> {
 
 /** A Sénat video's HLS stream (live or recorded), from its embedded player's page. */
 export async function senateStream(http: Http, id: string): Promise<string> {
-  const page = await http.text(`${SENATE_PORTAL}/iframe.${id}`, { cacheMs: 60_000 })
+  const page = await http.text(`${SENATE_PORTAL}/iframe.${id}`, { cacheMs: LIVE_CACHE_MS })
   return decodeHtml(page.match(/<source src="([^"]+\.m3u8[^"]*)"/)?.[1] ?? '')
 }
 
-/** Title, chapters with timecodes, speakers (with their matricule) and the stream of one of the Sénat's videos. */
+/** Title, chapters with timecodes, speakers (with their matricule) and the stream of one of the Sénat's videos, live or recorded. */
 export async function senateVideoDetail(http: Http, id: string): Promise<VideoDetail> {
   const root = `${SENATE_PORTAL}/Datas/senat/${id}`
   const [data, player, stream] = await Promise.all([
-    http.text(`${root}/content/data.nvs`, { cacheMs: 600_000 }).then(parseXml),
+    http.text(`${root}/content/data.nvs`, { cacheMs: LIVE_CACHE_MS }).then(parseXml),
     http
-      .text(`${root}/content/finalplayer.nvs`, { cacheMs: 600_000 })
+      .text(`${root}/content/finalplayer.nvs`, { cacheMs: VIDEO_CACHE_MS })
       .then(parseXml)
       .catch(() => null),
     senateStream(http, id).catch(() => '')
   ])
-  return readVideo('se', id, data, player, stream)
+  return readVideo('se', id, data, player, stream, player ? null : await livePlayer(http, root))
 }
 
 // ---------------------------------------------------------------- both

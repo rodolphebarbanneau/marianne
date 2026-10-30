@@ -78,6 +78,7 @@ const stream = (over: Partial<LiveStream>): LiveStream => ({
   place: '',
   live: true,
   hls: '',
+  mirrors: [],
   poster: '',
   url: '',
   ...over

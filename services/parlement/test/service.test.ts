@@ -400,6 +400,7 @@ describe('today’s lines', () => {
     place: '',
     live: true,
     hls: 'https://x/live.m3u8',
+    mirrors: [],
     poster: '',
     url: ''
   }
@@ -440,6 +441,7 @@ describe('the meetings live broadcasts show', () => {
     place: '',
     live: true,
     hls: 'https://x/live.m3u8',
+    mirrors: [],
     poster: '',
     url: ''
   })
@@ -457,6 +459,13 @@ describe('the meetings live broadcasts show', () => {
   it('is the sitting under way, whatever meeting the chamber names (the Assemblée names its first of the day)', () => {
     const live = liveMeetings(meetings, [stream('AN-0900', 'an', 'Séance publique'), stream('5981480_x', 'se', 'Séance publique')], now)
     expect([...live.keys()].sort()).toEqual(['AN-2130', 'SE-2130'])
+  })
+
+  it('is the meeting its video names, when the portal says', () => {
+    const live = { ...stream('AN-0900', 'an', 'Séance publique'), meeting: 'AN-1500' }
+    expect([...liveMeetings(meetings, [live], now).keys()]).toEqual(['AN-1500'])
+    // One the agenda doesn't have: the sitting under way.
+    expect([...liveMeetings(meetings, [{ ...live, meeting: 'AN-XXXX' }], now).keys()]).toEqual(['AN-2130'])
   })
 
   it('is, for a committee, the meeting named, or at the Sénat the latest of that committee', () => {

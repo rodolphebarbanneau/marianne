@@ -9,6 +9,8 @@ const SITE = 'https://www.assemblee-nationale.fr'
 const SENATE = 'https://www.senat.fr'
 export const PORTAL = 'https://videos.assemblee-nationale.fr'
 export const SENATE_PORTAL = 'https://videos.senat.fr'
+/** The Assemblée portal's live page (it goes to the video of the main live, when there is one). */
+export const LIVE_PAGE = `${PORTAL}/direct.php`
 export const AGENDA_PAGE = 'https://www2.assemblee-nationale.fr/agendas/les-agendas'
 export const SENATE_AGENDA_PAGE = 'https://agenda.senat.fr/'
 /** Where the Assemblée tells anyone their deputy from their address. */
