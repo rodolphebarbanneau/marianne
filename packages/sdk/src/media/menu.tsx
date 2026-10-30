@@ -66,7 +66,9 @@ export interface OptionsMenuProps {
   onPip?: () => void
 }
 
-const heightLabel = (l: StreamLevel) => `${l.height}p`
+/** A level as the menu says it: its height, or, when its playlist doesn't say it, its bitrate (« 2,5 Mb/s »). */
+export const heightLabel = (l: Pick<StreamLevel, 'height' | 'bitrate'>) =>
+  l.height > 0 ? `${l.height}p` : l.bitrate > 0 ? `${(l.bitrate / 1e6).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} Mb/s` : 'inconnue'
 
 /** The gear's menu: qualité, vitesse, temps; garder un extrait, partager; the sound and the mini-player when the bar is narrow; image dans l'image. */
 export function OptionsMenu(p: OptionsMenuProps) {
