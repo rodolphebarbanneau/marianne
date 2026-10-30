@@ -11,6 +11,7 @@ import { TicketMachine } from '../components/ticket-machine'
 import { useServices } from '../host'
 import { api, errorText, isMac } from '../lib/api'
 import { aboutEntity, presses, proposed, SHEET_URL, todoItems, weekLabels, whenOf, type SearchTarget } from '../lib/demarches'
+import { plainKey } from '../lib/keys'
 import { useDocuments, useProfile } from '../lib/profile'
 import { useTasks, useTaskTemplates } from '../lib/tasks'
 import { TodoRow } from './demarches/todo-row'
@@ -129,7 +130,7 @@ export function DomainPage({ id, tab = 'apercu' }: { id: DomainId; tab?: DomainT
     else toast('écrivez votre question')
   }
   const onBarKey = (e: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (plainKey(e, 'Enter')) {
       e.preventDefault()
       envoi()
     } else if (e.key === 'Escape') {

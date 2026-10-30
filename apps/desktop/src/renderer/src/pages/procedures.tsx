@@ -7,6 +7,7 @@ import { KioskHead } from '../components/kiosk-head'
 import { TicketMachine } from '../components/ticket-machine'
 import { useServices } from '../host'
 import { api } from '../lib/api'
+import { plainKey } from '../lib/keys'
 import {
   domainByNumber,
   presses,
@@ -121,7 +122,7 @@ export function ProceduresPage() {
     setSelected((i) => Math.max(0, Math.min(results.length - 1, i + by)))
   }
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (plainKey(e, 'Enter')) {
       e.preventDefault()
       envoi()
     } else if (e.key === 'Escape' && query) {
