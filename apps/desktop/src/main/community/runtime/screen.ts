@@ -28,13 +28,14 @@ import { mediaUrl, pictureUrl, schemeHandler, type SchemeSource } from './scheme
  * Marianne only through its preload (preload/community-screen.ts) and this relay, which answers its
  * calls and data itself and hands the window only what the window shows: a question for Marianne,
  * another screen, a link to confirm, a toast, a tab, a key. The user's keys and clicks are read
- * here, from the view's input: a link or a copy needs a recent one, and only they keep the account
- * awake; F1 to F9 go to the window, échap when the screen doesn't use it.
+ * here, from the view's input: a link, a copy or a video for the mini-player needs a recent one,
+ * and only they keep the account awake; F1 to F9 go to the window, échap when the screen doesn't
+ * use it.
  */
 
-/** A link or a copy asked this long after the user's last key or click in the screen; later, ignored. */
+/** A link, a copy or a pin asked this long after the user's last key or click in the screen; later, ignored. */
 export const INPUT_WINDOW_MS = 5000
-/** An échap the screen hands back must follow a real one this closely. */
+/** An échap or a « / » the screen hands back, or a pin by the player's P, must follow a real one this closely. */
 const ESCAPE_WINDOW_MS = 1000
 /** The account's idle lock hears of the user at most this often. */
 const TOUCH_EVERY_MS = 10_000
@@ -69,11 +70,13 @@ export interface ScreenHost {
 export class ScreenRelay extends EventEmitter {
   private ready = false
   private init: Extract<ToFrame, { type: 'init' }> | null = null
-  /** The user's last click, Enter or Space in the screen: what a link or a copy needs. */
+  /** The user's last click, Enter or Space in the screen: what a link, a copy or a pin needs. */
   private lastConsent = -Infinity
   private lastEscape = -Infinity
   /** The user's last « / » in the screen: the frame's search field takes it. */
   private lastSlash = -Infinity
+  /** The user's last P in the screen: the player's key for the mini-player. */
+  private lastPinKey = -Infinity
   private lastTouch = -Infinity
   private readonly limit = new RateLimit(100, 300)
   private warned = false
@@ -127,7 +130,8 @@ export class ScreenRelay extends EventEmitter {
 
   /**
    * A key, a click or a scroll in the screen, from its input (not from its page): the user is here.
-   * Only a click, Enter or Space counts as the user's go-ahead for a link or a copy.
+   * Only a click, Enter or Space counts as the user's go-ahead for a link, a copy or a pin; P,
+   * the player's key for the mini-player, for a pin too.
    */
   input(kind: 'key' | 'click' | 'wheel', key?: string, modifiers?: Omit<KeyLike, 'key' | 'code'> & { code?: string }): string | null {
     const now = this.now()
@@ -142,8 +146,11 @@ export class ScreenRelay extends EventEmitter {
       this.host.lock()
       return 'lock'
     }
-    // « / » needs Shift on some keyboards (AZERTY's main row): Shift alone doesn't stop it.
-    if (key === '/' && !(modifiers && (modifiers.ctrlKey || modifiers.altKey || modifiers.metaKey))) this.lastSlash = now
+    // « / » needs Shift on some keyboards (AZERTY's main row): Shift alone doesn't stop it. The
+    // player reads P with Shift too.
+    const typed = !(modifiers && (modifiers.ctrlKey || modifiers.altKey || modifiers.metaKey))
+    if (key === '/' && typed) this.lastSlash = now
+    if ((key === 'p' || key === 'P') && typed) this.lastPinKey = now
     if (modifiers && (modifiers.ctrlKey || modifiers.altKey || modifiers.metaKey || modifiers.shiftKey)) return null
     if (key === 'Escape') this.lastEscape = now
     // The guide and the tabs: the window's, whatever the screen does with them.
@@ -198,7 +205,12 @@ export class ScreenRelay extends EventEmitter {
         this.emit('window', { type: 'toast', text: `${this.who} · ${m.text}` })
         return
       // A video of its declared hosts, which brings the user back to its own screen; its picture only from there too.
+      // Handed over by the user (the mini-player's key, clicked or pressed just before), or, as the
+      // screen goes, by its view unmounting a video that plays: a screen can't fill the corner as it
+      // opens, nor while the user looks elsewhere.
       case 'pin': {
+        const asked = recent || this.now() - this.lastPinKey <= ESCAPE_WINDOW_MS
+        if (m.auto ? !this.leaving : !asked) return this.host.log.warn(`${this.who}: a video pinned without the user, ignored`)
         const { poster, ...item } = m.item
         if (!allowedUrl(manifest, item.src) || !ownRoute(this.code, item.route)) return this.host.log.warn(`${this.who}: a video not pinned`)
         this.emit('window', { ...m, item: { ...item, ...(poster && allowedUrl(manifest, poster) ? { poster } : {}) } })

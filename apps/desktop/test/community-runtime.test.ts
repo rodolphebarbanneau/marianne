@@ -804,15 +804,55 @@ describe('a community screen’s relay', () => {
       route: 'service:bonjour',
       params: { id: 'x' }
     }
+    relay.input('click')
     relay.fromScreen({ type: 'pin', item, auto: false })
     const { poster: _poster, ...shown } = item
     expect(toWindow).toEqual([{ type: 'pin', item: shown, auto: false }])
     relay.fromScreen({ type: 'pin', item: { ...item, src: 'https://evil.example.com/v.m3u8' }, auto: false })
-    relay.fromScreen({ type: 'pin', item: { ...item, route: 'service:parlement' }, auto: true })
-    relay.fromScreen({ type: 'pin', item: { ...item, route: 'settings:identity' }, auto: true })
+    relay.fromScreen({ type: 'pin', item: { ...item, route: 'service:parlement' }, auto: false })
+    relay.fromScreen({ type: 'pin', item: { ...item, route: 'settings:identity' }, auto: false })
     expect(toWindow).toHaveLength(1)
     relay.fromScreen({ type: 'take', src: item.src })
     expect(toWindow.at(-1)).toEqual({ type: 'take', src: item.src })
+  })
+
+  it('pins a video only when the user hands it over, or as the screen goes with it playing', () => {
+    const { relay, toWindow, later } = relayOf()
+    const none = { ctrlKey: false, altKey: false, metaKey: false, shiftKey: false }
+    const pin = (auto: boolean) =>
+      relay.fromScreen({ type: 'pin', item: { src: 'https://api.example.fr/v.m3u8', title: 'Séance', at: 0, route: 'service:bonjour' }, auto })
+    // As it opens, or after a scroll or another key: nothing reaches the corner.
+    pin(false)
+    relay.input('wheel')
+    relay.input('key', 'a', none)
+    pin(false)
+    expect(toWindow).toEqual([])
+    // The mini-player's key: clicked (or Enter, Space), within the input window; P, the player's key, just before.
+    relay.input('click')
+    pin(false)
+    expect(toWindow).toHaveLength(1)
+    later(6000)
+    pin(false)
+    expect(toWindow).toHaveLength(1)
+    relay.input('key', 'p', none)
+    pin(false)
+    expect(toWindow).toHaveLength(2)
+    later(2000)
+    pin(false)
+    relay.input('key', 'p', { ...none, ctrlKey: true })
+    pin(false)
+    expect(toWindow).toHaveLength(2)
+    // A pin of a page that leaves, while the screen stays (or the user just clicked): no.
+    relay.input('click')
+    pin(true)
+    expect(toWindow).toHaveLength(2)
+    // The screen going, its view unmounting a video that plays: yes.
+    relay.leave()
+    later(6000)
+    pin(true)
+    expect(toWindow.at(-1)).toEqual(expect.objectContaining({ type: 'pin', auto: true }))
+    pin(false)
+    expect(toWindow).toHaveLength(3)
   })
 
   it('keeps the mini-player’s state for the screen until it says hello; going, lets only its pins cross', () => {
