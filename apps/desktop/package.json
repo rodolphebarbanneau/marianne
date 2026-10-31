@@ -1,7 +1,7 @@
 {
   "name": "marianne",
   "productName": "Marianne",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Assistant citoyen : vos droits, vos démarches et les données publiques françaises, avec votre propre Claude Code, Codex ou Mistral Vibe.",
   "main": "./out/main/index.js",
   "author": "Rodolphe Barbanneau",
