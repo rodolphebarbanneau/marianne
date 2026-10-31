@@ -100,7 +100,7 @@ async function turn(t: EngineTurn): Promise<void> {
 
 export const claude: Engine = {
   candidates,
-  site: 'claude.com/product/claude-code',
+  site: 'code.claude.com/docs/fr/setup',
   async account(cli, env) {
     const a = await runAside(cli, ['auth', 'status', '--json'], { env, timeoutMs: 15_000 })
     const json = JSON.parse(a.stdout.slice(a.stdout.indexOf('{')))

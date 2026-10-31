@@ -1,6 +1,6 @@
 # Marianne
 
-A desktop citizen assistant for people living in France: rights, formalities, papers and deadlines, public information. It works with your own [Claude Code](https://claude.com/product/claude-code), [Codex](https://chatgpt.com/codex) (part of ChatGPT, included in its plans) or [Mistral Vibe](https://mistral.ai/products/vibe), through its own tools only, and keeps everything in one encrypted archive on your computer.
+A desktop citizen assistant for people living in France: rights, formalities, papers and deadlines, public information. It works with your own command-line [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli) or [Mistral Vibe](https://docs.mistral.ai/vibe/code/cli/install-setup), through its own tools only, and keeps everything in one encrypted archive on your computer.
 
 **Status: alpha.** To install and use it, see the user guide, in [English](docs/guide/en/index.md) or in [French](docs/guide/fr/index.md), and the [releases](https://github.com/rodolphebarbanneau/marianne/releases). Marianne is an independent project, not affiliated with the French State or any administration.
 

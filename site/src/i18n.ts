@@ -128,8 +128,8 @@ const fr = {
         code: 'CL',
         name: 'Claude Code',
         maker: 'Anthropic',
-        href: 'https://claude.com/product/claude-code',
-        plan: 'compris dans un abonnement Claude payant (Pro, Max…), ou avec un compte Claude Console',
+        href: 'https://code.claude.com/docs/fr/setup',
+        plan: 'en ligne de commande, avec un abonnement Claude payant (Pro, Max…) ou un compte Claude Console',
         state: 'ready',
         note: ''
       },
@@ -137,8 +137,8 @@ const fr = {
         code: 'CX',
         name: 'Codex',
         maker: 'OpenAI',
-        href: 'https://chatgpt.com/codex',
-        plan: 'Codex fait partie de ChatGPT : il est compris dans votre offre ChatGPT, avec des limites selon l’offre',
+        href: 'https://learn.chatgpt.com/docs/codex/cli',
+        plan: 'en ligne de commande, avec une offre ChatGPT Plus ou supérieure, ou une clé d’API OpenAI',
         state: 'ready',
         note: ''
       },
@@ -146,8 +146,8 @@ const fr = {
         code: 'MI',
         name: 'Mistral Vibe',
         maker: 'Mistral AI',
-        href: 'https://mistral.ai/products/vibe',
-        plan: 'compris dans votre offre Mistral, gratuite ou Pro, avec des limites selon l’offre',
+        href: 'https://docs.mistral.ai/vibe/code/cli/install-setup',
+        plan: 'en ligne de commande, avec un compte Mistral, gratuit ou Pro, et des limites selon l’offre',
         state: 'soon',
         note: 'pas encore essayé avec une vraie installation'
       }
@@ -207,7 +207,7 @@ const fr = {
     },
     engine: {
       title: 'Avant de commencer : un moteur',
-      text: 'Marianne parle à Claude Code, Codex ou Mistral Vibe. Installez-en un, puis connectez-vous une fois avec votre compte, dans un terminal.',
+      text: 'Marianne parle à Claude Code, Codex ou Mistral Vibe, dans leur version en ligne de commande : l’application de bureau ne suffit pas. Installez-en un d’une ligne dans un terminal, puis connectez-le depuis Marianne.',
       link: 'le guide d’installation'
     }
   },
@@ -219,7 +219,9 @@ const fr = {
     edit: 'modifier cette page',
     prev: 'RETOUR',
     next: 'SUITE',
-    back: 'retour à l’accueil'
+    back: 'retour à l’accueil',
+    copy: 'copier',
+    copied: 'copié'
   },
   manifesto: {
     title: 'Manifeste',
@@ -428,8 +430,8 @@ const en: typeof fr = {
         code: 'CL',
         name: 'Claude Code',
         maker: 'Anthropic',
-        href: 'https://claude.com/product/claude-code',
-        plan: 'included in a paid Claude plan (Pro, Max…), or with a Claude Console account',
+        href: 'https://code.claude.com/docs/en/setup',
+        plan: 'on the command line, with a paid Claude plan (Pro, Max…) or a Claude Console account',
         state: 'ready',
         note: ''
       },
@@ -437,8 +439,8 @@ const en: typeof fr = {
         code: 'CX',
         name: 'Codex',
         maker: 'OpenAI',
-        href: 'https://chatgpt.com/codex',
-        plan: 'Codex is part of ChatGPT: it is included in your ChatGPT plan, with limits that depend on the plan',
+        href: 'https://learn.chatgpt.com/docs/codex/cli',
+        plan: 'on the command line, with a ChatGPT Plus plan or higher, or an OpenAI API key',
         state: 'ready',
         note: ''
       },
@@ -446,8 +448,8 @@ const en: typeof fr = {
         code: 'MI',
         name: 'Mistral Vibe',
         maker: 'Mistral AI',
-        href: 'https://mistral.ai/products/vibe',
-        plan: 'included in your Mistral plan, Free or Pro, with limits that depend on the plan',
+        href: 'https://docs.mistral.ai/vibe/code/cli/install-setup',
+        plan: 'on the command line, with a Mistral account, Free or Pro, and limits that depend on the plan',
         state: 'soon',
         note: 'not yet tried with a real installation'
       }
@@ -498,7 +500,7 @@ const en: typeof fr = {
     },
     engine: {
       title: 'Before you start: an engine',
-      text: 'Marianne talks to Claude Code, Codex or Mistral Vibe. Install one, then sign in once with your account, in a terminal.',
+      text: 'Marianne talks to Claude Code, Codex or Mistral Vibe, in their command-line version: the desktop app isn’t enough. Install one with a line in a terminal, then connect it from Marianne.',
       link: 'the installation guide'
     }
   },
@@ -510,7 +512,9 @@ const en: typeof fr = {
     edit: 'edit this page',
     prev: 'RETOUR',
     next: 'SUITE',
-    back: 'back to the home page'
+    back: 'back to the home page',
+    copy: 'copy',
+    copied: 'copied'
   },
   manifesto: {
     title: 'Manifesto',

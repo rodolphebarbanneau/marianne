@@ -79,7 +79,7 @@ async function turn(t: EngineTurn): Promise<void> {
 
 export const codex: Engine = {
   candidates,
-  site: 'chatgpt.com/codex',
+  site: 'learn.chatgpt.com/docs/codex/cli',
   async account(cli, env) {
     // e.g. "Logged in using ChatGPT" / "Not logged in"
     const a = await runAside(cli, ['login', 'status'], { env, timeoutMs: 15_000 })
