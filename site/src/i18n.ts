@@ -281,47 +281,10 @@ const fr = {
         'Il y a plus de quarante ans, le Minitel faisait entrer des services dans des millions de foyers, avec un code et un écran. Marianne en garde l’esprit : les services publics à portée de main, pour tout le monde. Cette fois, vos données restent chez vous.'
       ]
     },
-    signed: 'les auteurs de Marianne',
+    signed: 'Rodolphe Barbanneau',
     download: 'télécharger Marianne',
     guide: 'lire le guide',
     code: 'lire le code'
-  },
-  about: {
-    title: 'À propos',
-    description: 'Marianne, l’assistant citoyen sur votre ordinateur : ce qu’elle est, qui la fait, et sous quelle licence.',
-    heading: 'À propos de Marianne',
-    lead: 'Marianne est un assistant citoyen pour votre ordinateur : vos droits, vos démarches, vos papiers et vos échéances, et l’information publique utile, au même endroit.',
-    app: {
-      title: 'L’application',
-      text: [
-        'Marianne est une application de bureau pour Windows, macOS et Linux, gratuite et open source. Elle travaille avec votre propre moteur d’IA, Claude Code, Codex ou Mistral Vibe, à travers ses seuls outils, et garde tout ce que vous lui confiez dans une archive chiffrée, sur votre ordinateur. Elle n’a ni serveur ni compte en ligne.',
-        'C’est une version alpha : elle sert à trouver ce qui ne va pas avant une vraie sortie. L’application est en français.'
-      ]
-    },
-    independent: {
-      title: 'Un projet indépendant',
-      text: [
-        'Marianne est un projet indépendant, sans lien avec l’État ni avec aucune administration. Elle aide à comprendre et à préparer vos démarches, sans remplacer l’administration ni un conseil juridique. Les démarches se font sur les sites officiels, avec votre accord.'
-      ]
-    },
-    authors: {
-      title: 'Les auteurs',
-      lead: 'Marianne est écrite par ses contributeurs, au grand jour, sur GitHub :',
-      text: [
-        'Rodolphe Barbanneau l’a créée et la maintient : il relit les changements et publie les versions.',
-        'Chacun peut y prendre part : signaler un problème, proposer une idée, corriger une démarche, traduire le guide ou écrire un service 3615.'
-      ],
-      all: 'les contributeurs sur GitHub',
-      contribute: 'contribuer'
-    },
-    license: {
-      title: 'Licence et crédits',
-      text: [
-        'Le code est sous licence MIT (© 2026 Rodolphe Barbanneau) : chacun peut le lire, le réutiliser et le modifier.',
-        'En fond de page : Eugène Delacroix, La Liberté guidant le peuple (1830), musée du Louvre, domaine public. Polices : VT323 et JetBrains Mono, sous licence SIL Open Font.'
-      ]
-    },
-    why: 'Pourquoi nous la faisons : le manifeste'
   },
   bar: { locked: 'rien ne quitte votre ordinateur', prev: 'précédent', next: 'suivant', top: 'haut de page', help: 'le guide' },
   footer: {
@@ -604,47 +567,10 @@ const en: typeof fr = {
         'More than forty years ago, the Minitel brought services into millions of French homes, with a code and a screen. Marianne keeps its spirit: public services within reach, for everyone. This time, your data stays with you.'
       ]
     },
-    signed: 'the authors of Marianne',
+    signed: 'Rodolphe Barbanneau',
     download: 'download Marianne',
     guide: 'read the guide',
     code: 'read the code'
-  },
-  about: {
-    title: 'About',
-    description: 'Marianne, the citizen assistant on your computer: what it is, who makes it, and under which license.',
-    heading: 'About Marianne',
-    lead: 'Marianne is a citizen assistant for your computer, for people living in France: your rights, your formalities, your papers and deadlines, and useful public information, in one place.',
-    app: {
-      title: 'The app',
-      text: [
-        'Marianne is a desktop app for Windows, macOS and Linux, free and open source. It works with your own AI engine, Claude Code, Codex or Mistral Vibe, through its own tools only, and keeps everything you give it in an encrypted archive, on your computer. It has no server and no online account.',
-        'This is an alpha version: it’s here to find what’s wrong before a real release. The app is in French.'
-      ]
-    },
-    independent: {
-      title: 'An independent project',
-      text: [
-        'Marianne is an independent project, not affiliated with the French State or any administration. It helps you understand and prepare your formalities, without replacing the administration or legal advice. Formalities are done on the official websites, with your approval.'
-      ]
-    },
-    authors: {
-      title: 'The authors',
-      lead: 'Marianne is written by its contributors, in the open, on GitHub:',
-      text: [
-        'Rodolphe Barbanneau created it and maintains it: he reviews the changes and publishes the releases.',
-        'Anyone can take part: report a problem, suggest an idea, correct a formality, translate the guide or write a 3615 service.'
-      ],
-      all: 'the contributors on GitHub',
-      contribute: 'contribute'
-    },
-    license: {
-      title: 'License and credits',
-      text: [
-        'The code is under the MIT license (© 2026 Rodolphe Barbanneau): anyone may read it, reuse it and change it.',
-        'In the background: Eugène Delacroix, Liberty Leading the People (1830), Louvre, public domain. Fonts: VT323 and JetBrains Mono, under the SIL Open Font License.'
-      ]
-    },
-    why: 'Why we make it: the manifesto'
   },
   bar: { locked: 'nothing leaves your computer', prev: 'previous', next: 'next', top: 'top of the page', help: 'the guide' },
   footer: {

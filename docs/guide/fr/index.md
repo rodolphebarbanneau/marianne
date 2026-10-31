@@ -20,5 +20,6 @@ Marianne est un projet indépendant, sans lien avec l’État ni avec aucune adm
 - [Utiliser Marianne](using.md) : les dossiers, le navigateur, les pages, les infos, les vidéos du Parlement, les tâches planifiées, les touches.
 - [Vos données](privacy.md) : ce qui reste sur votre ordinateur, ce que voit le moteur, les sauvegardes.
 - [Aide](help.md) : en cas de problème, nous écrire, tester la version alpha.
+- [À propos](about.md) : l’application, son auteur, contribuer, la licence et les crédits.
 
 Dans l’application, la touche F1 ouvre aussi un guide, avec vos raccourcis.
