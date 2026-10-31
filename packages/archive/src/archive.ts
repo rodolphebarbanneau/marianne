@@ -49,6 +49,16 @@ export class ArchiveFullError extends Error {
   }
 }
 
+/** A document whose chunks don't all read back as they were written: one is missing, moved or altered. */
+export class DamagedFileError extends Error {
+  constructor() {
+    super('Ce document est abîmé dans l’archive : une partie en manque ou a été modifiée.')
+  }
+}
+
+/** What a chunk is sealed with: its file, its place and how many chunks the file has. */
+const chunkAad = (id: string, n: number, total: number) => `chunks/${id}/${n}/of/${total}`
+
 interface VaultRow {
   format: number
   id: string
@@ -248,6 +258,9 @@ export class Archive {
   }
 
   // ---------- files: documents, in 1 MiB chunks ----------
+  // Each chunk is sealed with its place and with the number of chunks of its file: one taken out of
+  // the archive (a document's last ones, which would leave it shorter but readable) makes the file
+  // unreadable rather than wrong.
 
   writeFile<M>(id: string, data: Uint8Array, meta: M): void {
     const previous = this.db.prepare('SELECT size FROM files WHERE id = ?').get(id) as { size: number } | undefined
@@ -255,9 +268,8 @@ export class Archive {
     this.transaction(() => {
       this.db.prepare('DELETE FROM chunks WHERE file_id = ?').run(id)
       const insert = this.db.prepare('INSERT INTO chunks (file_id, n, data) VALUES (?, ?, ?)')
-      for (let n = 0; n * CHUNK < data.byteLength || n === 0; n++) {
-        insert.run(id, n, seal(this.dek, data.subarray(n * CHUNK, (n + 1) * CHUNK), `chunks/${id}/${n}`))
-      }
+      const total = Math.max(1, Math.ceil(data.byteLength / CHUNK))
+      for (let n = 0; n < total; n++) insert.run(id, n, seal(this.dek, data.subarray(n * CHUNK, (n + 1) * CHUNK), chunkAad(id, n, total)))
       this.db.prepare('INSERT OR REPLACE INTO files (id, size, meta) VALUES (?, ?, ?)').run(id, data.byteLength, seal(this.dek, json(meta), `files/${id}`))
     })
   }
@@ -265,7 +277,22 @@ export class Archive {
   readFile(id: string): Buffer {
     const rows = this.db.prepare('SELECT n, data FROM chunks WHERE file_id = ? ORDER BY n').all(id) as Array<{ n: number; data: Uint8Array }>
     if (!rows.length) throw new Error('Fichier introuvable dans l’archive.')
-    return Buffer.concat(rows.map((r) => unseal(this.dek, r.data, `chunks/${id}/${r.n}`)))
+    if (rows.some((r, i) => r.n !== i)) throw new DamagedFileError()
+    try {
+      return Buffer.concat(rows.map((r) => unseal(this.dek, r.data, chunkAad(id, r.n, rows.length))))
+    } catch {
+      // Sealed before the count was (0.1.0-alpha.2 and earlier): its chunks are checked one by one,
+      // and the whole against the size the archive keeps of it.
+      let data: Buffer
+      try {
+        data = Buffer.concat(rows.map((r) => unseal(this.dek, r.data, `chunks/${id}/${r.n}`)))
+      } catch {
+        throw new DamagedFileError()
+      }
+      const size = (this.db.prepare('SELECT size FROM files WHERE id = ?').get(id) as { size: number } | undefined)?.size
+      if (size !== data.byteLength) throw new DamagedFileError()
+      return data
+    }
   }
 
   fileMeta<M>(id: string): StoredFile<M> | null {

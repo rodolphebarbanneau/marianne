@@ -5,8 +5,8 @@ import { DatabaseSync } from 'node:sqlite'
 import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 import { accountFile, archivesIn, cloudSynced, defaultArchiveFolder, listAccounts, newAccountId, type Places } from '../src/accounts'
-import { createArchive, openArchive, readHeader, recoverArchive, unlockArchive, WrongSecretError } from '../src/archive'
-import { LIGHT_KDF, normalizeRecoveryKey, PASSWORD_KDF } from '../src/crypto'
+import { createArchive, DamagedFileError, openArchive, readHeader, recoverArchive, unlockArchive, WrongSecretError } from '../src/archive'
+import { LIGHT_KDF, normalizeRecoveryKey, PASSWORD_KDF, seal } from '../src/crypto'
 import { PIN_ATTEMPTS, PinStore, WrongPinError, type Keystore } from '../src/pin'
 import { Session } from '../src/session'
 
@@ -100,6 +100,54 @@ describe('archive', () => {
     archive.removeFile('big')
     expect(archive.usage().used).toBeLessThan(before + 1024 * 1024)
     archive.close()
+  }, 30_000)
+
+  it('refuses a document with a chunk taken out, rather than giving it back shorter', async () => {
+    const id = newAccountId(dir)
+    const file = accountFile(dir, id)
+    const { archive } = await createArchive(file, { id, display: '', password: PASSWORD })
+    const dek = archive.dataKey()
+    // Three chunks of 1 MiB, each a different byte.
+    const doc = Buffer.concat([Buffer.alloc(1024 * 1024, 1), Buffer.alloc(1024 * 1024, 2), Buffer.alloc(512 * 1024, 3)])
+    archive.writeFile('last', doc, {})
+    archive.writeFile('middle', doc, {})
+    archive.close()
+    const db = new DatabaseSync(file)
+    db.prepare("DELETE FROM chunks WHERE file_id = 'last' AND n = 2").run()
+    db.prepare("DELETE FROM chunks WHERE file_id = 'middle' AND n = 1").run()
+    db.close()
+    const reopened = openArchive(file, dek)
+    expect(() => reopened.readFile('last')).toThrow(DamagedFileError)
+    expect(() => reopened.readFile('middle')).toThrow(DamagedFileError)
+    reopened.close()
+  }, 30_000)
+
+  it('reads a document sealed before its chunks counted, and checks it against its size', async () => {
+    const id = newAccountId(dir)
+    const file = accountFile(dir, id)
+    const { archive } = await createArchive(file, { id, display: '', password: PASSWORD })
+    const dek = archive.dataKey()
+    const doc = Buffer.concat([Buffer.alloc(1024 * 1024, 1), Buffer.alloc(1024 * 1024, 2), Buffer.alloc(512 * 1024, 3)])
+    archive.writeFile('old', doc, {})
+    archive.close()
+    // Its chunks as 0.1.0-alpha.2 sealed them: with their place, not their count.
+    const db = new DatabaseSync(file)
+    for (let n = 0; n < 3; n++)
+      db.prepare("UPDATE chunks SET data = ? WHERE file_id = 'old' AND n = ?").run(
+        seal(dek, doc.subarray(n * 1024 * 1024, (n + 1) * 1024 * 1024), `chunks/old/${n}`),
+        n
+      )
+    db.close()
+    let reopened = openArchive(file, dek)
+    expect(reopened.readFile('old').equals(doc)).toBe(true)
+    reopened.close()
+    // Its last chunk taken out: shorter than the size the archive keeps of it.
+    const again = new DatabaseSync(file)
+    again.prepare("DELETE FROM chunks WHERE file_id = 'old' AND n = 2").run()
+    again.close()
+    reopened = openArchive(file, dek)
+    expect(() => reopened.readFile('old')).toThrow(DamagedFileError)
+    reopened.close()
   }, 30_000)
 
   it('refuses a data key that is not its own', async () => {
