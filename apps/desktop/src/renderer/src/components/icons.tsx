@@ -26,8 +26,9 @@ export const CopyIcon = svg('M5.5 5.5h8v8h-8z M10.5 5.5v-3h-8v8h3')
 export const CheckIcon = svg('M2.5 8.5l3.5 3.5 7.5-8')
 /** The GUIDE's links: the code, a bug, an idea's spark, a version's tag, the user guide's book. */
 export const CodeIcon = svg('M5 4.5L1.5 8L5 11.5 M11 4.5L14.5 8L11 11.5 M9.2 3L6.8 13')
+/** An insect as wide and tall as the other icons (legs to 1.5 and 14.5, antennae to 2): its body alone would look smaller. */
 export const BugIcon = svg(
-  'M5 7h6v3a3 3 0 0 1-6 0z M6.5 7V6a1.5 1.5 0 0 1 3 0v1 M8 9v4 M5 9H2 M11 9h3 M5.5 12l-2 1.5 M10.5 12l2 1.5 M5 7.2L3 5.7 M11 7.2l2-1.5'
+  'M4.5 6.5h7v3.5a3.5 3.5 0 0 1-7 0z M6 6.5V5.6a2 2 0 0 1 4 0v.9 M6.6 3.9L5.2 2.2 M9.4 3.9l1.4-1.7 M8 8.5v5 M4.5 9.6H1.5 M11.5 9.6h3 M5.1 12.4l-2.4 1.6 M10.9 12.4l2.4 1.6 M4.5 7.3L2.2 5.6 M11.5 7.3l2.3-1.7'
 )
 export const SparkIcon = svg('M7 1.5l1.4 4.1 4.1 1.4-4.1 1.4L7 12.5 5.6 8.4 1.5 7l4.1-1.4z M12.5 10.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z')
 export const TagIcon = svg('M2 2h5.5l6.5 6.5-5.5 5.5L2 7.5z M5 4.3a.7.7 0 1 1 0 1.4a.7.7 0 1 1 0-1.4z')

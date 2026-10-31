@@ -16,7 +16,7 @@ Marianne is a desktop citizen assistant for people living in France: their right
 ## The window
 
 ```
-[◧] MARIANNE  Démarches  Services                                    ⌕ ⚙ ↻  ─ □ ✕
+[◧] MARIANNE  Démarches  Services                                    ⌕ ↻ ⚙  ─ □ ✕
 ┌────────────────┬───────────────────────────────────────────┬────────────────────┐
 │ ⌕ filtre  ＋    │                                           │                    │
 │ ● pinned       │     the page, or the open folder          │  built-in browser  │
@@ -31,7 +31,7 @@ Marianne is a desktop citizen assistant for people living in France: their right
 
 ### The bars
 
-- **Title bar**: the sidebar toggle; MARIANNE (a new folder, on the composer); the pages, the current one as an inverse block; search, settings, reload and the bug (« signaler un bug », [below](#engines)); the system's window buttons. Full screen is F11 (ctrl+cmd+F on macOS), with no button.
+- **Title bar**: the sidebar toggle; MARIANNE (a new folder, on the composer); the pages, the current one as an inverse block; search, reload, settings and the bug (« signaler un bug », [below](#engines)); the system's window buttons. Full screen is F11 (ctrl+cmd+F on macOS), with no button.
 - **Sidebar** (after T3 Code):
   - at the top, search, a filter by domain (shift+click for several) and a new folder;
   - each row: domain badge, pin, status or time, title, a meta line and the engine badge; on hover, snooze and settle;
