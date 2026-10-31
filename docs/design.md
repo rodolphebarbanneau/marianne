@@ -140,6 +140,7 @@ The MCP server resolves `[[tokens]]` in a tool's arguments and scrubs its result
 The built-in browser belongs to a folder: shown in the right column, or kept out of sight.
 
 - Going online needs consent, once per folder or per site. Signing, paying and sending always need approval.
+- **A site** is a registrable domain, by the Public Suffix List and its private part (`shared/hosts.ts`, tldts): cfspart.impots.gouv.fr is impots.gouv.fr's, while x.asso.fr and evil.asso.fr are two sites, as are two sites on github.io. The keychain groups its logins the same way.
 - The user can take control (« prendre la main ») at any time. In a conversation, Marianne hands over for CAPTCHAs, codes and FranceConnect.
 - Its cookies live in memory only.
 - **Marianne asks for the user's attention; she never takes the screen from them** (`renderer/src/browser/reveal.ts`). When she hands over, or opens a site to show it (Réglages › Navigateur › « afficher le navigateur »: when she offers, always, never), the window opens the folder's browser. If the user is on another screen, the window stays where it is: a toast says which folder asks, and its browser opens when the user goes there. A hand-over waits ten minutes.
@@ -186,7 +187,7 @@ Nobody watches a run, and it reads pages anyone can write. So the rule is enforc
 
 ### The sites a run reaches
 
-- **Its hosts only.** A run reaches the hosts listed on its task and what is under them, over https, for that run only. « www.x » is that site, with or without its www, not every host under x. A task proposed in a conversation names one site, never a whole hosting service such as github.io.
+- **Its hosts only.** A run reaches the hosts listed on its task and what is under them, over https, for that run only. « www.x » is that site, with or without its www, not every host under x. A task proposed in a conversation names one site, never a whole hosting service or a public suffix (github.io, asso.fr), nor free.fr, ovh.net or wordpress.com, which the list leaves out.
 - **Its own browser.** It browses in a view and a session of its own, emptied before and after each run: it never has the user's sign-ins, and the user's page waits aside. Its browser stays out of sight.
 - **Guarded before anything leaves** (`browser/run-guard.ts`): a link, a form, a script, a frame or a server's redirect elsewhere is stopped; a popup opens only on those hosts; nothing downloads, and nothing goes to the system (mail, phone). The tools check again where the page landed.
 - **Not the folder's consents.** It neither reads nor adds to them: those were given to a conversation.

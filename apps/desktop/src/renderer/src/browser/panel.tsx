@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { addressUrl } from '@shared/address'
 import { DEFAULT_CONFIG } from '@shared/config'
+import { siteOf } from '@shared/hosts'
 import type { BrowserState, KeychainEntry } from '@shared/types'
 import { useApp } from '../app/context'
 import { CloseIcon } from '../components/icons'
@@ -10,18 +11,6 @@ import { overlay } from '../lib/overlay'
 import { CONVERSATION_MIN, DRAG_FROM, draggedWidth, pageBounds } from './layout'
 
 const rect = (el: HTMLElement) => pageBounds(el.getBoundingClientRect())
-
-const siteOf = (url: string) => {
-  try {
-    const host = new URL(url).hostname
-    return host
-      .split('.')
-      .slice(host.endsWith('.gouv.fr') ? -3 : -2)
-      .join('.')
-  } catch {
-    return ''
-  }
-}
 
 /**
  * The browser's left edge: dragged, it shares the window between the conversation and the page;
@@ -122,9 +111,7 @@ export function BrowserPanel({ folderId }: { folderId: string }) {
   useEffect(() => {
     const site = siteOf(state?.url ?? '')
     if (!site) return setLogins([])
-    void api
-      .listKeychain()
-      .then((all) => setLogins(all.filter((e) => e.kind === 'login' && siteOf(e.url.startsWith('http') ? e.url : `https://${e.url}`) === site)))
+    void api.listKeychain().then((all) => setLogins(all.filter((e) => e.kind === 'login' && siteOf(e.url) === site)))
   }, [state?.url])
 
   const human = state?.controller === 'human'

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ENGINE_BADGES, ENGINE_HOMES, ENGINE_LABELS } from '@shared/config'
+import { siteOf } from '@shared/hosts'
 import type { Site } from '@shared/sites'
 import type { EngineId, EngineModel, EngineStatus, KeychainEntry, PublicSourceId } from '@shared/types'
 import { PUBLIC_SOURCES } from '@shared/public'
@@ -9,18 +10,6 @@ import { api, errorText, useLive } from '../lib/api'
 import { useSites } from '../lib/content'
 import { when } from '../lib/format'
 import { useProfile } from '../lib/profile'
-
-const siteOf = (url: string) => {
-  try {
-    const host = new URL(/^https?:/.test(url) ? url : `https://${url}`).hostname
-    return host
-      .split('.')
-      .slice(host.endsWith('.gouv.fr') ? -3 : -2)
-      .join('.')
-  } catch {
-    return ''
-  }
-}
 
 /** Public-service websites and APIs: the login kept in the archive, the identifiers each one needs. */
 export function SitesPane() {

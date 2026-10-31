@@ -1,6 +1,6 @@
 import type { Archive } from '@marianne/archive'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { keychain, loginFits, siteOf } from '../src/main/keychain'
+import { keychain, loginFits } from '../src/main/keychain'
 import { session } from '../src/main/session'
 
 /** Where a saved login may fill a form: its own host and what is under it, never its neighbours on a shared domain. */
@@ -40,10 +40,12 @@ describe('a saved login', () => {
 
   it('is offered where it fits, and its password masked on its whole site', () => {
     keychain.save({ kind: 'login', label: 'Mon asso', url: 'https://x.asso.fr', username: 'camille', password: 'secret-1' })
-    expect(siteOf('https://evil.asso.fr/')).toBe(siteOf('https://x.asso.fr/'))
+    keychain.save({ kind: 'login', label: 'Impôts', url: 'https://www.impots.gouv.fr', username: 'camille', password: 'secret-2' })
     expect(keychain.forUrl('https://evil.asso.fr/login').map((e) => e.label)).toEqual([])
     expect(keychain.hasLogin('https://evil.asso.fr/')).toBe(false)
     expect(keychain.forUrl('https://x.asso.fr/login').map((e) => e.label)).toEqual(['Mon asso'])
-    expect(keychain.ofSite('https://evil.asso.fr/').map((e) => e.label)).toEqual(['Mon asso'])
+    // Its site is its registrable domain, by the Public Suffix List: another association is another site.
+    expect(keychain.ofSite('https://evil.asso.fr/').map((e) => e.label)).toEqual([])
+    expect(keychain.ofSite('https://cfspart.impots.gouv.fr/').map((e) => e.label)).toEqual(['Impôts'])
   })
 })
