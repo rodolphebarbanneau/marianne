@@ -32,7 +32,7 @@ body:
     attributes:
       label: Version
       description: In the app, Réglages › À propos et mises à jour, or the guide (F1).
-      placeholder: 0.1.0-alpha.2
+      placeholder: 0.1.0-alpha.3
     validations:
       required: true
   # Text fields rather than lists: GitHub fills only those from the address the app opens.
