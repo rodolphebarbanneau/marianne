@@ -1,6 +1,6 @@
 # Marianne
 
-Marianne est un assistant citoyen pour votre ordinateur. Elle vous aide à comprendre vos droits, à préparer vos démarches, à ranger vos papiers et à suivre vos échéances, et vous donne l’information publique utile. Elle travaille avec votre propre assistant d’IA, Claude Code, Codex (compris dans ChatGPT) ou Mistral Vibe, et garde tout ce que vous lui confiez dans une archive chiffrée, sur votre ordinateur.
+Marianne est un assistant citoyen pour votre ordinateur. Elle vous aide à comprendre vos droits, à préparer vos démarches, à ranger vos papiers et à suivre vos échéances, et vous donne l’information publique utile. Elle travaille avec votre propre assistant d’IA, Claude Code, Codex ou Mistral Vibe, dans sa version en ligne de commande, et garde tout ce que vous lui confiez dans une archive chiffrée, sur votre ordinateur.
 
 Marianne est un projet indépendant, sans lien avec l’État ni avec aucune administration. Elle vous aide à comprendre et à préparer vos démarches, sans remplacer l’administration ni un conseil juridique.
 
@@ -15,7 +15,7 @@ Marianne est un projet indépendant, sans lien avec l’État ni avec aucune adm
 
 ## Le guide
 
-- [Installer Marianne](install.md) : le moteur d’IA, le téléchargement, les mises à jour.
+- [Installer Marianne](install.md) : le moteur d’IA en ligne de commande, le téléchargement, la connexion du moteur, les mises à jour.
 - [Premiers pas](getting-started.md) : créer votre archive, la phrase de passe, la clé de secours, le code.
 - [Utiliser Marianne](using.md) : les dossiers, le navigateur, les pages, les infos, les vidéos du Parlement, les tâches planifiées, les touches.
 - [Vos données](privacy.md) : ce qui reste sur votre ordinateur, ce que voit le moteur, les sauvegardes.

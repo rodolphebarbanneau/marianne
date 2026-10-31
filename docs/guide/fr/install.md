@@ -1,28 +1,91 @@
 # Installer Marianne
 
+Trois étapes, une fois pour toutes : installer un moteur d’IA, installer Marianne, puis connecter le moteur à votre compte. Comptez un quart d’heure.
+
 ## Avant de commencer : un moteur
 
-Marianne n’a pas d’IA à elle : elle travaille avec un moteur d’IA, celui que vous avez peut-être déjà avec votre abonnement. Elle en utilise la version pour le terminal : installez-la, même si vous avez déjà l’application du moteur.
+Marianne n’a pas d’IA à elle : elle fait travailler un moteur d’IA, avec votre compte chez son éditeur. Ce moteur est un programme **en ligne de commande** (en anglais, un « CLI ») : il s’installe sur votre ordinateur et travaille sans fenêtre à lui. C’est ce programme qu’il faut installer.
 
-- **Claude Code**, d’Anthropic : [claude.com/product/claude-code](https://claude.com/product/claude-code). Il est compris dans les abonnements Claude payants (Pro, Max, Ultra, Team, Enterprise), et marche aussi avec un compte Claude Console.
-- **Codex**, d’OpenAI : [chatgpt.com/codex](https://chatgpt.com/codex). Codex fait partie de ChatGPT : il est compris dans votre offre ChatGPT, avec des limites selon l’offre, et vous vous y connectez avec votre compte ChatGPT.
-- **Mistral Vibe**, de Mistral AI : [mistral.ai/products/vibe](https://mistral.ai/products/vibe). Vibe, l’ancien Le Chat, a un agent de code pour le terminal, compris dans votre offre Mistral, gratuite ou Pro, avec des limites selon l’offre. Il n’a pas encore été essayé avec une vraie installation.
+L’application de bureau ou le site de l’éditeur (Claude, ChatGPT, Codex, Vibe) **ne suffisent pas** : Marianne ne s’en sert pas, même quand ils contiennent un moteur. Ils ne sont pas nécessaires non plus : gardez-les si vous voulez, Marianne n’en dépend pas.
+
+Choisissez un moteur selon le compte que vous avez :
+
+- **Claude Code**, d’Anthropic : le programme `claude`. Il faut un abonnement Claude Pro, Max, Ultra, Team ou Enterprise, ou un compte Claude Console, payé à l’usage. L’offre gratuite de Claude ne comprend pas Claude Code. La page officielle : [code.claude.com/docs/fr/setup](https://code.claude.com/docs/fr/setup).
+- **Codex CLI**, d’OpenAI : le programme `codex`. Il faut une offre ChatGPT Plus ou supérieure, ou une clé d’API OpenAI : avec les offres Free et Go, Codex n’existe que dans l’application ChatGPT, pas en ligne de commande. La page officielle : [learn.chatgpt.com/docs/codex/cli](https://learn.chatgpt.com/docs/codex/cli).
+- **Mistral Vibe**, de Mistral AI : le programme `vibe`. Il marche avec un compte Mistral, gratuit (quelques sessions) ou Pro. Il n’a pas encore été essayé avec une vraie installation. La page officielle : [docs.mistral.ai/vibe/code/cli/install-setup](https://docs.mistral.ai/vibe/code/cli/install-setup).
 
 Le moteur travaille avec votre compte chez son éditeur : votre abonnement, ses conditions. Sans moteur, Marianne s’ouvre, mais ne peut pas répondre.
 
-### L’installer
+## Installer le moteur
 
-Ouvrez un terminal (PowerShell sur Windows, Terminal sur macOS) et collez la ligne de votre moteur. La page de chacun donne la ligne à jour.
+Une ligne à copier dans un terminal, la fenêtre où l’on tape des commandes. Pas besoin d’être administrateur, ni de savoir programmer.
 
-- **Claude Code** : `curl -fsSL https://claude.ai/install.sh | bash` sur macOS et Linux, `irm https://claude.ai/install.ps1 | iex` sur Windows.
-- **Codex** : `curl -fsSL https://chatgpt.com/codex/install.sh | sh` sur macOS et Linux, `powershell -ExecutionPolicy ByPass -c "irm https://chatgpt.com/codex/install.ps1 | iex"` sur Windows.
-- **Mistral Vibe** : `curl -LsSf https://mistral.ai/vibe/install.sh | bash` sur macOS et Linux. Sur Windows, installez d’abord uv avec `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`, puis Vibe avec `uv tool install mistral-vibe`.
+1. **Ouvrez un terminal.**
+   - Windows : ouvrez le menu Démarrer, tapez `powershell`, puis Entrée. Dans la fenêtre qui s’ouvre, la ligne commence par `PS C:\Users\…>`.
+   - macOS : cmd+espace, tapez `terminal`, puis Entrée.
+   - Linux : ctrl+alt+T, sur la plupart des systèmes.
+2. **Copiez la ligne** de votre moteur et de votre système, ci-dessous.
+3. **Collez-la** dans le terminal (clic droit ou ctrl+V sur Windows, cmd+V sur macOS, ctrl+maj+V sur Linux), puis appuyez sur Entrée.
+4. **Attendez** que le terminal vous rende la main : une nouvelle ligne apparaît, prête pour une autre commande. Cela prend une minute ou deux ; Claude Code n’affiche rien pendant son téléchargement, c’est normal.
+5. **Fermez le terminal.**
 
-### Vous connecter
+Le moteur s’installe dans votre dossier personnel, pour vous seul. Si le terminal affiche une erreur en rouge, la page officielle de votre moteur, ci-dessus, dit quoi faire.
 
-Une fois, tapez `claude`, `codex` ou `vibe` dans un nouveau terminal et suivez ce qu’il demande : votre navigateur s’ouvre pour vous connecter avec votre compte (pour Codex, « Sign in with ChatGPT »). Ensuite, Réglages › Moteurs montre les moteurs que Marianne trouve sur votre ordinateur ; quand l’un d’eux n’est pas connecté, « se connecter » ouvre sa connexion dans un terminal.
+### Claude Code
 
-## Télécharger
+Windows :
+
+```powershell
+irm https://claude.ai/install.ps1 | iex
+```
+
+macOS et Linux :
+
+```sh
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+Il se met ensuite à jour de lui-même. Pour une première fois dans un terminal, Anthropic a [un guide du terminal](https://code.claude.com/docs/fr/terminal-guide), et un [dépannage de l’installation](https://code.claude.com/docs/fr/troubleshoot-install), en français.
+
+### Codex
+
+Windows :
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://chatgpt.com/codex/install.ps1 | iex"
+```
+
+macOS et Linux :
+
+```sh
+curl -fsSL https://chatgpt.com/codex/install.sh | sh
+```
+
+La même ligne le met à jour.
+
+### Mistral Vibe
+
+macOS et Linux :
+
+```sh
+curl -LsSf https://mistral.ai/vibe/install.sh | bash
+```
+
+Windows, en deux temps. D’abord uv, l’outil qui installe Vibe :
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Puis fermez le terminal, ouvrez-en un nouveau, et collez :
+
+```powershell
+uv tool install mistral-vibe
+```
+
+Mistral vise d’abord macOS et Linux ; Vibe marche aussi sur Windows.
+
+## Télécharger Marianne
 
 Téléchargez le fichier de votre système en bas de la [page des versions](https://github.com/rodolphebarbanneau/marianne/releases).
 
@@ -30,9 +93,19 @@ Téléchargez le fichier de votre système en bas de la [page des versions](http
 - **macOS** : le `.dmg` de votre puce (`arm64` pour Apple, `x64` pour Intel). L’application n’est pas notariée : au premier lancement, faites clic droit › Ouvrir, ou Réglages Système › Confidentialité et sécurité › « Ouvrir quand même ».
 - **Linux** : le `.deb`, ou l’`AppImage` (rendez-la exécutable : `chmod +x`).
 
+## Connecter le moteur
+
+Ouvrez Marianne et créez votre archive ([Premiers pas](getting-started.md)). Puis ouvrez Réglages › Moteurs ; les témoins des moteurs, en bas à gauche, y mènent aussi d’un clic. Chaque moteur y montre son état :
+
+- **« introuvable sur cet ordinateur »** : il n’est pas installé, ou Marianne était déjà ouverte pendant l’installation. Cliquez sur « réessayer ». S’il reste introuvable, reprenez [son installation](#installer-le-moteur).
+- **« pas connecté »** : cliquez sur « se connecter ». Marianne ouvre un terminal où le moteur lance sa propre connexion, sans rien à taper : votre navigateur s’ouvre chez l’éditeur, où vous vous connectez avec votre compte. Pour Codex, choisissez « Sign in with ChatGPT » ; pour Vibe, « Launch browser », avec les flèches puis Entrée. Quand le navigateur dit que c’est fait, fermez le terminal et rouvrez Réglages › Moteurs.
+- **« connecté · prêt »** : c’est fini, Marianne peut vous répondre.
+
+Vous vous connectez chez l’éditeur, jamais dans Marianne : elle ne voit ni votre mot de passe ni votre connexion, que le moteur garde dans son dossier (`.claude`, `.codex` ou `.vibe`, dans votre dossier personnel). Vous pouvez aussi vous connecter sans Marianne : tapez `claude`, `codex` ou `vibe` dans un nouveau terminal et suivez ce qu’il demande.
+
 ## Les mises à jour
 
-Sur Windows et Linux, les versions suivantes s’installent d’elles-mêmes (Réglages › À propos et mises à jour). Sur macOS, l’application n’étant pas encore signée, la mise à jour automatique ne marche pas : téléchargez la nouvelle version depuis la page des versions.
+Sur Windows et Linux, les versions suivantes de Marianne s’installent d’elles-mêmes (Réglages › À propos et mises à jour). Sur macOS, l’application n’étant pas encore signée, la mise à jour automatique ne marche pas : téléchargez la nouvelle version depuis la page des versions.
 
 ## Ouvrir une archive d’un double clic
 
