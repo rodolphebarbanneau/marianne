@@ -18,6 +18,18 @@ export function plainKey(e: KeyPress, ...keys: string[]): boolean {
   return keys.includes(e.key) && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey
 }
 
+/**
+ * Which tab of a page F2, F3… open, by its place (F2 the first: F1 stays GUIDE), or null: another
+ * key, a key with a modifier, or a page with fewer tabs. The same keys on a service's screen, a
+ * domain's page, Démarches and Services.
+ */
+export function tabFromKey(e: KeyPress, count: number): number | null {
+  const n = /^F([2-9])$/.exec(e.key)
+  if (!n || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return null
+  const index = Number(n[1]) - 2
+  return index < count ? index : null
+}
+
 /** What a dialog reads of a key event before taking it. */
 export interface DialogKey extends KeyPress {
   /** When it was pressed, on the clock of performance.now(). */

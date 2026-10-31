@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dialogEnter, plainKey, type DialogKey } from '../../src/renderer/src/lib/keys'
+import { dialogEnter, plainKey, tabFromKey, type DialogKey } from '../../src/renderer/src/lib/keys'
 import { accelOf, matches, SHORTCUTS, type KeyLike } from '../../src/shared/shortcuts'
 
 /** A page's own Enter and Space, and the app's shortcuts made of them: each its own. */
@@ -42,6 +42,26 @@ describe('a page’s Enter and Space', () => {
         expect(plainKey(e, 'Enter', ' ')).toBe(false)
       }
     }
+  })
+})
+
+describe('a page’s tabs', () => {
+  it('open on F2, F3… in their order, F1 left to GUIDE', () => {
+    expect(tabFromKey(press('F2'), 3)).toBe(0)
+    expect(tabFromKey(press('F3'), 3)).toBe(1)
+    expect(tabFromKey(press('F4'), 3)).toBe(2)
+    expect(tabFromKey(press('F1'), 3)).toBeNull()
+  })
+
+  it('stop at the page’s last tab, and leave F10, F11 and F12 to the window', () => {
+    expect(tabFromKey(press('F4'), 2)).toBeNull()
+    expect(tabFromKey(press('F5'), 4)).toBe(3)
+    for (const key of ['F10', 'F11', 'F12']) expect(tabFromKey(press(key), 9)).toBeNull()
+  })
+
+  it('answer the key alone, never with a modifier', () => {
+    for (const mod of ['ctrlKey', 'altKey', 'metaKey', 'shiftKey'] as const) expect(tabFromKey(press('F2', { [mod]: true }), 3)).toBeNull()
+    expect(tabFromKey(press('2'), 3)).toBeNull()
   })
 })
 

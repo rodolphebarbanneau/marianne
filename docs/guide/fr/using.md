@@ -17,7 +17,7 @@ Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à dr
 ## Les pages
 
 - **Démarches** : les domaines de votre vie administrative (impôts, santé, logement, famille…), chacun avec sa page et ses démarches guidées, étape par étape.
-- **Services** : les codes 3615, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. 3615 METEO donne le temps de votre commune : maintenant, la pluie des deux prochaines heures, 48 heures, 7 et 15 jours, avec l’air, l’UV et les pollens. Tapez un code ou des mots dans la barre 3615 pour en trouver un. L’étoile épingle un service en tuile, en haut de « mes services », avec ce qu’il a de neuf pour vous : la météo du jour, un péage à payer. « + découvrir » propose les services officiels que vous n’avez pas encore ajoutés, puis ceux de la communauté. Avant d’ajouter un service, Marianne vous montre ce qu’il pourra faire. Un service qui a besoin d’une partie de votre profil, comme votre plaque d’immatriculation pour le péage, vous le demande d’abord.
+- **Services** : les codes 3615, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. 3615 METEO donne le temps de votre commune : maintenant, la pluie des deux prochaines heures, 48 heures, 7 et 15 jours, avec l’air, l’UV et les pollens. Tapez un code ou des mots dans la barre 3615 pour en trouver un. L’étoile épingle un service en tuile, en haut de « mes services » (F2), avec ce qu’il a de neuf pour vous : la météo du jour, un péage à payer. « découvrir » (F3) propose les services officiels que vous n’avez pas encore ajoutés, puis ceux de la communauté. Avant d’ajouter un service, Marianne vous montre ce qu’il pourra faire. Un service qui a besoin d’une partie de votre profil, comme votre plaque d’immatriculation pour le péage, vous le demande d’abord.
 
 ## Les infos
 
@@ -41,7 +41,7 @@ Dans 3615 PARLEMENT, l’onglet vidéos ouvre les séances et les commissions de
 
 La barre du haut demande « QUELLE DÉMARCHE ? ». Chaque domaine est un guichet numéroté : tapez son numéro et la machine imprime votre ticket, 08 pour Mobilité, puis ENVOI (entrée) vous y emmène. Tapez plutôt des mots pour tout chercher à la fois : vos dossiers, vos pièces et vos échéances, les démarches guidées, les liens officiels et les domaines. ↑ et ↓ parcourent les résultats, entrée en ouvre un, échap efface la recherche, et la dernière ligne propose toujours de demander à Marianne.
 
-Sous la barre, trois onglets :
+Sous la barre, trois onglets, sur F2 à F4 :
 
 - **mes domaines** : ce qui presse, puis une ligne par domaine, avec ce qui vous attend ou sa prochaine échéance, et les huit semaines à venir. Chaque échéance est un carré, rouge si elle est en retard ou à moins de 3 jours.
 - **à faire** : tout, dans l’ordre : ce qui est en retard, ce qui vous attend, ce qui tombe dans les 3 jours, puis les 45 jours à venir.
@@ -94,4 +94,4 @@ Comme sur un Minitel, la barre du bas montre les touches de l’écran :
 
 La barre suit l’écran : sur l’écran d’un service ou la page d’un domaine, RETOUR (échap) revient en arrière, et dans les réglages, ENVOI (ctrl+S) enregistre.
 
-Et aussi : ctrl+K pour les commandes, ctrl+alt+espace pour chercher partout, ctrl+2 et ctrl+3 pour Démarches et Services, ctrl+, pour les réglages, ctrl+B pour replier la colonne de gauche, F11 pour le plein écran, ctrl+maj+R pour recharger la fenêtre. Dans un service, F2, F3… ouvrent ses onglets, F1 son guide, et « / » sa recherche ; sur la page d’un domaine, F2 à F5 ouvrent ses onglets. Sur macOS, cmd remplace ctrl, sauf pour le menu et la recherche, et le plein écran est ctrl+cmd+F. Tous se changent dans Réglages › Raccourcis clavier.
+Et aussi : ctrl+K pour les commandes, ctrl+alt+espace pour chercher partout, ctrl+2 et ctrl+3 pour Démarches et Services, ctrl+, pour les réglages, ctrl+B pour replier la colonne de gauche, F11 pour le plein écran, ctrl+maj+R pour recharger la fenêtre. Dans un service, F2, F3… ouvrent ses onglets, F1 son guide, et « / » sa recherche ; sur Démarches, Services et la page d’un domaine, F2, F3… ouvrent leurs onglets. Sur macOS, cmd remplace ctrl, sauf pour le menu et la recherche, et le plein écran est ctrl+cmd+F. Tous se changent dans Réglages › Raccourcis clavier.

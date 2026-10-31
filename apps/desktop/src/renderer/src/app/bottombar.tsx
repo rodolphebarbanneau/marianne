@@ -1,10 +1,18 @@
 import { useLayoutEffect, useRef } from 'react'
+import { tabKey } from '@marianne/sdk'
 import { ENGINE_BADGES, ENGINE_LABELS } from '@shared/config'
 import { LockIcon } from '../components/icons'
 import { serviceKeys, type BarKey as Key } from '../host/frame'
 import { api } from '../lib/api'
+import { TABS as DOMAIN_TABS } from '../pages/domain'
+import { TABS as PROCEDURE_TABS } from '../pages/procedures'
+import { TABS as SERVICE_TABS } from '../pages/services'
 import { useShortcutLabel, type Actions } from './commands'
 import { PAGES, PAGE_LABELS, useApp } from './context'
+
+/** A page's tabs on F2, F3…, said as a service's screen says its own. */
+const tabKeys = (count: number): Key => ['SUITE', `${tabKey(0)}…${tabKey(count - 1)}`, 'onglets', null]
+const PAGE_TABS: Partial<Record<string, number>> = { procedures: PROCEDURE_TABS.length, services: SERVICE_TABS.length }
 
 /** The Minitel keys of the screen: [key, shortcut, what it does, command when clicked]. */
 function useKeys(): Key[] {
@@ -30,7 +38,7 @@ function useKeys(): Key[] {
       ['GUIDE', 'guide', 'aide', 'guide']
     ]
   if (view.kind === 'service') return serviceKeys(serviceBar, menu)
-  if (view.kind === 'domain') return [['ENVOI', 'Enter', 'demander', null], ['RETOUR', 'Escape', 'Démarches', 'prev'], ...menu]
+  if (view.kind === 'domain') return [['ENVOI', 'Enter', 'demander', null], ['RETOUR', 'Escape', 'Démarches', 'prev'], tabKeys(DOMAIN_TABS.length), ...menu]
   const i = PAGES.indexOf(view.page)
   const keys: Key[] = []
   if (view.page === 'home') keys.push(['ENVOI', 'send', 'envoyer', null])
@@ -38,6 +46,8 @@ function useKeys(): Key[] {
   if (view.page === 'services') keys.push(['ENVOI', 'Enter', 'ouvrir le code', null])
   if (i > 0) keys.push(['RETOUR', 'prev', PAGE_LABELS[PAGES[i - 1]], 'prev'])
   if (i < PAGES.length - 1) keys.push(['SUITE', 'next', PAGE_LABELS[PAGES[i + 1]], 'next'])
+  const tabs = PAGE_TABS[view.page]
+  if (tabs) keys.push(tabKeys(tabs))
   return [...keys, ...menu]
 }
 

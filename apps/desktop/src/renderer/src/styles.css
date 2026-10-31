@@ -1524,32 +1524,14 @@ button.card:hover {
   }
 }
 
-/* The two tabs under the kiosk: what one uses, and discovering others. */
-.ktabs {
+/* Démarches' and Services' tabs, under their head: a service's screen's tabs (.service-tab), each with its key. */
+.page-tabs {
   display: flex;
   align-items: flex-end;
   border-bottom: 1px solid var(--rule);
 }
-.ktabs button {
-  padding: 6px 14px;
-  border: 1px solid transparent;
-  border-bottom: 0;
-  margin-bottom: -1px;
-  color: var(--dim);
-}
-.ktabs button:hover {
-  color: var(--hi);
-}
-.ktabs button.on {
-  border-color: var(--rule);
-  background: var(--bg);
-  color: var(--hi);
-}
-.ktabs .n {
-  color: var(--muted);
-  margin-left: 5px;
-}
-.ktabs .disc.on {
+/* « découvrir » shown: in the accent, as what Marianne offers rather than what the user has. */
+.service-tab.disc.on {
   color: var(--accent);
 }
 
@@ -3963,7 +3945,7 @@ button.choice:hover {
   pointer-events: auto;
 }
 
-/* ---------- Démarches and the domains: the Services page's parts first (kiosk-head, codebar, ktabs, sec-h, stable, srow,
+/* ---------- Démarches and the domains: the Services page's parts first (kiosk-head, codebar, page-tabs, sec-h, stable, srow,
    switch, folder-head, msg, composer); dm-… only for what they lack ---------- */
 
 /* The head: the Services page's, for every page. The line above the bar is the page's title and what it is about. */
@@ -4022,8 +4004,9 @@ button.choice:hover {
   container: kiosk / inline-size;
   padding-bottom: 0;
 }
+/* As far under the head as Démarches' and Services' tabs (.kiosk-top's gap). */
 .dm-dom .service-tabs {
-  margin-top: var(--s2);
+  margin-top: var(--s4);
 }
 .dm-starters {
   display: flex;
