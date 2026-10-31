@@ -49,41 +49,26 @@ const fr = {
     zoom: 'AGRANDIR',
     zoomLabel: 'agrandir l’écran',
     close: 'fermer',
-    items: {
-      dossier: {
-        tab: 'un dossier',
-        caption: 'Une question, une réponse claire. Marianne consulte ses services et ses sources, puis vous dit quoi faire, et avant quand.'
-      },
-      accord: {
-        tab: 'votre accord',
-        caption:
-          'Marianne propose de vous rappeler la suite le jour venu. Rien n’est enregistré, rempli, signé ni envoyé sans votre accord, donné sur une carte comme celle-ci.'
-      },
-      demarches: {
-        tab: 'vos démarches',
-        caption:
-          'Chaque domaine a son tableau de bord : vos échéances, vos véhicules, les démarches guidées. Les tâches planifiées reviennent à leur jour : un rappel, ou une vérification que Marianne fait pour vous.'
-      },
-      navigateur: {
-        tab: 'le navigateur',
-        caption:
-          'Les sites officiels s’ouvrent à côté de la conversation, dans le navigateur de Marianne. Vous pouvez reprendre la main à tout moment, et il oublie tout au verrouillage.'
-      },
-      infos: {
-        tab: 'les infos',
-        caption:
-          '3615 INFOS rassemble les titres de vos journaux en sujets : qui en parle, et comment chacun titre, chaque source à la couleur de sa ligne éditoriale.'
-      },
-      parlement: {
-        tab: 'le Parlement',
-        caption:
-          '3615 PARLEMENT : l’hémicycle par groupe, un scrutin vote par vote, qui a voté ce jour-là. Les élus de votre adresse, les séances en vidéo, l’agenda.'
-      },
-      services: {
-        tab: 'vos services',
-        caption:
-          'Les Services, avec leurs codes 3615 : vos péages en flux libre, le temps de votre commune sur 15 jours, la France en données publiques, l’annuaire des services publics…'
-      }
+    tabs: {
+      dossier: 'un dossier',
+      accord: 'votre accord',
+      demarches: 'vos démarches',
+      services: 'vos services'
+    },
+    /** Each screen’s caption: in a tab of several screens, the caption follows the screen shown. */
+    captions: {
+      dossier: 'Une question, une réponse claire. Marianne consulte ses services et ses sources, puis vous dit quoi faire, et avant quand.',
+      accord:
+        'Marianne propose de vous rappeler la suite le jour venu. Rien n’est enregistré, rempli, signé ni envoyé sans votre accord, donné sur une carte comme celle-ci.',
+      demarches:
+        'Chaque domaine a son tableau de bord : vos échéances, vos véhicules, les démarches guidées. Les tâches planifiées reviennent à leur jour : un rappel, ou une vérification que Marianne fait pour vous.',
+      navigateur:
+        'Les sites officiels s’ouvrent à côté de la conversation, dans le navigateur de Marianne. Vous pouvez reprendre la main à tout moment, et il oublie tout au verrouillage.',
+      infos:
+        '3615 INFOS rassemble les titres de vos journaux en sujets : qui en parle, et comment chacun titre, chaque source à la couleur de sa ligne éditoriale.',
+      parlement:
+        '3615 PARLEMENT : vos élus d’après votre adresse, leurs votes et leurs prises de parole du jour, le prochain grand rendez-vous. Et l’hémicycle, les scrutins, les séances en vidéo, l’agenda.',
+      services: 'Les Services, avec leurs codes 3615 : le temps de votre commune sur 15 jours, la France en données publiques, l’annuaire des services publics…'
     }
   },
   features: {
@@ -364,41 +349,26 @@ const en: typeof fr = {
     zoom: 'ENLARGE',
     zoomLabel: 'enlarge the screen',
     close: 'close',
-    items: {
-      dossier: {
-        tab: 'a folder',
-        caption: 'A question, a clear answer. Marianne checks its services and sources, then tells you what to do, and by when.'
-      },
-      accord: {
-        tab: 'your approval',
-        caption:
-          'Marianne offers to remind you of what comes next, on the day. Nothing is saved, filled in, signed or sent without your approval, given on a card like this one.'
-      },
-      demarches: {
-        tab: 'your formalities',
-        caption:
-          'Each area of your paperwork has its dashboard: your deadlines, your vehicles, the guided formalities. Planned tasks come back on their day: a reminder, or a check Marianne makes for you.'
-      },
-      navigateur: {
-        tab: 'the browser',
-        caption:
-          'Official websites open next to the conversation, in Marianne’s browser. You can take over at any time, and it forgets everything when the archive locks.'
-      },
-      infos: {
-        tab: 'the news',
-        caption:
-          '3615 INFOS groups your newspapers’ headlines into subjects: who covers them, and how each one titles them, each source in the colour of its editorial line.'
-      },
-      parlement: {
-        tab: 'Parliament',
-        caption:
-          '3615 PARLEMENT: the chamber by group, a ballot vote by vote, who voted that day. The representatives of your address, the sittings on video, the agenda.'
-      },
-      services: {
-        tab: 'your services',
-        caption:
-          'The Services, with their 3615 codes: your free-flow tolls, the weather of your commune over 15 days, France in public data, the directory of public services…'
-      }
+    tabs: {
+      dossier: 'a folder',
+      accord: 'your approval',
+      demarches: 'your formalities',
+      services: 'your services'
+    },
+    /** Each screen’s caption: in a tab of several screens, the caption follows the screen shown. */
+    captions: {
+      dossier: 'A question, a clear answer. Marianne checks its services and sources, then tells you what to do, and by when.',
+      accord:
+        'Marianne offers to remind you of what comes next, on the day. Nothing is saved, filled in, signed or sent without your approval, given on a card like this one.',
+      demarches:
+        'Each area of your paperwork has its dashboard: your deadlines, your vehicles, the guided formalities. Planned tasks come back on their day: a reminder, or a check Marianne makes for you.',
+      navigateur:
+        'Official websites open next to the conversation, in Marianne’s browser. You can take over at any time, and it forgets everything when the archive locks.',
+      infos:
+        '3615 INFOS groups your newspapers’ headlines into subjects: who covers them, and how each one titles them, each source in the colour of its editorial line.',
+      parlement:
+        '3615 PARLEMENT: your representatives from your address, their votes and speeches of the day, the next big sitting. And the chamber, the ballots, the sittings on video, the agenda.',
+      services: 'The Services, with their 3615 codes: the weather of your commune over 15 days, France in public data, the directory of public services…'
     }
   },
   features: {

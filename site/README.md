@@ -30,7 +30,9 @@ The page guesses the visitor's system: Windows, Mac (Apple silicon, or Intel whe
 
 `src/assets/screens/` holds captures of the real app at 1200×750, twice the pixels (2400×1500), on a test account with made-up data (never real personal data: see [CONTRIBUTING.md](../CONTRIBUTING.md)). Astro makes the smaller sizes at build time. To replace one, capture the app's window at the same size and keep the file's name.
 
-A tab may show a film instead: a short loop of the app (`infos.mp4`, `parlement.mp4`), H.264 at 1600×1000, ten seconds or so and under 1.5 MB, with a WebP of the same name as its poster (its first frame, at 2400×1500). It plays only while its tab shows and the gallery is in view, and stays on its poster for a visitor who asks for less motion. A film is made of screenshots taken step by step (a scroll, a tab picked) and played at 30 frames a second, with crossfades between the steps; its last step comes back to its first, so the loop doesn't jump. Any screen opens full size in a dialog (« AGRANDIR », or a click on it).
+The gallery has four tabs (`src/components/Screens.astro`): « un dossier », « votre accord », « vos démarches » (Démarches, the planned tasks, the browser) and « vos services » (INFOS, PARLEMENT's home, METEO, CARTE, ANNUAIRE). A tab of several screens shows them in turn, and the caption under it follows the screen shown (`captions` in `src/i18n.ts`).
+
+A screen may be a film: a short loop of the app (`infos.mp4`), H.264 at 1600×1000, ten seconds or so and under 1.5 MB, with a WebP of the same name as its poster (its first frame, at 2400×1500). It plays once through while it shows and the gallery is in view, and stays on its poster for a visitor who asks for less motion. A film is made of screenshots taken step by step (a scroll, a tab picked) and played at 30 frames a second, with crossfades between the steps; its last step comes back to its first, so the loop doesn't jump. Any screen opens full size in a dialog (« AGRANDIR », or a click on it).
 
 ## Publishing
 
