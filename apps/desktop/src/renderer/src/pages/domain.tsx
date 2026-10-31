@@ -1,15 +1,15 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import type { Procedure } from '@marianne/content'
 import { DOCUMENT_TYPE_LABELS, domainInfo, type Deadline, type DocumentMeta, type DomainInfo, type EntityKind, type Profile } from '@marianne/profile'
-import { serviceCode, tabKey, type ServiceState, type ServiceSummary } from '@marianne/sdk'
+import { serviceCode, type ServiceState, type ServiceSummary } from '@marianne/sdk'
 import { ServiceIcon } from '@marianne/sdk/view'
-import { accelOf, matches, SHORTCUTS } from '@shared/shortcuts'
 import type { DomainId, FolderSummary, PlannedTask, TaskTemplate } from '@shared/types'
 import { useApp, type DomainTab } from '../app/context'
+import { KeyTabs, useTabKeys } from '../components/key-tabs'
 import { KioskHead } from '../components/kiosk-head'
 import { TicketMachine } from '../components/ticket-machine'
 import { useServices } from '../host'
-import { api, errorText, isMac } from '../lib/api'
+import { api, errorText } from '../lib/api'
 import { aboutEntity, presses, proposed, SHEET_URL, todoItems, weekLabels, whenOf, type SearchTarget } from '../lib/demarches'
 import { plainKey } from '../lib/keys'
 import { useDocuments, useProfile } from '../lib/profile'
@@ -29,7 +29,7 @@ import { PropCard, RunsCells, TaskCard } from './tasks/task-card'
  * the tabs scrolls. Services are laid out from their summaries: data, never an add-on's own screen.
  */
 
-const TABS: Array<{ id: DomainTab; label: string }> = [
+export const TABS: Array<{ id: DomainTab; label: string }> = [
   { id: 'apercu', label: 'aperçu' },
   { id: 'taches', label: 'tâches planifiées' },
   { id: 'dossiers', label: 'dossiers' },
@@ -60,7 +60,7 @@ interface Domain {
 
 export function DomainPage({ id, tab = 'apercu' }: { id: DomainId; tab?: DomainTab }) {
   const app = useApp()
-  const { go, toast, step, palette, settingsPage, guideOpen, config } = app
+  const { go, toast, step } = app
   const d = domainInfo(id)
   const profile = useProfile()
   const documents = useDocuments().filter((x) => x.domain === id)
@@ -101,19 +101,8 @@ export function DomainPage({ id, tab = 'apercu' }: { id: DomainId; tab?: DomainT
 
   const showTab = useCallback((next: DomainTab) => go({ kind: 'domain', id, tab: next }), [go, id])
 
-  // F2…F5: the tabs, in their order (F1 stays GUIDE), unless the key is one of the user's shortcuts or a dialog is open.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const n = /^F([2-5])$/.exec(e.key)
-      if (!n || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return
-      if (palette || settingsPage || guideOpen || document.querySelector('#root > .overlay')) return
-      if (SHORTCUTS.some((def) => matches(e, accelOf(def.id, isMac, config.shortcuts), isMac))) return
-      e.preventDefault()
-      showTab(TABS[Number(n[1]) - 2].id)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [showTab, palette, settingsPage, guideOpen, config.shortcuts])
+  // F2…F5: the tabs, in their order (F1 stays GUIDE).
+  useTabKeys(TABS.length, (i) => showTab(TABS[i].id))
 
   const ask = (text: string) => {
     if (sending.current) return
@@ -190,21 +179,7 @@ export function DomainPage({ id, tab = 'apercu' }: { id: DomainId; tab?: DomainT
       </div>
       {/* The tabs stay above the content, which scrolls under them; each with its key. */}
       <nav className="service-tabs" aria-label={`onglets de ${d.label}`}>
-        <div className="service-tab-list">
-          {TABS.map((t, i) => (
-            <button
-              key={t.id}
-              className={`service-tab${t.id === tab ? ' on' : ''}`}
-              aria-current={t.id === tab ? 'page' : undefined}
-              title={`${t.label} (${tabKey(i)})`}
-              onClick={() => showTab(t.id)}
-            >
-              <span className="fkey">{tabKey(i)}</span>
-              {t.label}
-              {!!counts[t.id] && <span className="count">{counts[t.id]}</span>}
-            </button>
-          ))}
-        </div>
+        <KeyTabs tabs={TABS.map((t) => ({ ...t, count: counts[t.id] || undefined }))} current={tab} onPick={showTab} />
       </nav>
       <div className="service-body" ref={body}>
         <div className="service-content">

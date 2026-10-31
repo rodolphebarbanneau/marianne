@@ -149,7 +149,7 @@ function MarianneGuide() {
     ['menu', label('menu')],
     ['chercher partout', label('search')],
     ['page suivante, précédente', `${label('next')} ${label('prev')}`],
-    ['onglets d’un domaine', 'F2 à F5'],
+    ['onglets de Démarches, de Services, d’un domaine', 'F2, F3…'],
     ['réglages', label('settings')],
     ['verrouiller', label('lock')],
     ['recharger la fenêtre', label('reload')]

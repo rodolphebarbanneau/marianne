@@ -17,7 +17,7 @@ Marianne opens the sites it needs in the folder's browser, on the right (the « 
 ## The pages
 
 - **Démarches** (formalities): the areas of your administrative life (taxes, health, housing, family…), each with its own page and its guided formalities, step by step.
-- **Services**: the 3615 codes, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. 3615 METEO gives your commune's weather: now, the rain of the next two hours, 48 hours, 7 and 15 days, with air quality, UV and pollen. Type a code or words in the 3615 bar to find one. The star pins a service as a tile, at the top of « mes services » (my services), with what's new for you: today's weather, a toll to pay. « + découvrir » (discover) offers the official services you haven't added yet, then the community's. Before you add a service, Marianne shows you what it will be able to do. A service that needs part of your profile, like your license plate for the tolls, asks you first.
+- **Services**: the 3615 codes, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. 3615 METEO gives your commune's weather: now, the rain of the next two hours, 48 hours, 7 and 15 days, with air quality, UV and pollen. Type a code or words in the 3615 bar to find one. The star pins a service as a tile, at the top of « mes services » (my services, F2), with what's new for you: today's weather, a toll to pay. « découvrir » (discover, F3) offers the official services you haven't added yet, then the community's. Before you add a service, Marianne shows you what it will be able to do. A service that needs part of your profile, like your license plate for the tolls, asks you first.
 
 ## The news
 
@@ -41,7 +41,7 @@ In 3615 PARLEMENT, the vidéos (videos) tab opens the sittings and committees of
 
 The bar at the top asks « QUELLE DÉMARCHE ? » (which formality?). Each area is a numbered counter, a « guichet »: type its number and the ticket machine prints your ticket, 08 for Mobilité, then ENVOI (enter) takes you there. Type words instead to search everything at once: your folders, documents and deadlines, the guided formalities, the official links and the areas. ↑ and ↓ move through the results, enter opens one, esc clears the search, and the last line always offers to ask Marianne.
 
-Under the bar, three tabs:
+Under the bar, three tabs, on F2 to F4:
 
 - **mes domaines** (my areas): what presses, then one line per area, with what waits for you or its next deadline, and the eight weeks to come. Each deadline is a square, red when it's late or within 3 days.
 - **à faire** (to do): everything, in order: what's late, what waits for you, what falls within 3 days, then the next 45 days.
@@ -94,4 +94,4 @@ Like on a Minitel, the bottom bar shows the screen's keys:
 
 The bar follows the screen: on a service's screen or an area's page, RETOUR (esc) goes back, and in the settings, ENVOI (ctrl+S) saves.
 
-Also: ctrl+K for commands, ctrl+alt+space to search everywhere, ctrl+2 and ctrl+3 for Démarches and Services, ctrl+, for settings, ctrl+B to fold the left column, F11 for full screen, ctrl+shift+R to reload the window. In a service, F2, F3… open its tabs, F1 its guide, and « / » its search; on an area's page, F2 to F5 open its tabs. On macOS, cmd replaces ctrl, except for the menu and search, and full screen is ctrl+cmd+F. All of them can be changed in Réglages › Raccourcis clavier (Settings › Keyboard shortcuts).
+Also: ctrl+K for commands, ctrl+alt+space to search everywhere, ctrl+2 and ctrl+3 for Démarches and Services, ctrl+, for settings, ctrl+B to fold the left column, F11 for full screen, ctrl+shift+R to reload the window. In a service, F2, F3… open its tabs, F1 its guide, and « / » its search; on Démarches, Services and an area's page, F2, F3… open their tabs. On macOS, cmd replaces ctrl, except for the menu and search, and full screen is ctrl+cmd+F. All of them can be changed in Réglages › Raccourcis clavier (Settings › Keyboard shortcuts).

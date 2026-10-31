@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useApp, type ScreenKey } from '../../app/context'
+import { KeyTabs, useTabKeys, type KeyTab } from '../../components/key-tabs'
 import { api } from '../../lib/api'
 import { useCatalogue, useServices, useServiceTiles } from '../../host'
 import { plainKey } from '../../lib/keys'
@@ -22,6 +23,13 @@ import { Tiles } from './tiles'
  */
 
 type Tab = 'mine' | 'discover'
+
+/** The page's tabs, in the order of their keys (F2, F3): the bottom bar counts them too. */
+export const TABS: Array<[Tab, string]> = [
+  ['mine', 'mes services'],
+  ['discover', 'découvrir']
+]
+
 type Dialog = { kind: 'pins' } | { kind: 'file' } | { kind: 'review'; subject: ReviewSubject } | null
 
 /** The tab shown, kept while the user opens a service and comes back. */
@@ -138,6 +146,18 @@ export function ServicesPage() {
   }, [dialogKind, searching, setScreenKeys])
   useEffect(() => () => setScreenKeys(null), [setScreenKeys])
 
+  // « découvrir » opens on the catalogue's first page.
+  const pick = (next: Tab) => {
+    setTab(next)
+    if (next === 'discover') setShown(CATALOGUE_PAGE)
+  }
+  const tabs: KeyTab<Tab>[] = TABS.map(([id, label]) => (id === 'mine' ? { id, label, count: mine.length } : { id, label, className: 'disc' }))
+  // F2, F3: the tabs, a search under way cleared (the tabs come back with it).
+  useTabKeys(tabs.length, (i) => {
+    clear()
+    pick(tabs[i].id)
+  })
+
   const recs = recommended(all)
   const rows = catalogueRows(all, trust, catalogueSort)
   const more = useCallback(() => setShown((n) => n + CATALOGUE_PAGE), [])
@@ -150,22 +170,9 @@ export function ServicesPage() {
         {searching ? (
           <SearchHead query={query.trim()} groups={groups} onClear={clear} />
         ) : (
-          <div className="ktabs" role="tablist">
-            <button role="tab" aria-selected={tab === 'mine'} className={tab === 'mine' ? 'on' : undefined} onClick={() => setTab('mine')}>
-              mes services<span className="n">{mine.length}</span>
-            </button>
-            <button
-              role="tab"
-              aria-selected={tab === 'discover'}
-              className={`disc${tab === 'discover' ? ' on' : ''}`}
-              onClick={() => {
-                setTab('discover')
-                setShown(CATALOGUE_PAGE)
-              }}
-            >
-              + découvrir
-            </button>
-          </div>
+          <nav className="page-tabs" aria-label="onglets de Services">
+            <KeyTabs tabs={tabs} current={tab} onPick={pick} />
+          </nav>
         )}
       </div>
       <div key={searching ? 'search' : tab} className="page-body">

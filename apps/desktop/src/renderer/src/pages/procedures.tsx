@@ -3,6 +3,7 @@ import { DOMAINS, type Deadline } from '@marianne/profile'
 import type { Procedure } from '@marianne/content'
 import type { DomainId } from '@shared/types'
 import { useApp, type ScreenKey } from '../app/context'
+import { KeyTabs, useTabKeys } from '../components/key-tabs'
 import { KioskHead } from '../components/kiosk-head'
 import { TicketMachine } from '../components/ticket-machine'
 import { useServices } from '../host'
@@ -39,7 +40,7 @@ import { NewTaskDialog } from './tasks/dialogs'
 
 type Tab = 'domains' | 'todo' | 'tasks'
 
-const TABS: Array<[Tab, string]> = [
+export const TABS: Array<[Tab, string]> = [
   ['domains', 'mes domaines'],
   ['todo', 'à faire'],
   ['tasks', 'tâches planifiées']
@@ -160,6 +161,12 @@ export function ProceduresPage() {
   }, [active, short, setScreenKeys])
   useEffect(() => () => setScreenKeys(null), [setScreenKeys])
 
+  // F2…F4: the tabs, in their order, a search under way cleared (the tabs come back with it).
+  useTabKeys(TABS.length, (i) => {
+    clear()
+    setTab(TABS[i][0])
+  })
+
   const closeDialog = useCallback(() => setCreating(false), [])
   const counts: Record<Tab, number> = { domains: DOMAINS.length, todo: items.length, tasks: tasks.filter((t) => t.on).length }
   const rows = (list: TodoItem[], lit: boolean) => (
@@ -193,14 +200,9 @@ export function ProceduresPage() {
         {searching ? (
           <SearchHead query={query.trim()} groups={groups} onClear={clear} />
         ) : (
-          <div className="ktabs" role="tablist">
-            {TABS.map(([id, label]) => (
-              <button key={id} role="tab" aria-selected={shown === id} className={shown === id ? 'on' : undefined} onClick={() => setTab(id)}>
-                {label}
-                <span className="n">{counts[id]}</span>
-              </button>
-            ))}
-          </div>
+          <nav className="page-tabs" aria-label="onglets de Démarches">
+            <KeyTabs tabs={TABS.map(([id, label]) => ({ id, label, count: counts[id] }))} current={shown} onPick={setTab} />
+          </nav>
         )}
       </div>
       <div key={searching ? 'search' : shown} className="page-body">
