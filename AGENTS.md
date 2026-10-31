@@ -29,7 +29,7 @@ Node 24 and npm, from the root:
 ```sh
 npm install                                    # installs and links the workspace packages
 npm run dev                                    # the app; the window reloads live
-npm run check                                  # Prettier, no stray .gitkeep, boundaries, types, tests: what CI runs
+npm run check                                  # Prettier, no stray .gitkeep, no <placeholder> outside code in Markdown, boundaries, types, tests: what CI runs
 npx vitest run apps/desktop/test/news.test.ts  # one test file
 npx vitest run --project content               # the content, every shipped file
 npm run format                                 # Prettier on everything

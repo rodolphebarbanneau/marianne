@@ -27,7 +27,7 @@ description: trouver son député et ses sénateurs, leurs votes et leurs foncti
 ## Vidéos
 
 - `parlement_videos` liste les vidéos d'une période (séance publique, commissions, questions au gouvernement) de l'Assemblée et du Sénat, par mots du titre ou par orateur ; `parlement_video` donne l'ordre du jour et l'horodatage de chaque intervention avec l'orateur.
-- Cite les liens de vidéos : Marianne les affiche comme des lecteurs. Pour un passage, ajoute ?timecode=<millisecondes> (le timecode du chapitre).
+- Cite les liens de vidéos : Marianne les affiche comme des lecteurs. Pour un passage, ajoute `?timecode=<millisecondes>` (le timecode du chapitre).
 - `parlement_live` indique ce qui est diffusé en direct dans les deux chambres, et ce que l'Assemblée annonce pour plus tard dans la journée.
 
 ## Données
