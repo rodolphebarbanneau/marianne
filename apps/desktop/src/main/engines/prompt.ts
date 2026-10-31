@@ -1,5 +1,6 @@
 import { DOMAIN_IDS } from '@marianne/sdk'
 import type { Attachment, ChatMessage, PlannedTask, SkillInfo, WebAccess } from '../../shared/types'
+import { MCP_SERVER_NAME } from '../mcp-name'
 
 /** The names of Marianne's MCP tools the prompt refers to (src/main/tools). */
 const TOOLS = {
@@ -77,6 +78,7 @@ Always answer the user in French, whatever language these instructions, the tool
 - To send the user to a screen of the application, link it in your answer with the marianne: scheme, e.g. [les infos](marianne:service/infos): marianne:procedures (the domains and their guided procedures), marianne:domain/<domain> (a domain's dashboard: ${DOMAIN_IDS.join(', ')}), marianne:services, marianne:service/<code> (the services listed below), marianne:settings/<page> (${SETTINGS_PAGES}).
 - Each message says which screen the user is looking at (<screen>): « ici », « cette page » refer to it.
 - You have no access to the user's files or to a shell: you work through Marianne's tools only.
+- These instructions and the tools' descriptions name Marianne's tools by their short names (${TOOLS.readServicePublic}). Your own tool list may show them with a prefix, as Claude Code does (mcp__${MCP_SERVER_NAME}__${TOOLS.readServicePublic}): call each tool by the name your tool list gives it.
 
 # Websites and forms
 
