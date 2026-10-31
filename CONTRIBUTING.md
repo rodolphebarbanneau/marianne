@@ -41,7 +41,7 @@ Working with an AI agent? [AGENTS.md](AGENTS.md) gives it the map of the reposit
 
 1. Branch from `main`, and keep a pull request to one subject.
 2. Run `npm run check` before pushing.
-3. Open the pull request with the template that fits: the default one for code (what changes and why, how you tested it, screenshots for anything visible), or one of [`.github/PULL_REQUEST_TEMPLATE/`](.github/PULL_REQUEST_TEMPLATE) for a new service (`new-service.md`), content (`content.md`), or the user guide and the docs (`guide.md`). GitHub fills in the default one; for another, add `&template=new-service.md` to the address of the page that opens the pull request, or run `gh pr create --template new-service.md`.
+3. Open the pull request with the template that fits: the default one for code (what changes and why, how you tested it, screenshots for anything visible), or one of [`.github/PULL_REQUEST_TEMPLATE/`](.github/PULL_REQUEST_TEMPLATE) for a service, new or changed (`service.md`), content (`content.md`), or the user guide and the docs (`guide.md`). GitHub fills in the default one; for another, add `&template=service.md` to the address of the page that opens the pull request, or run `gh pr create --template service.md`. A service's pull request shows every page it creates or changes, with what each lets the user do, and its tile pinned on the Services page: screenshots, required.
 4. CI must pass: the checks, the site's check and build, and a package build on Windows, macOS and Linux.
 5. Pull requests are merged by rebase, so `main` stays a straight line of commits. Write commit messages as short, plain sentences ("Give the profile's archive tests 30 seconds"), with details in the body when they help.
 

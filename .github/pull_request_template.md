@@ -1,8 +1,8 @@
 <!--
 This template is for code. Another kind of pull request has its own, in .github/PULL_REQUEST_TEMPLATE/:
-a new service (new-service.md), content (content.md), the user guide and the docs (guide.md).
-Before you write, add &template=new-service.md to this page's address (?template= if it has no ?),
-or from the command line: gh pr create --template new-service.md
+a service, new or changed (service.md), content (content.md), the user guide and the docs (guide.md).
+Before you write, add &template=service.md to this page's address (?template= if it has no ?),
+or from the command line: gh pr create --template service.md
 -->
 
 ## What and why
