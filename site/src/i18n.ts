@@ -42,10 +42,13 @@ const fr = {
   },
   screens: {
     title: 'Un coup d’œil',
-    lead: 'Marianne telle que vous la verrez : une question posée, votre accord demandé, vos démarches suivies, vos services sous la main.',
+    lead: 'Marianne telle que vous la verrez : une question posée, votre accord demandé, vos démarches suivies, le navigateur à côté, vos services sous la main.',
     sample: 'données d’exemple',
     prev: 'précédent',
     next: 'suivant',
+    zoom: 'AGRANDIR',
+    zoomLabel: 'agrandir l’écran',
+    close: 'fermer',
     items: {
       dossier: {
         tab: 'un dossier',
@@ -58,12 +61,28 @@ const fr = {
       },
       demarches: {
         tab: 'vos démarches',
-        caption: 'Chaque domaine de votre vie administrative a son tableau de bord : vos échéances, vos véhicules, les démarches guidées.'
+        caption:
+          'Chaque domaine a son tableau de bord : vos échéances, vos véhicules, les démarches guidées. Les tâches planifiées reviennent à leur jour : un rappel, ou une vérification que Marianne fait pour vous.'
+      },
+      navigateur: {
+        tab: 'le navigateur',
+        caption:
+          'Les sites officiels s’ouvrent à côté de la conversation, dans le navigateur de Marianne. Vous pouvez reprendre la main à tout moment, et il oublie tout au verrouillage.'
+      },
+      infos: {
+        tab: 'les infos',
+        caption:
+          '3615 INFOS rassemble les titres de vos journaux en sujets : qui en parle, et comment chacun titre, chaque source à la couleur de sa ligne éditoriale.'
+      },
+      parlement: {
+        tab: 'le Parlement',
+        caption:
+          '3615 PARLEMENT : l’hémicycle par groupe, un scrutin vote par vote, qui a voté ce jour-là. Les élus de votre adresse, les séances en vidéo, l’agenda.'
       },
       services: {
         tab: 'vos services',
         caption:
-          'Les Services, avec leurs codes 3615 : vos péages en flux libre, la France en données publiques, le temps de votre commune, le Parlement et ses votes…'
+          'Les Services, avec leurs codes 3615 : vos péages en flux libre, le temps de votre commune sur 15 jours, la France en données publiques, l’annuaire des services publics…'
       }
     }
   },
@@ -338,10 +357,13 @@ const en: typeof fr = {
   },
   screens: {
     title: 'A look inside',
-    lead: 'Marianne as you’ll see it: a question asked, your approval sought, your formalities followed, your services at hand.',
+    lead: 'Marianne as you’ll see it: a question asked, your approval sought, your formalities followed, the browser alongside, your services at hand.',
     sample: 'sample data',
     prev: 'previous',
     next: 'next',
+    zoom: 'ENLARGE',
+    zoomLabel: 'enlarge the screen',
+    close: 'close',
     items: {
       dossier: {
         tab: 'a folder',
@@ -354,11 +376,28 @@ const en: typeof fr = {
       },
       demarches: {
         tab: 'your formalities',
-        caption: 'Each area of your paperwork has its dashboard: your deadlines, your vehicles, the guided formalities.'
+        caption:
+          'Each area of your paperwork has its dashboard: your deadlines, your vehicles, the guided formalities. Planned tasks come back on their day: a reminder, or a check Marianne makes for you.'
+      },
+      navigateur: {
+        tab: 'the browser',
+        caption:
+          'Official websites open next to the conversation, in Marianne’s browser. You can take over at any time, and it forgets everything when the archive locks.'
+      },
+      infos: {
+        tab: 'the news',
+        caption:
+          '3615 INFOS groups your newspapers’ headlines into subjects: who covers them, and how each one titles them, each source in the colour of its editorial line.'
+      },
+      parlement: {
+        tab: 'Parliament',
+        caption:
+          '3615 PARLEMENT: the chamber by group, a ballot vote by vote, who voted that day. The representatives of your address, the sittings on video, the agenda.'
       },
       services: {
         tab: 'your services',
-        caption: 'The Services, with their 3615 codes: your free-flow tolls, France in public data, the weather of your commune, Parliament and its votes…'
+        caption:
+          'The Services, with their 3615 codes: your free-flow tolls, the weather of your commune over 15 days, France in public data, the directory of public services…'
       }
     }
   },
