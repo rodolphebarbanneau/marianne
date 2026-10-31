@@ -11,6 +11,12 @@
 
 In the app, F1 opens the guide, with links to the project.
 
+## Reporting a bug
+
+The insect at the top right of the window prepares the report for you. Say what you saw: your engine reads it with Marianne's diagnostics (its version, your system, the screen you were on, its last errors, the open folder's course without your messages, the end of its log) and writes a report in English: what happened, how to make it happen again, where it may come from. It works without tools or the web, and reads only that. Untick the analysis for a report of your words and the diagnostics alone.
+
+The report is public. Marianne first takes out what it knows to be personal (your identifiers, your name, your home folder on the computer, email addresses, numbers) and shows it to you in full: you can change anything. Nothing leaves Marianne: « ouvrir sur GitHub » (open on GitHub) opens the project's bug form in your browser, filled in, and you read it again before publishing it, with a GitHub account.
+
 ## Writing to us
 
 Open an issue on [GitHub](https://github.com/rodolphebarbanneau/marianne/issues/new/choose): "Bug report" for a problem, "Idea" for an idea, "Content correction" for wrong or outdated information in a formality or to propose a news source, "Feedback" for your thoughts. Don't write **any personal data** in it: issues are public.

@@ -70,7 +70,7 @@ async function turn(t: EngineTurn): Promise<void> {
   const mcpConfig = await contentFile(
     'claude-mcp',
     JSON.stringify({
-      mcpServers: { [MCP_SERVER_NAME]: { type: 'http', url: mcp.urlFor(t.folderId), headers: { Authorization: `Bearer ${mcp.token}` } } }
+      mcpServers: { [MCP_SERVER_NAME]: { type: 'http', url: mcp.urlFor(t.folderId, t.tools), headers: { Authorization: `Bearer ${mcp.token}` } } }
     }),
     'json'
   )

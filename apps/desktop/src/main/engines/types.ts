@@ -15,6 +15,8 @@ export interface Turn {
   resume: boolean
   /** A planned task's run: a session of its own, nobody's to resume, whose transcript isn't kept. */
   unattended?: boolean
+  /** 'none': Marianne's MCP server serves the turn no tool (a bug report's analysis). */
+  tools?: 'all' | 'none'
   web: WebAccess
   signal: AbortSignal
   timeoutMs: number

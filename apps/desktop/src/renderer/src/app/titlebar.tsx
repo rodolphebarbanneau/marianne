@@ -1,13 +1,16 @@
-import { GearIcon, PanelIcon, ReloadIcon, SearchIcon } from '../components/icons'
+import { useState } from 'react'
+import { BugIcon, GearIcon, PanelIcon, ReloadIcon, SearchIcon } from '../components/icons'
+import { BugReportDialog } from './bug-report'
 import { useShortcutLabel } from './commands'
 import { PAGE_LABELS, useApp, type PageId } from './context'
 
 const TABS: PageId[] = ['procedures', 'services']
 
-/** Sidebar toggle and MARIANNE on the left; the pages; search, settings and reload before the window buttons. */
+/** Sidebar toggle and MARIANNE on the left; the pages; search, settings, reload and « signaler un bug » before the window buttons. */
 export function TitleBar() {
   const app = useApp()
   const label = useShortcutLabel()
+  const [reporting, setReporting] = useState(false)
   const current = app.view.kind === 'page' ? app.view.page : app.view.kind === 'service' ? 'services' : app.view.kind === 'domain' ? 'procedures' : null
   return (
     <header className="titlebar">
@@ -44,7 +47,11 @@ export function TitleBar() {
         <button className="icon-btn" title={`recharger la fenêtre (${label('reload')})`} onClick={app.reload}>
           <ReloadIcon />
         </button>
+        <button className="icon-btn" title="signaler un bug" onClick={() => setReporting(true)}>
+          <BugIcon />
+        </button>
       </div>
+      {reporting && <BugReportDialog onClose={() => setReporting(false)} />}
     </header>
   )
 }

@@ -2,6 +2,7 @@ import type { ParliamentGroup, Procedure } from '@marianne/content'
 export type { ParliamentGroup }
 import type { Deadline, DocumentMeta, Profile, ProfileOp } from '@marianne/profile'
 import type { ProfileField, ServiceState, ServiceSummary } from '@marianne/sdk'
+import type { BugReport, BugReportRequest } from './bug-report'
 import type { NewsSource, NewsStats } from './news'
 import type { PublicSourceStatus } from './public'
 import type { CatalogueState, ServiceFileReview } from './catalogue'
@@ -94,6 +95,10 @@ export interface MarianneApi {
   toggleFullscreen(): void
   /** Reload the screens (what the main process holds, the open archive first, stays). */
   reloadWindow(): void
+  /** « signaler un bug »: the report, scrubbed, analyzed by the user's engine if they asked. Nothing is sent. */
+  prepareBugReport(req: BugReportRequest): Promise<BugReport>
+  /** Stop the analysis under way: the report comes without it. */
+  cancelBugReport(): void
   /** A dialog is over the screens: the system's window buttons dim with the title bar. */
   dimTitleBar(dim: boolean): void
   onFullscreen(cb: (on: boolean) => void): () => void

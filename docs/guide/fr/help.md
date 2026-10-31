@@ -11,6 +11,12 @@
 
 Dans l’application, F1 ouvre le guide, avec les liens vers le projet.
 
+## Signaler un bug
+
+L’insecte en haut à droite de la fenêtre prépare le rapport pour vous. Dites ce que vous avez vu : votre moteur le lit avec le diagnostic de Marianne (sa version, votre système, l’écran où vous étiez, ses dernières erreurs, le déroulé du dossier ouvert sans vos messages, la fin de son journal) et en fait un rapport en anglais : ce qui s’est passé, comment le refaire, d’où cela peut venir. Il travaille sans outil ni web, et ne lit que cela. Décochez l’analyse pour un rapport fait de vos mots et du diagnostic seuls.
+
+Le rapport est public. Marianne en retire d’abord ce qu’elle sait être personnel (vos identifiants, votre nom, votre dossier personnel sur l’ordinateur, les adresses e-mail, les numéros) et vous le montre en entier : vous pouvez tout modifier. Rien ne part de Marianne : « ouvrir sur GitHub » ouvre le formulaire de bug du projet dans votre navigateur, rempli, et vous le relisez avant de le publier, avec un compte GitHub.
+
 ## Nous écrire
 
 Ouvrez un ticket sur [GitHub](https://github.com/rodolphebarbanneau/marianne/issues/new/choose) : « Bug report » pour un problème, « Idea » pour une idée, « Content correction » pour une information fausse ou dépassée dans une démarche ou pour proposer une source d’information, « Feedback » pour un avis. Les formulaires sont en anglais, pour que chacun puisse suivre le projet : écrivez en anglais si vous le pouvez. N’y écrivez **aucune donnée personnelle** : les tickets sont publics.

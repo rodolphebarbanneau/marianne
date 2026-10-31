@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from 'react'
 import { Failure } from '@marianne/sdk/view'
 import type { Usage } from '@shared/types'
+import { describeError, noteError } from '../lib/errors'
 import { usePixelRatio } from '../lib/pixel-ratio'
 import { SearchIcon } from './icons'
 
@@ -86,6 +87,7 @@ export class Boundary extends Component<{ children: ReactNode; label: string }, 
 
   componentDidCatch(error: Error) {
     console.error(`[${this.props.label}]`, error)
+    noteError(`${this.props.label}: ${describeError(error)}`)
   }
 
   render() {

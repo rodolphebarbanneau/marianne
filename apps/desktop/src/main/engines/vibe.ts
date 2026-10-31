@@ -80,7 +80,7 @@ system_prompt_id = ${toml(AGENT)}
  * restriction for web_fetch, so reading pages is left out.
  */
 async function turn(t: EngineTurn): Promise<void> {
-  for (const [name, content] of Object.entries(projectFiles(t, mcp.urlFor(t.folderId)))) {
+  for (const [name, content] of Object.entries(projectFiles(t, mcp.urlFor(t.folderId, t.tools)))) {
     const file = join(t.cwd, '.vibe', name)
     mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file, content, { encoding: 'utf8', mode: 0o600 })
