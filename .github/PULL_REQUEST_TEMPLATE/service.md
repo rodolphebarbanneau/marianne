@@ -36,7 +36,7 @@ For a change: before and after. For a new service: its main page at 800 and 520 
 
 ### Pages
 
-- **<page or tab, its key>**: what it shows, and what the user can do there.
+- **[page or tab] ([its key])**: what it shows, and what the user can do there.
 
   <!-- Its screenshot, then one per feature the page alone doesn't show; before and after for a change. -->
 
