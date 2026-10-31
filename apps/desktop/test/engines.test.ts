@@ -5,6 +5,7 @@ import type { Archive } from '@marianne/archive'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import { ClaudeStream, CodexStream, resultText, VibeStream, type EngineEvent } from '../src/main/engines/events'
 import { recap, systemPrompt, userMessage } from '../src/main/engines/prompt'
+import { MCP_SERVER_NAME } from '../src/main/mcp-name'
 import { clearScratch, scratchDir, scratchName } from '../src/main/engines/scratch'
 import { parseSkill } from '../src/main/engines/skills'
 import {
@@ -267,6 +268,11 @@ describe('prompt', () => {
     const p = systemPrompt({ ...base, legifrance: true })
     expect(p).toMatch(/^You are Marianne/)
     expect(p).toContain('Always answer the user in French')
+  })
+
+  it('tells the engine its tools may be listed with the server’s prefix, so it calls them by those names', () => {
+    // Claude Code called read_service_public by its short name, which it doesn't list, then again by its own.
+    expect(systemPrompt({ ...base, legifrance: true })).toContain(`mcp__${MCP_SERVER_NAME}__read_service_public`)
   })
 
   it('tells the engine how to cite laws, with or without Légifrance', () => {

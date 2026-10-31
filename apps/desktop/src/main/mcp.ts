@@ -6,6 +6,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { app } from 'electron'
 import { log } from './log'
+import { MCP_SERVER_NAME } from './mcp-name'
 import { profile } from './profile/store'
 import { ALL_TOOLS, activeTools } from './tools'
 import { tasks } from './tasks'
@@ -20,7 +21,7 @@ import { ToolError, type Tool, type ToolContext } from './tools/tool'
  * user's values here, and every result is scrubbed of them before it goes back to the engine.
  */
 
-export const MCP_SERVER_NAME = 'marianne'
+export { MCP_SERVER_NAME }
 const MAX_BODY = 4 * 1024 * 1024
 
 function readBody(req: IncomingMessage): Promise<unknown> {
