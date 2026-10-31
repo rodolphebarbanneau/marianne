@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events'
 import { session as electronSession, shell, WebContentsView, type BrowserWindow } from 'electron'
+import { addressUrl } from '../../shared/address'
 import type { BrowserState, PagePart } from '../../shared/types'
 import { keychain, loginFits, siteOf } from '../keychain'
 import { log } from '../log'
@@ -231,14 +232,8 @@ class Browser extends EventEmitter {
 
   /** What the user typed in the address bar: an address, or a search of Service-Public. */
   navigate(input: string): Promise<void> {
-    const text = input.trim()
-    if (!text) return Promise.resolve()
-    const url = /^https?:\/\//i.test(text)
-      ? text
-      : /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(text)
-        ? `https://${text}`
-        : `https://www.service-public.gouv.fr/particuliers/recherche?keyword=${encodeURIComponent(text)}`
-    return this.openForUser(url)
+    const url = addressUrl(input)
+    return url ? this.openForUser(url) : Promise.resolve()
   }
 
   back(): void {

@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { addressUrl } from '@shared/address'
 import { DEFAULT_CONFIG } from '@shared/config'
 import type { BrowserState, KeychainEntry } from '@shared/types'
 import { useApp } from '../app/context'
 import { CloseIcon } from '../components/icons'
-import { addressUrl } from '../lib/address'
 import { api, errorText, useLive } from '../lib/api'
 import { plainKey } from '../lib/keys'
 import { overlay } from '../lib/overlay'
@@ -154,7 +154,7 @@ export function BrowserPanel({ folderId }: { folderId: string }) {
             if (!plainKey(e, 'Enter')) return
             const url = addressUrl(address)
             if (!url) return
-            // No page of this folder's yet: one opens for it. On its page, the main process reads the address the same way (browser.navigate).
+            // No page of this folder's yet: one opens for it. On its page, the main process reads the address with the same addressUrl (browser.navigate).
             if (!state?.url || state.folderId !== folderId) api.browserOpen(url, folderId)
             else api.browserNavigate(address)
           }}

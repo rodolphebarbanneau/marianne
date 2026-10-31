@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { addressUrl, webHost } from '../../src/renderer/src/lib/address'
+import { addressUrl } from '../../src/shared/address'
+import { webHost } from '../../src/renderer/src/lib/address'
 
 describe('the browser bar', () => {
   it('opens an address as it is, and a site’s name on https', () => {
