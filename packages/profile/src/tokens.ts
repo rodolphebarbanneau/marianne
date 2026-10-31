@@ -1,6 +1,6 @@
 import type { Site } from '@marianne/content'
 import { ENTITY_LABELS } from './domains'
-import { ID_DOCUMENT_LABELS, nirValid, RELATION_LABELS, type Profile } from './profile'
+import { ID_DOCUMENT_LABELS, nirValid, numberOf, RELATION_LABELS, type Profile } from './profile'
 
 /**
  * Tokens stand for the user's identifiers in everything the engines see. An engine writes [[nir]]
@@ -52,35 +52,36 @@ export function tokensOf(p: Profile, sites: Site[]): TokenDef[] {
     const site = sites.find((s) => s.id === account.siteId)
     for (const f of site?.fields ?? []) add(f.key, `${f.label} (${site!.name})`, account.fields[f.key] ?? '', 'id')
   }
+  // Each record by its number (numbered): a token keeps its meaning when an earlier record goes.
   p.household.forEach((m, i) => {
-    const who = `${RELATION_LABELS[m.relation]} ${i + 1}`
-    add(`household.${i + 1}.first_name`, `prénom (${who})`, m.firstName, 'text')
-    if (m.lastName && m.lastName !== lastName) add(`household.${i + 1}.last_name`, `nom (${who})`, m.lastName, 'text')
-    add(`household.${i + 1}.birth_date`, `date de naissance (${who})`, m.birthDate, 'date')
+    const n = numberOf(m, i)
+    const who = `${RELATION_LABELS[m.relation]} ${n}`
+    add(`household.${n}.first_name`, `prénom (${who})`, m.firstName, 'text')
+    if (m.lastName && m.lastName !== lastName) add(`household.${n}.last_name`, `nom (${who})`, m.lastName, 'text')
+    add(`household.${n}.birth_date`, `date de naissance (${who})`, m.birthDate, 'date')
   })
   for (const doc of p.idDocuments) {
     const member = p.household.findIndex((m) => m.id === doc.holder)
     const name = `numéro de ${ID_DOCUMENT_LABELS[doc.type] ?? doc.type}`
     if (doc.holder === 'me') add(`id_document.${doc.type}.number`, name, doc.number, 'id')
-    else if (member >= 0)
-      add(
-        `household.${member + 1}.id_document.${doc.type}.number`,
-        `${name} (${RELATION_LABELS[p.household[member].relation]} ${member + 1})`,
-        doc.number,
-        'id'
-      )
+    else if (member >= 0) {
+      const n = numberOf(p.household[member], member)
+      add(`household.${n}.id_document.${doc.type}.number`, `${name} (${RELATION_LABELS[p.household[member].relation]} ${n})`, doc.number, 'id')
+    }
   }
   p.companies.forEach((c, i) => {
-    add(`company.${i + 1}.siren`, `siren (${ENTITY_LABELS.companies.one} ${i + 1})`, c.siren, 'id')
-    add(`company.${i + 1}.name`, `nom (${ENTITY_LABELS.companies.one} ${i + 1})`, c.name, 'text')
+    const n = numberOf(c, i)
+    add(`company.${n}.siren`, `siren (${ENTITY_LABELS.companies.one} ${n})`, c.siren, 'id')
+    add(`company.${n}.name`, `nom (${ENTITY_LABELS.companies.one} ${n})`, c.name, 'text')
   })
   p.employers.forEach((e, i) => {
-    add(`employer.${i + 1}.name`, `nom (${ENTITY_LABELS.employers.one} ${i + 1})`, e.name, 'text')
-    add(`employer.${i + 1}.siren`, `siren (${ENTITY_LABELS.employers.one} ${i + 1})`, e.siren, 'id')
+    const n = numberOf(e, i)
+    add(`employer.${n}.name`, `nom (${ENTITY_LABELS.employers.one} ${n})`, e.name, 'text')
+    add(`employer.${n}.siren`, `siren (${ENTITY_LABELS.employers.one} ${n})`, e.siren, 'id')
   })
-  p.vehicles.forEach((v, i) => add(`vehicle.${i + 1}.plate`, `immatriculation (${ENTITY_LABELS.vehicles.one} ${i + 1})`, v.plate, 'id'))
+  p.vehicles.forEach((v, i) => add(`vehicle.${numberOf(v, i)}.plate`, `immatriculation (${ENTITY_LABELS.vehicles.one} ${numberOf(v, i)})`, v.plate, 'id'))
   p.properties.forEach((x, i) =>
-    add(`property.${i + 1}.address`, `adresse (${ENTITY_LABELS.properties.one} ${i + 1})`, x.address, 'text', false, streetsOf(x.address))
+    add(`property.${numberOf(x, i)}.address`, `adresse (${ENTITY_LABELS.properties.one} ${numberOf(x, i)})`, x.address, 'text', false, streetsOf(x.address))
   )
   return out
 }

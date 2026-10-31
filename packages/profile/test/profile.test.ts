@@ -9,6 +9,7 @@ import {
   missingFor,
   monthDay,
   nirValid,
+  numbered,
   readNewsChoice,
   setupLabel,
   sirenValid,
@@ -258,6 +259,60 @@ describe('tokens', () => {
   it('resolves tokens locally, leaves unknown ones', () => {
     expect(resolve('NIR [[nir]], né le [[birth_date]], [[caf_number]]', defs)).toBe('NIR 288034410912376, né le 14/03/1988, [[caf_number]]')
     expect(resolveDeep({ a: ['[[last_name]]'], b: 3 }, defs)).toEqual({ a: ['Martin'], b: 3 })
+  })
+})
+
+describe('the numbers of tokens', () => {
+  const car = (id: string, plate: string, n?: number) => ({ id, plate, model: '', firstRegistration: '', lastInspection: '', critair: '', ...(n ? { n } : {}) })
+  const plates = (p: Profile) =>
+    Object.fromEntries(
+      tokensOf(p, SITES)
+        .filter((t) => t.token.startsWith('vehicle.'))
+        .map((t) => [t.token, t.value])
+    )
+
+  it('give records from before them their place in the list, as their tokens had', () => {
+    const p = structuredClone(EMPTY_PROFILE)
+    p.vehicles = [car('a', 'AA-111-AA'), car('b', 'BB-222-BB'), car('c', 'CC-333-CC')]
+    const q = numbered(p)
+    expect(q.vehicles.map((v) => v.n)).toEqual([1, 2, 3])
+    expect(q.numbers?.vehicles).toBe(3)
+    expect(plates(q)).toEqual({ 'vehicle.1.plate': 'AA-111-AA', 'vehicle.2.plate': 'BB-222-BB', 'vehicle.3.plate': 'CC-333-CC' })
+    // Numbered again, nothing moves.
+    expect(numbered(q)).toEqual(q)
+  })
+
+  it('keep a token’s meaning when an earlier record goes, and never give a number twice', () => {
+    let p = numbered({ ...structuredClone(EMPTY_PROFILE), vehicles: [car('a', 'AA-111-AA'), car('b', 'BB-222-BB')] })
+    // The first car sold: the second is still vehicle 2, in what was written before as in what comes.
+    p = numbered({ ...p, vehicles: p.vehicles.filter((v) => v.id !== 'a') })
+    expect(plates(p)).toEqual({ 'vehicle.2.plate': 'BB-222-BB' })
+    expect(resolve('la plaque [[vehicle.2.plate]], et [[vehicle.1.plate]]', tokensOf(p, SITES))).toBe('la plaque BB-222-BB, et [[vehicle.1.plate]]')
+    // A new car takes a new number, not the sold one's.
+    p = numbered({ ...p, vehicles: [...p.vehicles, car('c', 'CC-333-CC')] })
+    expect(plates(p)).toEqual({ 'vehicle.2.plate': 'BB-222-BB', 'vehicle.3.plate': 'CC-333-CC' })
+    // Nor the last one's once it goes.
+    p = numbered({ ...p, vehicles: [...p.vehicles.filter((v) => v.id !== 'c'), car('d', 'DD-444-DD')] })
+    expect(plates(p)).toEqual({ 'vehicle.2.plate': 'BB-222-BB', 'vehicle.4.plate': 'DD-444-DD' })
+  })
+
+  it('give a number anew when one is missing, invalid or taken twice', () => {
+    const p = numbered({
+      ...structuredClone(EMPTY_PROFILE),
+      vehicles: [car('a', 'AA-111-AA', 2), car('b', 'BB-222-BB', 2), { ...car('c', 'CC-333-CC'), n: -1 }]
+    })
+    expect(p.vehicles.map((v) => v.n)).toEqual([2, 3, 4])
+  })
+
+  it('name the household and its documents by the member’s number, in the tokens and the context', () => {
+    const p = sample()
+    p.household = [{ id: 'm2', n: 2, relation: 'child', firstName: 'Léo', lastName: '', birthDate: '2017-05-02', dependent: true }]
+    p.idDocuments = [{ id: 'd1', type: 'passport', number: '19AB12345', holder: 'm2', issued: '', expires: '' }] as Profile['idDocuments']
+    const tokens = tokensOf(p, SITES).map((t) => t.token)
+    expect(tokens).toContain('household.2.first_name')
+    expect(tokens).toContain('household.2.id_document.passport.number')
+    expect(tokens).not.toContain('household.1.first_name')
+    expect(contextView(p, { sites: SITES, tokens: tokensOf(p, SITES), deadlines: [], hasLogin: () => false })).toContain('([[household.2.first_name]], id m2)')
   })
 })
 

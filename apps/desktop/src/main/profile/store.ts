@@ -4,6 +4,7 @@ import {
   computeDeadlines,
   EMPTY_PROFILE,
   newKey,
+  numbered,
   readNewsChoice,
   today,
   tokensOf,
@@ -25,10 +26,10 @@ import { session } from '../session'
 const KIND = 'profile'
 const ID = 'main'
 
-/** Fill in fields added since the record was written. */
+/** Fill in fields added since the record was written, and number what isn't yet (numbered). */
 export function normalize(raw: Partial<Profile>): Profile {
   const e = structuredClone(EMPTY_PROFILE)
-  return {
+  return numbered({
     ...e,
     ...raw,
     version: 1,
@@ -41,7 +42,7 @@ export function normalize(raw: Partial<Profile>): Profile {
       themes: raw.opinions?.themes ?? [],
       sources: readNewsChoice(raw.opinions?.sources)
     }
-  } as Profile
+  } as Profile)
 }
 
 const clean = (s: unknown) => (typeof s === 'string' ? s.trim() : s)
@@ -53,9 +54,14 @@ function cleanObject<T extends object>(o: T): T {
 /** Identifiers are stored without spaces: they're typed in every format. */
 const compact = (s: string) => s.replace(/[\s.]/g, '').toUpperCase()
 
-const upsert = <T extends { id: string }>(list: T[], item: T): T[] => {
+const upsert = <T extends { id: string; n?: number }>(list: T[], item: T): T[] => {
   const withId = { ...item, id: item.id || newKey() }
-  return list.some((x) => x.id === withId.id) ? list.map((x) => (x.id === withId.id ? withId : x)) : [...list, withId]
+  const old = list.find((x) => x.id === withId.id)
+  // A record's number in the tokens is the store's to give (numbered): an edit keeps it whatever the
+  // form sent, and a new record takes none from it, which could be another's.
+  if (old?.n) withId.n = old.n
+  else delete withId.n
+  return old ? list.map((x) => (x.id === withId.id ? withId : x)) : [...list, withId]
 }
 
 class ProfileStore extends EventEmitter {
@@ -187,8 +193,9 @@ class ProfileStore extends EventEmitter {
         p.onboarded = op.value
         break
     }
-    this.save(p)
-    return p
+    const saved = numbered(p)
+    this.save(saved)
+    return saved
   }
 
   /** Keep a trace of what was done (the last 500). */
