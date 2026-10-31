@@ -27,7 +27,10 @@ export interface Asset {
 export interface Release {
   tag: string
   version: string
+  /** The day it was published, YYYY-MM-DD, as the page shows it. */
   date: string
+  /** When it was published, to the second: which of two releases is the newer. */
+  published: string
   url: string
   prerelease: boolean
   assets: Partial<Record<Installer, Asset>>
@@ -56,12 +59,24 @@ export function latest(releases: GitHubRelease[]): Release | null {
       tag: r.tag_name,
       version: r.tag_name.replace(/^v/, ''),
       date: (r.published_at ?? '').slice(0, 10),
+      published: r.published_at ?? '',
       url: r.html_url,
       prerelease: r.prerelease,
       assets
     }
   }
   return null
+}
+
+/**
+ * Whether `a` was published after `b` (none at all counts as before). Only a newer release may take
+ * the place of the one a page shows: an older one, read before it came out, never brings it back.
+ */
+export function newer(a: Release | null | undefined, b: Release | null | undefined): boolean {
+  if (!a) return false
+  if (!b) return true
+  const at = (r: Release) => Date.parse(r.published || r.date) || 0
+  return at(a) > at(b)
 }
 
 export async function fetchLatest(token?: string): Promise<Release | null> {
