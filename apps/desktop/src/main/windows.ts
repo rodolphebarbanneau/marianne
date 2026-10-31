@@ -77,6 +77,7 @@ export function showMain(focus = true): void {
     icon: appIcon(),
     backgroundColor: BACKGROUND,
     // Our title bar, with the system's own window buttons over its right end (traffic lights on the left on macOS).
+    // macOS draws no overlay: it is asked for what it tells the screens, where the lights end and that full screen took them away.
     titleBarStyle: 'hidden',
     titleBarOverlay: isMac ? true : { color: BACKGROUND, symbolColor: FOREGROUND, height: TITLE_BAR_HEIGHT },
     ...(isMac ? { trafficLightPosition: { x: 14, y: (TITLE_BAR_HEIGHT - 14) / 2 } } : {}),

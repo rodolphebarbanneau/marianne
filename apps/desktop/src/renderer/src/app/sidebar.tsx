@@ -303,7 +303,7 @@ function AccountSelector() {
 
 /** Drag the sidebar's edge; double-click puts the default width back. */
 function Splitter() {
-  const { config, setConfig } = useApp()
+  const { setConfig } = useApp()
   const [drag, setDrag] = useState(false)
   return (
     <div
@@ -315,7 +315,8 @@ function Splitter() {
         el.setPointerCapture(e.pointerId)
         setDrag(true)
         const start = e.clientX
-        const width = config.ui.sidebarWidth
+        // From the width drawn, not the one asked for: the title bar's line can hold the column wider (--side-min).
+        const width = el.parentElement!.offsetWidth
         let last = width
         const move = (m: PointerEvent) => {
           last = Math.max(210, Math.min(420, width + m.clientX - start))
