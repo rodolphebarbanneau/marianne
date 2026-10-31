@@ -444,11 +444,12 @@ describe('a task proposed in a conversation', () => {
     return call(folder.id, 'task_propose', args, t)
   }
 
-  it('names one site, never a whole hosting service: its run could reach any page there', async () => {
-    expect(await propose(['github.io'])).toMatch(/^refused:.*whole hosting service/)
-    expect(await propose(['www.github.io'])).toMatch(/^refused:/)
+  it('names one site, never a whole hosting service or public suffix: its run could reach any page there', async () => {
+    expect(await propose(['github.io'])).toMatch(/^refused:.*shared by many sites/)
+    // The Public Suffix List's (asso.fr, gouv.fr, pages.dev), and the hosts it leaves out (free.fr).
+    for (const site of ['www.github.io', 'asso.fr', 'gouv.fr', 'pages.dev', 'free.fr', 'www.free.fr']) expect(await propose([site]), site).toMatch(/^refused:/)
     expect(request).not.toHaveBeenCalled()
-    await propose(['mairie.github.io'])
+    await propose(['mairie.github.io', 'x.asso.fr', 'www.impots.gouv.fr'])
     expect(request).toHaveBeenCalledOnce()
   })
 })

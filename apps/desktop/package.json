@@ -34,6 +34,7 @@
     "fast-xml-parser": "^5.11.2",
     "fflate": "^0.8.3",
     "pdfjs-dist": "^6.4.299",
+    "tldts": "^7.4.19",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -44,10 +45,10 @@
     "@marianne/profile": "*",
     "@marianne/sdk": "*",
     "@marianne/service-annuaire": "*",
-    "@marianne/service-parlement": "*",
     "@marianne/service-carte": "*",
     "@marianne/service-infos": "*",
     "@marianne/service-meteo": "*",
+    "@marianne/service-parlement": "*",
     "@marianne/service-peage": "*",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

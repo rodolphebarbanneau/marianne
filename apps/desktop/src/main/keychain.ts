@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
+import { hostOf, siteOf } from '../shared/hosts'
 import type { KeychainEntry, KeychainInput } from '../shared/types'
 import { session } from './session'
 
@@ -14,27 +15,6 @@ const KIND = 'keychain'
 interface StoredEntry extends KeychainEntry {
   password: string
   createdAt: string
-}
-
-/** A URL's host, lower case; '' for what isn't one. */
-function hostOf(url: string): string {
-  try {
-    return new URL(/^[a-z]+:\/\//i.test(url) ? url : `https://${url}`).hostname.toLowerCase()
-  } catch {
-    return ''
-  }
-}
-
-/**
- * The site a URL belongs to: login pages often live on another subdomain than the home page
- * (www.impots.gouv.fr → cfspart.impots.gouv.fr). gouv.fr is a public suffix.
- */
-export function siteOf(url: string): string {
-  const host = hostOf(url)
-  return host
-    .split('.')
-    .slice(host.endsWith('.gouv.fr') ? -3 : -2)
-    .join('.')
 }
 
 /**
