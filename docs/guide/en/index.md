@@ -22,5 +22,6 @@ The app itself is in French: this guide quotes its labels as they appear on scre
 - [Using Marianne](using.md): folders, the browser, pages, the news, the Parliament's videos, planned tasks, the keys.
 - [Your data](privacy.md): what stays on your computer, what the engine sees, backups.
 - [Help](help.md): when something goes wrong, writing to us, testing the alpha.
+- [About](about.md): the app, its author, contributing, the license and credits.
 
 In the app, the F1 key also opens a guide, with your shortcuts.

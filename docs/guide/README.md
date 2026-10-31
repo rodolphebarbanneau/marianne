@@ -1,6 +1,6 @@
 # The user guide
 
-What Marianne is and how to use it, for the people who use it: installing it, getting started, the features, their data, help. It is written to be published as a website's content as well as read here: the site ([`site/`](../../site/README.md)) renders these files as they are.
+What Marianne is and how to use it, for the people who use it: installing it, getting started, the features, their data, help, and the project itself (about). It is written to be published as a website's content as well as read here: the site ([`site/`](../../site/README.md)) renders these files as they are.
 
 - [`fr/`](fr/index.md): in French, the language of the app.
 - [`en/`](en/index.md): in English.
