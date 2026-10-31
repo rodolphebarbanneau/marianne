@@ -8,6 +8,19 @@ import { sumDepartments, Territory, toCommuneFigures, toCommuneProfile } from '.
 import type { CommuneFigures, DepartmentFigures, MapView } from '../src/types'
 import { ALL_COMMUNES, BORDEAUX, BORDEAUX_SAINT_CLAIR, DEPARTMENTS, GIRONDE_COMMUNES } from './fixtures'
 
+/** An arrondissement, which geo.api.gouv.fr lists only when asked for one (type=arrondissement-municipal). */
+const LYON_3E = {
+  nom: 'Lyon 3e Arrondissement',
+  code: '69383',
+  codeDepartement: '69',
+  codesPostaux: ['69003'],
+  population: 100679,
+  surface: 636.19,
+  centre: { type: 'Point', coordinates: [4.8685, 45.7514] },
+  departement: { code: '69', nom: 'Rhône' },
+  region: { code: '84', nom: 'Auvergne-Rhône-Alpes' }
+}
+
 /** geo.api.gouv.fr as the tests have it. */
 function geoApi(url: URL): unknown {
   const p = Object.fromEntries(url.searchParams)
@@ -23,6 +36,7 @@ function geoApi(url: URL): unknown {
           departement: BORDEAUX.departement,
           region: BORDEAUX.region
         }))
+      if (p.code && p.type === 'arrondissement-municipal') return p.code === LYON_3E.code ? [LYON_3E] : []
       if (p.code) return p.code === BORDEAUX.code ? [BORDEAUX] : []
       return ALL_COMMUNES
     case '/departements':
@@ -105,6 +119,18 @@ describe('figures', () => {
     expect(await territory.departmentFigures()).toBe(first)
     expect(urls.filter((u) => u.pathname === '/communes')).toHaveLength(2)
     expect(urls.find((u) => u.pathname === '/departements')?.searchParams.get('fields')).toBe('nom,code,region')
+  })
+
+  it('finds a commune by its INSEE code, and an arrondissement of Paris, Lyon or Marseille as itself', async () => {
+    const { ctx, urls } = fakeContext(pkg, { answer: geoApi })
+    const territory = new Territory(ctx.http)
+    expect((await territory.commune('33063'))?.name).toBe('Bordeaux')
+    // An address in Lyon 3e has its arrondissement's code: not in the communes' list, asked for as an arrondissement.
+    expect(await territory.commune('69383')).toMatchObject({ code: '69383', name: 'Lyon 3e Arrondissement' })
+    expect(urls.filter((u) => u.searchParams.get('code') === '69383').map((u) => u.searchParams.get('type'))).toEqual([null, 'arrondissement-municipal'])
+    // Any other code not found is just not found, asked once.
+    expect(await territory.commune('99999')).toBeNull()
+    expect(urls.filter((u) => u.searchParams.get('code') === '99999')).toHaveLength(1)
   })
 
   it('finds communes by postal code, most populated first, else by INSEE code', async () => {

@@ -1,3 +1,4 @@
+import { communeOfArrondissement } from '@marianne/sdk'
 import { query, type ServiceHttp } from '@marianne/sdk/main'
 import { communeView, type CommuneFeature } from './map'
 import type { CommuneFigures, DepartmentFigures, MapView } from './types'
@@ -146,10 +147,14 @@ export class Territory {
     return sumDepartments(communes, departments)
   }
 
-  /** A commune by INSEE code, with its département and region; null when there is none. */
+  /**
+   * A commune by INSEE code, with its département and region; null when there is none. An
+   * arrondissement of Paris, Lyon or Marseille (an address there has its code) is found as itself.
+   */
   async commune(code: string): Promise<CommuneProfile | null> {
-    const found = await this.http.json<RawCommune[]>(`${GEO_API}/communes${query({ code, fields: PROFILE_FIELDS })}`, { cacheMs: DAY })
-    return found[0] ? toCommuneProfile(found[0]) : null
+    const get = (type?: string) => this.http.json<RawCommune[]>(`${GEO_API}/communes${query({ code, type, fields: PROFILE_FIELDS })}`, { cacheMs: DAY })
+    const found = (await get())[0] ?? (communeOfArrondissement(code) ? (await get('arrondissement-municipal'))[0] : undefined)
+    return found ? toCommuneProfile(found) : null
   }
 
   /**

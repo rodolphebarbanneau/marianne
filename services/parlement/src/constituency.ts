@@ -1,3 +1,5 @@
+import { communeOfArrondissement } from '@marianne/sdk'
+
 /**
  * Which constituency (circonscription législative) an address is in: its commune says it, but for
  * the 125 communes split between several (Paris, Marseille, Lyon, Toulouse, Bordeaux…), where the
@@ -32,12 +34,7 @@ export const assemblyDepartment = (code: string) => OVERSEAS[code.toUpperCase()]
 export const constituencyNumber = (code: string) => String(Number(code.slice(-2)))
 
 /** The arrondissements of Paris, Lyon and Marseille are one commune each in the polling stations' list. */
-export function communeOf(insee: string): string {
-  if (/^751(0[1-9]|1\d|20)$/.test(insee)) return '75056'
-  if (/^6938[1-9]$/.test(insee)) return '69123'
-  if (/^132(0[1-9]|1[0-6])$/.test(insee)) return '13055'
-  return insee
-}
+export const communeOf = (insee: string): string => communeOfArrondissement(insee) ?? insee
 
 export interface CommuneConstituency {
   commune: string

@@ -16,6 +16,7 @@
 
 import { ICON_SIZE, pictureProblems, type PixelArt } from './palette'
 
+export * from './geo'
 export * from './news'
 export * from './palette'
 export * from './tile'
