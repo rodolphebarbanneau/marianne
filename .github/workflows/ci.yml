@@ -32,6 +32,10 @@ jobs:
       - name: Stray .gitkeep
         run: node scripts/check-gitkeep.mjs
 
+      # No <placeholder> outside code in Markdown, which renderers drop as an HTML tag.
+      - name: Markdown placeholders
+        run: node scripts/check-markdown.mjs
+
       # What each package may import (docs/design.md, "The code").
       - name: Package boundaries
         run: node scripts/check-boundaries.mjs

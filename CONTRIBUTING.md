@@ -22,7 +22,7 @@ Node 24 and npm. From the repository's root:
 ```sh
 npm install     # installs and links the workspace packages
 npm run dev     # the app; the window reloads live, the main process restarts on change
-npm run check   # Prettier, no stray .gitkeep, package boundaries, type checks and tests
+npm run check   # Prettier, no stray .gitkeep, no <placeholder> outside code in Markdown, package boundaries, type checks and tests
 ```
 
 The repository is an npm workspace: the app in `apps/desktop`, its packages in `packages/` (the SDK, the archive, the profile, the content) and the services in `services/`. See the [README](README.md) and [docs/design.md](docs/design.md) for how it fits together.

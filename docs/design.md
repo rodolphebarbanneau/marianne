@@ -140,4 +140,4 @@ archive, sdk      nothing of Marianne
 
 A package imports another by its name, never by a path; only the apps run on Electron; in `packages/`, React is for the SDK's views only. `scripts/check-boundaries.mjs` holds these rules, in `npm run check` and in CI: a new package gets its line there.
 
-`npm run check` runs Prettier, a check that no `.gitkeep` is left beside other files, the package boundaries, the type checks (the app, then every package and service) and the tests (the app's, every package's and every service's).
+`npm run check` runs Prettier, a check that no `.gitkeep` is left beside other files, a check that no `<placeholder>` stands outside code in Markdown (renderers drop it as an HTML tag), the package boundaries, the type checks (the app, then every package and service) and the tests (the app's, every package's and every service's).
