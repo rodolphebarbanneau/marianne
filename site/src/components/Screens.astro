@@ -6,11 +6,12 @@ import demarches from '../assets/screens/demarches.webp'
 import peage from '../assets/screens/peage.webp'
 import carte from '../assets/screens/carte.webp'
 import meteo from '../assets/screens/meteo.webp'
+import parlement from '../assets/screens/parlement.webp'
 import { words, type Lang } from '../i18n'
 
-// Screens of the real app (1440×900, captured at twice the pixels), on a test account: the data is
+// Screens of the real app (1200×750, captured at twice the pixels), on a test account: the data is
 // made up. They play like a short film, a tab every few seconds, until the visitor picks one; the
-// services' tab shows three of them in turn.
+// services' tab shows four of them in turn.
 interface Props {
   lang: Lang
 }
@@ -20,7 +21,7 @@ const shots = [
   { id: 'dossier', frames: [dossier] },
   { id: 'accord', frames: [accord] },
   { id: 'demarches', frames: [demarches] },
-  { id: 'services', frames: [peage, carte, meteo] }
+  { id: 'services', frames: [peage, carte, meteo, parlement] }
 ] as const
 ---
 
