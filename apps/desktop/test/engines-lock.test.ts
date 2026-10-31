@@ -26,6 +26,7 @@ vi.mock('../src/main/engines/claude', () => ({
     candidates: () => [],
     site: 'claude.com/claude-code',
     login: [],
+    keyVars: [],
     account: async () => ({}),
     models: async () => [],
     turn: () => new Promise<void>((resolve) => (engine.end = resolve)),
@@ -34,8 +35,8 @@ vi.mock('../src/main/engines/claude', () => ({
     sweep: vi.fn((home: string) => engine.sweep(home))
   }
 }))
-vi.mock('../src/main/engines/codex', () => ({ codex: { candidates: () => [], site: '', login: [] } }))
-vi.mock('../src/main/engines/vibe', () => ({ vibe: { candidates: () => [], site: '', login: [] } }))
+vi.mock('../src/main/engines/codex', () => ({ codex: { candidates: () => [], site: '', login: [], keyVars: [] } }))
+vi.mock('../src/main/engines/vibe', () => ({ vibe: { candidates: () => [], site: '', login: [], keyVars: [] } }))
 vi.mock('../src/main/engines/cli', () => ({ findCli: () => 'claude', expandHome: (p: string) => p, openInTerminal: async () => undefined }))
 vi.mock('../src/main/aside', () => ({ runAside: async () => ({ code: 0, stdout: '', stderr: '' }) }))
 vi.mock('../src/main/content', () => ({ content: { get: () => ({ sites: [] }), on: () => undefined } }))

@@ -12,7 +12,8 @@ export type EngineEvent =
   | { type: 'text'; key: string; text: string }
   | { type: 'tool'; id: string; name: string; input: unknown }
   | { type: 'tool-result'; id: string; output: string; isError: boolean }
-  | { type: 'done'; error?: string }
+  /** The turn is over; `signIn`: it failed because the engine isn't signed in. */
+  | { type: 'done'; error?: string; signIn?: boolean }
 
 /** A parser of one turn's output; `end` runs once the CLI exits, for formats without a final line. */
 export interface EngineStream {
@@ -21,6 +22,21 @@ export interface EngineStream {
 }
 
 type Json = Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+
+/** An engine's failure that says it isn't signed in, or its key was refused. */
+export const looksLikeAuthError = (detail: string) => /log ?in|sign ?in|auth|credential|unauthori|api.?key|401/i.test(detail)
+
+/** A turn that failed for want of a sign-in: the engine's own words in brackets, the chat says what to do. */
+const notSignedIn = (label: string, detail: string): EngineEvent => ({
+  type: 'done',
+  error: detail ? `${label} n’est pas connecté (${detail}).` : `${label} n’est pas connecté.`,
+  signIn: true
+})
+
+/** The end of a failed turn: in French when it is about signing in, the engine's words as detail. */
+export function failed(label: string, detail: string): EngineEvent {
+  return looksLikeAuthError(detail) ? notSignedIn(label, detail) : { type: 'done', error: `${label} a échoué : ${detail}` }
+}
 
 function parse(line: string): Json | null {
   try {
@@ -43,17 +59,25 @@ export function resultText(content: unknown): string {
 }
 
 /**
- * Claude Code: `claude -p --output-format stream-json --verbose --include-partial-messages`.
- * Text streams as `stream_event` deltas; complete `assistant` messages carry tool calls (and the
- * text again, used only when it didn't stream); `user` messages carry tool results.
+ * Claude Code, through the Agent SDK: its messages are those of `--output-format stream-json
+ * --verbose --include-partial-messages`. Text streams as `stream_event` deltas; complete `assistant`
+ * messages carry tool calls (and the text again, used only when it didn't stream); `user` messages
+ * carry tool results. An API error comes as an `assistant` message with an `error` and its words as
+ * text, then as the result: those words are the turn's error, not the answer.
  */
 export class ClaudeStream implements EngineStream {
   private message = ''
   private streamed = new Set<string>()
   private extra = 0
+  /** Claude Code said its sign-in or key was refused (`authentication_failed`). */
+  private refused = false
 
   push(line: string): EngineEvent[] {
-    const e = parse(line)
+    return this.handle(parse(line))
+  }
+
+  /** One message, as the Agent SDK hands it over: the same objects as the lines of stream-json. */
+  handle(e: Json | null): EngineEvent[] {
     if (!e) return []
     switch (e.type) {
       case 'system':
@@ -72,6 +96,10 @@ export class ClaudeStream implements EngineStream {
       }
       case 'assistant': {
         if (e.parent_tool_use_id) return []
+        if (e.error) {
+          if (e.error === 'authentication_failed') this.refused = true
+          return []
+        }
         const id = String(e.message?.id ?? '')
         const out: EngineEvent[] = []
         for (const block of e.message?.content ?? []) {
@@ -89,8 +117,12 @@ export class ClaudeStream implements EngineStream {
           .filter((b: Json) => b?.type === 'tool_result')
           .map((b: Json) => ({ type: 'tool-result', id: String(b.tool_use_id), output: resultText(b.content), isError: !!b.is_error }) as EngineEvent)
       }
-      case 'result':
-        return [{ type: 'done', error: e.is_error ? String(e.result || e.subtype || 'Claude Code a échoué') : undefined }]
+      case 'result': {
+        if (!e.is_error) return [{ type: 'done' }]
+        const detail = String(e.result || e.subtype || '')
+        // Claude Code's words end with what to type in its own window (« · Please run /login »): not here.
+        return [this.refused ? notSignedIn('Claude Code', detail.split(' · ')[0]) : failed('Claude Code', detail)]
+      }
       default:
         return []
     }
@@ -115,9 +147,9 @@ export class CodexStream implements EngineStream {
       case 'turn.completed':
         return [{ type: 'done' }]
       case 'turn.failed':
-        return [{ type: 'done', error: String(e.error?.message ?? 'Codex a échoué') }]
+        return [failed('Codex', String(e.error?.message ?? ''))]
       case 'error':
-        return [{ type: 'done', error: String(e.message ?? 'Codex a échoué') }]
+        return [failed('Codex', String(e.message ?? ''))]
       default:
         return []
     }

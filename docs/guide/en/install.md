@@ -101,6 +101,8 @@ Open Marianne and create your archive ([Getting started](getting-started.md)). T
 - **« pas connecté »** (not signed in): click « se connecter » (sign in). Marianne opens a terminal where the engine starts its own sign-in, with nothing to type: your browser opens at the maker's, where you sign in with your account. For Codex, choose "Sign in with ChatGPT"; for Vibe, "Launch browser", with the arrow keys then Enter. When the browser says it's done, close the terminal and reopen Réglages › Moteurs.
 - **« connecté · prêt »** (signed in · ready): you're done, Marianne can answer you.
 
+**An API key on your computer.** If a variable such as `ANTHROPIC_API_KEY`, `CODEX_API_KEY` or `MISTRAL_API_KEY` is set there, the engine would take it ahead of your sign-in, and an API key is billed per use, on top of your subscription. When the engine has your sign-in, Marianne leaves the key out and says so under the engine; the box « utiliser la clé de la variable… » (use the variable's key) takes it anyway. Without a sign-in, Marianne goes through the key, and says so too.
+
 You sign in at the maker's, never in Marianne: it sees neither your password nor your sign-in, which the engine keeps in its folder (`.claude`, `.codex` or `.vibe`, in your home folder). You can also sign in without Marianne: type `claude`, `codex` or `vibe` in a new terminal and follow what it asks.
 
 ## Updates

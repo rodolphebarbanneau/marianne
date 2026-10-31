@@ -84,7 +84,7 @@ export function BottomBar({ actions }: { actions: Actions }) {
             <span
               key={l.id}
               className={`eng${l.ok ? '' : ' off'}`}
-              title={`${ENGINE_LABELS[l.id]} · ${!l.ok ? 'introuvable' : l.busy ? 'au travail' : 'prêt'}`}
+              title={`${ENGINE_LABELS[l.id]} · ${!l.ok ? 'introuvable' : l.busy ? 'au travail' : 'prêt'}${l.envKey ? ' · par une clé d’API, facturée à l’usage' : ''}`}
             >
               <span className={`dot ${!l.ok ? 'err' : l.busy ? 'work' : 'ready'}`} />
               {ENGINE_BADGES[l.id]}

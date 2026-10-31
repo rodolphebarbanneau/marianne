@@ -9,6 +9,11 @@ files:
   - resources/**
   - package.json
   - '!**/*.map'
+  # The Agent SDK brings a Claude Code binary of its own, per platform, and Anthropic's API SDK for
+  # its types. Marianne runs the user's own claude (src/main/engines/claude.ts) and ships neither:
+  # Claude Code isn't Marianne's to redistribute.
+  - '!**/node_modules/@anthropic-ai/claude-agent-sdk-*/**'
+  - '!**/node_modules/@anthropic-ai/sdk/**'
 npmRebuild: false
 
 # .marianne files show the archive's icon (scripts/generate-icons.mjs), and a double click opens them in

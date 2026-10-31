@@ -24,7 +24,8 @@ interface RunOptions {
   signal?: AbortSignal
 }
 
-function start(cmd: string, args: string[], opts: RunOptions): ChildProcess {
+/** Start a command, hidden; on Windows a .cmd/.bat shim through the shell, which it needs. */
+export function startProcess(cmd: string, args: string[], opts: Pick<RunOptions, 'cwd' | 'env'>): ChildProcess {
   const spawnOpts: SpawnOptions = { cwd: opts.cwd, env: opts.env ?? shellEnv(), windowsHide: true }
   // .cmd/.bat shims need a shell on Windows.
   const viaShell = isWin && /\.(cmd|bat)$/i.test(cmd)
@@ -42,7 +43,7 @@ const STOP_WAIT_MS = 5_000
  */
 export function run(cmd: string, args: string[], opts: RunOptions & { onLine?: (line: string) => void } = {}): Promise<RunResult> {
   return new Promise((resolve, reject) => {
-    const child = start(cmd, args, opts)
+    const child = startProcess(cmd, args, opts)
     let stdout = ''
     let stderr = ''
     let pending = ''
@@ -68,7 +69,7 @@ export function run(cmd: string, args: string[], opts: RunOptions & { onLine?: (
       if (settled || stopped) return
       stopped = err
       if (timer) clearTimeout(timer)
-      kill(child)
+      killTree(child)
       cap = setTimeout(() => finish(err), STOP_WAIT_MS)
     }
     if (opts.signal?.aborted) onAbort()
@@ -107,7 +108,7 @@ export function run(cmd: string, args: string[], opts: RunOptions & { onLine?: (
 }
 
 /** Stop a child process and, on Windows, the processes it started (cmd shims spawn node). */
-function kill(child: ChildProcess): void {
+export function killTree(child: ChildProcess): void {
   if (isWin && child.pid) execFile('taskkill', ['/pid', String(child.pid), '/t', '/f'], { windowsHide: true }, () => undefined)
   else child.kill()
 }

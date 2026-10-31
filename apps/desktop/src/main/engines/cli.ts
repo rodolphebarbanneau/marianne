@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { log } from '../log'
 import { paths } from '../paths'
 import { isMac, isWin, run, shellEnv, which, type RunResult } from '../util'
-import type { EngineEvent, EngineStream } from './events'
+import { failed, type EngineEvent, type EngineStream } from './events'
 import type { EngineTurn } from './types'
 
 /**
@@ -86,13 +86,33 @@ export async function openInTerminal(cli: string, args: string[], title: string,
   void run(found[0], found[1], { env: fullEnv }).catch(() => undefined)
 }
 
+/**
+ * A turn's time limit, which the time spent waiting for the user's answer on cards extends, as
+ * run() (util) does for the engines it starts itself. `clear` once the turn is over.
+ */
+export function deadline(ms: number, waitedMs: () => number, onExpire: () => void): { clear(): void } {
+  let granted = 0
+  let timer: NodeJS.Timeout | null = null
+  const arm = (delay: number) => {
+    timer = setTimeout(() => {
+      const waited = waitedMs()
+      if (waited > granted) {
+        const more = waited - granted
+        granted = waited
+        return arm(Math.max(more, 5_000))
+      }
+      onExpire()
+    }, delay)
+  }
+  if (ms) arm(ms)
+  return { clear: () => timer && clearTimeout(timer) }
+}
+
 /** Short, single-line error detail from a CLI's output. */
 export function errorDetail(...outputs: string[]): string {
   const text = outputs.find((o) => o.trim()) ?? ''
   return text.trim().split('\n').slice(-6).join(' ').slice(0, 400)
 }
-
-export const looksLikeAuthError = (detail: string) => /log ?in|sign ?in|auth|credential|unauthori|api.?key|401/i.test(detail)
 
 /**
  * Run one turn: the message on stdin, stdout parsed line by line into events. When the output
@@ -128,6 +148,6 @@ export async function runStream(label: string, args: string[], t: EngineTurn, st
   if (!done) {
     const detail = errorDetail(r.stderr) || `code de sortie ${r.code}`
     log.warn(`${label} failed:`, detail)
-    emit([{ type: 'done', error: looksLikeAuthError(detail) ? `${label} n’est pas connecté. ${detail}` : `${label} a échoué : ${detail}` }])
+    emit([failed(label, detail)])
   }
 }

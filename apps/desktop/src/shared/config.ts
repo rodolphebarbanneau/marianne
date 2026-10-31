@@ -11,9 +11,9 @@ export const DEFAULT_CONFIG: DeviceConfig = {
   engines: {
     default: 'claude',
     compactAt: 300_000,
-    claude: { enabled: true, home: '', model: 'sonnet', effort: 'medium' },
-    codex: { enabled: true, home: '', model: '', effort: 'medium' },
-    vibe: { enabled: false, home: '', model: '', effort: 'medium' }
+    claude: { enabled: true, home: '', model: 'sonnet', effort: 'medium', useEnvKey: false },
+    codex: { enabled: true, home: '', model: '', effort: 'medium', useEnvKey: false },
+    vibe: { enabled: false, home: '', model: '', effort: 'medium', useEnvKey: false }
   },
   web: 'public',
   lockAfterMinutes: 15,

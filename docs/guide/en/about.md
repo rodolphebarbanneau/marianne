@@ -28,6 +28,6 @@ Anyone can take part: report a problem, suggest an idea, correct a formality, tr
 
 ## License and credits
 
-The code is under the [MIT license](https://github.com/rodolphebarbanneau/marianne/blob/main/LICENSE) (© 2026 Rodolphe Barbanneau): anyone may read it, reuse it and change it. A security vulnerability is reported privately, never in an issue: see the [security policy](https://github.com/rodolphebarbanneau/marianne/blob/main/SECURITY.md).
+The code is under the [MIT license](https://github.com/rodolphebarbanneau/marianne/blob/main/LICENSE) (© 2026 Rodolphe Barbanneau): anyone may read it, reuse it and change it. To talk to Claude Code, the app includes Anthropic's Agent SDK, under Anthropic's terms; it includes no engine. A security vulnerability is reported privately, never in an issue: see the [security policy](https://github.com/rodolphebarbanneau/marianne/blob/main/SECURITY.md).
 
 On the website, in the background: Eugène Delacroix, _Liberty Leading the People_ (1830), Louvre, public domain. Fonts: VT323 and JetBrains Mono, under the SIL Open Font License.

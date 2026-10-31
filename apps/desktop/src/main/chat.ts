@@ -14,6 +14,7 @@ import type {
   TextPart,
   ToolPart
 } from '../shared/types'
+import { ENGINE_LABELS } from '../shared/config'
 import { approvals } from './approvals'
 import { browser } from './browser'
 import { configStore } from './config'
@@ -40,11 +41,24 @@ const TASK_MINUTES = 10
 /** A page a conversation left in the browser may be there for the user to check: a run leaves it alone this long. */
 const BROWSER_QUIET_MS = 30 * 60_000
 
+/** Where a turn that failed for want of a sign-in sends the user: Réglages › Moteurs, « se connecter ». */
+function signInCard(engine: EngineId): SetupPart {
+  return {
+    type: 'setup',
+    page: 'engines',
+    label: 'la connexion',
+    action: 'ouvrir Réglages › Moteurs',
+    reason: `${ENGINE_LABELS[engine]} n’est pas connecté à votre compte. Dans Réglages › Moteurs, « se connecter » ouvre sa connexion, chez son éditeur.`
+  }
+}
+
 /** Applies engine events to the assistant message being written. */
 class AnswerBuilder {
   private texts = new Map<string, TextPart>()
   private tools = new Map<string, ToolPart>()
   error?: string
+  /** The turn failed because the engine isn't signed in. */
+  signIn = false
   model?: string
 
   constructor(readonly message: ChatMessage) {}
@@ -83,6 +97,7 @@ class AnswerBuilder {
         break
       case 'done':
         this.error = e.error
+        this.signIn = !!e.signIn
         break
     }
   }
@@ -405,6 +420,8 @@ class Chat extends EventEmitter {
       }
       answer.status = builder.error ? 'error' : 'done'
       answer.error = builder.error
+      // Signing in is the user's to do, in the engine's own flow: the answer leads them to it.
+      if (builder.error && builder.signIn) answer.parts.push(signInCard(engine))
     } catch (err) {
       const cancelled = controller.signal.aborted
       answer.status = cancelled ? 'cancelled' : 'error'

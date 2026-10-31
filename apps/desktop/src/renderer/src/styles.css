@@ -4825,3 +4825,13 @@ button.choice:hover {
 .dm-older:hover {
   color: var(--dim);
 }
+/* An API key the environment sets for an engine: the choice, and what Marianne does with it. */
+.engine-row .key-line code {
+  flex: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+}
+.engine-row label.key-line {
+  cursor: pointer;
+}
