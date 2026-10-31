@@ -67,7 +67,7 @@ Une tâche commence avec « + nouvelle tâche », depuis ce que vos services pro
 - **Elle utilise votre moteur.** Chaque vérification utilise votre moteur, comme le ferait une question, avec au plus 12 vérifications par jour. Un rappel ne coûte rien.
 - **Marianne ne paie jamais.** Une vérification peut seulement regarder et rendre compte : elle ne paie pas, ne signe pas, n’envoie rien, et rien de ce qu’elle lit sur une page ne peut l’y amener. Elle va sur les sites que vous lui avez donnés, pour cette vérification seulement, et sur aucun autre. Si un site veut un code, ou que quelque chose a besoin de vous, elle s’arrête et vous prévient.
 
-Quand une vérification ne trouve rien, le dossier se rendort, et sa conversation replie ces vérifications en une ligne : cliquez dessus pour les lire. Quand elle trouve quelque chose ou a besoin de vous, le dossier revient et une notification vous prévient ; ce qui vous attend paraît aussi dans « à faire ».
+Quand une vérification ne trouve rien, le dossier se rendort, et sa conversation replie ces vérifications en une ligne : cliquez dessus pour les lire. Quand elle trouve quelque chose ou a besoin de vous, le dossier revient et une notification vous prévient, sans dire de quelle tâche il s’agit : un écran verrouillé peut l’afficher. Ce qui vous attend paraît aussi dans « à faire ».
 
 Dans le dossier d’une tâche, « modifier la tâche » change son rythme ou la retire, et « mettre en pause » l’arrête jusqu’à ce que vous choisissiez « reprendre ». Pendant la pause, son dossier est dans « Classés ».
 
