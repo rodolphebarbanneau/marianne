@@ -39,8 +39,15 @@
   --s6: 32px;
 
   --titlebar-h: 40px;
+  /* What the window's buttons take at the start of the title bar: on macOS, as much as the system
+     says there (windows.ts asks it to), which is nothing in full screen, where they go away. */
+  --titlebar-start: env(titlebar-area-x, 0px);
   --bar-h: 30px;
   --side-w: 270px;
+  /* The column at its narrowest, for the title bar's line to fit in it: those buttons, the sidebar
+     button with its margins, the name (8 VT323 letters, each 0.4em and 0.25em of spacing). Only past
+     macOS's buttons is it more than the splitter's 210px. */
+  --side-min: calc(var(--titlebar-start) + 55px + 5.2 * var(--pixel-size));
   --browser-w: 560px;
   /* The conversation's column, centred, and the composer under it. */
   --column: 760px;
@@ -660,7 +667,6 @@ textarea.notes {
   display: flex;
   align-items: stretch;
   -webkit-app-region: drag;
-  padding-left: env(titlebar-area-x, 0px);
   padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw));
 }
 .titlebar button,
@@ -669,14 +675,15 @@ textarea.notes {
 }
 /* On the sidebar's two lines, like its search field and rows below: frames 6px from the edge, their
    content 15px (1px border, 8px padding). Hence a sidebar button 34px wide: its frame on the first
-   line, its icon, centered, on the second. */
+   line, its icon, centered, on the second. The window's buttons on macOS sit over this column, which
+   stays above the sidebar and the pages' tabs on their margin: only what it holds moves, past them. */
 .brand {
-  width: var(--side-w);
+  width: max(var(--side-w), var(--side-min));
   flex: none;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 8px 0 6px;
+  padding: 0 8px 0 calc(6px + var(--titlebar-start));
   border-right: 1px solid var(--rule);
 }
 .brand > .icon-btn {
@@ -689,7 +696,7 @@ textarea.notes {
 }
 /* No sidebar button before the name: the name itself on the content line. */
 .app.bare .brand {
-  padding-left: 15px;
+  padding-left: calc(15px + var(--titlebar-start));
 }
 .mark {
   display: flex;
@@ -754,7 +761,7 @@ textarea.notes {
   background-color: transparent;
 }
 .side {
-  width: var(--side-w);
+  width: max(var(--side-w), var(--side-min));
   flex: none;
   border-right: 1px solid var(--rule);
   display: flex;
