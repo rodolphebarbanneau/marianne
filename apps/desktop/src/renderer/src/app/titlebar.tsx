@@ -41,11 +41,11 @@ export function TitleBar() {
         >
           <SearchIcon />
         </button>
-        <button className="icon-btn" title={`réglages (${label('settings')})`} onClick={() => app.openSettings('identity')}>
-          <GearIcon />
-        </button>
         <button className="icon-btn" title={`recharger la fenêtre (${label('reload')})`} onClick={app.reload}>
           <ReloadIcon />
+        </button>
+        <button className="icon-btn" title={`réglages (${label('settings')})`} onClick={() => app.openSettings('identity')}>
+          <GearIcon />
         </button>
         <button className="icon-btn" title="signaler un bug" onClick={() => setReporting(true)}>
           <BugIcon />
