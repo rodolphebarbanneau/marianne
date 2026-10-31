@@ -102,6 +102,41 @@ describe('in the archive', { timeout: 30_000 }, () => {
     expect(profile.get().person.birthName).toBe('')
   })
 
+  it('numbers the records for the tokens: an edit keeps its number, a new one takes none from the form', async () => {
+    const { archive } = await createArchive(join(dir, 'n.marianne'), { id: 'n', display: '', password: PASSWORD })
+    session.open(archive)
+    const car = (id: string, plate: string, n?: number) => ({
+      id,
+      plate,
+      model: '',
+      firstRegistration: '',
+      lastInspection: '',
+      critair: '',
+      ...(n ? { n } : {})
+    })
+    profile.apply({ type: 'entity', kind: 'vehicles', item: car('a', 'AA-111-AA') })
+    profile.apply({ type: 'entity', kind: 'vehicles', item: car('b', 'BB-222-BB') })
+    profile.apply({ type: 'deleteEntity', kind: 'vehicles', id: 'a' })
+    // The form sends the car back without its number: it keeps 2.
+    profile.apply({ type: 'entity', kind: 'vehicles', item: { ...car('b', 'BB-222-BB'), model: 'Clio' } })
+    // A new car that says it is 2 (an engine's proposal, a copy) gets a number of its own.
+    profile.apply({ type: 'entity', kind: 'vehicles', item: car('c', 'CC-333-CC', 2) })
+    expect(profile.get().vehicles.map((v) => [v.id, v.n])).toEqual([
+      ['b', 2],
+      ['c', 3]
+    ])
+    expect(
+      profile
+        .tokens()
+        .filter((t) => t.token.startsWith('vehicle.'))
+        .map((t) => [t.token, t.value])
+    ).toEqual([
+      ['vehicle.2.plate', 'BB-222-BB'],
+      ['vehicle.3.plate', 'CC-333-CC']
+    ])
+    expect(archive.get<Profile>('profile', 'main')?.numbers?.vehicles).toBe(3)
+  })
+
   it('changes only the part of the opinions a change carries', async () => {
     const { archive } = await createArchive(join(dir, 'o.marianne'), { id: 'o', display: '', password: PASSWORD })
     session.open(archive)

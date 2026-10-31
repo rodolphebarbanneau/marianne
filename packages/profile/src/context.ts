@@ -8,6 +8,7 @@ import {
   FREQUENCY_LABELS,
   ID_DOCUMENT_LABELS,
   missingFor,
+  numberOf,
   PROPERTY_STATUS_LABELS,
   PROPERTY_USE_LABELS,
   REGIME_LABELS,
@@ -68,7 +69,7 @@ export function contextView(
       `- foyer : ${p.household
         .map((m, i) => {
           const a = ageOf(m.birthDate, opts.now)
-          return `${RELATION_LABELS[m.relation]}${a !== null ? ` ${a} ans` : ''}${m.dependent ? ' à charge' : ''} ([[household.${i + 1}.first_name]], id ${m.id})`
+          return `${RELATION_LABELS[m.relation]}${a !== null ? ` ${a} ans` : ''}${m.dependent ? ' à charge' : ''} ([[household.${numberOf(m, i)}.first_name]], id ${m.id})`
         })
         .join(' · ')}`
     )
@@ -88,22 +89,22 @@ export function contextView(
   const entities: string[] = []
   p.companies.forEach((c, i) =>
     entities.push(
-      `- entreprise ${i + 1} : ${label(REGIME_LABELS, c.regime)}${c.legalForm ? `, ${c.legalForm}` : ''}${c.activity ? `, activité ${c.activity}` : ''}${c.created ? `, créée le ${c.created}` : ''}${c.frequency ? `, déclarations urssaf ${label(FREQUENCY_LABELS, c.frequency)}s` : ''}${c.vat ? `, tva ${label(VAT_LABELS, c.vat)}` : ''}, rôle ${label(ROLE_LABELS, c.role)} · siren [[company.${i + 1}.siren]] · nom [[company.${i + 1}.name]] · id ${c.id}`
+      `- entreprise ${numberOf(c, i)} : ${label(REGIME_LABELS, c.regime)}${c.legalForm ? `, ${c.legalForm}` : ''}${c.activity ? `, activité ${c.activity}` : ''}${c.created ? `, créée le ${c.created}` : ''}${c.frequency ? `, déclarations urssaf ${label(FREQUENCY_LABELS, c.frequency)}s` : ''}${c.vat ? `, tva ${label(VAT_LABELS, c.vat)}` : ''}, rôle ${label(ROLE_LABELS, c.role)} · siren [[company.${numberOf(c, i)}.siren]] · nom [[company.${numberOf(c, i)}.name]] · id ${c.id}`
     )
   )
   p.employers.forEach((e, i) =>
     entities.push(
-      `- employeur ${i + 1} : ${label(CONTRACT_LABELS, e.contract)}${e.position ? `, ${e.position}` : ''}${e.start ? `, depuis ${e.start}` : ''}${e.end ? ` jusqu’au ${e.end}` : ''}${e.idcc ? `, convention collective idcc ${e.idcc}` : ''} · nom [[employer.${i + 1}.name]] · id ${e.id}`
+      `- employeur ${numberOf(e, i)} : ${label(CONTRACT_LABELS, e.contract)}${e.position ? `, ${e.position}` : ''}${e.start ? `, depuis ${e.start}` : ''}${e.end ? ` jusqu’au ${e.end}` : ''}${e.idcc ? `, convention collective idcc ${e.idcc}` : ''} · nom [[employer.${numberOf(e, i)}.name]] · id ${e.id}`
     )
   )
   p.vehicles.forEach((v, i) =>
     entities.push(
-      `- véhicule ${i + 1} : ${v.model || 'modèle non renseigné'}${v.firstRegistration ? `, 1re immatriculation ${v.firstRegistration}` : ''}${v.lastInspection ? `, dernier contrôle technique ${v.lastInspection}` : ''}${v.critair ? `, crit’air ${v.critair}` : ''} · immatriculation [[vehicle.${i + 1}.plate]] · id ${v.id}`
+      `- véhicule ${numberOf(v, i)} : ${v.model || 'modèle non renseigné'}${v.firstRegistration ? `, 1re immatriculation ${v.firstRegistration}` : ''}${v.lastInspection ? `, dernier contrôle technique ${v.lastInspection}` : ''}${v.critair ? `, crit’air ${v.critair}` : ''} · immatriculation [[vehicle.${numberOf(v, i)}.plate]] · id ${v.id}`
     )
   )
   p.properties.forEach((x, i) =>
     entities.push(
-      `- logement ${i + 1} : ${label(PROPERTY_STATUS_LABELS, x.status)}, ${label(PROPERTY_USE_LABELS, x.use)}${x.rent ? `, loyer ${x.rent} €` : ''}${x.leaseStart ? `, bail depuis ${x.leaseStart}` : ''} · adresse [[property.${i + 1}.address]] · id ${x.id}`
+      `- logement ${numberOf(x, i)} : ${label(PROPERTY_STATUS_LABELS, x.status)}, ${label(PROPERTY_USE_LABELS, x.use)}${x.rent ? `, loyer ${x.rent} €` : ''}${x.leaseStart ? `, bail depuis ${x.leaseStart}` : ''} · adresse [[property.${numberOf(x, i)}.address]] · id ${x.id}`
     )
   )
   if (entities.length) lines.push('', '## Entités liées', '', ...entities)

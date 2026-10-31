@@ -5,7 +5,7 @@ Marianne is a desktop citizen assistant for people living in France: their right
 ## Principles
 
 - **Local and private.** Personal information never goes to a server of ours: there is none. Each account is one encrypted archive on the user's computer.
-- **Masked for the engines.** Identifiers (social security number, tax number, names, address, IBAN…) are replaced by `[[tokens]]` before anything reaches an engine, and put back on the user's screen only.
+- **Masked for the engines.** Identifiers (social security number, tax number, names, address, IBAN…) are replaced by `[[tokens]]` before anything reaches an engine, and put back on the user's screen only. A household member's, a company's, an employer's, a vehicle's or a home's tokens carry its number (`[[vehicle.2.plate]]`), given once and kept: a token in an earlier conversation or a planned task still means the same record when one before it is deleted.
 - **Chat first.** One folder is one conversation: a unit of work, like a branch and its pull request.
 - **The user decides.** Anything that changes the profile, fills a form, signs, pays or sends goes through an approval card.
 - **Add-ons for information.** The Services (3615 codes) are packages of their own, built on an SDK; see [services.md](services.md).

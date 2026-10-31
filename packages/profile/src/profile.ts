@@ -49,6 +49,8 @@ export type Relation = 'spouse' | 'child' | 'other'
 
 export interface HouseholdMember {
   id: string
+  /** Its number in the tokens ([[vehicle.2.plate]]): given once, kept when others go (see `numbered`). */
+  n?: number
   relation: Relation
   firstName: string
   lastName: string
@@ -80,6 +82,8 @@ export type CompanyRegime = 'micro' | 'sole_trader' | 'corporate_tax' | 'income_
 
 export interface Company {
   id: string
+  /** Its number in the tokens ([[vehicle.2.plate]]): given once, kept when others go (see `numbered`). */
+  n?: number
   siren: string
   name: string
   legalForm: string
@@ -98,6 +102,8 @@ export interface Company {
 
 export interface Employer {
   id: string
+  /** Its number in the tokens ([[vehicle.2.plate]]): given once, kept when others go (see `numbered`). */
+  n?: number
   name: string
   siren: string
   position: string
@@ -110,6 +116,8 @@ export interface Employer {
 
 export interface Vehicle {
   id: string
+  /** Its number in the tokens ([[vehicle.2.plate]]): given once, kept when others go (see `numbered`). */
+  n?: number
   plate: string
   model: string
   firstRegistration: string
@@ -119,6 +127,8 @@ export interface Vehicle {
 
 export interface Property {
   id: string
+  /** Its number in the tokens ([[vehicle.2.plate]]): given once, kept when others go (see `numbered`). */
+  n?: number
   address: string
   inseeCode: string
   use: 'main_home' | 'second_home' | 'rental'
@@ -197,6 +207,8 @@ export interface Profile {
    * it only when the user lets it (opinions.leaning, opinions.themes, opinions.sources).
    */
   opinions: Opinions
+  /** The last number given in each numbered list (see `numbered`): none is given twice. */
+  numbers?: Partial<Record<NumberedList, number>>
 }
 
 export interface Opinions {
@@ -551,3 +563,41 @@ export function daysUntil(iso: string, from = new Date()): number {
 }
 
 export const newKey = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+
+/** The lists whose records are numbered in the tokens: [[household.1.first_name]], [[vehicle.2.plate]]… */
+export const NUMBERED_LISTS = ['household', 'companies', 'employers', 'vehicles', 'properties'] as const
+export type NumberedList = (typeof NUMBERED_LISTS)[number]
+
+/** A record's number in the tokens; its place in the list for a record not numbered yet (as before the numbers). */
+export const numberOf = (record: { n?: number }, index: number): number => record.n ?? index + 1
+
+const isNumber = (n: unknown): n is number => Number.isInteger(n) && (n as number) > 0
+
+/**
+ * The profile with every record of the numbered lists numbered. A record keeps its number for good,
+ * and no number is given twice, not even once its record is gone: a token written in an earlier
+ * conversation or a planned task ([[vehicle.2.plate]]) never comes to mean another vehicle when
+ * the first one is deleted. Records from before the numbers get their place in the list, which is
+ * what their tokens said until then.
+ */
+export function numbered(p: Profile): Profile {
+  const numbers: Partial<Record<NumberedList, number>> = { ...p.numbers }
+  const out: Profile = { ...p, numbers }
+  for (const list of NUMBERED_LISTS) {
+    const records = (p[list] ?? []) as Array<{ n?: number }>
+    let last = Math.max(isNumber(numbers[list]) ? numbers[list] : 0, ...records.map((r) => (isNumber(r.n) ? r.n : 0)))
+    const seen = new Set<number>()
+    // A number missing, invalid or taken twice (a record copied by hand) is given anew, after the last.
+    ;(out[list] as Array<{ n?: number }>) = records.map((r) => {
+      if (isNumber(r.n) && !seen.has(r.n)) {
+        seen.add(r.n)
+        return r
+      }
+      const n = ++last
+      seen.add(n)
+      return { ...r, n }
+    })
+    numbers[list] = last
+  }
+  return out
+}
