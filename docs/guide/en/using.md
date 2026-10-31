@@ -67,7 +67,7 @@ A task starts from « + nouvelle tâche » (new task), from what your services p
 - **It spends your engine.** Each check uses your engine, as a question would, with at most 12 checks a day. A reminder costs nothing.
 - **Marianne never pays.** A check can only look and report: it doesn't pay, sign or send, and nothing it reads on a page can make it. It reaches the sites you gave it, for that check only, and no other. If a site wants a code, or anything else needs you, it stops and tells you.
 
-When a check finds nothing, the folder goes back to sleep, and its conversation folds these checks into one line: click it to read them. When it finds something or needs you, the folder comes back and a notification tells you; what waits for you also shows in « à faire ».
+When a check finds nothing, the folder goes back to sleep, and its conversation folds these checks into one line: click it to read them. When it finds something or needs you, the folder comes back and a notification tells you, without saying which task: a locked screen may show it. What waits for you also shows in « à faire ».
 
 In a task's folder, « modifier la tâche » (edit the task) changes its rhythm or removes it, and « mettre en pause » (pause) stops it until you choose « reprendre » (resume). While it's paused, its folder is under « Classés » (filed).
 

@@ -49,6 +49,19 @@ export function deadlineNotices(due: Deadline[], now = new Date()): Array<{ titl
   return [{ title: `${due.length} échéances à venir`, body: `La prochaine ${when(days(first))} : ouvrez Marianne pour les voir.`, silent: days(first) > 7 }]
 }
 
+/**
+ * A planned task's run, as the system shows it: what came of it, never the task's title. The title
+ * is the user's own words (a reminder's above all), and a locked screen may show notifications: the
+ * title waits in Marianne, as a deadline's does.
+ */
+export function runNotice(run: Pick<TaskRun, 'outcome'>): { title: string; body: string; silent: boolean } {
+  return {
+    title: RUN_TITLES[run.outcome],
+    body: run.outcome === 'done' ? 'Ouvrez Marianne pour le lire.' : 'Ouvrez Marianne pour la voir.',
+    silent: run.outcome === 'nothing'
+  }
+}
+
 function refresh(): void {
   if (!tray) return
   const next = upcoming()
@@ -140,7 +153,7 @@ export function startBackground(): void {
   session.on('locked', safeRefresh)
   tasks.on('run', (task: PlannedTask, run: TaskRun) => {
     if (!Notification.isSupported()) return
-    const n = new Notification({ title: RUN_TITLES[run.outcome], body: task.title, silent: run.outcome === 'nothing' })
+    const n = new Notification(runNotice(run))
     n.on('click', () => navigate(`folder:${task.folderId}`))
     n.show()
   })

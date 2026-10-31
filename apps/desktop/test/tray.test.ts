@@ -2,7 +2,7 @@ import { rmSync } from 'node:fs'
 import type { Deadline } from '@marianne/profile'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 
-/** A deadline's notification stays on the screen of whoever is there: it says when, never what. */
+/** A notification stays on the screen of whoever is there, a locked one included: it says when or what came of it, never what about. */
 
 // ~/.marianne points at a temporary folder, before paths.ts reads it.
 const root = vi.hoisted(() => {
@@ -17,7 +17,7 @@ vi.mock('electron', () => ({ app: { on: () => undefined, isPackaged: false, getV
 vi.mock('../src/main/deadlines', () => ({ deadlines: () => [] }))
 vi.mock('../src/main/profile/store', () => ({ profile: { on: () => undefined } }))
 
-import { deadlineNotices } from '../src/main/tray'
+import { deadlineNotices, runNotice } from '../src/main/tray'
 
 const NOW = new Date(2026, 9, 30, 9, 0)
 const PLATE = 'AB-123-CD'
@@ -35,5 +35,16 @@ describe('deadline notifications', () => {
     expect(notices).toEqual([{ title: '4 échéances à venir', body: 'La prochaine aujourd’hui : ouvrez Marianne pour les voir.', silent: false }])
     expect(JSON.stringify(notices)).not.toContain(PLATE)
     expect(deadlineNotices([deadline('2026-11-29', 'x')], NOW)[0].silent).toBe(true)
+  })
+})
+
+describe('a planned task’s notifications', () => {
+  it('say what came of the run, never the task’s title', () => {
+    expect(runNotice({ outcome: 'done' })).toEqual({ title: 'Rappel', body: 'Ouvrez Marianne pour le lire.', silent: false })
+    expect(runNotice({ outcome: 'found' })).toEqual({ title: 'Une tâche a trouvé quelque chose', body: 'Ouvrez Marianne pour la voir.', silent: false })
+    expect(runNotice({ outcome: 'waiting' }).title).toBe('Une tâche attend votre réponse')
+    expect(runNotice({ outcome: 'failed' }).title).toBe('Une tâche n’a pas abouti')
+    // A check that found nothing doesn't make a sound.
+    expect(runNotice({ outcome: 'nothing' })).toMatchObject({ title: 'Rien à signaler', silent: true })
   })
 })
