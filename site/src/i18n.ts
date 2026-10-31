@@ -53,7 +53,8 @@ const fr = {
       },
       accord: {
         tab: 'votre accord',
-        caption: 'Marianne remplit le site du péage dans son navigateur, avec votre plaque. Avant chaque clic qui compte, elle vous demande votre accord.'
+        caption:
+          'Marianne propose de vous rappeler la suite le jour venu. Rien n’est enregistré, rempli, signé ni envoyé sans votre accord, donné sur une carte comme celle-ci.'
       },
       demarches: {
         tab: 'vos démarches',
@@ -61,7 +62,8 @@ const fr = {
       },
       services: {
         tab: 'vos services',
-        caption: 'Les Services, avec leurs codes 3615 : vos péages en flux libre, la France en données publiques, le temps de votre commune…'
+        caption:
+          'Les Services, avec leurs codes 3615 : vos péages en flux libre, la France en données publiques, le temps de votre commune, le Parlement et ses votes…'
       }
     }
   },
@@ -384,7 +386,8 @@ const en: typeof fr = {
       },
       accord: {
         tab: 'your approval',
-        caption: 'Marianne fills in the toll website in its browser, with your plate. Before any click that matters, it asks for your approval.'
+        caption:
+          'Marianne offers to remind you of what comes next, on the day. Nothing is saved, filled in, signed or sent without your approval, given on a card like this one.'
       },
       demarches: {
         tab: 'your formalities',
@@ -392,7 +395,7 @@ const en: typeof fr = {
       },
       services: {
         tab: 'your services',
-        caption: 'The Services, with their 3615 codes: your free-flow tolls, France in public data, the weather of your commune…'
+        caption: 'The Services, with their 3615 codes: your free-flow tolls, France in public data, the weather of your commune, Parliament and its votes…'
       }
     }
   },
