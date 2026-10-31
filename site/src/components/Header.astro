@@ -9,19 +9,22 @@ const { lang, path } = Astro.props
 const t = words(lang)
 const other: Lang = lang === 'fr' ? 'en' : 'fr'
 const home = localized(lang)
-// The home page's sections; from another page, the same links lead back to them. `fits`: down to
-// which width a tab stays as the header narrows (wide, medium, or any).
+const GH = 'https://github.com/rodolphebarbanneau/marianne'
+// The home page's sections; from another page, the same links lead back to them. Then the site's own
+// pages: the same path in each language. `fits`: down to which width a tab stays in the header as it
+// narrows (wide, medium, or any); the menu always holds them all.
 const onHome = path === ''
-const links = [
-  { id: 'fonctions', label: t.nav.features, fits: 'wide' },
-  { id: 'vie-privee', label: t.nav.privacy, fits: 'wide' },
-  { id: 'services', label: t.nav.services, fits: 'wide' },
-  { id: 'telecharger', label: t.nav.download, fits: 'medium' }
-]
-// The site's own pages, after the home page's sections: the same path in each language.
-const pages = [
-  { path: 'guide/', label: t.nav.guide, fits: 'any' },
-  { path: 'manifeste/', label: t.nav.manifesto, fits: 'medium' }
+const tabs = [
+  ...[
+    { id: 'fonctions', label: t.nav.features, fits: 'wide' },
+    { id: 'vie-privee', label: t.nav.privacy, fits: 'wide' },
+    { id: 'services', label: t.nav.services, fits: 'wide' },
+    { id: 'telecharger', label: t.nav.download, fits: 'medium' }
+  ].map((l) => ({ ...l, href: onHome ? `#${l.id}` : `${home}#${l.id}`, spy: onHome ? l.id : undefined, current: false })),
+  ...[
+    { path: 'guide/', label: t.nav.guide, fits: 'any' },
+    { path: 'manifeste/', label: t.nav.manifesto, fits: 'medium' }
+  ].map((p) => ({ ...p, href: localized(lang, p.path), spy: undefined, current: path.startsWith(p.path) }))
 ]
 ---
 
@@ -30,20 +33,16 @@ const pages = [
     <a class="mark" href={home} aria-label="Marianne">
       <span class="wordmark">MARIANNE</span>
     </a>
-    <nav class="tabs" aria-label={lang === 'fr' ? 'Sections' : 'Sections'}>
-      {links.map((l) => (
-        <a href={onHome ? `#${l.id}` : `${home}#${l.id}`} data-spy={onHome ? l.id : undefined} data-fits={l.fits}>
-          {l.label}
-        </a>
-      ))}
-      {pages.map((p) => (
+    <nav class="tabs" aria-label="Sections">
+      {tabs.map((tab) => (
         <a
-          href={localized(lang, p.path)}
-          class:list={{ on: path.startsWith(p.path) }}
-          aria-current={path.startsWith(p.path) ? 'page' : undefined}
-          data-fits={p.fits}
+          href={tab.href}
+          class:list={{ on: tab.current }}
+          aria-current={tab.current ? 'page' : undefined}
+          data-spy={tab.spy}
+          data-fits={tab.fits}
         >
-          {p.label}
+          {tab.label}
         </a>
       ))}
     </nav>
@@ -54,7 +53,7 @@ const pages = [
       <a class="lang" href={localized(other, path)} hreflang={other} lang={other} title={t.ui.otherTitle}>
         {other.toUpperCase()}
       </a>
-      <a class="gh" href="https://github.com/rodolphebarbanneau/marianne" aria-label="GitHub">
+      <a class="gh" href={GH} aria-label="GitHub">
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <path
             fill="currentColor"
@@ -62,14 +61,35 @@ const pages = [
           ></path>
         </svg>
       </a>
+      <button type="button" class="menu-key" aria-label={t.ui.menu} aria-expanded="false" aria-controls="menu">
+        <span class="key">MENU</span>
+      </button>
     </div>
   </div>
+  <nav id="menu" class="menu" aria-label={t.ui.menu} hidden>
+    <ol>
+      {tabs.map((tab, i) => (
+        <li>
+          <a href={tab.href} class:list={{ on: tab.current }} aria-current={tab.current ? 'page' : undefined} data-spy={tab.spy}>
+            <span class="n inv">{i + 1}</span>
+            {tab.label}
+          </a>
+        </li>
+      ))}
+    </ol>
+    <div class="more">
+      <button type="button" class="opt" data-opt="mono" title={t.ui.monoTitle} aria-pressed="false">
+        {t.ui.mono}
+      </button>
+      <a class="repo" href={GH}>GitHub ›</a>
+    </div>
+  </nav>
 </header>
 
 <script>
   // Minitel 1, the first Minitel's greys: an option kept between visits.
   const root = document.documentElement
-  const mono = document.querySelector<HTMLButtonElement>('.opt[data-opt="mono"]')!
+  const monos = [...document.querySelectorAll<HTMLButtonElement>('.opt[data-opt="mono"]')]
   const read = () => {
     try {
       return !!JSON.parse(localStorage.getItem('marianne-screen') || '{}').mono
@@ -80,24 +100,49 @@ const pages = [
   const apply = (on: boolean) => {
     if (on) root.dataset.theme = 'monochrome'
     else delete root.dataset.theme
-    mono.setAttribute('aria-pressed', String(on))
+    monos.forEach((m) => m.setAttribute('aria-pressed', String(on)))
   }
-  mono.addEventListener('click', () => {
-    const on = !read()
-    localStorage.setItem('marianne-screen', JSON.stringify({ mono: on }))
-    apply(on)
-  })
+  monos.forEach((m) =>
+    m.addEventListener('click', () => {
+      const on = !read()
+      localStorage.setItem('marianne-screen', JSON.stringify({ mono: on }))
+      apply(on)
+    })
+  )
   apply(read())
 
+  // MENU: its links close it, since one of the page's own sections doesn't load a new page; so do
+  // échap and a tap beside it.
+  const header = document.querySelector<HTMLElement>('header.top')!
+  const key = header.querySelector<HTMLButtonElement>('.menu-key')!
+  const menu = header.querySelector<HTMLElement>('.menu')!
+  const open = (on: boolean) => {
+    menu.hidden = !on
+    key.setAttribute('aria-expanded', String(on))
+  }
+  key.addEventListener('click', () => open(key.getAttribute('aria-expanded') !== 'true'))
+  menu.addEventListener('click', (e) => {
+    if ((e.target as Element).closest('a')) open(false)
+  })
+  document.addEventListener('click', (e) => {
+    if (!header.contains(e.target as Node)) open(false)
+  })
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !menu.hidden) {
+      open(false)
+      key.focus()
+    }
+  })
+
   // The current section's tab in inverse video, as the app shows the current page.
-  const tabs = [...document.querySelectorAll<HTMLAnchorElement>('[data-spy]')]
-  const sections = tabs.map((a) => document.getElementById(a.dataset.spy!)).filter((s): s is HTMLElement => !!s)
+  const spies = [...document.querySelectorAll<HTMLAnchorElement>('[data-spy]')]
+  const sections = [...new Set(spies.map((a) => a.dataset.spy!))].map((id) => document.getElementById(id)).filter((s): s is HTMLElement => !!s)
   if (sections.length) {
     const update = () => {
       const y = window.scrollY + window.innerHeight * 0.35
       let current: string | undefined
       for (const s of sections) if (s.offsetTop <= y) current = s.id
-      tabs.forEach((a) => a.classList.toggle('on', a.dataset.spy === current))
+      spies.forEach((a) => a.classList.toggle('on', a.dataset.spy === current))
     }
     addEventListener('scroll', update, { passive: true })
     update()
@@ -121,6 +166,7 @@ const pages = [
   }
   .mark {
     color: var(--hi);
+    padding: 10px 0;
   }
   .mark .wordmark {
     font-size: 1.5rem;
@@ -184,15 +230,112 @@ const pages = [
     width: 20px;
     height: 20px;
   }
-  @media (max-width: 560px) {
-    .opt {
-      display: none;
-    }
+  /* MENU, a key like the screen's others: every tab, where some have left the header. */
+  .menu-key {
+    display: none;
+    align-items: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin-left: 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    cursor: pointer;
   }
-  /* As the header narrows, the home page's sections go first (the keys at the bottom still reach
-     them), but Télécharger; then every tab but the guide's. */
+  .menu-key .key {
+    font-size: 1.2rem;
+    padding: 1px 7px;
+  }
+  .menu-key:hover .key,
+  .menu-key[aria-expanded='true'] .key {
+    background: var(--accent);
+  }
+  /* The menu drops from the header. It scrolls on its own, for a phone held sideways. */
+  .menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: calc(100vh - var(--header-h));
+    max-height: calc(100dvh - var(--header-h));
+    overflow-y: auto;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--rule);
+    box-shadow: 0 30px 60px -10px rgba(0, 0, 0, 0.75);
+  }
+  .menu ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .menu li + li {
+    border-top: 1px solid var(--rule);
+  }
+  .menu li a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 52px;
+    padding: 0 var(--gutter);
+    color: var(--fg);
+    font-size: 1.05rem;
+  }
+  .menu li a:hover {
+    background: var(--hover);
+    color: var(--hi);
+  }
+  .menu .n {
+    min-width: 1.5em;
+    font-size: 1.4rem;
+    text-align: center;
+  }
+  .menu a.on {
+    color: var(--hi);
+  }
+  .menu a.on .n {
+    background: var(--accent);
+  }
+  /* What has left the header on a phone: the option and GitHub. */
+  .more {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 10px var(--gutter);
+    border-top: 1px solid var(--rule);
+  }
+  .more .opt {
+    min-height: 40px;
+    padding: 2px 12px;
+    font-size: 0.9rem;
+  }
+  .more .repo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    color: var(--link);
+  }
+  /* As the header narrows, the tabs go, the home page's sections first, then all but the guide's,
+     and MENU comes to hold them. */
   @media (max-width: 1240px) {
     .tabs a[data-fits='wide'] {
+      display: none;
+    }
+    .menu-key {
+      display: inline-flex;
+    }
+    /* Beside the header's end rather than across a whole tablet. */
+    .menu {
+      left: auto;
+      right: var(--gutter);
+      width: 320px;
+      border: 1px solid var(--rule);
+      border-top: 0;
+    }
+  }
+  @media (min-width: 1241px) {
+    .menu {
       display: none;
     }
   }
@@ -202,6 +345,39 @@ const pages = [
     }
     .bar {
       gap: 14px;
+    }
+    .lang {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+      min-height: 40px;
+    }
+    .tools .gh {
+      padding: 10px;
+    }
+  }
+  @media (max-width: 640px) {
+    .menu {
+      left: 0;
+      right: 0;
+      width: auto;
+      border: 0;
+      border-bottom: 1px solid var(--rule);
+    }
+  }
+  @media (max-width: 560px) {
+    .tools .opt,
+    .tools .gh {
+      display: none;
+    }
+    .more {
+      display: flex;
+    }
+  }
+  @media (max-width: 480px) {
+    .tabs {
+      display: none;
     }
   }
 </style>

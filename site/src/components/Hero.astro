@@ -103,13 +103,15 @@ const questions = [
 
   // Liberty's mosaic in the screen's own pixels, as the app draws its logo: a block of 8 CSS pixels and
   // a gap of 1, each rounded to whole screen pixels, so every gap is as wide as the others; drawn again
-  // when the page is zoomed, and placed on a whole screen pixel.
+  // when the page is zoomed, and placed on a whole screen pixel. A phone's blocks are half that size:
+  // full size, its width would show a quarter of the painting, a few blocks with nothing to recognise.
   const source = document.querySelector<HTMLImageElement>('img.liberty')!
   const canvas = document.querySelector<HTMLCanvasElement>('canvas.liberty')!
   const drawLiberty = () => {
     const dpr = window.devicePixelRatio || 1
-    const block = Math.max(2, Math.round(8 * dpr))
-    const gap = Math.max(1, Math.round(dpr))
+    const size = matchMedia('(max-width: 640px)').matches ? 0.5 : 1
+    const block = Math.max(2, Math.round(8 * size * dpr))
+    const gap = Math.max(1, Math.round(size * dpr))
     const step = block + gap
     const { naturalWidth: cols, naturalHeight: rows } = source
     canvas.width = cols * step
@@ -359,6 +361,12 @@ const questions = [
     }
     .sub .sep {
       display: none;
+    }
+    .sub a {
+      padding: 6px 0;
+    }
+    img.liberty {
+      width: 720px;
     }
   }
   .phone {

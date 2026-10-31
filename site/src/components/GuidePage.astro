@@ -198,6 +198,8 @@ const source = `https://github.com/rodolphebarbanneau/marianne/blob/main/docs/gu
   .prose {
     max-width: 78ch;
     color: var(--fg);
+    /* An address in the text has no spaces: wider than a phone, it breaks rather than pushes the page. */
+    overflow-wrap: break-word;
   }
   .prose :global(h1) {
     font-family: var(--retro);
@@ -361,14 +363,38 @@ const source = `https://github.com/rodolphebarbanneau/marianne/blob/main/docs/gu
     text-decoration: none;
   }
   @media (max-width: 860px) {
+    /* minmax(0, …): a plain 1fr grows to the widest thing in it, and the page with it. */
     .guide {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
     .side {
       position: static;
     }
     .side ul {
       display: none;
+    }
+    .pager a {
+      min-height: 44px;
+    }
+    .prose :global(.copy) {
+      top: 4px;
+      right: 4px;
+      padding: 7px 12px;
+    }
+    .edit a {
+      display: inline-block;
+      padding: 8px 0;
+    }
+  }
+  /* A table's words don't break: wider than a small phone, it scrolls within itself, not the page. */
+  @media (max-width: 480px) {
+    .prose :global(table) {
+      display: block;
+      overflow-x: auto;
+    }
+    .prose :global(th),
+    .prose :global(td) {
+      padding: 8px 6px;
     }
   }
 </style>
