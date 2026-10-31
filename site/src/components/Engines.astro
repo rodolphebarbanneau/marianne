@@ -100,4 +100,17 @@ const t = words(lang)
       grid-template-columns: 1fr;
     }
   }
+  /* The maker under the name: beside it on a phone, the name has to wrap. */
+  @media (max-width: 480px) {
+    .engines li {
+      grid-template-columns: auto 1fr;
+    }
+    .maker {
+      grid-column: 2;
+    }
+    .section-head a {
+      display: inline-block;
+      padding: 6px 0;
+    }
+  }
 </style>

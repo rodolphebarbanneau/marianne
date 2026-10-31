@@ -27,7 +27,8 @@ const fr = {
     monoTitle: 'Le noir et blanc du premier Minitel',
     other: 'English',
     otherTitle: 'This site in English',
-    skip: 'Aller au contenu'
+    skip: 'Aller au contenu',
+    menu: 'menu'
   },
   hero: {
     title: 'Vos droits, vos démarches,\nvos services',
@@ -48,6 +49,7 @@ const fr = {
     next: 'suivant',
     zoom: 'AGRANDIR',
     zoomLabel: 'agrandir l’écran',
+    pan: 'faites glisser pour parcourir l’écran',
     close: 'fermer',
     tabs: {
       dossier: 'un dossier',
@@ -287,7 +289,8 @@ const fr = {
         'Il y a plus de quarante ans, le Minitel faisait entrer des services dans des millions de foyers, avec un code et un écran. Marianne en garde l’esprit : les services publics à portée de main, pour tout le monde. Cette fois, vos données restent chez vous.'
       ]
     },
-    signed: 'Rodolphe Barbanneau',
+    signed: 'les auteurs de Marianne',
+    signedAt: 'guide/about/#les-auteurs',
     download: 'télécharger Marianne',
     guide: 'lire le guide',
     code: 'lire le code'
@@ -329,7 +332,8 @@ const en: typeof fr = {
     monoTitle: 'The black and white of the first Minitel',
     other: 'Français',
     otherTitle: 'Ce site en français',
-    skip: 'Skip to content'
+    skip: 'Skip to content',
+    menu: 'menu'
   },
   hero: {
     title: 'Your rights, your formalities,\nyour services',
@@ -350,6 +354,7 @@ const en: typeof fr = {
     next: 'next',
     zoom: 'ENLARGE',
     zoomLabel: 'enlarge the screen',
+    pan: 'drag to move around the screen',
     close: 'close',
     tabs: {
       dossier: 'a folder',
@@ -580,7 +585,8 @@ const en: typeof fr = {
         'More than forty years ago, the Minitel brought services into millions of French homes, with a code and a screen. Marianne keeps its spirit: public services within reach, for everyone. This time, your data stays with you.'
       ]
     },
-    signed: 'Rodolphe Barbanneau',
+    signed: 'the authors of Marianne',
+    signedAt: 'guide/about/#the-authors',
     download: 'download Marianne',
     guide: 'read the guide',
     code: 'read the code'

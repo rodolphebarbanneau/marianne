@@ -18,32 +18,37 @@ import { words, type Lang } from '../i18n'
 // of several screens shows them in turn, a film (a looping video, its first frame as its poster)
 // once through while it shows, and the caption follows the screen. Any screen opens full size
 // (AGRANDIR, or a click on it).
+//
+// A phone can't show 1200 pixels of interface in 350 and have them read. There, the window is square
+// and from edge to edge, the screens at full height: it shows the part of each that matters, `focus`
+// saying where that part sits across the screen, from 0 (its left) to 100 (its right). Enlarged, the
+// screen comes close to its real size, and the finger moves around it.
 interface Props {
   lang: Lang
 }
 const { lang } = Astro.props
 const t = words(lang)
 type Caption = keyof typeof t.screens.captions
-type Frame = { image: ImageMetadata; film?: string; caption: Caption }
+type Frame = { image: ImageMetadata; film?: string; caption: Caption; focus: number }
 const shots: Array<{ id: keyof typeof t.screens.tabs; frames: Frame[] }> = [
-  { id: 'dossier', frames: [{ image: dossier, caption: 'dossier' }] },
-  { id: 'accord', frames: [{ image: accord, caption: 'accord' }] },
+  { id: 'dossier', frames: [{ image: dossier, caption: 'dossier', focus: 77 }] },
+  { id: 'accord', frames: [{ image: accord, caption: 'accord', focus: 78 }] },
   {
     id: 'demarches',
     frames: [
-      { image: demarches, caption: 'demarches' },
-      { image: taches, caption: 'demarches' },
-      { image: navigateur, caption: 'navigateur' }
+      { image: demarches, caption: 'demarches', focus: 64 },
+      { image: taches, caption: 'demarches', focus: 0 },
+      { image: navigateur, caption: 'navigateur', focus: 100 }
     ]
   },
   {
     id: 'services',
     frames: [
-      { image: infos, film: infosFilm, caption: 'infos' },
-      { image: parlement, caption: 'parlement' },
-      { image: meteo, caption: 'services' },
-      { image: carte, caption: 'services' },
-      { image: annuaire, caption: 'services' }
+      { image: infos, film: infosFilm, caption: 'infos', focus: 64 },
+      { image: parlement, caption: 'parlement', focus: 64 },
+      { image: meteo, caption: 'services', focus: 64 },
+      { image: carte, caption: 'services', focus: 65 },
+      { image: annuaire, caption: 'services', focus: 64 }
     ]
   }
 ]
@@ -94,6 +99,7 @@ const posters = new Map(
                   class:list={['screen', { on: n === 0 }]}
                   data-full={f.film}
                   data-says={f.caption}
+                  style={`--focus: ${f.focus}%`}
                   poster={posters.get(f.image)}
                   aria-label={label(s.frames, n) || undefined}
                   muted
@@ -108,10 +114,11 @@ const posters = new Map(
                   class:list={['screen', { on: n === 0 }]}
                   data-full={full.get(f.image)}
                   data-says={f.caption}
+                  style={`--focus: ${f.focus}%`}
                   src={f.image}
                   alt={label(s.frames, n)}
                   widths={[720, 1200, 1800, 2400]}
-                  sizes="(min-width: 1280px) 1200px, 94vw"
+                  sizes="(max-width: 640px) 160vw, (min-width: 1280px) 1200px, 94vw"
                   loading={i === 0 ? 'eager' : 'lazy'}
                   fetchpriority={i === 0 ? 'high' : 'auto'}
                 />
@@ -142,6 +149,7 @@ const posters = new Map(
   </div>
   <dialog class="enlarged" aria-label={t.screens.zoomLabel}>
     <div class="frame"></div>
+    <p class="pan">{t.screens.pan}</p>
     <div class="caption">
       <p></p>
       <button type="button" class="nav" data-close aria-label={t.screens.close}>
@@ -153,20 +161,25 @@ const posters = new Map(
 
 <script>
   const viewer = document.querySelector<HTMLElement>('.viewer')!
+  const stage = viewer.querySelector<HTMLElement>('.window')!
   const tabs = [...viewer.querySelectorAll<HTMLButtonElement>('[role=tab]')]
   const panels = [...viewer.querySelectorAll<HTMLElement>('[role=tabpanel]')]
   const captions = [...viewer.querySelectorAll<HTMLElement>('[data-caption]')]
   const zoom = viewer.querySelector<HTMLButtonElement>('.zoom')!
   const dialog = document.querySelector<HTMLDialogElement>('dialog.enlarged')!
-  // A screen alone in its tab stays DWELL; among others, FRAME; a film, once through.
-  const DWELL = 6500
-  const FRAME = 3200
+  // A screen alone in its tab stays DWELL; among others, FRAME; a film, once through. Longer where
+  // there is no pointer to rest on it, as on a phone, whose captions run to several lines.
+  const touch = matchMedia('(hover: none)').matches
+  const DWELL = touch ? 9000 : 6500
+  const FRAME = touch ? 5000 : 3200
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches
   let index = 0
   // The screen shown in the tab, and for how long it has been.
   let frame = 0
   let shown = 0
   let playing = !still
+  // A screen reached by a step stays on show until the next one.
+  let held = false
   let hovered = false
   let visible = false
   let enlarged = false
@@ -213,11 +226,20 @@ const posters = new Map(
   // Picked by hand, it stays: the film stops (a tab's own screens still take turns).
   const pick = (i: number, focus = false) => {
     playing = false
+    held = false
     viewer.classList.add('stopped')
     show(i, focus)
   }
+  // RETOUR, SUITE and a swipe go through every screen, a tab's own and then the next tab's.
+  const step = (by: number) => {
+    const next = frame + by
+    const inside = next >= 0 && next < frames(index).length
+    pick(inside ? index : index + by)
+    showFrame(inside ? next : by < 0 ? frames(index).length - 1 : 0)
+    held = true
+  }
   tabs.forEach((t, n) => t.addEventListener('click', () => pick(n)))
-  viewer.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((b) => b.addEventListener('click', () => pick(index + Number(b.dataset.step))))
+  viewer.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((b) => b.addEventListener('click', () => step(Number(b.dataset.step))))
   viewer.querySelector('[role=tablist]')!.addEventListener('keydown', (e) => {
     const k = (e as KeyboardEvent).key
     if (k === 'ArrowRight' || k === 'ArrowLeft') {
@@ -225,6 +247,25 @@ const posters = new Map(
       pick(index + (k === 'ArrowRight' ? 1 : -1), true)
     }
   })
+  // A swipe across the screen is a step. The window leaves the browser only the vertical one
+  // (touch-action), which scrolls the page.
+  let start = { x: 0, y: 0 }
+  stage.addEventListener(
+    'touchstart',
+    (e) => {
+      start = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY }
+    },
+    { passive: true }
+  )
+  stage.addEventListener(
+    'touchend',
+    (e) => {
+      const x = e.changedTouches[0].clientX - start.x
+      const y = e.changedTouches[0].clientY - start.y
+      if (Math.abs(x) > 48 && Math.abs(x) > 2 * Math.abs(y)) step(x < 0 ? 1 : -1)
+    },
+    { passive: true }
+  )
   viewer.addEventListener('pointerenter', () => (hovered = true))
   viewer.addEventListener('pointerleave', () => (hovered = false))
   new IntersectionObserver(
@@ -262,6 +303,10 @@ const posters = new Map(
     enlarged = true
     sync()
     dialog.showModal()
+    // On a phone the screen is wider than the view: it opens where the gallery's crop starts, at the
+    // left of what it was showing, where its lines begin. Elsewhere nothing is cropped, and this is 0.
+    const cropped = 1 - stage.clientWidth / (stage.clientHeight * 1.6)
+    frame.scrollLeft = (frame.scrollWidth * cropped * parseFloat(getComputedStyle(screen).objectPosition)) / 100
   }
   zoom.addEventListener('click', enlarge)
   panels.forEach((p) => p.addEventListener('click', enlarge))
@@ -293,7 +338,8 @@ const posters = new Map(
         tabs[index].style.setProperty('--p', String(Math.min(1, (before + shown) / total)))
       }
       if (shown >= lengths[frame]) {
-        if (frame + 1 < list.length) showFrame(frame + 1)
+        if (held) shown = 0
+        else if (frame + 1 < list.length) showFrame(frame + 1)
         else if (playing) show(index + 1)
         else if (list.length > 1) showFrame(0)
         else shown = 0
@@ -359,6 +405,7 @@ const posters = new Map(
   .window {
     position: relative;
     aspect-ratio: 1440 / 900;
+    touch-action: pan-y pinch-zoom;
     border: 1px solid var(--rule);
     background: var(--bg-sunken);
     box-shadow:
@@ -367,16 +414,23 @@ const posters = new Map(
       0 0 0 6px color-mix(in srgb, var(--bg-raised) 70%, transparent);
     overflow: hidden;
   }
+  /* The screens lie one on the other. Those not shown are hidden once they have faded, not just
+     transparent: ten images this size, painted for nothing, are a lot for a phone. */
   figure {
     position: absolute;
     inset: 0;
     margin: 0;
     opacity: 0;
-    transition: opacity 0.35s steps(4);
+    visibility: hidden;
+    transition:
+      opacity 0.35s steps(4),
+      visibility 0s 0.35s;
     cursor: zoom-in;
   }
   figure.on {
     opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
   }
   figure :global(.screen) {
     position: absolute;
@@ -386,21 +440,26 @@ const posters = new Map(
     height: 100%;
     object-fit: cover;
     opacity: 0;
-    transition: opacity 0.35s steps(4);
+    visibility: hidden;
+    transition:
+      opacity 0.35s steps(4),
+      visibility 0s 0.35s;
   }
   figure :global(.screen.on) {
     opacity: 1;
+    visibility: inherit;
+    transition-delay: 0s;
   }
   /* AGRANDIR: in the screen's corner, a key like the window's others. */
   .zoom {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 2px;
+    right: 2px;
     z-index: 2;
     font: inherit;
     border: 0;
     background: none;
-    padding: 0;
+    padding: 8px;
     cursor: pointer;
     opacity: 0.88;
   }
@@ -436,12 +495,26 @@ const posters = new Map(
     text-align: center;
     text-wrap: balance;
   }
+  /* The captions in one cell, the ones not shown keeping their room: the longest sets the height, and
+     the page under the gallery doesn't jump as they change, by four lines on a phone. */
+  .viewer .caption p {
+    display: grid;
+  }
+  .viewer .caption span {
+    grid-area: 1 / 1;
+  }
+  .viewer .caption span[hidden] {
+    display: block;
+    visibility: hidden;
+  }
   .nav {
     font: inherit;
     border: 0;
     background: none;
     cursor: pointer;
     padding: 0;
+    min-width: 44px;
+    min-height: 44px;
   }
   .nav .key {
     font-size: 1.15rem;
@@ -453,6 +526,7 @@ const posters = new Map(
   dialog.enlarged {
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     max-width: none;
     max-height: none;
     margin: 0;
@@ -460,6 +534,7 @@ const posters = new Map(
     border: 0;
     background: transparent;
     color: var(--fg);
+    overscroll-behavior: contain;
   }
   dialog.enlarged[open] {
     display: flex;
@@ -475,6 +550,7 @@ const posters = new Map(
   dialog.enlarged .frame,
   dialog.enlarged .caption {
     width: min(100%, calc((100vh - 150px) * 1.6));
+    width: min(100%, calc((100dvh - 150px) * 1.6));
   }
   dialog.enlarged .frame {
     aspect-ratio: 1440 / 900;
@@ -488,22 +564,122 @@ const posters = new Map(
     height: 100%;
     object-fit: contain;
   }
+  /* Said where the screen is wider than the view: on a phone held upright. */
+  .pan {
+    display: none;
+    color: var(--dim);
+    font-size: 0.8rem;
+    text-align: center;
+  }
   @media (max-width: 640px) {
     .caption {
       flex-wrap: wrap;
       justify-content: space-between;
+      gap: 6px 16px;
     }
+    /* The keys right under the screen they turn, always in the same place; the caption after them. */
     .caption p {
-      order: -1;
+      order: 1;
       flex-basis: 100%;
     }
+    /* The four tabs in sight, none of them to scroll to. */
     .tabs {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scrollbar-width: none;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-bottom: 10px;
     }
     .tabs button {
-      white-space: nowrap;
+      min-height: 40px;
+      padding: 4px 6px;
+    }
+    .progress {
+      bottom: -3px;
+    }
+    .sample {
+      grid-column: 1 / -1;
+      margin-left: 0;
+      text-align: right;
+    }
+    .window {
+      aspect-ratio: 1;
+      margin-inline: calc(-1 * var(--gutter));
+      border-inline: 0;
+    }
+    figure :global(.screen) {
+      object-position: var(--focus, 50%) 50%;
+    }
+    /* Enlarged, the screen at the full height of the phone, close to its real size: the view moves
+       across it, and fingers can still zoom. */
+    dialog.enlarged {
+      padding: 0 0 6px;
+    }
+    dialog.enlarged[open] {
+      justify-content: flex-start;
+    }
+    dialog.enlarged .frame {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      aspect-ratio: auto;
+      overflow: auto;
+      border-inline: 0;
+      border-top: 0;
+      box-shadow: none;
+    }
+    dialog.enlarged .frame > :global(*) {
+      width: auto;
+      max-width: none;
+      aspect-ratio: 1440 / 900;
+    }
+    dialog.enlarged .pan {
+      display: block;
+    }
+    dialog.enlarged .caption {
+      width: 100%;
+      margin-top: 0;
+      min-height: 0;
+      padding: 0 var(--gutter);
+    }
+    dialog.enlarged .caption p {
+      order: -1;
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+  }
+  /* A phone held sideways: the screen fills the width, as tall as it needs to, and scrolls over the
+     key that closes it; a caption would leave it no room. */
+  @media (max-height: 500px) {
+    dialog.enlarged {
+      padding: 0;
+    }
+    dialog.enlarged[open] {
+      justify-content: flex-start;
+      gap: 0;
+    }
+    dialog.enlarged .frame {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      aspect-ratio: auto;
+      overflow: auto;
+      border: 0;
+      box-shadow: none;
+    }
+    dialog.enlarged .frame > :global(*) {
+      width: 100%;
+      height: auto;
+      max-width: none;
+      aspect-ratio: 1440 / 900;
+    }
+    dialog.enlarged .pan,
+    dialog.enlarged .caption p {
+      display: none;
+    }
+    dialog.enlarged .caption {
+      width: 100%;
+      margin-top: 0;
+      min-height: 0;
+      padding: 0 var(--gutter);
     }
   }
 </style>
