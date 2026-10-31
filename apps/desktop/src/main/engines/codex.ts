@@ -50,7 +50,7 @@ async function turn(t: EngineTurn): Promise<void> {
     ['-c', `model_reasoning_effort="${t.effort}"`],
     // TOML strings; forward slashes keep Windows paths free of escapes.
     ['-c', `model_instructions_file="${instructions.replace(/\\/g, '/')}"`],
-    ['-c', `${server}.url="${mcp.urlFor(t.folderId)}"`],
+    ['-c', `${server}.url="${mcp.urlFor(t.folderId, t.tools)}"`],
     // A tool call can wait for the user's answer on a card.
     ['-c', `${server}.tool_timeout_sec=900`],
     ['-c', `${server}.bearer_token_env_var="MARIANNE_MCP_TOKEN"`],

@@ -4,6 +4,7 @@ import { display, type ProfileOp } from '@marianne/profile'
 import type { ProfileField } from '@marianne/sdk'
 import { app, dialog, ipcMain, shell } from 'electron'
 import type { Rect, UnlockSecret } from '../shared/api'
+import type { BugReportRequest } from '../shared/bug-report'
 import type {
   AccountSettings,
   AppInfo,
@@ -21,6 +22,7 @@ import type {
 import { accounts } from './account'
 import { approvals } from './approvals'
 import { browser } from './browser'
+import { cancelBugReport, prepareBugReport } from './bug-reporter'
 import { chat } from './chat'
 import { catalogue, communityPackages, SERVICE_FILE_EXT } from './community'
 import { configStore } from './config'
@@ -131,6 +133,8 @@ export function registerIpc(): void {
   on('openExternal', (url: string) => {
     if (/^https?:\/\//.test(url)) void shell.openExternal(url)
   })
+  handle('prepareBugReport', (req: BugReportRequest) => prepareBugReport(req))
+  on('cancelBugReport', () => cancelBugReport())
   on('toggleFullscreen', () => mainWindow?.setFullScreen(!mainWindow.isFullScreen()))
   on('dimTitleBar', (dim: boolean) => dimTitleBar(!!dim))
   // The screens from scratch, the archive still open. The browser panel is drawn here, over them: hidden until they show it again.
@@ -403,6 +407,7 @@ export function registerIpc(): void {
   session.on('unlocked', () => broadcast('accounts', accounts.list()))
   session.on('locked', () => {
     chat.cancelAll()
+    cancelBugReport()
     broadcast('accounts', accounts.list())
   })
   configStore.on('change', (next: DeviceConfig, prev: DeviceConfig) => {

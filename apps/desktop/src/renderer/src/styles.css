@@ -3482,6 +3482,37 @@ button.card:hover {
   padding: 10px 16px;
   border-top: 1px dashed var(--rule);
 }
+/* « signaler un bug » (app/bug-report.tsx): the user's words, then the report to read again, each field as tall as what
+   it holds, up to a height where it scrolls. */
+.bug-report textarea {
+  width: 100%;
+  min-height: 3.2em;
+  max-height: 260px;
+  overflow: auto;
+}
+.bug-report textarea.words {
+  min-height: 7em;
+}
+.bug-report textarea.analysis {
+  min-height: 9em;
+  max-height: 340px;
+}
+/* The log's lines as they are, one a line: wider than the dialog, they scroll sideways. */
+.bug-report textarea.diagnostics {
+  max-height: 200px;
+  font-size: 0.82em;
+  color: var(--dim);
+  white-space: pre;
+}
+.bug-report .check {
+  display: flex;
+  align-items: flex-start;
+  font-size: 0.88em;
+  line-height: 1.45;
+}
+.bug-report .check input {
+  margin-top: 3px;
+}
 /* GUIDE: wider than the other dialogs, its keys beside its links and authors. */
 .modal:has(.guide) {
   width: min(820px, 100%);

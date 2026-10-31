@@ -8,6 +8,7 @@ import type { MarianneApi } from '../shared/api'
 
 const SEND = [
   'openExternal',
+  'cancelBugReport',
   'toggleFullscreen',
   'reloadWindow',
   'dimTitleBar',
@@ -37,6 +38,7 @@ const SEND = [
 
 const INVOKE = [
   'getInfo',
+  'prepareBugReport',
   'getUpdateState',
   'getConfig',
   'setConfig',

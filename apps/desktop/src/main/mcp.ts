@@ -46,11 +46,11 @@ function readBody(req: IncomingMessage): Promise<unknown> {
   })
 }
 
-/** One MCP server per request (stateless mode), with the tools enabled right now. */
-function buildServer(ctx: ToolContext): McpServer {
+/** One MCP server per request (stateless mode), with the tools enabled right now, or none for a turn given none. */
+function buildServer(ctx: ToolContext, tools: 'all' | 'none'): McpServer {
   const server = new McpServer({ name: MCP_SERVER_NAME, title: 'Marianne', version: app.getVersion() }, { capabilities: { tools: {} } })
   const names = new Set<string>()
-  for (const t of activeTools()) {
+  for (const t of tools === 'none' ? [] : activeTools()) {
     // One tool by a name; one that can't be registered is left out, the others are served.
     if (names.has(t.name)) {
       log.warn(`MCP: two tools named ${t.name}; the second left out`)
@@ -150,9 +150,9 @@ class McpHost {
     } catch {
       return send(400, 'Invalid JSON body')
     }
-    // Each turn's MCP address names its folder (?f=…), where cards are shown.
-    const folderId = new URL(req.url, 'http://localhost').searchParams.get('f') ?? undefined
-    const server = buildServer({ folderId })
+    // Each turn's MCP address names its folder (?f=…), where cards are shown, and whether it has tools.
+    const query = new URL(req.url, 'http://localhost').searchParams
+    const server = buildServer({ folderId: query.get('f') ?? undefined }, query.get('tools') === 'none' ? 'none' : 'all')
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true })
     res.on('close', () => {
       void transport.close()
@@ -167,9 +167,16 @@ class McpHost {
     }
   }
 
-  /** The address a turn's engine connects to: cards of its tool calls go to `folderId`. */
-  urlFor(folderId?: string): string {
-    return folderId ? `${this.url}?f=${encodeURIComponent(folderId)}` : this.url
+  /**
+   * The address a turn's engine connects to: cards of its tool calls go to `folderId`. A turn given
+   * no tools (a bug report's analysis) finds none there: the address can only take tools away.
+   */
+  urlFor(folderId?: string, tools: 'all' | 'none' = 'all'): string {
+    const query = new URLSearchParams()
+    if (folderId) query.set('f', folderId)
+    if (tools === 'none') query.set('tools', 'none')
+    const q = query.toString()
+    return q ? `${this.url}?${q}` : this.url
   }
 
   stop(): void {

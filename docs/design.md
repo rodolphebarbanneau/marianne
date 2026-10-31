@@ -31,7 +31,7 @@ Marianne is a desktop citizen assistant for people living in France: their right
 
 ### The bars
 
-- **Title bar**: the sidebar toggle; MARIANNE (a new folder, on the composer); the pages, the current one as an inverse block; search, settings and reload; the system's window buttons. Full screen is F11 (ctrl+cmd+F on macOS), with no button.
+- **Title bar**: the sidebar toggle; MARIANNE (a new folder, on the composer); the pages, the current one as an inverse block; search, settings, reload and the bug (« signaler un bug », [below](#engines)); the system's window buttons. Full screen is F11 (ctrl+cmd+F on macOS), with no button.
 - **Sidebar** (after T3 Code):
   - at the top, search, a filter by domain (shift+click for several) and a new folder;
   - each row: domain badge, pin, status or time, title, a meta line and the engine badge; on hover, snooze and settle;
@@ -120,6 +120,11 @@ Claude Code (CL), Codex (CX) and Mistral Vibe (MI) are the user's own CLIs, each
 - **Sessions.** Each folder keeps each engine's session: its transcript goes into the archive after each turn and comes back before the next. Claude compacts at 300 000 tokens by default (`autoCompactWindow`; Réglages › Moteurs offers 150 000 to 800 000).
 - **Installing and signing in.** Each engine's `site` is where to get it (the "not found" message): claude.com/product/claude-code, chatgpt.com/codex (Codex comes with ChatGPT's plans), mistral.ai/products/vibe. The user signs in with the CLI's own sign-in; « se connecter » in Réglages › Moteurs opens it in a terminal (`login`).
 - **Language.** The system prompt and every message are in English; the engine answers in French.
+- **Bug reports.** « signaler un bug » has the user's engine write up a bug for GitHub (`main/bug-report.ts`, `main/bug-reporter.ts`, `renderer/src/app/bug-report.tsx`):
+  - it reads the user's words and the app's diagnostics: version, system, engine, screen, the window's last errors (kept in memory only), the open folder's course without its words, the log's end;
+  - all of it is scrubbed before, and its answer after: the profile's tokens, the home folder, the account's name, emails, phones, IBANs, plates, long numbers, addresses past their site;
+  - it works in a session of its own, with no web and no tool (its MCP address serves none: `tools=none`), and writes in English;
+  - the user reads and edits it all, then opens GitHub's bug form, filled from its address (`shared/bug-report.ts`). GitHub fills only text fields that way, so the form's system and engine are inputs. The app sends nothing.
 
 ## Tools, cards and the browser
 

@@ -6,6 +6,8 @@ body:
     attributes:
       value: |
         Thanks for testing Marianne. Don't write **any personal data** here (social security number, address, tax number…): this report is public.
+
+        In the app, the bug icon at the top right fills this form in for you: your words, an analysis by your own engine, and the app's diagnostics, with what is personal left out.
   - type: textarea
     id: what
     attributes:
@@ -20,6 +22,11 @@ body:
       placeholder: |
         1. Open…
         2. Click on…
+  - type: textarea
+    id: analysis
+    attributes:
+      label: Analysis
+      description: Written in the app by the reporter's own engine, from their words and the diagnostics below. Expected, actual, evidence, likely cause.
   - type: input
     id: version
     attributes:
@@ -28,18 +35,26 @@ body:
       placeholder: 0.1.0-alpha.2
     validations:
       required: true
-  - type: dropdown
+  # Text fields rather than lists: GitHub fills only those from the address the app opens.
+  - type: input
     id: system
     attributes:
       label: Operating system
-      options: [Windows, macOS (Apple silicon), macOS (Intel), Linux]
+      placeholder: Windows 11, macOS 15 (Apple silicon), Ubuntu 24.04…
     validations:
       required: true
-  - type: dropdown
+  - type: input
     id: engine
     attributes:
       label: Engine
-      options: [Claude Code, Codex, Mistral Vibe, none]
+      description: Claude Code, Codex, Mistral Vibe, or none.
+      placeholder: Claude Code
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Filled in by the app with the environment, the screen, the window's errors, the conversation's course (never its words) and the end of the log.
+      render: text
   - type: textarea
     id: screenshots
     attributes:
