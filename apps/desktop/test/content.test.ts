@@ -7,9 +7,22 @@ import { readContent, writeBundle } from '@marianne/content'
 import { files } from '@marianne/content/files'
 import { setupLabel } from '@marianne/profile'
 import { afterAll, describe, expect, it, vi } from 'vitest'
-import { appProblems, ContentStore } from '../src/main/content'
+import { appProblems, ContentStore, publishedBundle } from '../src/main/content'
 
-const BUNDLE_URL = 'https://example.test/releases/latest/download/content.json'
+const RELEASES_URL = 'https://api.example.test/repos/x/marianne/releases?per_page=10'
+const BUNDLE_URL = 'https://example.test/releases/download/v0.1.0-alpha.3/content.json'
+const asset = (name: string, url = `https://example.test/releases/download/v0.1.0-alpha.3/${name}`) => ({ name, browser_download_url: url })
+
+/** GitHub's list of releases, newest first: a draft, then a prerelease with the bundle when one is published, then an older one without. */
+const releases = (published: boolean) => [
+  { draft: true, prerelease: true, assets: [asset('content.json', 'https://example.test/draft/content.json'), asset('content.json.sig')] },
+  {
+    draft: false,
+    prerelease: true,
+    assets: [asset('Marianne-Setup-0.1.0-alpha.3.exe'), ...(published ? [asset('content.json'), asset('content.json.sig')] : [])]
+  },
+  { draft: false, prerelease: true, assets: [asset('Marianne-Setup-0.1.0-alpha.2.exe')] }
+]
 const root = mkdtempSync(join(tmpdir(), 'marianne-content-'))
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 
@@ -30,14 +43,20 @@ function publish(content: Record<string, string>, version: string, key: KeyObjec
 }
 
 /** A store on its own folder, with a fake network serving `remote` and a log to read. */
-function store(options: { key?: KeyObject | null; dir?: string; remote?: () => Published | null } = {}) {
+function store(options: { key?: KeyObject | null; dir?: string; remote?: () => Published | null; list?: () => Response } = {}) {
   const lines: string[] = []
+  /** The bundle's and its signature's, not the list's. */
   const requests: Array<{ url: string; headers: Record<string, string> }> = []
+  const lists: string[] = []
   const dir = options.dir ?? mkdtempSync(join(root, 'store-'))
   const fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
     const headers = (init?.headers ?? {}) as Record<string, string>
-    requests.push({ url: String(url), headers })
     const published = options.remote?.()
+    if (String(url) === RELEASES_URL) {
+      lists.push(headers['User-Agent'])
+      return options.list?.() ?? Response.json(releases(!!published))
+    }
+    requests.push({ url: String(url), headers })
     if (!published) return new Response('Not Found', { status: 404 })
     if (String(url).endsWith('.sig')) return new Response(new Uint8Array(published.signature))
     if (headers['If-None-Match'] === published.etag) return new Response(null, { status: 304 })
@@ -51,7 +70,7 @@ function store(options: { key?: KeyObject | null; dir?: string; remote?: () => P
     files,
     signingKey: options.key ? pem(options.key) : null,
     dir,
-    url: BUNDLE_URL,
+    releases: RELEASES_URL,
     userAgent: () => 'Marianne/test',
     fetch: fetch as unknown as typeof globalThis.fetch,
     log: { info: log('info'), warn: log('warn'), error: log('error') }
@@ -59,7 +78,7 @@ function store(options: { key?: KeyObject | null; dir?: string; remote?: () => P
   vi.useFakeTimers()
   s.start()
   vi.useRealTimers()
-  return { s, dir, lines, requests, fetch }
+  return { s, dir, lines, requests, lists, fetch }
 }
 
 const title = (s: ContentStore) => s.get().skills.find((x) => x.name === 'taxes')?.title
@@ -103,7 +122,7 @@ describe('the content store', () => {
 
   it('takes a newer signed bundle, keeps it, and asks again conditionally', async () => {
     const published = publish(newer(), '2026-11-02T10:00:00.000Z', privateKey)
-    const { s, dir, requests } = store({ key: publicKey, remote: () => published })
+    const { s, dir, requests, lists } = store({ key: publicKey, remote: () => published })
     const changed = vi.fn()
     s.on('change', changed)
     await s.check()
@@ -113,6 +132,7 @@ describe('the content store', () => {
     expect(changed).toHaveBeenCalledTimes(1)
     expect(requests.map((r) => r.url)).toEqual([BUNDLE_URL, `${BUNDLE_URL}.sig`])
     expect(requests[0].headers['User-Agent']).toBe('Marianne/test')
+    expect(lists).toEqual(['Marianne/test'])
     expect(readFileSync(join(dir, 'content.json'))).toEqual(published.data)
     expect(readFileSync(join(dir, 'content.json.sig'))).toEqual(published.signature)
 
@@ -182,9 +202,42 @@ describe('the content store', () => {
   })
 
   it('says when nothing is published', async () => {
-    const { s, lines } = store({ key: publicKey, remote: () => null })
+    const { s, lines, requests } = store({ key: publicKey, remote: () => null })
     await s.check()
     expect(s.origin).toBe('built-in')
-    expect(lines).toEqual([`info Content: no bundle published at ${BUNDLE_URL}`])
+    expect(requests).toEqual([])
+    expect(lines).toEqual([`info Content: no bundle published in the releases of ${RELEASES_URL}`])
+  })
+
+  it('tries again next time when the list of releases can’t be read', async () => {
+    const published = publish(newer(), '2026-11-02T10:00:00.000Z', privateKey)
+    let answer = () => new Response('rate limit exceeded', { status: 403 })
+    const { s, lines } = store({ key: publicKey, remote: () => published, list: () => answer() })
+    await s.check()
+    expect(lines).toEqual([`warn Content: HTTP 403 from ${RELEASES_URL}`])
+    answer = () => new Response('<html>', { status: 200 })
+    await s.check()
+    expect(lines[1]).toMatch(/^warn Content: update check failed:/)
+    expect(s.origin).toBe('built-in')
+  })
+})
+
+describe('the published bundle', () => {
+  it('is the newest release’s that carries a bundle and its signature, prereleases included and drafts skipped', () => {
+    expect(publishedBundle(releases(true))).toEqual({ bundle: BUNDLE_URL, signature: `${BUNDLE_URL}.sig` })
+    const older = asset('content.json', 'https://example.test/releases/download/v0.1.0-alpha.2/content.json')
+    const olderSig = asset('content.json.sig', 'https://example.test/releases/download/v0.1.0-alpha.2/content.json.sig')
+    // A release with its bundle and not yet its signature is passed over for an older one with both.
+    expect(publishedBundle([{ assets: [asset('content.json')] }, { assets: [older, olderSig] }])).toEqual({
+      bundle: older.browser_download_url,
+      signature: olderSig.browser_download_url
+    })
+  })
+
+  it('is none when no release has one, or the list is not a list', () => {
+    expect(publishedBundle(releases(false))).toBeNull()
+    expect(publishedBundle([])).toBeNull()
+    expect(publishedBundle({ message: 'API rate limit exceeded' })).toBeNull()
+    expect(publishedBundle([null, { assets: null }])).toBeNull()
   })
 })

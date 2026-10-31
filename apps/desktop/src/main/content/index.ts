@@ -19,7 +19,11 @@ import { paths } from '../paths'
  * taken is kept in paths.content for the next starts. Nothing personal: shared by the accounts.
  */
 
-export const CONTENT_URL = `${REPO_URL}/releases/latest/download/${BUNDLE_FILE}`
+/**
+ * GitHub's list of the project's releases, newest first: the bundle is the newest release's that
+ * carries one. Not /releases/latest/download/, which skips prereleases, and Marianne's are alpha ones.
+ */
+export const CONTENT_RELEASES = `${REPO_URL.replace('https://github.com/', 'https://api.github.com/repos/')}/releases?per_page=10`
 
 const FIRST_CHECK_MS = 30_000
 const CHECK_EVERY_MS = 24 * 3600_000
@@ -27,6 +31,8 @@ const TIMEOUT_MS = 30_000
 /** Far more than the content needs (about 150 kB); an ed25519 signature is 64 bytes. */
 const MAX_BUNDLE_BYTES = 8 * 1024 * 1024
 const MAX_SIGNATURE_BYTES = 1024
+/** Ten releases and their assets: a few dozen kB. */
+const MAX_LIST_BYTES = 2 * 1024 * 1024
 /** What was last seen of the published bundle, for conditional requests. */
 const REMOTE_FILE = 'remote.json'
 
@@ -39,8 +45,8 @@ export interface ContentOptions {
   signingKey: string | null
   /** Where the bundle taken is kept. */
   dir: string
-  /** The published bundle; its signature is beside it. */
-  url: string
+  /** The list of releases (GitHub's API) where the published bundle and its signature are found. */
+  releases: string
   userAgent: () => string
   fetch?: typeof fetch
   log?: Logger
@@ -64,6 +70,24 @@ class Refused extends Error {
   ) {
     super(message)
   }
+}
+
+interface GitHubRelease {
+  draft?: boolean
+  assets?: { name?: string; browser_download_url?: string }[]
+}
+
+/** Where the newest release with a bundle and its signature has them, in GitHub's list of releases (newest first); null: none has. */
+export function publishedBundle(releases: unknown): { bundle: string; signature: string } | null {
+  if (!Array.isArray(releases)) return null
+  for (const r of releases as (GitHubRelease | null)[]) {
+    if (!r || r.draft) continue
+    const url = (name: string) => r.assets?.find((a) => a?.name === name)?.browser_download_url
+    const bundle = url(BUNDLE_FILE)
+    const signature = url(SIGNATURE_FILE)
+    if (bundle && signature) return { bundle, signature }
+  }
+  return null
 }
 
 /** What this version of the app can't honor in content that is otherwise valid: settings and document types it doesn't know. */
@@ -140,15 +164,18 @@ export class ContentStore extends EventEmitter {
     if (!this.key || this.checking) return
     this.checking = true
     try {
+      const list = await this.download(this.opts.releases, MAX_LIST_BYTES)
+      if (!list.data) return this.log.warn(`Content: HTTP ${list.status} from ${this.opts.releases}`)
+      const published = publishedBundle(JSON.parse(list.data.toString('utf8')))
+      if (!published) return this.log.info(`Content: no bundle published in the releases of ${this.opts.releases}`)
+      const url = published.bundle
       const remote = this.readRemote()
-      const bundle = await this.download(this.opts.url, MAX_BUNDLE_BYTES, remote?.seenWith === this.active.version ? remote : undefined)
+      const bundle = await this.download(url, MAX_BUNDLE_BYTES, remote?.seenWith === this.active.version ? remote : undefined)
       if (bundle.status === 304) return
-      if (bundle.status === 404) return this.log.info(`Content: no bundle published at ${this.opts.url}`)
-      if (!bundle.data) return this.log.warn(`Content: HTTP ${bundle.status} from ${this.opts.url}`)
-      const signatureUrl = new URL(SIGNATURE_FILE, this.opts.url).href
-      const signature = await this.download(signatureUrl, MAX_SIGNATURE_BYTES)
+      if (!bundle.data) return this.log.warn(`Content: HTTP ${bundle.status} from ${url}`)
+      const signature = await this.download(published.signature, MAX_SIGNATURE_BYTES)
       if (!signature.data)
-        return this.log.warn(`Content bundle ${this.opts.url} refused: no signature (HTTP ${signature.status} from ${signatureUrl}); trying again next time`)
+        return this.log.warn(`Content bundle ${url} refused: no signature (HTTP ${signature.status} from ${published.signature}); trying again next time`)
       const seen = { etag: bundle.etag, lastModified: bundle.lastModified }
       try {
         this.use(this.accept(bundle.data, signature.data))
@@ -156,7 +183,7 @@ export class ContentStore extends EventEmitter {
         this.writeRemote({ ...seen, seenWith: this.active.version })
       } catch (err) {
         if (!(err instanceof Refused)) throw err
-        this.refused(err, this.opts.url, err.reason === 'unsigned' ? '; trying again next time' : '')
+        this.refused(err, url, err.reason === 'unsigned' ? '; trying again next time' : '')
         if (err.reason !== 'unsigned') this.writeRemote({ ...seen, seenWith: this.active.version })
       }
     } catch (err) {
@@ -288,4 +315,4 @@ export class ContentStore extends EventEmitter {
   }
 }
 
-export const content = new ContentStore({ files, signingKey, dir: paths.content, url: CONTENT_URL, userAgent })
+export const content = new ContentStore({ files, signingKey, dir: paths.content, releases: CONTENT_RELEASES, userAgent })

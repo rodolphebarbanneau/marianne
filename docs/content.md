@@ -290,14 +290,14 @@ Made once: `npm run content:key -- <path outside the repository>`.
 
 - The script refuses content that doesn't validate, and a key that is in the repository or doesn't match `signing-key.pem`.
 - Without the variable, it builds an unsigned bundle, for a look.
-- Attach both files to the latest GitHub release, replacing the previous ones, and attach a fresh pair to every new release: the app downloads the latest release's.
+- Attach both files to the newest GitHub release, prerelease or not, replacing the previous ones, and attach a fresh pair to every new release: the app downloads the newest release's that has both.
 
 ### How the app picks its content
 
 In `apps/desktop/src/main/content/`:
 
 - **At start**: the content it was built with, unless the bundle taken on an earlier run (`~/.marianne/content/`) still checks out. One that doesn't is removed, and the log says why.
-- **30 seconds after start, then every day**: it asks for `https://github.com/rodolphebarbanneau/marianne/releases/latest/download/content.json` (a conditional request: nothing is downloaded when it didn't change), then its signature.
+- **30 seconds after start, then every day**: it reads GitHub's list of releases (`https://api.github.com/repos/rodolphebarbanneau/marianne/releases`), takes the newest release with `content.json` and its signature, prereleases included (`/releases/latest` skips them, and Marianne's are alpha ones), and asks for its `content.json` (a conditional request: nothing is downloaded when it didn't change), then its signature.
 - **It takes a bundle** when its signature verifies with the built-in public key (nothing else of the file is read before that), its version is newer than the content in use, and every one of its files is valid for this version of Marianne. Otherwise it keeps what it has and logs why; a bundle it can't read whole is refused whole.
 - **The built-in content** counts until the end of the day of its latest `updated`: a bundle built that same day is not newer.
 
