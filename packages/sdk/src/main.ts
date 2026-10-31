@@ -76,6 +76,7 @@ export interface Commune {
 export interface ServiceGeo {
   /** By name, postal code or INSEE code, most populated first. */
   findCommunes(text: string, limit?: number): Promise<Commune[]>
+  /** By INSEE code; an arrondissement of Paris, Lyon or Marseille (an address there has its code) as itself. */
   getCommune(code: string): Promise<Commune | null>
 }
 

@@ -124,18 +124,18 @@ export const service = defineService<MeteoMethods>({
 
 The context is all a service gets of Marianne:
 
-| `ctx.`     | what                                                                                                                                |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `manifest` | its manifest                                                                                                                        |
-| `http`     | `json`, `text`, `page` (as a browser): HTTPS to its declared hosts only, Marianne's user agent                                      |
-| `log`      | Marianne's log, prefixed with the service                                                                                           |
-| `storage`  | the user's data for it (favorites…), in the encrypted archive; throws while locked                                                  |
-| `dataDir`  | a folder of this computer for its public data (its sync job fills it); never personal data                                          |
-| `geo`      | `findCommunes`, `getCommune`: the communes of France                                                                                |
-| `home()`   | the commune of the user's address (a community service gets the commune's centre; a built-in one, the address's own place), or null |
-| `profile`  | `granted()`, `vehicles()`, `leaning()`, `themes()`, `sources()`: the fields the user granted it, nothing else                       |
-| `news`     | the headlines Marianne reads for it (below); present only with `"news": true`                                                       |
-| `sync`     | `status()` and `run()` of its sync job                                                                                              |
+| `ctx.`     | what                                                                                                                                                                                                              |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `manifest` | its manifest                                                                                                                                                                                                      |
+| `http`     | `json`, `text`, `page` (as a browser): HTTPS to its declared hosts only, Marianne's user agent                                                                                                                    |
+| `log`      | Marianne's log, prefixed with the service                                                                                                                                                                         |
+| `storage`  | the user's data for it (favorites…), in the encrypted archive; throws while locked                                                                                                                                |
+| `dataDir`  | a folder of this computer for its public data (its sync job fills it); never personal data                                                                                                                        |
+| `geo`      | `findCommunes`, `getCommune`: the communes of France (an arrondissement of Paris, Lyon or Marseille, whose code an address there has, as itself; `communeOfArrondissement` from `@marianne/sdk` says its commune) |
+| `home()`   | the commune of the user's address (a community service gets the commune's centre; a built-in one, the address's own place), or null                                                                               |
+| `profile`  | `granted()`, `vehicles()`, `leaning()`, `themes()`, `sources()`: the fields the user granted it, nothing else                                                                                                     |
+| `news`     | the headlines Marianne reads for it (below); present only with `"news": true`                                                                                                                                     |
+| `sync`     | `status()` and `run()` of its sync job                                                                                                                                                                            |
 
 `ctx.http` keeps a GET's answer 5 minutes, unless the request's `cacheMs` says otherwise (0: not at all).
 

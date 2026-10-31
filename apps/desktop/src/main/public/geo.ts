@@ -1,3 +1,4 @@
+import { communeOfArrondissement } from '@marianne/sdk'
 import { fetchJson, query } from '../http'
 import { ensureEnabled, sourceUrl } from './sources'
 
@@ -55,13 +56,16 @@ export async function findCommunes(term: string, limit = 5): Promise<Commune[]> 
   return (await get({ nom: t })).map(commune)
 }
 
-/** One commune by its INSEE code; null when there is none. */
+/**
+ * One commune by its INSEE code; null when there is none. An arrondissement of Paris, Lyon or
+ * Marseille (an address there has its code) is found as itself: its name, postcodes and centre.
+ */
 export async function getCommune(code: string): Promise<Commune | null> {
   ensureEnabled('geo')
-  const list = await fetchJson<RawCommune[]>(`${sourceUrl('geo')}/communes${query({ code: code.trim().toUpperCase(), fields: FIELDS })}`, {
-    cacheMs: 86_400_000
-  })
-  return list[0] ? commune(list[0]) : null
+  const c = code.trim().toUpperCase()
+  const get = (type?: string) => fetchJson<RawCommune[]>(`${sourceUrl('geo')}/communes${query({ code: c, type, fields: FIELDS })}`, { cacheMs: 86_400_000 })
+  const found = (await get())[0] ?? (communeOfArrondissement(c) ? (await get('arrondissement-municipal'))[0] : undefined)
+  return found ? commune(found) : null
 }
 
 /** The département of an INSEE commune code: two characters, three overseas (971…). */
