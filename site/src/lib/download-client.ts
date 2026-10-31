@@ -1,8 +1,9 @@
 // In the browser: the visitor's system, and the latest release. The page is built with the release
-// of its build day (in #release-data); this reads GitHub again, at most once per visit, so a release
-// published since gets its buttons without rebuilding the site.
+// of its build day (in #release-data); this reads GitHub again, at most every half hour of a visit,
+// so a release published since gets its version and buttons without rebuilding the site. Only a
+// newer one does: what the browser kept from before a release never takes the page back to it.
 
-import { latest, RELEASES_API, type Installer, type Release } from './release'
+import { latest, newer, RELEASES_API, type Installer, type Release } from './release'
 
 export type Kind = 'windows' | 'mac' | 'linux' | 'mobile' | null
 
@@ -34,7 +35,9 @@ const chip: Promise<void> = (async () => {
   } catch {}
 })()
 
-const CACHE = 'marianne-release'
+const CACHE = 'marianne-release-2'
+/** How long the browser keeps what GitHub said: a release published meanwhile shows within it. */
+const CACHE_MS = 30 * 60_000
 
 function built(): Release | null {
   try {
@@ -46,14 +49,14 @@ function built(): Release | null {
 
 async function fresh(): Promise<Release | null> {
   try {
-    const cached = sessionStorage.getItem(CACHE)
-    if (cached) return JSON.parse(cached)
+    const kept = JSON.parse(sessionStorage.getItem(CACHE) || 'null') as { at: number; release: Release } | null
+    if (kept && Date.now() - kept.at < CACHE_MS) return kept.release
   } catch {}
   try {
     const res = await fetch(RELEASES_API, { headers: { Accept: 'application/vnd.github+json' } })
     if (!res.ok) return null
     const release = latest(await res.json())
-    if (release) sessionStorage.setItem(CACHE, JSON.stringify(release))
+    if (release) sessionStorage.setItem(CACHE, JSON.stringify({ at: Date.now(), release }))
     return release
   } catch {
     return null
@@ -77,7 +80,7 @@ const lang = () => (document.documentElement.lang === 'en' ? 'en' : 'fr')
   current = built()
   for (const fn of listeners) fn(current, lang())
   const latest = await fresh()
-  if (latest && latest.tag !== current?.tag) {
+  if (newer(latest, current)) {
     current = latest
     for (const fn of listeners) fn(current, lang())
   }
