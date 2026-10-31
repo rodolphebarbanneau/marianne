@@ -54,8 +54,20 @@ export interface Engine {
   candidates(): string[]
   /** Where to get it, for the "not found" message. */
   site: string
-  /** Login state and account, read from the CLI without touching the credentials. */
+  /**
+   * The CLI's own sign-in and account, read without touching the credentials. `env` is without
+   * `keyVars`: what the CLI has of its own, whatever key the environment sets.
+   */
   account(cli: string, env: NodeJS.ProcessEnv, home: string): Promise<Pick<EngineStatus, 'loggedIn' | 'account'>>
+  /**
+   * Variables that, set in the environment, make the CLI use a key of theirs instead of its own
+   * sign-in, silently: an API key billed per use, or another account's token. The first one set is
+   * shown in Réglages › Moteurs, and left out of Marianne's runs when the CLI has a sign-in of its
+   * own, unless the user chose the key.
+   */
+  keyVars: string[]
+  /** Variables left out along with the key: what it was for (Claude: its endpoint). */
+  keyCompanions?: string[]
   /** Arguments of the CLI's own sign-in, opened in a terminal. */
   login: string[]
   models(home: string): Promise<EngineModel[]>

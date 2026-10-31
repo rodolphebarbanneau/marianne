@@ -159,7 +159,7 @@ function SetupCard({ part }: { part: SetupPart }) {
         <p>{part.reason}</p>
         <div className="acts">
           <button className="btn primary" onClick={() => openSettings(part.page)}>
-            renseigner {part.label} →
+            {part.action ?? `renseigner ${part.label}`} →
           </button>
         </div>
       </div>

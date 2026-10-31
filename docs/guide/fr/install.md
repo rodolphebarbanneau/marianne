@@ -101,6 +101,8 @@ Ouvrez Marianne et créez votre archive ([Premiers pas](getting-started.md)). Pu
 - **« pas connecté »** : cliquez sur « se connecter ». Marianne ouvre un terminal où le moteur lance sa propre connexion, sans rien à taper : votre navigateur s’ouvre chez l’éditeur, où vous vous connectez avec votre compte. Pour Codex, choisissez « Sign in with ChatGPT » ; pour Vibe, « Launch browser », avec les flèches puis Entrée. Quand le navigateur dit que c’est fait, fermez le terminal et rouvrez Réglages › Moteurs.
 - **« connecté · prêt »** : c’est fini, Marianne peut vous répondre.
 
+**Une clé d’API sur votre ordinateur.** Si une variable comme `ANTHROPIC_API_KEY`, `CODEX_API_KEY` ou `MISTRAL_API_KEY` y est définie, le moteur la prendrait avant votre connexion, et une clé d’API est facturée à l’usage, en plus de votre abonnement. Quand le moteur a votre connexion, Marianne laisse la clé de côté et le dit sous le moteur ; la case « utiliser la clé de la variable… » la prend quand même. Sans connexion, Marianne passe par la clé, et le dit aussi.
+
 Vous vous connectez chez l’éditeur, jamais dans Marianne : elle ne voit ni votre mot de passe ni votre connexion, que le moteur garde dans son dossier (`.claude`, `.codex` ou `.vibe`, dans votre dossier personnel). Vous pouvez aussi vous connecter sans Marianne : tapez `claude`, `codex` ou `vibe` dans un nouveau terminal et suivez ce qu’il demande.
 
 ## Les mises à jour

@@ -150,6 +150,9 @@ export const vibe: Engine = {
     return { loggedIn: !!source, account: source ? [source, await plan(home)].filter(Boolean).join(' · ') : undefined }
   },
   login: ['--setup'],
+  // A key in the environment wins over the one Vibe's sign-in stored (.env, keyring): another
+  // workspace's, maybe, with another plan.
+  keyVars: [KEY],
   /** Vibe's model catalog, cached per key (model_catalog_cache.json), else its default. */
   async models(home) {
     try {

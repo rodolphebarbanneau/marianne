@@ -28,6 +28,6 @@ Chacun peut y prendre part : signaler un problème, proposer une idée, corriger
 
 ## Licence et crédits
 
-Le code est sous [licence MIT](https://github.com/rodolphebarbanneau/marianne/blob/main/LICENSE) (© 2026 Rodolphe Barbanneau) : chacun peut le lire, le réutiliser et le modifier. Une faille de sécurité se signale en privé, jamais dans un ticket : voir la [politique de sécurité](https://github.com/rodolphebarbanneau/marianne/blob/main/SECURITY.md).
+Le code est sous [licence MIT](https://github.com/rodolphebarbanneau/marianne/blob/main/LICENSE) (© 2026 Rodolphe Barbanneau) : chacun peut le lire, le réutiliser et le modifier. Pour parler à Claude Code, l’application embarque le SDK Agent d’Anthropic, sous les conditions d’Anthropic ; elle n’embarque aucun moteur. Une faille de sécurité se signale en privé, jamais dans un ticket : voir la [politique de sécurité](https://github.com/rodolphebarbanneau/marianne/blob/main/SECURITY.md).
 
 Sur le site, en fond de page : Eugène Delacroix, _La Liberté guidant le peuple_ (1830), musée du Louvre, domaine public. Polices : VT323 et JetBrains Mono, sous licence SIL Open Font.

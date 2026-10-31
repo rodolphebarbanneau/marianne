@@ -79,7 +79,31 @@ describe('ClaudeStream', () => {
       { type: 'result', subtype: 'error_during_execution', is_error: true, result: '' }
     ])
     expect(events[0]).toMatchObject({ type: 'text', text: 'Bonjour' })
-    expect(events[1]).toEqual({ type: 'done', error: 'error_during_execution' })
+    expect(events[1]).toEqual({ type: 'done', error: 'Claude Code a échoué : error_during_execution' })
+  })
+
+  it('says when Claude Code is not signed in, so the chat can lead the user to « se connecter »', () => {
+    const [done] = feed(new ClaudeStream(), [{ type: 'result', subtype: 'success', is_error: true, result: 'Not logged in · Please run /login' }])
+    expect(done).toEqual({ type: 'done', error: 'Claude Code n’est pas connecté (Not logged in · Please run /login).', signIn: true })
+  })
+
+  it('keeps a refused key’s words out of the answer: they are the turn’s error', () => {
+    // As Claude Code 2.1.316 says it, with a key the API refuses.
+    const stream = new ClaudeStream()
+    const events = [
+      { type: 'assistant', error: 'authentication_failed', message: { id: 'm', content: [{ type: 'text', text: 'Invalid API key · Fix external API key' }] } },
+      { type: 'result', subtype: 'success', is_error: true, result: 'Invalid API key · Fix external API key' }
+    ].flatMap((m) => stream.handle(m))
+    expect(events).toEqual([{ type: 'done', error: 'Claude Code n’est pas connecté (Invalid API key).', signIn: true }])
+  })
+
+  it('reads the Agent SDK’s messages as it reads the lines of stream-json', () => {
+    const stream = new ClaudeStream()
+    expect(stream.handle({ type: 'system', subtype: 'init', session_id: 's1', model: 'claude-sonnet' })).toEqual([
+      { type: 'session', id: 's1' },
+      { type: 'model', model: 'claude-sonnet' }
+    ])
+    expect(stream.handle({ type: 'result', subtype: 'success', is_error: false, result: 'ok' })).toEqual([{ type: 'done' }])
   })
 
   it('ignores the inner messages of subagents', () => {
@@ -133,7 +157,13 @@ describe('CodexStream', () => {
       { type: 'turn.failed', error: { message: 'quota' } }
     ])
     expect(events.at(-2)).toEqual({ type: 'tool-result', id: 'i', output: 'boom', isError: true })
-    expect(events.at(-1)).toEqual({ type: 'done', error: 'quota' })
+    expect(events.at(-1)).toEqual({ type: 'done', error: 'Codex a échoué : quota' })
+  })
+
+  it('says when Codex is not signed in, or its key was refused', () => {
+    expect(feed(new CodexStream(), [{ type: 'error', message: 'unexpected status 401 Unauthorized' }])).toEqual([
+      { type: 'done', error: 'Codex n’est pas connecté (unexpected status 401 Unauthorized).', signIn: true }
+    ])
   })
 })
 

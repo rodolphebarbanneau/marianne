@@ -24,6 +24,21 @@ export interface EngineConfig {
   home: string
   model: string
   effort: Effort
+  /**
+   * Use the API key the environment sets (ANTHROPIC_API_KEY…) even when the engine has a sign-in of
+   * its own. Off: Marianne leaves the key out of its runs, so a subscription isn't billed per use by surprise.
+   */
+  useEnvKey: boolean
+}
+
+/** An API key the environment sets for an engine, which would take the place of its own sign-in. */
+export interface EngineEnvKey {
+  /** The variable, e.g. ANTHROPIC_API_KEY. */
+  name: string
+  /** The engine also has a sign-in of its own (a subscription, a stored key). */
+  login: boolean
+  /** Marianne's runs use the key: chosen, or the engine has nothing else. */
+  used: boolean
 }
 
 export interface EngineStatus {
@@ -33,6 +48,8 @@ export interface EngineStatus {
   loggedIn?: boolean
   /** e.g. "vous@exemple.fr · max". */
   account?: string
+  /** An API key in the environment, and whether Marianne's runs use it. */
+  envKey?: EngineEnvKey
   error?: string
 }
 
@@ -44,6 +61,8 @@ export interface EngineLight {
   /** A turn is running. */
   busy: boolean
   label: string
+  /** The runs use an API key from the environment, billed per use. */
+  envKey?: boolean
 }
 
 export interface EngineModel {
@@ -219,6 +238,8 @@ export interface SetupPart {
   page: string
   label: string
   reason: string
+  /** The button's words, when « renseigner <label> » doesn't fit. */
+  action?: string
 }
 
 /** Progress of a task in the built-in browser. */

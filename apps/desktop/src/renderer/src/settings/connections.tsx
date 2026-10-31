@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ENGINE_BADGES, ENGINE_HOMES, ENGINE_LABELS } from '@shared/config'
 import { siteOf } from '@shared/hosts'
 import type { Site } from '@shared/sites'
-import type { EngineId, EngineModel, EngineStatus, KeychainEntry, PublicSourceId } from '@shared/types'
+import type { EngineEnvKey, EngineId, EngineModel, EngineStatus, KeychainEntry, PublicSourceId } from '@shared/types'
 import { PUBLIC_SOURCES } from '@shared/public'
 import { useApp } from '../app/context'
 import { Field, Modal, Spinner } from '../components/ui'
@@ -209,6 +209,34 @@ function ApiKeyForm() {
 
 const ENGINES: EngineId[] = ['claude', 'codex', 'vibe']
 
+/**
+ * An API key the computer's environment sets for the engine: the engine would take it ahead of the
+ * user's own sign-in and bill it per use. Marianne leaves it out unless the user chooses it here.
+ */
+function EnvKeyLine({ id, envKey, useEnvKey }: { id: EngineId; envKey: EngineEnvKey; useEnvKey: boolean }) {
+  const { setConfig } = useApp()
+  const name = <code>{envKey.name}</code>
+  if (!envKey.login)
+    return (
+      <span className="hint key-line">
+        Marianne passe par la clé de la variable {name} de cet ordinateur : une clé d’API est facturée à l’usage. « se connecter » pour utiliser votre compte.
+      </span>
+    )
+  return (
+    <>
+      <label className="home key-line">
+        <input type="checkbox" checked={useEnvKey} onChange={(e) => void setConfig({ engines: { [id]: { useEnvKey: e.target.checked } } })} />
+        <span>utiliser la clé de la variable {name}, facturée à l’usage, plutôt que votre connexion</span>
+      </label>
+      <span className="hint key-line">
+        {useEnvKey
+          ? 'Marianne passe par cette clé, pas par votre connexion.'
+          : 'Cette variable de votre ordinateur passerait avant votre connexion : Marianne la laisse de côté.'}
+      </span>
+    </>
+  )
+}
+
 /** Each engine: on or off, its configuration folder (where its login lives), its model. */
 export function EnginesPane() {
   const { config, setConfig } = useApp()
@@ -220,8 +248,16 @@ export function EnginesPane() {
       refresh(id)
       void api.engineModels(id).then((m) => setModels((prev) => ({ ...prev, [id]: m })))
     }
+    // The configuration folder, or the choice of an API key, changes what each engine says of its sign-in.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.engines.claude.home, config.engines.codex.home, config.engines.vibe.home])
+  }, [
+    config.engines.claude.home,
+    config.engines.codex.home,
+    config.engines.vibe.home,
+    config.engines.claude.useEnvKey,
+    config.engines.codex.useEnvKey,
+    config.engines.vibe.useEnvKey
+  ])
 
   return (
     <>
@@ -258,7 +294,7 @@ export function EnginesPane() {
               {config.engines.default === id && <span className="accent"> · par défaut</span>}
             </span>
             <span style={{ display: 'flex', gap: 6 }}>
-              {engine.enabled && s?.found && s.loggedIn === false && (
+              {engine.enabled && s?.found && (s.loggedIn === false || (s.envKey && !s.envKey.login)) && (
                 <button className="btn small" onClick={() => void api.engineLogin(id)}>
                   se connecter
                 </button>
@@ -290,6 +326,7 @@ export function EnginesPane() {
               {engine.enabled && s && !s.found ? ' · installez-le, puis réessayez' : ''}
               {s?.error ? ` · ${s.error}` : ''}
             </span>
+            {engine.enabled && s?.envKey && <EnvKeyLine id={id} envKey={s.envKey} useEnvKey={engine.useEnvKey} />}
             {(models[id]?.length ?? 0) > 0 && (
               <span className="home">
                 <span className="dim">modèle</span>

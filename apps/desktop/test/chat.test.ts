@@ -167,6 +167,31 @@ describe('a run and the user’s message, in the same folder', () => {
   })
 })
 
+describe('an engine that isn’t signed in', () => {
+  it('leaves its error, and a card that leads to « se connecter » in Réglages › Moteurs', async () => {
+    fake.user = async (turn) => turn.onEvent({ type: 'done', error: 'Claude Code n’est pas connecté (Not logged in).', signIn: true })
+    const folderId = await chat.send({ text: 'Ma taxe foncière ?', attachments: [] })
+    await vi.waitFor(() => expect(chat.running(folderId)).toBe(false))
+    const answer = folders.messages(folderId).at(-1)!
+    expect(answer).toMatchObject({ status: 'error', error: 'Claude Code n’est pas connecté (Not logged in).' })
+    expect(answer.parts).toContainEqual(
+      expect.objectContaining({ type: 'setup', page: 'engines', action: 'ouvrir Réglages › Moteurs', reason: expect.stringContaining('Claude Code') })
+    )
+  })
+
+  it('a failure of another kind leaves no such card', async () => {
+    fake.user = async (turn) => turn.onEvent({ type: 'done', error: 'Claude Code a échoué : overloaded' })
+    const folderId = await chat.send({ text: 'Ma taxe foncière ?', attachments: [] })
+    await vi.waitFor(() => expect(chat.running(folderId)).toBe(false))
+    expect(
+      folders
+        .messages(folderId)
+        .at(-1)!
+        .parts.some((p) => p.type === 'setup')
+    ).toBe(false)
+  })
+})
+
 describe('a folder deleted while Marianne answers', () => {
   it('waits for the turn to end, then leaves nothing of it', async () => {
     fake.user = untilStopped('turn')

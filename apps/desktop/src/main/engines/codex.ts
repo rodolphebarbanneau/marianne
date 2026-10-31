@@ -97,6 +97,10 @@ export const codex: Engine = {
     }
   },
   login: ['login'],
+  // `codex exec` takes CODEX_API_KEY ahead of the stored sign-in, though `codex login status` doesn't
+  // say so; CODEX_ACCESS_TOKEN is another account's. Never `forced_login_method`: with a key in the
+  // environment, exec then logs the user out, deleting their stored sign-in.
+  keyVars: ['CODEX_API_KEY', 'CODEX_ACCESS_TOKEN'],
   /** Codex's own catalog, kept up to date by the CLI, else a built-in list. */
   async models(home) {
     try {
