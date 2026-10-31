@@ -1,6 +1,6 @@
 import type { Deadline } from '@marianne/profile'
 import { readManifest, type ServiceState } from '@marianne/sdk'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { domainLine, domainServices, nextTaskDay, pressingLine, runCell, type TodoSources } from '../../src/renderer/src/lib/demarches'
 import type { FolderSummary, PlannedTask, TaskRun } from '../../src/shared/types'
 
@@ -142,9 +142,21 @@ describe('what is said of what presses', () => {
 })
 
 describe('the next task', () => {
+  // The day is told against today's date: the test's, not the machine's.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(NOW)
+  })
+  afterEach(() => vi.useRealTimers())
+
   it('names the day of the nearest one that is on', () => {
     const tasks = [task({ id: 'a', next: '2026-11-14' }), task({ id: 'b', next: '2026-10-31', on: false }), task({ id: 'c', next: '2026-11-01' })]
     expect(nextTaskDay(tasks)).toBe('dimanche 1er nov.')
+  })
+
+  it('says today for one due today or before', () => {
+    expect(nextTaskDay([task({ next: '2026-10-30' })])).toBe('aujourd’hui')
+    expect(nextTaskDay([task({ next: '2026-10-28' })])).toBe('aujourd’hui')
   })
 
   it('has nothing to say when all are paused', () => {
