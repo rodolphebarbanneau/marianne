@@ -74,6 +74,7 @@ class Approvals extends EventEmitter {
         return { decision: 'accepted', ahead: false }
       case 'rule':
       case 'level':
+      case 'followUp':
         return {
           decision: this.given(folderId, request, { ...card, action: request.action, given: givenLabel(verdict) }) ? 'accepted' : 'expired',
           ahead: true
@@ -91,6 +92,12 @@ class Approvals extends EventEmitter {
         return { decision, ahead: false }
       }
     }
+  }
+
+  /** Whether an action would go without a card (the folder's yes, or allowed ahead), asking nothing and showing nothing. */
+  covered(folderId: string | undefined, request: ApprovalRequest): boolean {
+    const { by } = decide(request, accounts.settings().approvals, !!tasks.runningIn(folderId))
+    return by !== 'card' && by !== 'run'
   }
 
   /**

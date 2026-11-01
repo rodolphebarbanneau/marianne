@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { foldText, NEUTRAL_ICON, PROFILE_FIELDS, type PixelArt, type ServiceManifest, type ServiceState, type ServiceTrust } from '@marianne/sdk'
 import { Modal, Pixels, ServiceIcon, Spinner } from '@marianne/sdk/view'
+import { ON_SITES } from '@shared/approvals'
 import type { CatalogueEntry, ServiceFileReview } from '@shared/catalogue'
 import { SearchField } from '../../components/ui'
 import { api, errorText } from '../../lib/api'
@@ -447,7 +448,7 @@ export function ReviewDialog({ subject, onAdded, onClose }: { subject: ReviewSub
                         {h}
                       </span>
                     ))}{' '}
-                    <span className="small dim">: dans son navigateur, pour ce service ; ce qui vous engage attend votre oui</span>
+                    <span className="small dim">: dans son navigateur, pour ce service ; {ON_SITES}</span>
                   </Can>
                 )}
                 {/* Every service knows the commune of the user's address (never the address itself): always said. */}

@@ -1,4 +1,5 @@
 import { PROFILE_FIELD_SHORT, type ServiceTrust } from '@marianne/sdk'
+import { ON_SITES } from '@shared/approvals'
 import { highlight, type Listing } from './model'
 
 /** Pieces the Services page shows in its tiles, rows and cards: always the same words for the same things. */
@@ -85,7 +86,7 @@ export function Access({ listing }: { listing: Pick<Listing, 'hosts' | 'sites' |
         {sites(listing.hosts)}
       </span>
       {listing.sites.length > 0 && (
-        <span className="small" title={`Marianne pourra agir pour vous sur : ${listing.sites.join(', ')}`}>
+        <span className="small" title={`Marianne pourra agir pour vous sur : ${listing.sites.join(', ')} ; ${ON_SITES}`}>
           Marianne agit sur {sites(listing.sites)}
         </span>
       )}

@@ -1,5 +1,6 @@
 import { PROFILE_FIELDS, serviceCode, type ServiceManifest, type ServiceState } from '@marianne/sdk'
 import * as z from 'zod'
+import { ON_SITES } from '../../shared/approvals'
 import type { PlannedTask, TaskTemplate } from '../../shared/types'
 import { accounts } from '../account'
 import { approvals, type Decision } from '../approvals'
@@ -69,7 +70,7 @@ export function offerFields(s: Pick<ServiceState, 'manifest' | 'tools'>): Array<
     { label: 'service', value: `3615 ${serviceCode(m)} · ${m.name}` },
     { label: 'ce qu’il fait', value: m.description },
     { label: 'se connecte à', value: m.hosts.join(', ') || 'aucun site' },
-    ...(m.sites.length ? [{ label: 'Marianne pourra agir pour vous sur', value: m.sites.join(', ') }] : []),
+    ...(m.sites.length ? [{ label: 'Marianne pourra agir pour vous sur', value: `${m.sites.join(', ')} ; ${ON_SITES}` }] : []),
     { label: 'lira de votre profil', value: reads ? `${reads}, pour ${m.permissions.purpose}, si vous l’acceptez` : 'rien' },
     { label: 'outils pour Marianne', value: s.tools.map((t) => t.label).join(', ') || 'aucun' }
   ]

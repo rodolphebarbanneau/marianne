@@ -89,19 +89,22 @@ export interface PaymentRoute {
   site: string
   /** The provider whose page it is; null on the site's own page. */
   provider: Provider | null
+  /** The address of the site's page: the page itself, or the one that sent the browser to the provider's (as it loaded). */
+  from: string
 }
 
 /**
  * Whom a payment on the page `url` is for; null when Marianne doesn't pay there. A site she knows
  * (`known`, by registrable domain: the content's public sites, those her services that are on
- * declare); or a payment provider's page that such a site's own page sent the browser to (its form
- * or its link, not an advert's frame in it, not an address typed or opened), directly or through
- * that provider's own pages, every redirect on the way on that site or the provider's hosts.
+ * declare; it gets the page on that site too); or a payment provider's page that such a site's own
+ * page sent the browser to (its form or its link, not an advert's frame in it, not an address typed
+ * or opened), directly or through that provider's own pages, every redirect on the way on that site
+ * or the provider's hosts.
  */
-export function paymentRoute(url: string, arrival: Arrival | null, known: (site: string) => boolean): PaymentRoute | null {
+export function paymentRoute(url: string, arrival: Arrival | null, known: (site: string, page: string) => boolean): PaymentRoute | null {
   if (!https(url)) return null
   const site = siteOf(url)
-  if (site && known(site)) return { site, provider: null }
+  if (site && known(site, url)) return { site, provider: null, from: url }
   const provider = providerOf(url)
   if (!provider || !arrival || originOf(arrival.url) !== originOf(url)) return null
   let page: Arrival | null = arrival
@@ -111,10 +114,31 @@ export function paymentRoute(url: string, arrival: Arrival | null, known: (site:
     const from = siteOf(before.url)
     if (!from || !https(page.initiator) || siteOf(page.initiator) !== from) return null
     if (!page.hops.every((hop) => https(hop) && (siteOf(hop) === from || providerOf(hop) === provider))) return null
-    if (known(from)) return { site: from, provider }
+    if (known(from, before.url)) return { site: from, provider, from: before.url }
     page = before
   }
   return null
+}
+
+/**
+ * Whether the page `url` is where a payment pressed on the page `paid` (its address as it loaded) led:
+ * the browser went from there to it, each page on the way sent by the one before it (a frame of that
+ * page's own site, or a payment provider's frame in it), over https, within the pages kept. The bank's
+ * 3-D Secure, wherever its host, and the way back to the provider and the merchant. Never an address
+ * opened or typed, back or reload, nor a page an advert's frame sent the browser to.
+ */
+export function paidOnward(url: string, arrival: Arrival | null, paid: string): boolean {
+  if (!https(url) || !paid || !arrival || originOf(arrival.url) !== originOf(url)) return false
+  let page: Arrival | null = arrival
+  for (let depth = 0; page && depth < ARRIVALS_KEPT; depth++) {
+    const before: Arrival | null = page.previous
+    if (!before || !https(before.url) || !https(page.initiator) || !page.hops.every(https)) return false
+    const from = siteOf(before.url)
+    if (!from || (siteOf(page.initiator) !== from && !providerOf(page.initiator))) return false
+    if (before.url === paid) return true
+    page = before
+  }
+  return false
 }
 
 // ---------------------------------------------------------------- card fields

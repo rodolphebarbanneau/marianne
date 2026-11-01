@@ -11,6 +11,10 @@ import type { ApprovalLevel, ApprovalRule, ApprovalSettings } from './types'
  * for it. Nor for planning a task, a community service's call, adding a service, or any change to the
  * profile but a deadline. And nothing is allowed ahead in a planned task's run, where nobody would
  * answer a card.
+ *
+ * A planned task's follow-up the user starts (« payer maintenant ») is their go-ahead, for that turn,
+ * to go to its task's sites and fill forms on the sites its service declares (`followUp`): the floor
+ * stays whole, and « tout demander » still asks each one.
  */
 
 /** What a tool asks to do. */
@@ -18,10 +22,11 @@ export type ApprovalRequest =
   /**
    * Going to a site from a folder. `known`: one of the sites Marianne knows (tools/online.ts).
    * `consented`: what the user already said yes to in this folder, this very site or any.
+   * `followUp`: the label of the follow-up the user started this turn with, when its task's sites hold the page.
    */
-  | { action: 'online'; site: string; known: boolean; consented: { site: boolean; folder: boolean } }
-  /** Filling a form on a site. */
-  | { action: 'form'; site: string; known: boolean }
+  | { action: 'online'; site: string; known: boolean; consented: { site: boolean; folder: boolean }; followUp?: string }
+  /** Filling a form on a site; `followUp`: as going online, when the follow-up's service declares the page. */
+  | { action: 'form'; site: string; known: boolean; followUp?: string }
   /** A change to the profile; `deadline`: adding or updating a deadline, the only one that can be allowed ahead. */
   | { action: 'profile'; deadline: boolean }
   /**
@@ -44,6 +49,8 @@ export type Verdict =
   | { by: 'rule'; rule: ApprovalRule }
   /** Allowed ahead by the « autonomie » level. */
   | { by: 'level' }
+  /** Allowed for this turn by the planned task's follow-up the user started (its label). */
+  | { by: 'followUp'; label: string }
 
 /** The standing permission a card may offer with « toujours… »; null for what can't be allowed ahead. */
 export function offerFor(request: ApprovalRequest): Offer | null {
@@ -68,6 +75,10 @@ export function decide(request: ApprovalRequest, settings: ApprovalSettings, run
   if (request.action === 'online' && request.consented.site) return { by: 'folder' }
   const rule = settings.rules.find((r) => covers(r, request))
   if (rule) return { by: 'rule', rule }
+  // The user's click on a planned task's follow-up: going to its task's sites, and its service's forms, for that
+  // turn. A level that asks each new site and each form keeps asking them.
+  if ((request.action === 'online' || request.action === 'form') && request.followUp && settings.level !== 'ask')
+    return { by: 'followUp', label: request.followUp }
   const autonomous = settings.level === 'autonomous'
   switch (request.action) {
     case 'online':
@@ -97,9 +108,9 @@ export function ruleLabel(rule: Offer): string {
   return 'enregistrer des échéances dans votre profil sans demander'
 }
 
-/** How an action was allowed ahead, as its line says after « autorisé d’office ». */
-export function givenLabel(verdict: Extract<Verdict, { by: 'rule' | 'level' }>): string {
-  return verdict.by === 'rule' ? alwaysLabel(verdict.rule) : 'autonomie'
+/** How an action was allowed ahead, as its line says after « autorisé d’office »: the follow-up by its label (« payer maintenant »). */
+export function givenLabel(verdict: Extract<Verdict, { by: 'rule' | 'level' | 'followUp' }>): string {
+  return verdict.by === 'rule' ? alwaysLabel(verdict.rule) : verdict.by === 'followUp' ? verdict.label : 'autonomie'
 }
 
 /** The levels, as Réglages › Autorisations offers them. */
@@ -123,3 +134,10 @@ export const LEVELS: Array<{ id: ApprovalLevel; label: string; text: string }> =
 
 /** The floor, in one line on the cards it holds. */
 export const FLOOR = 'payer, signer et envoyer attendent toujours votre oui'
+
+/**
+ * What the sites a built-in service declares (`sites`) mean for the user, in one line wherever they are
+ * shown (« avant d’ajouter », the services table, Marianne's card proposing the service): she clicks
+ * the steps on the way there without a card, the floor still asking (tools/browser.ts, click).
+ */
+export const ON_SITES = 'elle y avance sans vous demander, sauf pour payer, signer ou envoyer'

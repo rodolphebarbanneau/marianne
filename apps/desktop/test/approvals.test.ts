@@ -27,14 +27,14 @@ const SITE = 'sanef.com'
 const LEVEL_IDS: ApprovalLevel[] = ['ask', 'balanced', 'autonomous']
 const rule = (action: ApprovalRule['action'], site?: string): ApprovalRule => ({ id: `${action}:${site ?? ''}`, action, site, at: '2026-10-30T08:00:00.000Z' })
 
-const online = (more: { site?: string; known?: boolean; consented?: { site: boolean; folder: boolean } } = {}): ApprovalRequest => ({
+const online = (more: { site?: string; known?: boolean; consented?: { site: boolean; folder: boolean }; followUp?: string } = {}): ApprovalRequest => ({
   action: 'online',
   site: SITE,
   known: false,
   consented: { site: false, folder: false },
   ...more
 })
-const form = (known = false, site = SITE): ApprovalRequest => ({ action: 'form', site, known })
+const form = (known = false, site = SITE, followUp?: string): ApprovalRequest => ({ action: 'form', site, known, ...(followUp ? { followUp } : {}) })
 const profile = (deadline: boolean): ApprovalRequest => ({ action: 'profile', deadline })
 const by = (request: ApprovalRequest, level: ApprovalLevel, rules: ApprovalRule[] = [], run = false) => decide(request, { level, rules }, run).by
 
@@ -63,6 +63,32 @@ describe('the floor', () => {
   it('a rule of a kind no card gives covers nothing', () => {
     const forged = { ...rule('online', SITE), action: 'commit' } as unknown as ApprovalRule
     for (const request of [online(), form(), profile(true), { action: 'commit' } as const]) expect(covers(forged, request)).toBe(false)
+  })
+
+  it('a follow-up’s go-ahead lowers none of it, even said of a step that commits', () => {
+    for (const level of LEVEL_IDS)
+      for (const action of ['commit', 'task', 'service', 'add'] as const)
+        expect(by({ action, followUp: 'payer maintenant' } as unknown as ApprovalRequest, level)).toBe('card')
+    for (const level of LEVEL_IDS)
+      expect(by({ action: 'profile', deadline: false, followUp: 'payer maintenant' } as unknown as ApprovalRequest, level)).toBe('card')
+  })
+})
+
+describe('a planned task’s follow-up the user started', () => {
+  const GO = 'payer maintenant'
+
+  it('goes to its task’s sites and fills its service’s forms for that turn, but at « tout demander »', () => {
+    expect(LEVEL_IDS.map((level) => by(online({ followUp: GO }), level))).toEqual(['card', 'followUp', 'followUp'])
+    expect(LEVEL_IDS.map((level) => by(form(false, SITE, GO), level))).toEqual(['card', 'followUp', 'followUp'])
+    // Its line names it, even where « autonomie » would have let it through.
+    expect(decide(online({ known: true, followUp: GO }), { level: 'autonomous', rules: [] }, false)).toEqual({ by: 'followUp', label: GO })
+    expect(givenLabel({ by: 'followUp', label: GO })).toBe(GO)
+  })
+
+  it('leaves a yes already given and a standing permission as they were, and is nothing in a run', () => {
+    expect(by(online({ followUp: GO, consented: { site: true, folder: true } }), 'balanced')).toBe('folder')
+    expect(by(online({ followUp: GO }), 'balanced', [rule('online', SITE)])).toBe('rule')
+    for (const level of LEVEL_IDS) expect(by(online({ followUp: GO }), level, [], true)).toBe('run')
   })
 })
 
@@ -217,6 +243,16 @@ describe('the cards and the lines, in the main process', () => {
 
   it('an answer the window can’t name is a no', async () => {
     expect((await answer('f1', online(), 'perhaps' as never)).decision).toBe('refused')
+  })
+
+  it('a follow-up’s go-ahead shows as a line naming it; whether an action would go without a card is said without asking', async () => {
+    expect(approvals.covered('f1', online())).toBe(false)
+    expect(approvals.covered('f1', online({ consented: { site: true, folder: true } }))).toBe(true)
+    expect(approvals.covered('f1', online({ followUp: 'payer maintenant' }))).toBe(true)
+    expect(approvals.covered('f1', { action: 'commit' })).toBe(false)
+    expect(parts).toEqual([])
+    expect(await approvals.ask('f1', online({ followUp: 'payer maintenant' }), CARD)).toEqual({ decision: 'accepted', ahead: true })
+    expect(parts).toMatchObject([{ status: 'accepted', action: 'online', given: 'payer maintenant', title: `Aller sur ${SITE}` }])
   })
 
   it('« autonomie » saves a deadline with a line that shows its values', async () => {

@@ -138,6 +138,8 @@ class Chat extends EventEmitter {
   private ending = new Map<string, Promise<void>>()
   /** The planned task's run under way: the user's turn comes first. */
   private run: Run | null = null
+  /** The task whose follow-up the user started each folder's turn under way with (followUp): their go-ahead, for that turn only. */
+  private following = new Map<string, PlannedTask>()
 
   constructor() {
     super()
@@ -154,6 +156,7 @@ class Chat extends EventEmitter {
       return origin.kind !== 'service' || services.taskTemplates().some((t) => t.service === origin.service && t.id === origin.template)
     }
     tasks.runTurn = (task, line) => this.runTask(task, line)
+    tasks.followingUp = (id) => (id && this.following.get(id)) || null
     // The user reached for the browser (opened it, took it, typed an address): a run gives way.
     browser.on('taken', () => void this.interruptRun())
     tasks.addLine = (folderId, text, outcome) => void this.addTaskLine(folderId, text, outcome)
@@ -235,6 +238,9 @@ class Chat extends EventEmitter {
    * the conversation, theirs, in the task's folder, where standing permissions and the floor apply as
    * in any. Their message shows the label; the engine reads the instruction the task keeps, from its
    * service's template, never anything a run wrote. Only for the line that offers it (followUpLine).
+   * Their click is also their go-ahead for this turn, and this turn only: going to the task's sites
+   * and filling forms on those its service declares (tools/browser.ts). Never a message they type
+   * after it, nor the same message answered again.
    */
   async followUp(folderId: string, lineId: string): Promise<void> {
     const offered = () => !!this.followable(folderId) && followUpLine(folders.messages(folderId))?.id === lineId
@@ -256,7 +262,7 @@ class Chat extends EventEmitter {
     }
     messages.push(user)
     folders.saveMessages(folder.id, messages, { touched: true })
-    void this.turn(folders.get(folder.id)!, messages, user)
+    void this.turn(folders.get(folder.id)!, messages, user, undefined, undefined, task)
   }
 
   /** The folder's task, when it offers its follow-up: on, with one, and what it relies on still there (its service on, its plate granted). */
@@ -435,7 +441,9 @@ class Chat extends EventEmitter {
     user: ChatMessage,
     run?: { text: string; timeoutMs: number },
     /** A turn Marianne starts herself (carryOn): what the engine reads, in place of the user's words. */
-    resumed?: string
+    resumed?: string,
+    /** A turn the user started from a planned task's follow-up (followUp): its task, their go-ahead until the turn ends. */
+    followUp?: PlannedTask
   ): Promise<ChatMessage> {
     const engine = folder.engine
     const cfg = configStore.get()
@@ -457,6 +465,7 @@ class Chat extends EventEmitter {
     this.ending.set(folder.id, new Promise<void>((resolve) => (ended = resolve)))
     this.active.set(folder.id, controller)
     this.writing.set(folder.id, w)
+    if (followUp && !run) this.following.set(folder.id, followUp)
     this.push(w)
     folders.emit('list')
     const started = Date.now()
@@ -534,6 +543,7 @@ class Chat extends EventEmitter {
       answer.model = builder.model ?? answer.model
       this.active.delete(folder.id)
       this.writing.delete(folder.id)
+      this.following.delete(folder.id)
       try {
         // A run's messages are its own to write, once it is over (runTask), and its folder wakes only
         // when it found something (tasks.ts). A folder deleted meanwhile gets nothing back.

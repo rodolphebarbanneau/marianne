@@ -69,8 +69,9 @@ function buildServer(ctx: ToolContext, tools: 'all' | 'none'): McpServer {
 }
 
 /**
- * One call of a tool, as an engine makes it: the planned task's run gate, [[tokens]] resolved in
- * its arguments (refused for a service's), its result scrubbed of them and of card numbers.
+ * One call of a tool, as an engine makes it: the planned task's run gate, the follow-up its turn was
+ * started from (ToolContext.followUp), [[tokens]] resolved in its arguments (refused for a service's),
+ * its result scrubbed of them and of card numbers.
  */
 export async function callTool(t: Tool, args: unknown, ctx: ToolContext): Promise<{ content: { type: 'text'; text: string }[]; isError?: boolean }> {
   const started = Date.now()
@@ -79,6 +80,8 @@ export async function callTool(t: Tool, args: unknown, ctx: ToolContext): Promis
     // Nobody watches a run: this is what holds it to reading and reporting, whatever a page told the engine.
     // Read once: the call keeps to the run it started in, even if the run ends meanwhile (tools/browser.ts).
     const run = tasks.runningIn(ctx.folderId)
+    // The follow-up the user started the turn with, as the chat runner knows it: an engine can't claim one.
+    const followUp = run ? null : tasks.followingUp(ctx.folderId)
     if (!tasks.mayUse(ctx.folderId, t, ALL_TOOLS.includes(t)))
       throw new ToolError(`A planned task's run cannot use ${t.name}. Stop here and report "waiting" with task_report, saying what the user should do.`)
     const raw = JSON.stringify(args ?? {})
@@ -89,7 +92,7 @@ export async function callTool(t: Tool, args: unknown, ctx: ToolContext): Promis
     // A run's one identifier, its entity's, goes through type_text only, which checks it is exactly that one.
     if (run && replaced && t.name !== 'type_text')
       throw new ToolError(`A planned task's run cannot send the user's identifiers through ${t.name}. Stop here and report "waiting" with task_report.`)
-    const text = await t.run(resolved as never, { ...ctx, run, resolved: replaced })
+    const text = await t.run(resolved as never, { ...ctx, run, followUp, resolved: replaced })
     log.info(`tool ${t.name} ok in ${Date.now() - started}ms`)
     return { content: [{ type: 'text' as const, text: maskCards(redact(text, profile.tokens())) }] }
   } catch (err) {

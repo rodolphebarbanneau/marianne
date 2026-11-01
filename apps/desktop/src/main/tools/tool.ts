@@ -34,6 +34,11 @@ export interface ToolContext {
    * rules to its end, and a call that outlives its run stops rather than act as a conversation's.
    */
   run?: PlannedTask | null
+  /**
+   * The planned task whose follow-up the user started the call's turn with, if any (mcp.ts, from the
+   * chat runner, never from the engine): their go-ahead for that turn, which ends with it (tools/browser.ts).
+   */
+  followUp?: PlannedTask | null
 }
 
 /** Typed tool definition (infers `run`'s arguments from `input`). */

@@ -1,5 +1,6 @@
 import { siteReady } from '@marianne/profile'
 import * as z from 'zod'
+import type { ApprovalRequest } from '../../shared/approvals'
 import { cardTitle, cvvProblem, expired, parseExpiry } from '../../shared/cards'
 import type { LoginKind } from '../../shared/sites'
 import type { BrowserState, PaymentCard, PlannedTask } from '../../shared/types'
@@ -17,7 +18,7 @@ import { profile } from '../profile/store'
 import { session } from '../session'
 import { siteAllowed, tasks } from '../tasks'
 import { callingFolder } from './folder'
-import { binding, consequential, Consents, knownSites, PAY_GRANT_MS, PayGrants, reading } from './online'
+import { binding, consequential, Consents, knownSites, PAY_GRANT_MS, PayGrants, paying, reading } from './online'
 import { clip, DOMAIN_IDS, fold, plural, tool, TOKEN, ToolError, type ToolContext } from './tool'
 
 /**
@@ -79,6 +80,26 @@ function runOf(ctx: ToolContext): PlannedTask | null {
 const refusal = (decision: Decision, nothing: string) =>
   new ToolError(`${decision === 'refused' ? 'The user refused' : 'No answer from the user'}: ${nothing}. Do not retry; ask them what they want to do.`)
 
+/** The user's go-ahead from a planned task's follow-up: its label, its task's sites, its service. */
+interface GoAhead {
+  label: string
+  sites: string[]
+  service: string
+}
+
+/**
+ * The follow-up the user started the call's turn with (ToolContext.followUp, the chat runner's), while
+ * that very turn goes on: their go-ahead, for it, to go to the task's sites and fill forms on those its
+ * service declares (the approval policy still decides, and the floor holds). A built-in service's task
+ * with its template's follow-up only, while it still offers it (its service on); never in a run, and
+ * nothing a call the turn outlived can use.
+ */
+function goAhead(ctx: ToolContext): GoAhead | null {
+  const task = ctx.followUp
+  if (!task?.followUp || ctx.run || task.origin.kind !== 'service' || tasks.followingUp(ctx.folderId) !== task || !tasks.isOffered(task)) return null
+  return { label: task.followUp.label, sites: task.sites, service: task.origin.service }
+}
+
 /**
  * The sites Marianne knows, by registrable domain: the content's public sites, and those the built-in
  * services that are on declare (`sites`), never a community service's. The « autonomie » level lets
@@ -93,38 +114,56 @@ export const known = (): Set<string> => knownSites([...content.get().sites.map((
  */
 const declared = (url: string, sites = services.declaredSites()): boolean => siteAllowed({ sites }, url)
 
+/** Going to the page `url` from a folder, as the approval policy reads it: what the folder said yes to, and the follow-up's go-ahead when its task's sites hold the page. */
+function goingTo(folderId: string, url: string, go: GoAhead | null): Extract<ApprovalRequest, { action: 'online' }> {
+  const site = siteOf(url)
+  return {
+    action: 'online',
+    site,
+    known: known().has(site),
+    consented: { site: consents.has(folderId, site, 'site'), folder: consents.has(folderId, site, 'folder') },
+    ...(go && siteAllowed(go, url) ? { followUp: go.label } : {})
+  }
+}
+
 /**
  * Consent to go to the site of `url` from this folder, as the approval policy decides: the user's yes
- * on a card, or given in the folder before, or allowed ahead (their level, a standing permission).
- * True when the user said yes in this folder; false when it was allowed ahead, which covers that
- * site only and isn't kept as the folder's consent.
+ * on a card, or given in the folder before, or allowed ahead (their level, a standing permission, the
+ * follow-up they started). True when the user said yes in this folder to that site; false when it
+ * was allowed ahead, which covers that site only and isn't kept as the folder's consent, or when the
+ * page counts as another one (a payment's).
  */
-async function online(folderId: string, url: string, reason: string, run: PlannedTask | null): Promise<boolean> {
-  const site = siteOf(url)
+async function online(folderId: string, url: string, reason: string, run: PlannedTask | null, go: GoAhead | null = null): Promise<boolean> {
   // A run has the sites the user gave it. It neither reads nor adds to the folder's consents: those
   // were given to a conversation, and what a run opens mustn't widen what a conversation may.
   if (run) {
     if (siteAllowed(run, url)) return false
-    throw beyondRun(`reach ${site}`)
+    throw beyondRun(`reach ${siteOf(url)}`)
   }
-  const consented = { site: consents.has(folderId, site, 'site'), folder: consents.has(folderId, site, 'folder') }
+  // How the browser came to the page, when it is the one open now (not an address about to be opened).
+  const arrival = url === browser.currentUrl() ? browser.arrival() : null
+  // Where the payment the user approved led (the bank's 3-D Secure, the way back): part of it, its card the yes.
+  if (payGrants.onward(folderId, url, arrival)) return false
+  // A payment provider's page that a declared site's own page sent the browser to counts as that page: whatever
+  // let Marianne there (the folder's yes, a standing permission, « autonomie », the follow-up) lets her on, and
+  // nothing else does. Otherwise it is a site of its own.
+  const route = arrival && paymentRoute(url, arrival, (_site, page) => declared(page))
+  const at = route?.provider && approvals.covered(folderId, goingTo(folderId, route.from, go)) ? route.from : url
+  const request = goingTo(folderId, at, go)
+  const site = request.site
   const each = accounts.settings().approvals.level === 'ask'
-  const { decision, ahead } = await approvals.ask(
-    folderId,
-    { action: 'online', site, known: known().has(site), consented },
-    {
-      kind: 'online',
-      title: `Aller sur ${site}`,
-      reason,
-      fields: [
-        { label: 'site', value: site },
-        { label: 'accord', value: each ? 'pour ce site, dans ce dossier' : 'pour tous les sites de ce dossier' }
-      ]
-    }
-  )
+  const { decision, ahead } = await approvals.ask(folderId, request, {
+    kind: 'online',
+    title: `Aller sur ${site}`,
+    reason,
+    fields: [
+      { label: 'site', value: site },
+      { label: 'accord', value: each ? 'pour ce site, dans ce dossier' : 'pour tous les sites de ce dossier' }
+    ]
+  })
   if (decision !== 'accepted') throw refusal(decision, `not going to ${site}`)
   if (!ahead) consents.add(folderId, site)
-  return !ahead
+  return !ahead && at === url
 }
 
 /** The folder's page, while Marianne drives it and the user agreed to its site. */
@@ -133,7 +172,7 @@ async function current(ctx: ToolContext): Promise<{ folderId: string; url: strin
   const state = browser.state()
   if (!state.url || state.folderId !== folderId) throw new ToolError('No page of this folder is open in the browser: open one with open_site.')
   if (state.controller === 'human') throw new ToolError(HUMAN)
-  await online(folderId, state.url, 'Marianne veut continuer sur ce site pour ce dossier.', runOf(ctx))
+  await online(folderId, state.url, 'Marianne veut continuer sur ce site pour ce dossier.', runOf(ctx), goAhead(ctx))
   return { folderId, url: state.url, title: state.title }
 }
 
@@ -264,7 +303,10 @@ export const browserTools = [
       if (!/^https:\/\//i.test(url)) throw new ToolError('Only https addresses are opened.')
       if (browser.state().controller === 'human') throw new ToolError(HUMAN)
       const run = runOf(ctx)
-      const asked = await online(folderId, url, reason, run)
+      const go = goAhead(ctx)
+      // An address Marianne opens is her own step: what follows is no longer a payment's (the bank's 3-D Secure).
+      payGrants.land(folderId)
+      const asked = await online(folderId, url, reason, run, go)
       await act(() => browser.open(url, folderId))
       const setting = accounts.settings().browser.show
       // A planned task's run happens out of sight: it doesn't take the user's screen.
@@ -279,7 +321,7 @@ export const browserTools = [
       else if (landed && asked) consents.add(folderId, siteOf(landed))
       else if (landed && siteOf(landed) !== siteOf(url)) {
         try {
-          await online(folderId, landed, reason, null)
+          await online(folderId, landed, reason, null, go)
         } catch (err) {
           browser.back()
           throw new ToolError(`The address led to ${siteOf(landed)}. ${(err as Error).message} Went back to the previous page.`)
@@ -324,6 +366,7 @@ export const browserTools = [
       const clicked = { ...read, label }
       // Judged where the click happens: the page as it is now.
       const here = browser.currentUrl()
+      const version = browser.pageVersion()
       const run = runOf(ctx)
       let paid = false
       if (run) {
@@ -332,11 +375,14 @@ export const browserTools = [
         const own = run.origin.kind === 'service' && siteAllowed(run, here) && declared(here, services.declaredSites(run.origin.service))
         if (flagged || (own ? binding(clicked, purpose) : !reading(clicked, purpose))) throw beyondRun(`click « ${label || id} »`)
       } else if (flagged || consequential(clicked, purpose)) {
-        // The pay click that follows a payment the user approved on this very page (pay_by_card) goes on that yes, once.
-        paid = payGrants.take(folderId, url, browser.pageVersion(), label)
+        // The pay click that follows a payment the user approved on this very page (pay_by_card) goes on that yes, once:
+        // never one the engine says binds them beyond paying.
+        paid = payGrants.take(folderId, url, version, label) && !binding(clicked, purpose)
+        // Once that payment was pressed here, another click that pays would pay again: it asks, until the page changes.
+        const again = !paid && paying(label) && payGrants.pressedOn(folderId, url, version)
         // On a site Marianne's own services declare, the steps on the way (searching, validating, going on to pay) need
         // no card: paying there takes pay_by_card's. What binds the user beyond paying, or what the engine flags, asks.
-        const free = paid || (!flagged && declared(here) && !binding(clicked, purpose))
+        const free = paid || (!flagged && !again && declared(here) && !binding(clicked, purpose))
         const shown = label || 'cet élément'
         // The floor: a card for this one click, at every level, whatever the user allowed ahead.
         const { decision } = free
@@ -361,6 +407,10 @@ export const browserTools = [
         // The page may have changed while the card waited: click only what the user saw.
         if (browser.currentUrl() !== url) throw new ToolError('The page changed while the user was deciding: nothing was clicked. Read it again.')
       }
+      // The pay click the payment's yes covered: what it leads to is part of that payment (the bank's 3-D Secure), and
+      // the page is marked. Any other click is Marianne's own step: what follows is no longer the payment's.
+      if (paid) payGrants.press(folderId, url, version, browser.arrival()?.url)
+      else payGrants.land(folderId)
       await act(() => browser.click(id))
       const after = browser.state()
       // A run: still running (runOf stops it otherwise), and on one of its sites: its hosts, not
@@ -371,7 +421,7 @@ export const browserTools = [
       }
       if (!run && after.url && siteOf(after.url) !== siteOf(url)) {
         try {
-          await online(folderId, after.url, `Le clic sur « ${label || id} » mène à ce site.`, null)
+          await online(folderId, after.url, `Le clic sur « ${label || id} » mène à ce site.`, null, goAhead(ctx))
         } catch (err) {
           browser.back()
           throw new ToolError(`The click led to ${siteOf(after.url)}. ${(err as Error).message} Went back to the previous page.`)
@@ -445,6 +495,8 @@ export const browserTools = [
       const folderId = callingFolder(ctx.folderId).id
       const state = browser.state()
       if (!state.url || state.folderId !== folderId) throw new ToolError('No page of this folder is open in the browser: open one with open_site.')
+      // The user takes it from here: where they go, they hand back (below), not as a payment's.
+      payGrants.land(folderId)
       browser.setWaiting(reason)
       browser.reveal()
       const outcome = await approvals.hold(folderId, handedBack(HAND_OVER_MS))
@@ -520,9 +572,12 @@ export const browserTools = [
       if (fields.some((f) => TOKEN.test(f.value))) throw new ToolError('Tokens with no value in the profile: use request_setup so the user fills them in.')
       const site = siteOf(url)
       const title = `Remplir ${plural(fields.length, 'champ')} sur ${site}`
+      // The follow-up the user started covers the forms of the sites its service declares, by host, for this turn.
+      const go = goAhead(ctx)
+      const followUp = go && declared(url, services.declaredSites(go.service)) ? { followUp: go.label } : {}
       const { decision } = await approvals.ask(
         folderId,
-        { action: 'form', site, known: known().has(site) },
+        { action: 'form', site, known: known().has(site), ...followUp },
         { kind: 'form', title, reason, fields: fields.map((f) => ({ label: byId.get(f.id)?.label || f.id, value: f.value })) },
         { run: !!ctx.run, onCard: () => browser.setWaiting(title.toLowerCase()) }
       )
@@ -612,7 +667,10 @@ export const browserTools = [
       if (plan.pay) {
         // The pay button lives in the provider's frame, where click can't reach: pressed here, on the same yes, once the form had a moment to check the card.
         await new Promise((resolve) => setTimeout(resolve, 500))
-        const pressed = browser.pageVersion() === version && (await act(() => browser.pressPay(plan.pay!)))
+        const still = browser.pageVersion() === version
+        // Marked before the press, as the click the grant covers is: what it leads to is part of this payment, and another pay click here asks.
+        if (still) payGrants.press(folderId, url, version, browser.arrival()?.url)
+        const pressed = still && (await act(() => browser.pressPay(plan.pay!)))
         if (!pressed)
           return `${filled}, but couldn’t press « ${plan.pay.label} » in the payment form: ask the user to press it themselves (hand_over). ${confirm}`
         return `${filled} and pressed « ${plan.pay.label} » in the payment form, as the user approved. Read the page (read_page). ${confirm}`

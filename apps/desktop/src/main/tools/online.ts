@@ -1,4 +1,5 @@
 import { isSharedHost, siteOf } from '../../shared/hosts'
+import { paidOnward, type Arrival } from '../browser/payment'
 import { fold } from './tool'
 
 /**
@@ -50,9 +51,18 @@ export const PAY_GRANT_MS = 5 * 60_000
  * was when the card was filled (its address and its version, browser.pageVersion), for a few minutes,
  * once. In memory, forgotten when the session locks. The next click that commits takes it, used or
  * not: leaving the page, a second step that commits, or the time out end it.
+ *
+ * Once that payment is pressed (the click the grant covered, or pay_by_card's own press), the page is
+ * marked: another click there that pays would pay again, and asks until the page changes. And the
+ * pages the press leads to for a few minutes (the bank's 3-D Secure, the way back) are part of it,
+ * until Marianne acts otherwise (another click, an address, a hand-over).
  */
 export class PayGrants {
   private grants = new Map<string, { url: string; page: number; until: number }>()
+  /** The page each folder's approved payment was pressed on. */
+  private spent = new Map<string, { url: string; page: number }>()
+  /** Where each folder's approved payment was pressed (its page's address as it loaded), until when what follows is part of it. */
+  private flights = new Map<string, { from: string; until: number }>()
 
   give(folderId: string, url: string, page: number, now = Date.now()): void {
     this.grants.set(folderId, { url, page, until: now + PAY_GRANT_MS })
@@ -65,8 +75,38 @@ export class PayGrants {
     return !!grant && grant.url === url && grant.page === page && now <= grant.until && paying(label)
   }
 
+  /**
+   * The approved payment is pressed on this page (`url` at version `page`), as the browser came to it
+   * (`loaded`: the page's address as it loaded, browser.arrival; none, nothing follows on its yes).
+   * Marked before the press: one that failed half-way still counts.
+   */
+  press(folderId: string, url: string, page: number, loaded: string | undefined, now = Date.now()): void {
+    this.spent.set(folderId, { url, page })
+    if (loaded) this.flights.set(folderId, { from: loaded, until: now + PAY_GRANT_MS })
+    else this.flights.delete(folderId)
+  }
+
+  /** Whether the approved payment was already pressed on this page, unchanged since: a pay click there would pay again. */
+  pressedOn(folderId: string, url: string, page: number): boolean {
+    const spent = this.spent.get(folderId)
+    return !!spent && spent.url === url && spent.page === page
+  }
+
+  /** Whether the page open (`url`, the browser came to it by `arrival`) is where the payment pressed led, in time (payment.ts, paidOnward). */
+  onward(folderId: string, url: string, arrival: Arrival | null, now = Date.now()): boolean {
+    const flight = this.flights.get(folderId)
+    return !!flight && now <= flight.until && paidOnward(url, arrival, flight.from)
+  }
+
+  /** Marianne acts on her own again (another click, an address, a hand-over): what follows is no longer the payment's. */
+  land(folderId: string): void {
+    this.flights.delete(folderId)
+  }
+
   clear(): void {
     this.grants.clear()
+    this.spent.clear()
+    this.flights.clear()
   }
 }
 
@@ -139,10 +179,13 @@ export function binding(element: Clickable, purpose = ''): boolean {
 const PAYS = /\b(pa(y|yer|yez|iement)|payment|regl(er|ez)|valid(er|ez)?|confirm(er|ez)?|checkout|purchase|buy|achet(er|ez))(?![a-z])/
 const NOT_PAYING = /\b(envo[iy]|send|sign|suppr|delete|remove|annul|cancel|resili|declar|certifi|attest|retour|back)/
 
-/** Whether an element's label reads as the pay button: what the yes to a payment by card covers once (PayGrants). */
+/**
+ * Whether an element's label reads as the pay button: what the yes to a payment by card covers once
+ * (PayGrants). Never one that also binds the user beyond paying (« Payer et souscrire »): that asks.
+ */
 export function paying(label: string): boolean {
   const words = plain(label)
-  return PAYS.test(words) && !NOT_PAYING.test(words)
+  return PAYS.test(words) && !NOT_PAYING.test(words) && !binds(label)
 }
 
 /**

@@ -9,6 +9,7 @@ import {
   cardFills,
   expiryValue,
   frameMayReceive,
+  paidOnward,
   partValue,
   PAY_PRESS_SCRIPT,
   paymentRoute,
@@ -88,7 +89,11 @@ describe('whom a payment is for', () => {
   const posted = page(`${AXEPTA}/paymentPage.aspx`, ALIAE, journeys)
 
   it('a site Marianne knows, on its own page', () => {
-    expect(paymentRoute(`${SANEF}/client/index.html#basket`, null, known)).toEqual({ site: 'sanef.com', provider: null })
+    expect(paymentRoute(`${SANEF}/client/index.html#basket`, null, known)).toEqual({
+      site: 'sanef.com',
+      provider: null,
+      from: `${SANEF}/client/index.html#basket`
+    })
   })
 
   it('a provider’s page the site’s own page sent the browser to, its redirects on the site or the provider', () => {
@@ -132,6 +137,53 @@ describe('whom a payment is for', () => {
     expect(paymentRoute(`http://paymentpage.axepta.bnpparibas/paymentPage.aspx`, posted, known)).toBeNull()
     expect(paymentRoute('https://shop.example/pay', null, known)).toBeNull()
     expect(paymentRoute(`${AXEPTA}/paymentPage.aspx`, null, known)).toBeNull()
+  })
+
+  it('names the site’s page that sent the browser on, for a rule that counts pages rather than sites (a declared host)', () => {
+    expect(paymentRoute(`${AXEPTA}/paymentPage.aspx`, posted, known)?.from).toBe(`${ALIAE}/fr/journeys`)
+    const declared = (_site: string, url: string) => url.startsWith(`${ALIAE}/`)
+    expect(paymentRoute(`${AXEPTA}/paymentPage.aspx`, posted, declared)).toMatchObject({ site: 'aliae.com', from: `${ALIAE}/fr/journeys` })
+    const corporate = page('https://www.aliae.com/fr/payer', '', null)
+    expect(paymentRoute(`${AXEPTA}/paymentPage.aspx`, page(`${AXEPTA}/paymentPage.aspx`, 'https://www.aliae.com', corporate), declared)).toBeNull()
+  })
+})
+
+describe('where a payment pressed leads: the bank’s 3-D Secure', () => {
+  const PAID = `${AXEPTA}/paymentPage.aspx`
+  const ACS = 'https://acs.banque.example/challenge'
+  const page = (url: string, initiator: string, previous: Arrival | null, hops: string[] = [url]): Arrival => ({ url, initiator, hops, previous })
+  const paid = page(PAID, ALIAE, page(`${ALIAE}/fr/journeys`, '', null))
+  const challenge = page(ACS, AXEPTA, paid)
+
+  it('the pages each one sent the browser to, from the page the payment was pressed on: the bank’s, wherever its host, and back', () => {
+    expect(paidOnward(ACS, challenge, PAID)).toBe(true)
+    const code = page(`${ACS}/code`, 'https://acs.banque.example', challenge)
+    expect(paidOnward(`${ACS}/code`, code, PAID)).toBe(true)
+    const back = page(`${AXEPTA}/result.aspx`, 'https://acs.banque.example', code, ['https://acs.banque.example/r', `${AXEPTA}/result.aspx`])
+    expect(paidOnward(`${AXEPTA}/result.aspx`, back, PAID)).toBe(true)
+    expect(paidOnward(`${ALIAE}/fr/confirmation`, page(`${ALIAE}/fr/confirmation`, AXEPTA, back), PAID)).toBe(true)
+    // A provider's frame in the merchant's page sends the whole page to the bank.
+    const sanef = page(`${SANEF}/client/`, '', null)
+    expect(paidOnward(ACS, page(ACS, PAYLINE, sanef), `${SANEF}/client/`)).toBe(true)
+  })
+
+  it('never a page no page sent the browser to, nor one an advert’s frame did, nor through http', () => {
+    // Back, reload, an address typed or opened.
+    expect(paidOnward(ACS, page(ACS, '', paid), PAID)).toBe(false)
+    expect(paidOnward(`${ACS}/code`, page(`${ACS}/code`, '', challenge), PAID)).toBe(false)
+    expect(paidOnward(ACS, page(ACS, 'https://ads.example', paid), PAID)).toBe(false)
+    expect(paidOnward(ACS, page(ACS, AXEPTA, paid, ['http://acs.banque.example/challenge', ACS]), PAID)).toBe(false)
+    expect(paidOnward('http://acs.banque.example/challenge', challenge, PAID)).toBe(false)
+  })
+
+  it('never from another page than the one paid on, a page that isn’t the one the browser arrived on, or too far', () => {
+    expect(paidOnward(ACS, challenge, `${AXEPTA}/autre.aspx`)).toBe(false)
+    expect(paidOnward(ACS, challenge, '')).toBe(false)
+    expect(paidOnward('https://shop.example/', challenge, PAID)).toBe(false)
+    expect(paidOnward(ACS, null, PAID)).toBe(false)
+    let long: Arrival = challenge
+    for (let i = 0; i < ARRIVALS_KEPT; i++) long = page(`${ACS}/${i}`, 'https://acs.banque.example', long)
+    expect(paidOnward(long.url, long, PAID)).toBe(false)
   })
 })
 
@@ -378,8 +430,41 @@ describe('the one pay click a payment’s yes covers', () => {
     expect(grants.take('f1', PAGE, 7, 'Payer', 1000)).toBe(false)
   })
 
-  it('a button that pays, and nothing else of the floor', () => {
+  it('a button that pays, and nothing else of the floor, nor anything that binds the user beyond paying', () => {
     for (const label of ['Payer 12,40 €', 'Valider le paiement', 'Pay now', 'Confirmer', 'Régler']) expect(paying(label), label).toBe(true)
     for (const label of ['Envoyer et payer', 'Supprimer', 'Annuler le paiement', 'Signer', '', 'Retour']) expect(paying(label), label).toBe(false)
+    for (const label of ['Payer et souscrire', 'Payer et transmettre', 'Valider et soumettre', 'Confirmer le mandat de prélèvement', 'Pay and subscribe'])
+      expect(paying(label), label).toBe(false)
+  })
+
+  it('once pressed, marks its page: a pay click there would pay again, until the page changes', () => {
+    const grants = new PayGrants()
+    grants.press('f1', PAGE, 7, PAGE, 0)
+    expect(grants.pressedOn('f1', PAGE, 7)).toBe(true)
+    expect(grants.pressedOn('f1', PAGE, 8)).toBe(false)
+    expect(grants.pressedOn('f1', `${SANEF}/client/index.html#profile`, 7)).toBe(false)
+    expect(grants.pressedOn('f2', PAGE, 7)).toBe(false)
+    // Marianne acting otherwise ends what follows the payment, not the mark.
+    grants.land('f1')
+    expect(grants.pressedOn('f1', PAGE, 7)).toBe(true)
+    grants.clear()
+    expect(grants.pressedOn('f1', PAGE, 7)).toBe(false)
+  })
+
+  it('what the press leads to is part of it for a few minutes, until Marianne acts otherwise', () => {
+    const ACS = 'https://acs.banque.example/challenge'
+    const paid: Arrival = { url: PAGE, initiator: '', hops: [PAGE], previous: null }
+    const challenge: Arrival = { url: ACS, initiator: PAYLINE, hops: [ACS], previous: paid }
+    const grants = new PayGrants()
+    expect(grants.onward('f1', ACS, challenge, 0)).toBe(false)
+    grants.press('f1', PAGE, 7, PAGE, 0)
+    expect(grants.onward('f1', ACS, challenge, PAY_GRANT_MS)).toBe(true)
+    expect(grants.onward('f2', ACS, challenge, 1000)).toBe(false)
+    expect(grants.onward('f1', ACS, challenge, PAY_GRANT_MS + 1)).toBe(false)
+    grants.land('f1')
+    expect(grants.onward('f1', ACS, challenge, 1000)).toBe(false)
+    // Pressed on a page the browser can't say how it came to: nothing follows on its yes.
+    grants.press('f1', PAGE, 7, undefined, 0)
+    expect(grants.onward('f1', ACS, challenge, 1000)).toBe(false)
   })
 })
