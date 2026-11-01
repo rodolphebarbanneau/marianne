@@ -316,6 +316,8 @@ export interface ChatMessage {
   note?: 'compacted' | 'task' | 'resume'
   /** note 'task': how the run ended, once it has. */
   outcome?: TaskOutcome
+  /** note 'task': the run said so itself (task_report); without, its outcome is the runner's conclusion (« à relire »). */
+  reported?: boolean
   /**
    * A user message sent by a planned task's follow-up (its button on a run's line): the task's id.
    * The message shows the label; the engine reads the instruction the task keeps.
@@ -366,6 +368,8 @@ export interface TaskRun {
   outcome: TaskOutcome
   /** French, one line. */
   text?: string
+  /** The run said so itself (task_report); without, its outcome is the runner's conclusion. */
+  reported?: boolean
 }
 
 export type TaskOrigin = { kind: 'user' } | { kind: 'agent' } | { kind: 'service'; service: string; template: string }
@@ -406,6 +410,11 @@ export interface PlannedTask {
   anchor?: string
   on: boolean
   runs: TaskRun[]
+  /**
+   * In the list the window gets only (tasks.listed): whether what the task relies on is still there
+   * (its service on, its template still proposed, its plate still granted), as the main process checks.
+   */
+  offered?: boolean
 }
 
 /** A task a service proposes, with the service it comes from. */

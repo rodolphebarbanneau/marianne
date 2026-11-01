@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { FLOOR } from '@shared/approvals'
 import { ENGINE_LABELS } from '@shared/config'
 import type { ServiceState } from '@marianne/sdk'
@@ -113,6 +113,10 @@ function ApprovalCard({ part }: { part: ApprovalPart }) {
   const pending = part.status === 'pending'
   const sending = part.kind === 'service'
   const asksCvv = pending && part.kind === 'payment' && !!part.askCvv
+  // Settled other than by an answer here (the turn ended, the page changed, the card expired): the code typed goes too.
+  useEffect(() => {
+    if (!pending) setCvv('')
+  }, [pending])
   const answer = (reply: 'approve' | 'always' | 'refuse') => {
     api.respondApproval(part.id, reply, asksCvv && reply !== 'refuse' ? cvv : undefined)
     setCvv('')

@@ -2,11 +2,12 @@ import { rmSync } from 'node:fs'
 import { Archive } from '@marianne/archive'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { folders, redoFrom } from '../src/main/folders'
+import { log } from '../src/main/log'
 import { session } from '../src/main/session'
 import { RunInterrupted, siteAllowed, tasks, type NewTask, type TaskTurnEnd } from '../src/main/tasks'
 import { followUpMessage, recap, runsSince, taskMessage, userMessage } from '../src/main/engines/prompt'
 import { addEvery, dayOf, dayStart, everyLabel, nextDay } from '../src/shared/tasks'
-import type { ChatMessage, PlannedTask } from '../src/shared/types'
+import type { ChatMessage, PlannedTask, TaskTemplate } from '../src/shared/types'
 
 // ~/.marianne points at a temporary folder, before paths.ts reads it.
 const root = vi.hoisted(() => {
@@ -328,7 +329,92 @@ describe('the clock', () => {
   })
 })
 
+describe('a service’s task, as its template says it now', () => {
+  const FOLLOW_UP = { label: 'payer maintenant', instruction: 'Pay the passages the check found.' }
+  const template = (more: Partial<TaskTemplate> = {}): TaskTemplate => ({
+    service: 'peage',
+    id: 'tolls:v1',
+    domain: 'mobility',
+    title: 'Péages en flux libre',
+    checks: 'les passages en flux libre non payés',
+    rhythms: [{ every: { unit: 'day', n: 2 }, label: 'tous les 2 jours' }],
+    rhythm: 0,
+    allows: ['Ouvrir les pages de paiement des opérateurs.'],
+    never: 'Une vérification ne paie jamais.',
+    instruction: 'Search by plate alone.',
+    sites: ['www.sanef.com', 'paiement.aliae.com'],
+    followUp: FOLLOW_UP,
+    ...more
+  })
+  afterEach(() => {
+    tasks.templates = () => []
+    vi.restoreAllMocks()
+  })
+
+  it('takes its follow-up, its instruction, what it allows and what it never does, before anything runs', async () => {
+    // Planned before its service's update: the old words, and no follow-up.
+    const old = tasks.create({ ...TOLLS, allows: ['Lire les pages.'], never: 'Jamais rien payer.' })
+    let read = ''
+    turn = async (task) => ((read = task.instruction ?? ''), { outcome: 'nothing' })
+    tasks.templates = () => [template()]
+    await tasks.tick()
+    expect(tasks.get(old.id)).toMatchObject({
+      instruction: 'Search by plate alone.',
+      allows: ['Ouvrir les pages de paiement des opérateurs.'],
+      never: 'Une vérification ne paie jamais.',
+      followUp: FOLLOW_UP,
+      sites: TOLLS.sites
+    })
+    expect(read).toBe('Search by plate alone.')
+    // And no longer one its template doesn't offer.
+    tasks.templates = () => [template({ followUp: undefined })]
+    tasks.refresh()
+    expect(tasks.get(old.id)?.followUp).toBeUndefined()
+  })
+
+  it('never widens its sites: a template listing others is said in the log, once', () => {
+    const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined)
+    const task = tasks.create(TOLLS)
+    tasks.templates = () => [template({ sites: ['www.sanef.com', 'paiement.aliae.com', 'www.autre.example'] })]
+    tasks.refresh()
+    tasks.refresh()
+    expect(tasks.get(task.id)?.sites).toEqual(['www.sanef.com', 'paiement.aliae.com'])
+    expect(warn).toHaveBeenCalledOnce()
+    expect(warn.mock.calls[0].join(' ')).toMatch(/tolls:v1 of 3615 PEAGE.*keeps those its sheet showed/)
+  })
+
+  it('leaves alone a task its service no longer proposes, another template’s, and the user’s own', () => {
+    const tolls = tasks.create(TOLLS)
+    const other = tasks.create({ ...TOLLS, origin: { kind: 'service', service: 'peage', template: 'tolls:v2' } })
+    const reminder = tasks.create(REMINDER)
+    const before = [tolls, other, reminder].map((t) => tasks.get(t.id))
+    tasks.refresh([])
+    tasks.templates = () => [template({ id: 'tolls:v3' }), template({ service: 'vignette', id: 'tolls:v1' })]
+    tasks.refresh()
+    expect([tolls, other, reminder].map((t) => tasks.get(t.id))).toEqual(before)
+  })
+
+  it('tells the window whether each is still offered, as the main process checks it, keeping none of it', () => {
+    const offered = tasks.create(TOLLS)
+    const gone = tasks.create({ ...TOLLS, origin: { kind: 'service', service: 'peage', template: 'tolls:v2' } })
+    tasks.isOffered = (t) => t.id === offered.id
+    expect(Object.fromEntries(tasks.listed().map((t) => [t.id, t.offered]))).toEqual({ [offered.id]: true, [gone.id]: false })
+    expect(tasks.get(offered.id)).not.toHaveProperty('offered')
+  })
+})
+
 describe('what a run leaves', () => {
+  it('keeps whether the run said itself how it went', async () => {
+    const said = tasks.create(TOLLS)
+    turn = async () => ({ outcome: 'found', text: '1 passage', reported: true })
+    await tasks.tick()
+    expect(tasks.get(said.id)?.runs).toEqual([{ at: FRIDAY.toISOString(), outcome: 'found', text: '1 passage', reported: true }])
+    const concluded = tasks.create(TOLLS)
+    turn = async () => ({ outcome: 'found', text: 'à relire' })
+    await tasks.runNow(concluded.id)
+    expect(tasks.get(concluded.id)?.runs).toEqual([{ at: FRIDAY.toISOString(), outcome: 'found', text: 'à relire' }])
+  })
+
   it('wakes by its run, not by its date: a run that finds nothing leaves no trace', async () => {
     const task = tasks.create({ ...TOLLS, first: '2026-10-31' })
     vi.setSystemTime(new Date(2026, 9, 31, 9, 0))

@@ -35,8 +35,8 @@ const fake = vi.hoisted(() => ({
   beginRun: null as null | Promise<void>,
   /** The services, as the host tells them. */
   services: [] as Array<{ manifest: { id: string; name: string }; on: boolean; builtIn: boolean }>,
-  /** The tasks the services that are on propose, as the host tells them: what a service's task relies on. */
-  templates: [] as Array<{ service: string; id: string }>
+  /** The tasks the services that are on propose, as the host tells them: what a service's task relies on, and what it says. */
+  templates: [] as Array<{ service: string; id: string; instruction?: string; sites: string[]; followUp?: { label: string; instruction: string } }>
 }))
 
 vi.mock('electron', () => ({ app: { getVersion: () => '0', on: () => undefined, isPackaged: false } }))
@@ -329,12 +329,12 @@ describe('a planned task’s follow-up', () => {
   }
   /** The task planned, and a run that found something: the line that offers the follow-up. */
   const found = async () => {
-    fake.templates = [{ service: 'peage', id: 'tolls:v1' }]
+    fake.templates = [{ service: 'peage', id: 'tolls:v1', instruction: TOLLS.instruction, sites: TOLLS.sites!, followUp: FOLLOW_UP }]
     fake.run = finds
     const task = planned()
     await tasks.tick()
     const line = folders.messages(task.folderId)[0]
-    expect(line).toMatchObject({ note: 'task', outcome: 'found' })
+    expect(line).toMatchObject({ note: 'task', outcome: 'found', reported: true })
     return { task, line }
   }
   const over = (folderId: string) => vi.waitFor(() => expect(chat.running(folderId)).toBe(false))
@@ -384,6 +384,36 @@ describe('a planned task’s follow-up', () => {
     await over(task.folderId)
     await expect(chat.followUp(task.folderId, line.id)).rejects.toThrow('Cette suite n’est plus proposée.')
     expect(vi.mocked(runTurn).mock.calls).toHaveLength(2)
+  })
+
+  it('comes back when its answer failed or was stopped, not while it goes on', async () => {
+    const { task, line } = await found()
+    fake.user = async (turn) => turn.onEvent({ type: 'done', error: 'Claude Code a échoué : overloaded' })
+    await chat.followUp(task.folderId, line.id)
+    await over(task.folderId)
+    fake.user = untilStopped('turn')
+    await chat.followUp(task.folderId, line.id)
+    // Under way, its answer not saved yet: the line offers it no more.
+    await expect(chat.followUp(task.folderId, line.id)).rejects.toThrow('Cette suite n’est plus proposée.')
+    chat.cancel(task.folderId)
+    await over(task.folderId)
+    fake.user = answers('Payé.')
+    await chat.followUp(task.folderId, line.id)
+    await over(task.folderId)
+    await expect(chat.followUp(task.folderId, line.id)).rejects.toThrow('Cette suite n’est plus proposée.')
+    expect(folders.messages(task.folderId).map((m) => m.status ?? m.role)).toEqual(['system', 'done', 'user', 'error', 'user', 'cancelled', 'user', 'done'])
+  })
+
+  it('is not offered for a run that ended without saying what it found: that is the user’s to read', async () => {
+    fake.templates = [{ service: 'peage', id: 'tolls:v1', instruction: TOLLS.instruction, sites: TOLLS.sites!, followUp: FOLLOW_UP }]
+    fake.run = answers('Je n’ai pas pu conclure.')
+    const task = planned()
+    await tasks.tick()
+    const line = folders.messages(task.folderId)[0]
+    expect(line).toMatchObject({ note: 'task', outcome: 'found' })
+    expect(line).not.toHaveProperty('reported')
+    expect(tasks.get(task.id)?.runs.at(-1)).not.toHaveProperty('reported')
+    await expect(chat.followUp(task.folderId, line.id)).rejects.toThrow('Cette suite n’est plus proposée.')
   })
 
   it('is not offered for a task paused, or whose service is off', async () => {

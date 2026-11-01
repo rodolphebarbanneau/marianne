@@ -95,6 +95,18 @@ describe('stored numbers masked out of a text', () => {
     expect(maskCardNumbers('942424242424242421', numbers)).toBe('942424242424242421')
     expect(maskCardNumbers('5555 5555 5555 4444', numbers)).toBe('5555 5555 5555 4444')
   })
+
+  it('however a page sets the digits apart: a few spaces, no-break spaces, line breaks or slashes, characters that show nothing', () => {
+    const numbers = ['4242424242424242']
+    expect(maskCardNumbers('Carte 4242  4242  4242  4242 acceptée', numbers)).toBe('Carte •••• 4242 acceptée')
+    expect(maskCardNumbers('4242  4242 4242 4242', numbers)).toBe('•••• 4242')
+    expect(maskCardNumbers('4242 /\n4242 /\n4242 /\n4242', numbers)).toBe('•••• 4242')
+    expect(maskCardNumbers('4242​4242‌4242‍4242', numbers)).toBe('•••• 4242')
+    expect(maskCardNumbers('carte : 4⁠2﻿4 2 4242 4242 4242 !', numbers)).toBe('carte : •••• 4242 !')
+    // Not across a wider gap, and a text with no number in it keeps what it had, invisible characters included.
+    expect(maskCardNumbers('4242    4242    4242    4242', numbers)).toBe('4242    4242    4242    4242')
+    expect(maskCardNumbers('Famille 👩‍👧, 4242 €', numbers)).toBe('Famille 👩‍👧, 4242 €')
+  })
 })
 
 describe('the cards in the archive', () => {

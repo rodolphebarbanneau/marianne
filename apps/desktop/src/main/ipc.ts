@@ -106,6 +106,10 @@ function ownWords(): string[] {
 const pushFolders = () => {
   if (session.unlocked) broadcast('folders', folders.list())
 }
+/** The tasks, each saying whether it is still offered: told again when a task, a service, the settings or the profile changes. */
+const pushTasks = () => {
+  if (session.unlocked) broadcast('tasks', tasks.listed())
+}
 const pushLights = () => void engineLights().then((lights) => broadcast('engineLights', lights))
 
 export function registerIpc(): void {
@@ -246,7 +250,7 @@ export function registerIpc(): void {
   handle('getDeadlines', (days?: number) => deadlines(new Date(), days ?? 400))
 
   // ---------- planned tasks ----------
-  handle('listTasks', () => tasks.list())
+  handle('listTasks', () => tasks.listed())
   handle('taskTemplates', () => services.taskTemplates())
   handle('createTask', (request: CreateTask) => {
     if (request.kind === 'reminder') {
@@ -400,6 +404,7 @@ export function registerIpc(): void {
   accounts.on('settings', (s: AccountSettings) => {
     broadcast('accountSettings', s)
     broadcast('services', services.states())
+    pushTasks()
   })
   session.on('unlocked', () => broadcast('accounts', accounts.list()))
   session.on('locked', () => {
@@ -416,16 +421,17 @@ export function registerIpc(): void {
     if (JSON.stringify(next.sources) !== JSON.stringify(prev.sources)) broadcast('services', services.states())
   })
   folders.on('list', pushFolders)
-  tasks.on('change', () => {
-    if (session.unlocked) broadcast('tasks', tasks.list())
-  })
+  tasks.on('change', pushTasks)
   folders.on('folder', (id: string) => {
     const view = chat.view(id)
     if (view) broadcast('folder', view)
   })
   chat.on('folder', (view) => broadcast('folder', view))
   engineEvents.on('busy', pushLights)
-  profile.on('change', (p) => broadcast('profile', p))
+  profile.on('change', (p) => {
+    broadcast('profile', p)
+    pushTasks()
+  })
   documents.on('change', () => broadcast('documents', documents.list()))
   keychain.on('change', () => broadcast('keychain'))
   cards.on('change', () => broadcast('cards'))
@@ -433,7 +439,10 @@ export function registerIpc(): void {
   browser.on('reveal', (folderId: string) => broadcast('browserReveal', folderId))
   updater.on('change', (s) => broadcast('update', s))
   sync.on('change', (list) => broadcast('publicSources', list))
-  services.on('change', () => broadcast('services', services.states()))
+  services.on('change', () => {
+    broadcast('services', services.states())
+    pushTasks()
+  })
   // What the tiles hold now, without asking any again: only the page, as it shows, does.
   services.on('tiles', () => broadcast('serviceTiles', services.tiles(false)))
   content.on('change', () => broadcast('content'))

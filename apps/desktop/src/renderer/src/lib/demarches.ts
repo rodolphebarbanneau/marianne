@@ -82,10 +82,14 @@ const SOURCES: Record<Deadline['source'], string> = { rule: 'règle', calendar: 
 
 const lastRun = (task: PlannedTask): TaskRun | undefined => task.runs[task.runs.length - 1]
 
-/** Whether a task offers its follow-up: it has one, it is on, and its service is on. */
+/**
+ * Whether a task offers its follow-up: it has one, it is on, its service is on, and what it relies on
+ * is still there as the main process last said (`offered`: its template still proposed, its plate
+ * still granted), so that no button shows that the main process would refuse.
+ */
 export function followUpOffered(task: PlannedTask, services: Array<Pick<ServiceState, 'manifest' | 'on'>>): boolean {
   const { origin } = task
-  return !!task.followUp && task.on && origin.kind === 'service' && services.some((s) => s.manifest.id === origin.service && s.on)
+  return !!task.followUp && task.on && task.offered !== false && origin.kind === 'service' && services.some((s) => s.manifest.id === origin.service && s.on)
 }
 
 /** Whether a task found something today, in the service a deadline comes from. */
@@ -138,8 +142,8 @@ export function todoItems({ folders, deadlines, documents, tasks, services }: To
   }
   for (const t of tasks) {
     const run = lastRun(t)
-    // What it found waits for the user when it offers to follow it up (« payer maintenant »), in its folder.
-    const found = run?.outcome === 'found' && followUpOffered(t, services)
+    // What it said it found waits for the user when it offers to follow it up (« payer maintenant »), in its folder.
+    const found = run?.outcome === 'found' && !!run.reported && followUpOffered(t, services)
     if (!t.on || !run || (run.outcome !== 'waiting' && run.outcome !== 'failed' && !found)) continue
     // Once the user has opened its folder, it has been seen to.
     if (folders.some((f) => f.id === t.folderId && !f.unread)) continue

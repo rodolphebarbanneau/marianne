@@ -55,6 +55,8 @@ export interface TaskTurnEnd {
   outcome: TaskOutcome
   /** French, one line. */
   text?: string
+  /** The run said so itself (task_report), rather than the runner concluding for it. */
+  reported?: boolean
 }
 
 /** What a task is made of, before it has a folder and a day. */
@@ -118,6 +120,25 @@ export function templateTask(template: TaskTemplate, rhythm: number): NewTask | 
 }
 
 /**
+ * A service's task as its template says it now: its follow-up, its instruction, what it allows and
+ * what it never does, which an update of the service may have changed since the user planned it (a
+ * task planned before follow-ups existed has none). Never its sites: what its runs reach stays what
+ * the user saw on the sheet. Null when nothing changed.
+ */
+export function refreshedTask(task: PlannedTask, template: TaskTemplate): PlannedTask | null {
+  const followUp = template.followUp ? { label: template.followUp.label, instruction: template.followUp.instruction } : undefined
+  const same =
+    task.instruction === template.instruction &&
+    JSON.stringify(task.allows) === JSON.stringify(template.allows) &&
+    task.never === template.never &&
+    JSON.stringify(task.followUp) === JSON.stringify(followUp)
+  if (same) return null
+  const fresh: PlannedTask = { ...task, instruction: template.instruction, allows: template.allows, never: template.never, followUp }
+  if (!followUp) delete fresh.followUp
+  return fresh
+}
+
+/**
  * Whether a task's sites include an address: https, on a listed host or under it. Not by
  * registrable domain: the sheet says mairie.github.io, not all of github.io.
  */
@@ -148,6 +169,8 @@ class Tasks extends EventEmitter {
   isOffered: (task: PlannedTask) => boolean = () => true
   /** The task whose follow-up the user started the turn under way in a folder with, until that turn ends. Set by the chat runner. */
   followingUp: (folderId: string | undefined) => PlannedTask | null = () => null
+  /** What the built-in services that are on propose now. Set by the chat runner. */
+  templates: () => TaskTemplate[] = () => []
 
   /** The folder of the run under way, and its task. */
   private current: PlannedTask | null = null
@@ -155,6 +178,8 @@ class Tasks extends EventEmitter {
   private report: TaskTurnEnd | null = null
   private ticking = false
   private started = false
+  /** The tasks whose template's sites differ from theirs, said once in the log. */
+  private moved = new Set<string>()
 
   get(id: string): PlannedTask | null {
     return session.unlocked ? session.archive.get<PlannedTask>(KIND, id) : null
@@ -166,6 +191,31 @@ class Tasks extends EventEmitter {
 
   byFolder(folderId: string): PlannedTask | null {
     return this.list().find((t) => t.folderId === folderId) ?? null
+  }
+
+  /** The tasks as the window gets them: each with whether what it relies on is still there (`offered`). */
+  listed(): PlannedTask[] {
+    return this.list().map((t) => ({ ...t, offered: this.isOffered(t) }))
+  }
+
+  /**
+   * Each service's task takes what its template says now (refreshedTask), when its service still
+   * proposes it: a task planned before an update keeps none of the old words, nor misses a follow-up.
+   * Its sites stay its own; a template that lists others is said in the log.
+   */
+  refresh(templates = this.templates()): void {
+    for (const task of this.list()) {
+      const { origin } = task
+      if (origin.kind !== 'service') continue
+      const template = templates.find((t) => t.service === origin.service && t.id === origin.template)
+      if (!template) continue
+      const fresh = refreshedTask(task, template)
+      if (fresh) this.put(fresh)
+      if ([...template.sites].sort().join(' ') !== [...task.sites].sort().join(' ') && !this.moved.has(task.id)) {
+        this.moved.add(task.id)
+        log.warn(`Task ${origin.template} of 3615 ${origin.service.toUpperCase()}: its template lists other sites; it keeps those its sheet showed.`)
+      }
+    }
   }
 
   private put(task: PlannedTask): PlannedTask {
@@ -327,7 +377,13 @@ class Tasks extends EventEmitter {
     if (!session.unlocked) return
     const latest = this.get(task.id)
     if (!latest) return
-    const run: TaskRun = { at: started.toISOString(), outcome: end.outcome, text: end.text, ...(latest.next < today ? { due: latest.next } : {}) }
+    const run: TaskRun = {
+      at: started.toISOString(),
+      outcome: end.outcome,
+      text: end.text,
+      ...(end.reported ? { reported: true } : {}),
+      ...(latest.next < today ? { due: latest.next } : {})
+    }
     // Run before its day, with « lancer maintenant », it keeps that day: its next occurrence isn't spent.
     const next = this.put({ ...latest, next: latest.next > today ? latest.next : nextDay(latest, today), runs: [...latest.runs, run].slice(-RUNS_KEPT) })
     // Paused while it ran: its folder stays where the user filed it, and nobody is told.
@@ -370,6 +426,8 @@ class Tasks extends EventEmitter {
     if (this.ticking || !session.unlocked) return
     this.ticking = true
     try {
+      // Before anything runs: a service's task runs, and offers its follow-up, as its template says now.
+      this.refresh()
       this.settleBack(now.getTime())
       const today = dayOf(now)
       for (const { id } of this.list().filter((t) => t.on && t.next <= today)) {

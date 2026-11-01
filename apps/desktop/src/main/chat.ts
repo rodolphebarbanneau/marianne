@@ -155,6 +155,7 @@ class Chat extends EventEmitter {
       const { origin } = task
       return origin.kind !== 'service' || services.taskTemplates().some((t) => t.service === origin.service && t.id === origin.template)
     }
+    tasks.templates = () => services.taskTemplates()
     tasks.runTurn = (task, line) => this.runTask(task, line)
     tasks.followingUp = (id) => (id && this.following.get(id)) || null
     // The user reached for the browser (opened it, took it, typed an address): a run gives way.
@@ -243,7 +244,7 @@ class Chat extends EventEmitter {
    * after it, nor the same message answered again.
    */
   async followUp(folderId: string, lineId: string): Promise<void> {
-    const offered = () => !!this.followable(folderId) && followUpLine(folders.messages(folderId))?.id === lineId
+    const offered = () => !!this.followable(folderId) && followUpLine(folders.messages(folderId), this.active.has(folderId))?.id === lineId
     if (!folders.get(folderId)) throw new Error('Dossier introuvable.')
     if (!offered()) throw new Error('Cette suite n’est plus proposée.')
     await this.interruptRun()
@@ -366,8 +367,12 @@ class Chat extends EventEmitter {
           ? { outcome: 'failed', text: answer.error }
           : answer.status === 'cancelled'
             ? { outcome: 'failed', text: 'vérification interrompue' }
-            : (reported ?? { outcome: 'found', text: 'la vérification n’a pas conclu : à relire' })
+            : reported
+              ? { ...reported, reported: true }
+              : { outcome: 'found', text: 'la vérification n’a pas conclu : à relire' }
       opening.outcome = end.outcome
+      // Only what the run said it found offers its task's follow-up (followUpLine): a run that didn't conclude is the user's to read.
+      if (end.reported) opening.reported = true
       this.save(folder.id, messages)
       return end
     } finally {

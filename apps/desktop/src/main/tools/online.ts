@@ -49,8 +49,9 @@ export const PAY_GRANT_MS = 5 * 60_000
 /**
  * The one pay click a payment the user approved covers (pay_by_card): on the folder's page as it
  * was when the card was filled (its address and its version, browser.pageVersion), for a few minutes,
- * once. In memory, forgotten when the session locks. The next click that commits takes it, used or
- * not: leaving the page, a second step that commits, or the time out end it.
+ * once, in the turn it was given in. In memory, forgotten when the session locks. The next click that
+ * commits takes it, used or not: leaving the page, a second step that commits, the time out, the end
+ * of the turn or a hand-over end it.
  *
  * Once that payment is pressed (the click the grant covered, or pay_by_card's own press), the page is
  * marked: another click there that pays would pay again, and asks until the page changes. And the
@@ -98,8 +99,17 @@ export class PayGrants {
     return !!flight && now <= flight.until && paidOnward(url, arrival, flight.from)
   }
 
-  /** Marianne acts on her own again (another click, an address, a hand-over): what follows is no longer the payment's. */
+  /** Marianne acts on her own again (another click, an address): what follows is no longer the payment's. */
   land(folderId: string): void {
+    this.flights.delete(folderId)
+  }
+
+  /**
+   * The turn the payment was approved in is over, or the user takes the page (a hand-over): the pay
+   * click it covered and what follows its press end with it. The page pressed on stays marked.
+   */
+  end(folderId: string): void {
+    this.grants.delete(folderId)
     this.flights.delete(folderId)
   }
 
