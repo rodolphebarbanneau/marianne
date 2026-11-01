@@ -15,7 +15,10 @@ or from the command line: gh pr create --template service.md
 
 ## Screenshots
 
-<!-- For anything visible: before and after. Hide anything personal. -->
+<!--
+For anything visible: before and after. Hide anything personal.
+Drop them here, or write each as ![what it shows](shot:file.png) and run npm run pr:shots -- <number> --from <folder>.
+-->
 
 ## Checklist
 
