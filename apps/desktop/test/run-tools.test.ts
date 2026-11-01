@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events'
 import type { Archive } from '@marianne/archive'
 import type { TokenDef } from '@marianne/profile'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Arrival } from '../src/main/browser/payment'
 
 /**
  * What holds a planned task's run, where nobody watches and pages anyone can write are read: its
@@ -23,7 +24,11 @@ const root = vi.hoisted(() => {
 })
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 
-/** The page: where an address leads (its redirects), where a click leads, what an element says when clicked. */
+/**
+ * The page: where an address leads (its redirects), where a click leads, what an element says when
+ * clicked, how the browser came to it (an address opened: no page sent it; a click: the page clicked
+ * did), and its form.
+ */
 const page = vi.hoisted(() => ({
   url: '',
   title: '',
@@ -32,6 +37,8 @@ const page = vi.hoisted(() => ({
   targets: {} as Record<string, string>,
   live: {} as Record<string, string>,
   elements: [] as { id: string; role: string; label: string; type: string; secret: boolean }[],
+  arrival: null as Arrival | null,
+  form: [] as { id: string; label: string; type: string; required: boolean; value: string }[],
   /** While set, the page doesn't finish loading until `loaded()`. */
   hold: false,
   loaded: () => undefined as void
@@ -53,11 +60,13 @@ vi.mock('../src/main/browser', () => {
     }),
     currentUrl: () => page.url,
     pageVersion: () => 1,
+    arrival: () => page.arrival,
     inRun: vi.fn(() => true),
     open: vi.fn((url: string, folderId: string) => {
       page.url = page.redirects[url] ?? url
       page.folderId = folderId
       page.title = `Page de ${new URL(page.url).hostname}`
+      page.arrival = { url: page.url, initiator: '', hops: [url, page.url], previous: page.arrival }
     }),
     settled: vi.fn(() => (page.hold ? new Promise<void>((resolve) => (page.loaded = resolve)) : Promise.resolve())),
     reveal: vi.fn(),
@@ -65,11 +74,15 @@ vi.mock('../src/main/browser', () => {
     elementLabel: vi.fn(async (id: string) => page.live[id] ?? ''),
     click: vi.fn(async (id: string) => {
       if (page.targets[id]) {
+        const from = new URL(page.url).origin
         page.url = page.targets[id]
         page.title = 'Page piégée'
+        page.arrival = { url: page.url, initiator: from, hops: [page.url], previous: page.arrival }
       }
     }),
     type: vi.fn(async () => undefined),
+    readForm: vi.fn(async () => page.form),
+    fillForm: vi.fn(async (values: Record<string, string>) => ({ filled: Object.keys(values), missing: [] })),
     back: vi.fn(),
     setWaiting: vi.fn(),
     on: vi.fn(),
@@ -93,8 +106,8 @@ import { servicesTools } from '../src/main/tools/services'
 import { taskTools } from '../src/main/tools/tasks'
 import { folders } from '../src/main/folders'
 import { reading } from '../src/main/tools/online'
-import type { Tool } from '../src/main/tools/tool'
-import type { ApprovalPart } from '../src/shared/types'
+import type { Tool, ToolContext } from '../src/main/tools/tool'
+import type { ApprovalLevel, ApprovalPart, ApprovalRule, PlannedTask } from '../src/shared/types'
 
 /** A fake archive: tasks and folders only need keyed records. */
 function memoryArchive(): Archive {
@@ -156,7 +169,7 @@ beforeEach(() => {
   tasks.isBusy = () => false
   tasks.addLine = () => undefined
   tasks.isOffered = () => true
-  Object.assign(page, { url: '', title: '', folderId: '', redirects: {}, targets: {}, live: {}, elements: [], hold: false })
+  Object.assign(page, { url: '', title: '', folderId: '', redirects: {}, targets: {}, live: {}, elements: [], arrival: null, form: [], hold: false })
   vi.mocked(browser.open).mockClear()
   vi.mocked(browser.settled).mockClear()
   vi.mocked(browser.click).mockClear()
@@ -685,6 +698,227 @@ describe('going online from a conversation, as the user allowed ahead', () => {
     expect(await call(f, 'open_site', { url: 'https://www.impots.gouv.fr/', ...OPEN })).toMatch(/^Opened https:\/\/www\.franceconnect/)
     expect(await call(f, 'read_page')).toMatch(/^# Page de/)
     expect(request).toHaveBeenCalledOnce()
+  })
+})
+
+/** The account's level and standing permissions, for a conversation's tests. */
+const allowing = (level: ApprovalLevel, rules: ApprovalRule[] = []) =>
+  vi.spyOn(accounts, 'settings').mockReturnValue({ approvals: { level, rules }, browser: { show: 'always' } } as never)
+/** The cards asked (the test's request answers yes to each), by title. */
+const asked = () => (request.mock.calls as unknown[][]).map((args) => (args[1] as ApprovalPart).title)
+const aliaeRule: ApprovalRule = { id: 'r1', action: 'online', site: 'aliae.com', at: '2026-10-30T08:00:00.000Z' }
+
+describe('a planned task’s follow-up: the user’s click is their go-ahead, for its turn', () => {
+  const FOLLOW_UP = { label: 'payer maintenant', instruction: 'Pay the passages the check found.' }
+  const BILLING = [
+    { id: 'f1', label: 'Nom', type: 'text', required: true, value: '' },
+    { id: 'f2', label: 'E-mail', type: 'email', required: true, value: '' }
+  ]
+  const FILL = { fields: [{ id: 'f1', value: 'Camille Martin' }], reason: 'Vos coordonnées de facturation.' }
+  let lines: ApprovalPart[] = []
+  const onPart = (_folderId: string, part: ApprovalPart) => void (part.given && lines.push(part))
+  /** The follow-up's turn under way, as the chat runner marks it (chat.followUp): the task it read, or none. */
+  let following: PlannedTask | null = null
+  /** 3615 PEAGE's task, with its follow-up, and the turn the user started from it: its folder. */
+  const followUp = () => {
+    following = tasks.create({ ...TOLLS, followUp: FOLLOW_UP })
+    return following.folderId
+  }
+  /** Through the operators' pages to ALIAE's form, filled. */
+  const payingNow = async (f: string) => [
+    await call(f, 'open_site', { url: SANEF_PAGE, ...OPEN }),
+    await call(f, 'open_site', { url: ALIAE_PAGE, ...OPEN }),
+    await call(f, 'read_form'),
+    await call(f, 'fill_form', FILL)
+  ]
+  /** A reading tool of the app's, for this test, that tells whether its call was told of a follow-up. */
+  const probe = {
+    name: 'skill',
+    title: 'Probe',
+    description: 'A reading tool of the app, for this test.',
+    readOnly: true,
+    input: {},
+    run: async (_args: unknown, ctx: ToolContext) => String(!!ctx.followUp)
+  } as unknown as Tool
+  beforeEach(() => {
+    lines = []
+    following = null
+    page.form = BILLING
+    approvals.on('part', onPart)
+    approvals.canShow = () => true
+    tasks.followingUp = (id) => (following && id === following.folderId ? following : null)
+    declare()
+  })
+  afterEach(() => {
+    approvals.off('part', onPart)
+    approvals.canShow = () => false
+    tasks.followingUp = () => null
+  })
+
+  it('goes to its task’s sites and fills the forms of its service’s sites without a card, each said on a line naming it', async () => {
+    for (const level of ['balanced', 'autonomous'] as const) {
+      allowing(level)
+      lines = []
+      const results = await payingNow(followUp())
+      expect(
+        results.every((r) => !r.startsWith('refused:')),
+        level
+      ).toBe(true)
+      expect(lines, level).toMatchObject([
+        { action: 'online', given: 'payer maintenant', title: 'Aller sur sanef.com' },
+        { action: 'online', given: 'payer maintenant', title: 'Aller sur aliae.com' },
+        { action: 'form', given: 'payer maintenant', title: 'Remplir 1 champ sur aliae.com', fields: [{ label: 'Nom', value: 'Camille Martin' }] }
+      ])
+    }
+    expect(request).not.toHaveBeenCalled()
+  })
+
+  it('asks as the level says for a site its task doesn’t list, and a form on a page its service doesn’t declare', async () => {
+    allowing('balanced')
+    const f = followUp()
+    await call(f, 'open_site', { url: 'https://www.autoroutes.sanef.com/fr/aide', ...OPEN })
+    await call(f, 'read_form')
+    await call(f, 'fill_form', FILL)
+    expect(asked()).toEqual(['Aller sur sanef.com', 'Remplir 1 champ sur sanef.com'])
+    expect(lines).toEqual([])
+  })
+
+  it('lowers nothing at « tout demander »: each site and each form is asked', async () => {
+    allowing('ask')
+    await payingNow(followUp())
+    expect(asked()).toEqual(['Aller sur sanef.com', 'Aller sur aliae.com', 'Remplir 1 champ sur aliae.com'])
+    expect(lines).toEqual([])
+  })
+
+  it('is the follow-up’s turn only: not a message typed after it, nor an engine’s claim, nor a call an earlier turn left going', async () => {
+    allowing('balanced')
+    // The turn is over: the user types a message in the same folder.
+    const typed = followUp()
+    following = null
+    await call(typed, 'open_site', { url: SANEF_PAGE, ...OPEN })
+    // A call that names the follow-up itself: only the chat runner's mark counts.
+    const claimed = followUp()
+    const claim = following!
+    following = null
+    await callTool(tool('open_site'), { url: SANEF_PAGE, ...OPEN }, { folderId: claimed, followUp: claim })
+    expect(await callTool(probe, {}, { folderId: claimed, followUp: claim })).toMatchObject({ content: [{ text: 'false' }] })
+    // Started again, a call of the earlier turn's still going gets nothing of the new one.
+    const again = followUp()
+    const earlier = following!
+    following = tasks.get(earlier.id)
+    await tool('open_site').run({ url: SANEF_PAGE, ...OPEN }, { folderId: again, followUp: earlier })
+    expect(asked()).toEqual(['Aller sur sanef.com', 'Aller sur sanef.com', 'Aller sur sanef.com'])
+    expect(lines).toEqual([])
+  })
+
+  it('never in a run, nor for a task without its service’s follow-up', async () => {
+    allowing('balanced')
+    ALL_TOOLS.push(probe)
+    try {
+      // Whatever is marked in its folder, a run's calls are never told of a follow-up.
+      const { result } = await during(async (f) => {
+        following = { ...tasks.byFolder(f)!, followUp: FOLLOW_UP }
+        return call(f, 'skill', {}, probe)
+      })
+      expect(result).toBe('false')
+      // A conversation's are, while the turn goes on.
+      expect(await call(followUp(), 'skill', {}, probe)).toBe('true')
+    } finally {
+      ALL_TOOLS.splice(ALL_TOOLS.indexOf(probe), 1)
+    }
+    const without = followUp()
+    following = { ...following!, followUp: undefined }
+    await call(without, 'open_site', { url: SANEF_PAGE, ...OPEN })
+    const agents = followUp()
+    following = { ...following!, origin: { kind: 'agent' } }
+    await call(agents, 'open_site', { url: SANEF_PAGE, ...OPEN })
+    // Its service switched off during the turn: the task no longer offers its follow-up.
+    const off = followUp()
+    tasks.isOffered = () => false
+    await call(off, 'open_site', { url: SANEF_PAGE, ...OPEN })
+    expect(asked()).toEqual(['Aller sur sanef.com', 'Aller sur sanef.com', 'Aller sur sanef.com'])
+  })
+
+  it('never covers the floor: a click that binds the user, or one the engine flags, still asks', async () => {
+    allowing('autonomous')
+    const f = followUp()
+    page.elements = [submit('Signer le mandat')]
+    await call(f, 'open_site', { url: ALIAE_PAGE, ...OPEN })
+    await call(f, 'read_page')
+    await call(f, 'click', { element: 'e1', ...CLICK })
+    page.elements = [submit('Payer mes trajets')]
+    await call(f, 'read_page')
+    await call(f, 'click', { element: 'e1', purpose: 'payer avec la carte enregistrée sur le compte', consequential: true })
+    expect(asked()).toEqual(['Cliquer sur « Signer le mandat »', 'Cliquer sur « Payer mes trajets »'])
+    // The policy's own word: a step that commits takes a card, whatever it is told.
+    await approvals.ask(f, { action: 'commit', followUp: 'payer maintenant' } as never, { kind: 'online', title: 'Payer', fields: [] })
+    expect(request).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('a payment provider’s page a declared site sent the browser to, going online', () => {
+  const AXEPTA_PAGE = 'https://paymentpage.axepta.bnpparibas/paymentPage.aspx'
+  const conversation = () => folders.create({ title: 'Péages', engine: 'claude' }).id
+  /** From a page, « Poursuivre vers le paiement », whose form sends the browser to Axepta's page, then reading it: the cards that asked on the way. */
+  const toAxepta = async (f: string, from = ALIAE_PAGE) => {
+    page.elements = [submit('Poursuivre vers le paiement')]
+    page.targets.e1 = AXEPTA_PAGE
+    await call(f, 'open_site', { url: from, ...OPEN })
+    await call(f, 'read_page')
+    request.mockClear()
+    expect(await call(f, 'click', { element: 'e1', ...CLICK })).toMatch(/^Clicked/)
+    expect(await call(f, 'read_page')).toMatch(/^# Page/)
+    return asked()
+  }
+  beforeEach(() => {
+    declare()
+    approvals.canShow = () => true
+  })
+  afterEach(() => {
+    approvals.canShow = () => false
+    tasks.followingUp = () => null
+  })
+
+  it('is covered by what covered the declared page: the folder’s yes, a standing permission, « autonomie », the follow-up', async () => {
+    allowing('ask')
+    expect(await toAxepta(conversation())).toEqual([])
+    allowing('balanced', [aliaeRule])
+    expect(await toAxepta(conversation())).toEqual([])
+    allowing('autonomous')
+    expect(await toAxepta(conversation())).toEqual([])
+    allowing('balanced')
+    const task = tasks.create({ ...TOLLS, followUp: { label: 'payer maintenant', instruction: 'Pay.' } })
+    tasks.followingUp = (id) => (id === task.folderId ? task : null)
+    expect(await toAxepta(task.folderId)).toEqual([])
+  })
+
+  it('is a site of its own when a page that isn’t declared, or no page, sent the browser there', async () => {
+    allowing('ask')
+    // The folder said yes to aliae.com, but www.aliae.com isn't a page 3615 PEAGE declares.
+    expect(await toAxepta(conversation(), 'https://www.aliae.com/fr/payer')).toEqual([
+      'Cliquer sur « Poursuivre vers le paiement »',
+      'Aller sur axepta.bnpparibas'
+    ])
+    // Back, reload or an address typed: no page sent it.
+    const f = conversation()
+    await call(f, 'open_site', { url: ALIAE_PAGE, ...OPEN })
+    request.mockClear()
+    Object.assign(page, { url: AXEPTA_PAGE, arrival: { url: AXEPTA_PAGE, initiator: '', hops: [AXEPTA_PAGE], previous: page.arrival } })
+    await call(f, 'read_page')
+    expect(asked()).toEqual(['Aller sur axepta.bnpparibas'])
+  })
+
+  it('is a site of its own when nothing covers the declared page now: a follow-up’s turn over, at « équilibré »', async () => {
+    allowing('balanced')
+    const f = conversation()
+    const aliae: Arrival = { url: ALIAE_PAGE, initiator: '', hops: [ALIAE_PAGE], previous: null }
+    Object.assign(page, {
+      url: AXEPTA_PAGE,
+      folderId: f,
+      arrival: { url: AXEPTA_PAGE, initiator: 'https://paiement.aliae.com', hops: [AXEPTA_PAGE], previous: aliae }
+    })
+    await call(f, 'read_page')
+    expect(asked()).toEqual(['Aller sur axepta.bnpparibas'])
   })
 })
 

@@ -102,10 +102,13 @@ describe('its follow-up, « payer maintenant »', () => {
     expect(instruction).not.toMatch(/\d+[,.]\d{2} ?€|\d+ ?€/)
   })
 
-  it('goes on to the card without a confirmation of its own, and flags a click that would pay without the payment card', () => {
+  it('clicks through to the card, the payment card its one confirmation, and flags a click that would pay without it', () => {
     const { instruction } = tollTasks([KANGOO])[0].followUp!
-    expect(instruction).toContain('The buttons on the way (« Payer mes trajets », « Poursuivre vers le paiement ») need no card of their own.')
+    expect(instruction).toContain(
+      'Go on to the card: click through the steps (ALIAE: « Payer mes trajets », « carte bancaire », « Poursuivre vers le paiement »)'
+    )
     expect(instruction).toContain('Set consequential on a click that would pay without pay_by_card (a card saved in an account).')
-    expect(instruction).not.toMatch(/its own card/)
+    // Nothing anticipates a card but the payment's: the follow-up's click is the user's go-ahead to the rest.
+    expect(instruction).not.toMatch(/card of (its|their) own|its own card|another card/)
   })
 })

@@ -262,7 +262,11 @@ describe('proposing a service', () => {
       { label: 'service', value: '3615 VIGNETTE · Vignette' },
       { label: 'ce qu’il fait', value: 'la vignette de vos véhicules et les zones à faibles émissions' },
       { label: 'se connecte à', value: 'api.zfe.example' },
-      { label: 'Marianne pourra agir pour vous sur', value: 'paiement.vignette.example' },
+      // Where she would act, and what that means: she goes on there without asking, but to pay, sign or send.
+      {
+        label: 'Marianne pourra agir pour vous sur',
+        value: 'paiement.vignette.example ; elle y avance sans vous demander, sauf pour payer, signer ou envoyer'
+      },
       { label: 'lira de votre profil', value: 'la vignette Crit’Air de vos véhicules, pour vous dire où vous pouvez rouler, si vous l’acceptez' },
       { label: 'outils pour Marianne', value: 'zones à faibles émissions' }
     ])

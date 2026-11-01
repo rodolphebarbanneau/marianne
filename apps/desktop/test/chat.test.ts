@@ -359,6 +359,24 @@ describe('a planned task’s follow-up', () => {
     expect(turn.message).toContain('(planned task run) Un passage à payer.')
   })
 
+  it('marks its turn, and that turn only, as the follow-up’s: its go-ahead ends with it, and neither the same message answered again nor one typed after it gets one', async () => {
+    const { task, line } = await found()
+    const marked: Array<string | null> = []
+    fake.user = async (turn) => {
+      marked.push(tasks.followingUp(turn.folderId)?.id ?? null)
+      turn.onEvent({ type: 'text', key: 'a', text: 'Voici.' })
+      turn.onEvent({ type: 'done' })
+    }
+    await chat.followUp(task.folderId, line.id)
+    await over(task.folderId)
+    expect(tasks.followingUp(task.folderId)).toBeNull()
+    await chat.regenerate(task.folderId)
+    await over(task.folderId)
+    await chat.send({ folderId: task.folderId, text: 'Et l’autre passage ?', attachments: [] })
+    await over(task.folderId)
+    expect(marked).toEqual([task.id, null, null])
+  })
+
   it('goes once started from its line, and is refused for a line that no longer offers it', async () => {
     const { task, line } = await found()
     await expect(chat.followUp(task.folderId, 'another-line')).rejects.toThrow('Cette suite n’est plus proposée.')

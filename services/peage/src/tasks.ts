@@ -6,9 +6,10 @@ import { hostOf, NETWORKS } from './networks'
  * official pages, every 2 days by default. A passage is paid within 72 hours, so a rhythm of 2 days
  * leaves at least a day to pay, provided the user opens Marianne: a task only runs unlocked. A run
  * never pays: it looks, records what it can, and reports. Paying is its follow-up's, « payer
- * maintenant »: a turn of the conversation with the user there, who says yes on Marianne's payment
- * card. On the operators' pages, the sites this service declares, both click through the steps on
- * the way without asking.
+ * maintenant »: a turn of the conversation with the user there, whose click lets Marianne go to the
+ * operators' pages and fill their forms for that turn, and who says yes once, on her payment card.
+ * On the operators' pages, the sites this service declares, both click through the steps on the way
+ * without asking.
  */
 
 /** Each operator's payment page, once. */
@@ -59,7 +60,7 @@ const PAY_NOW = `The user wants to pay now, with you, the free-flow tolls this t
 For each operator the check named (each one, if it named none):
 1. Open its payUrl with open_site, then read_page; refuse cookies; choose the plate search if asked (ALIAE: « Plaque d'immatriculation »); type the plate this follow-up is about with type_text, its token exactly, and search, without a rental period.
 2. Show the user what is due as the page shows it: the passages, their dates when shown, the amount. Never state an amount the page doesn't show. If nothing is due there, say so and go on to the next operator.
-3. Go on to the card. Fill what the page asks before it (ALIAE: name, billing address, e-mail) with read_form and fill_form, tokens for identifiers. The buttons on the way (« Payer mes trajets », « Poursuivre vers le paiement ») need no card of their own. Set consequential on a click that would pay without pay_by_card (a card saved in an account).
+3. Go on to the card: click through the steps (ALIAE: « Payer mes trajets », « carte bancaire », « Poursuivre vers le paiement ») and fill what the page asks before it (ALIAE: name, billing address, e-mail) with read_form and fill_form, tokens for identifiers. Set consequential on a click that would pay without pay_by_card (a card saved in an account).
 4. Pay with pay_by_card, giving the amount read on the page: its card is the user's one confirmation. Then click the pay button if it didn't press it. If the bank asks for a confirmation (3-D Secure), hand_over. Without a saved card, propose adding one (request_setup, target payment) or hand_over so the user types theirs; never ask for card details in the conversation.
 5. Once the site confirms the payment, mark the matching trips paid with peage_mark_paid, after recording with peage_add_trip a paid passage peage_trips doesn't have, when the page gives its date and time. If the site doesn't confirm it, mark nothing and say so.`
 

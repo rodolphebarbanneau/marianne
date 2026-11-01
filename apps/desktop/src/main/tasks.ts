@@ -146,6 +146,8 @@ class Tasks extends EventEmitter {
   addLine: (folderId: string, text: string, outcome: TaskOutcome) => void = () => {}
   /** Whether what a task relies on is still there: a service switched off, a plate taken back. Set by the chat runner. */
   isOffered: (task: PlannedTask) => boolean = () => true
+  /** The task whose follow-up the user started the turn under way in a folder with, until that turn ends. Set by the chat runner. */
+  followingUp: (folderId: string | undefined) => PlannedTask | null = () => null
 
   /** The folder of the run under way, and its task. */
   private current: PlannedTask | null = null

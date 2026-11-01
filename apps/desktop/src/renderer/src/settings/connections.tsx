@@ -458,6 +458,14 @@ export function ApprovalsPane() {
           </span>
           <span />
         </div>
+        <div className="row">
+          <span>suite d’une tâche</span>
+          <span className="dim">
+            le bouton d’une tâche planifiée qui propose une suite (« payer maintenant ») vaut accord pour cette réponse : aller sur les sites de la tâche et
+            remplir les formulaires des sites de son service, sauf en « tout demander ».
+          </span>
+          <span />
+        </div>
       </div>
       <span className="label sub">autorisations données</span>
       <div className="rows">

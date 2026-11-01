@@ -21,19 +21,35 @@ const root = vi.hoisted(() => {
 })
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 
-/** The page: where it is, how the browser came there, its version, its card fields, and what was filled or pressed. */
-const page = vi.hoisted(() => ({
-  url: '',
-  title: '',
-  folderId: '',
-  version: 1,
-  arrival: null as Arrival | null,
-  frames: [] as CardFrame[],
-  fills: [] as Array<{ node: number; values: Record<string, string> }>,
-  fillHolds: true,
-  pressed: [] as string[],
-  elements: [] as { id: string; role: string; label: string; type: string; secret: boolean; card: boolean }[]
-}))
+/**
+ * The page: where it is, how the browser came there, its version, its card fields, what was filled or
+ * pressed, and where the next click or press leads (`next`: the address, and the origin of the frame
+ * that sends the browser there).
+ */
+const page = vi.hoisted(() => {
+  const state = {
+    url: '',
+    title: '',
+    folderId: '',
+    version: 1,
+    arrival: null as Arrival | null,
+    frames: [] as CardFrame[],
+    fills: [] as Array<{ node: number; values: Record<string, string> }>,
+    fillHolds: true,
+    pressed: [] as string[],
+    elements: [] as { id: string; role: string; label: string; type: string; secret: boolean; card: boolean }[],
+    next: null as { url: string; initiator: string } | null
+  }
+  /** Goes where `next` says, as a form, a link or a script of the page does. */
+  const go = () => {
+    if (!state.next) return
+    state.arrival = { url: state.next.url, initiator: state.next.initiator, hops: [state.next.url], previous: state.arrival }
+    state.url = state.next.url
+    state.version++
+    state.next = null
+  }
+  return Object.assign(state, { go })
+})
 
 vi.mock('electron', () => ({ app: { getVersion: () => '0' } }))
 vi.mock('../src/main/browser', () => {
@@ -59,10 +75,10 @@ vi.mock('../src/main/browser', () => {
       page.fills.push(...fills.map(({ node, values }) => ({ node, values })))
       return page.fillHolds
     }),
-    pressPay: vi.fn(async (pay: { id: string }) => (page.pressed.push(pay.id), true)),
+    pressPay: vi.fn(async (pay: { id: string }) => (page.pressed.push(pay.id), page.go(), true)),
     readPage: vi.fn(async () => ({ url: page.url, title: page.title, text: 'Montant à payer : 12,40 €', elements: page.elements })),
     elementLabel: vi.fn(async (id: string) => page.elements.find((e) => e.id === id)?.label ?? ''),
-    click: vi.fn(async () => undefined),
+    click: vi.fn(async () => page.go()),
     setWaiting: vi.fn(),
     settled: vi.fn(async () => undefined),
     reveal: vi.fn(),
@@ -82,7 +98,9 @@ import { services } from '../src/main/host'
 import { callTool } from '../src/main/mcp'
 import { profile } from '../src/main/profile/store'
 import { session } from '../src/main/session'
+import { tasks } from '../src/main/tasks'
 import { browserTools } from '../src/main/tools/browser'
+import { PAY_GRANT_MS } from '../src/main/tools/online'
 import type { Tool } from '../src/main/tools/tool'
 import type { ApprovalPart, PlannedTask } from '../src/shared/types'
 
@@ -153,7 +171,19 @@ function on(url: string, frames: CardFrame[] = SANEF_FRAMES): string {
 
 beforeEach(() => {
   session.open(memoryArchive())
-  Object.assign(page, { url: '', title: '', folderId: '', version: 1, arrival: null, frames: [], fills: [], fillHolds: true, pressed: [], elements: [] })
+  Object.assign(page, {
+    url: '',
+    title: '',
+    folderId: '',
+    version: 1,
+    arrival: null,
+    frames: [],
+    fills: [],
+    fillHolds: true,
+    pressed: [],
+    elements: [],
+    next: null
+  })
   vi.mocked(browser.fillCard).mockClear()
   vi.mocked(browser.pressPay).mockClear()
   vi.mocked(browser.cardFields).mockClear()
@@ -350,15 +380,16 @@ describe('the pay click that follows', () => {
     expect(result).toMatch(/and pressed « Payer » in the payment form, as the user approved/)
     expect(page.pressed).toEqual(['p1'])
     expect(payments()[0].fields).toContainEqual({ label: 'puis', value: 'appuie sur « Payer » dans le formulaire de paiement' })
-    // No pay click left to cover: one the engine says would pay asks.
+    // No pay click left to cover, and the payment pressed on this page: another pay button asks, though Sanef is declared.
     page.elements = [PAY_BUTTON]
     await call(f, 'read_page')
     const asked = parts.length
-    await click(f, true)
+    await click(f)
     expect(parts).toHaveLength(asked + 1)
+    expect(parts.at(-1)).toMatchObject({ action: 'commit', title: 'Cliquer sur « Payer 12,40 € »' })
   })
 
-  it('on a site Marianne’s own services declare, needs no card of its own, and still ends the grant: one the engine flags then asks', async () => {
+  it('on a site Marianne’s own services declare, needs no card of its own; pressed again on that page, asks, until the page changes', async () => {
     reply = { answer: 'approve', cvv: CVV }
     const f = on(`${SANEF}/client/index.html#basket`)
     await call(f, 'pay_by_card', PAY)
@@ -366,11 +397,141 @@ describe('the pay click that follows', () => {
     await call(f, 'read_page')
     const asked = parts.length
     expect(await click(f)).toMatch(/^Clicked « Payer 12,40 € », as part of the payment the user approved/)
-    expect(await click(f)).toMatch(/^Clicked « Payer 12,40 € »\. Now on/)
     expect(parts).toHaveLength(asked)
-    await click(f, true)
+    // The same page would pay again: the floor's card.
+    await click(f)
     expect(parts).toHaveLength(asked + 1)
     expect(parts.at(-1)).toMatchObject({ action: 'commit', title: 'Cliquer sur « Payer 12,40 € »' })
+    // A step that doesn't pay goes as on any declared page; once the page changed, a pay button does too.
+    page.elements = [{ ...PAY_BUTTON, label: 'Accepter les conditions' }]
+    await call(f, 'read_page')
+    expect(await click(f)).toMatch(/^Clicked « Accepter les conditions »/)
+    page.version++
+    page.elements = [PAY_BUTTON]
+    await call(f, 'read_page')
+    expect(await click(f)).toMatch(/^Clicked « Payer 12,40 € »\. Now on/)
+    expect(parts).toHaveLength(asked + 1)
+  })
+
+  it('never one that also binds the user: « Payer et souscrire » asks, on a declared site too', async () => {
+    reply = { answer: 'approve', cvv: CVV }
+    for (const open of [onAxepta, () => on(`${SANEF}/client/index.html#basket`)]) {
+      const f = open()
+      expect(await call(f, 'pay_by_card', PAY)).toMatch(/^Filled/)
+      page.elements = [{ ...PAY_BUTTON, label: 'Payer et souscrire' }]
+      await call(f, 'read_page')
+      const asked = parts.length
+      expect(await click(f)).not.toMatch(/as part of the payment/)
+      expect(parts).toHaveLength(asked + 1)
+      expect(parts.at(-1)).toMatchObject({ action: 'commit', title: 'Cliquer sur « Payer et souscrire »' })
+    }
+    // Nor a pay button the engine says binds them.
+    const f = onAxepta()
+    await call(f, 'pay_by_card', PAY)
+    page.elements = [PAY_BUTTON]
+    await call(f, 'read_page')
+    const asked = parts.length
+    await call(f, 'click', { element: 'e1', purpose: 'payer et souscrire l’abonnement annuel', consequential: false })
+    expect(parts).toHaveLength(asked + 1)
+  })
+})
+
+describe('what the payment leads to: the bank’s 3-D Secure', () => {
+  const ACS = 'https://acs.banque.example/challenge'
+  const PAY_BUTTON = { id: 'e1', role: 'button', label: 'Payer 12,40 €', type: 'submit', secret: false, card: false }
+  const click = (f: string) => call(f, 'click', { element: 'e1', purpose: 'payer les passages', consequential: false })
+  /** The going-online cards asked: not the lines of what was allowed ahead. */
+  const goingOnline = () => parts.filter((p) => p.action === 'online' && !p.given).map((p) => p.title)
+  /** Axepta's page, ALIAE's own page having sent the browser there, the card filled and its pay button read. */
+  async function paying(): Promise<string> {
+    const f = on(`${AXEPTA}/paymentPage.aspx`, [
+      { node: 1, origins: [AXEPTA], fields: [field('c1', 'number'), field('c2', 'expiry'), field('c3', 'holder'), field('c4', 'cvv')], pay: [] }
+    ])
+    const journeys: Arrival = { url: `${ALIAE}/fr/journeys`, initiator: ALIAE, hops: [`${ALIAE}/fr/journeys`], previous: null }
+    page.arrival = { url: `${AXEPTA}/paymentPage.aspx`, initiator: ALIAE, hops: [`${AXEPTA}/paymentPage.aspx`], previous: journeys }
+    await call(f, 'pay_by_card', PAY)
+    page.elements = [PAY_BUTTON]
+    await call(f, 'read_page')
+    return f
+  }
+  beforeEach(() => (reply = { answer: 'approve', cvv: CVV }))
+
+  it('after the pay click the yes covered: the bank’s pages, and the way back, need no going-online card', async () => {
+    const f = await paying()
+    page.next = { url: ACS, initiator: AXEPTA }
+    expect(await click(f)).toMatch(/^Clicked « Payer 12,40 € », as part of the payment the user approved\. Now on https:\/\/acs\.banque\.example/)
+    expect(await call(f, 'read_page')).toMatch(/^# Paiement/)
+    // The bank's own next page, then back to the provider's.
+    page.next = { url: `${ACS}/code`, initiator: 'https://acs.banque.example' }
+    page.go()
+    await call(f, 'read_page')
+    page.next = { url: `${AXEPTA}/result.aspx`, initiator: 'https://acs.banque.example' }
+    page.go()
+    await call(f, 'read_page')
+    expect(goingOnline()).toEqual([])
+  })
+
+  it('after pay_by_card’s own press in the provider’s frame too', async () => {
+    const monetico = 'https://p.monetico-services.com'
+    const f = on(`${SANEF}/client/`, [
+      { node: 7, origins: [SANEF, monetico], fields: [field('c1', 'number'), field('c2', 'expiry'), field('c3', 'cvv')], pay: ['Payer'] }
+    ])
+    page.arrival = { url: `${SANEF}/client/`, initiator: '', hops: [`${SANEF}/client/`], previous: null }
+    // The provider's frame sends the whole page to the bank.
+    page.next = { url: ACS, initiator: monetico }
+    expect(await call(f, 'pay_by_card', PAY)).toMatch(/pressed « Payer »/)
+    expect(await call(f, 'read_page')).toMatch(/^# Paiement\nhttps:\/\/acs\.banque\.example/)
+    expect(goingOnline()).toEqual([])
+  })
+
+  it('not after another click, nor for a page no page of the payment sent the browser to, nor once its few minutes are over', async () => {
+    // Another click, Marianne's own step, after the one the yes covered.
+    const f = await paying()
+    await click(f)
+    page.elements = [{ id: 'e1', role: 'link', label: 'Aide', type: '', secret: false, card: false }]
+    await call(f, 'read_page')
+    page.next = { url: ACS, initiator: AXEPTA }
+    await call(f, 'click', { element: 'e1', purpose: 'lire l’aide', consequential: false })
+    expect(goingOnline()).toEqual(['Aller sur banque.example'])
+    // Back, or an address typed: no page sent the browser there.
+    const g = await paying()
+    await click(g)
+    page.next = { url: ACS, initiator: '' }
+    page.go()
+    await call(g, 'read_page')
+    expect(goingOnline()).toHaveLength(2)
+    // The bank's page, reached in time; read again once the few minutes are over.
+    const h = await paying()
+    page.next = { url: ACS, initiator: AXEPTA }
+    await click(h)
+    expect(goingOnline()).toHaveLength(2)
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now() + PAY_GRANT_MS + 1)
+    await call(h, 'read_page')
+    expect(goingOnline()).toEqual(['Aller sur banque.example', 'Aller sur banque.example', 'Aller sur banque.example'])
+  })
+})
+
+describe('in a planned task’s follow-up', () => {
+  it('the payment card still asks: the follow-up’s go-ahead never covers it', async () => {
+    reply = { answer: 'approve', cvv: CVV }
+    const task = tasks.create({
+      title: 'Péages en flux libre',
+      domain: 'mobility',
+      runner: 'marianne',
+      origin: { kind: 'service', service: 'peage', template: 'tolls:v1' },
+      every: { unit: 'day', n: 2 },
+      everyLabel: 'tous les 2 jours',
+      sites: ['www.sanef.com', 'paiement.aliae.com'],
+      followUp: { label: 'payer maintenant', instruction: 'Pay the passages found.' }
+    })
+    tasks.followingUp = (id) => (id === task.folderId ? task : null)
+    try {
+      Object.assign(page, { url: `${SANEF}/client/index.html#basket`, title: 'Paiement', folderId: task.folderId, frames: SANEF_FRAMES })
+      expect(await call(task.folderId, 'pay_by_card', PAY)).toMatch(/^Filled/)
+      expect(payments()).toMatchObject([{ action: 'commit', status: 'accepted', title: 'Payer par carte sur sanef.com' }])
+    } finally {
+      tasks.followingUp = () => null
+    }
   })
 })
 
