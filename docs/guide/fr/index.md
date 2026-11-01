@@ -9,7 +9,7 @@ Marianne est un projet indépendant, sans lien avec l’État ni avec aucune adm
 - **Des dossiers.** Chaque sujet a son dossier : une conversation avec Marianne, qui garde la question, les pièces et les étapes.
 - **Des démarches guidées.** Déclarer ses revenus, renouveler sa carte d’identité, contester une décision… Marianne vous accompagne pas à pas.
 - **Des tâches planifiées.** Un dossier qui revient à son jour : un rappel, ou une vérification que Marianne fait pour vous, comme les péages à payer. Une vérification ne paie jamais.
-- **Les Services.** Des petits outils d’information publique, avec leurs codes 3615 : la météo, le péage en flux libre, la carte de France, le Parlement (Assemblée nationale et Sénat), l’annuaire des services publics.
+- **Les Services.** Des petits outils d’information publique, ou qui aident à mener une démarche, avec leurs codes 3615 : la météo, le péage en flux libre, la carte de France, le Parlement (Assemblée nationale et Sénat), l’annuaire des services publics.
 - **Les infos.** 3615 INFOS rassemble les titres de vos sources d’information, regroupés en sujets : qui en parle, et comment chacun titre. L’article s’ouvre chez le journal.
 - **Vos papiers.** Vos pièces et votre profil restent dans l’archive, et servent à préparer vos démarches.
 

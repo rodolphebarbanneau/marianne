@@ -200,9 +200,11 @@ function ApprovalCard({ part }: { part: ApprovalPart }) {
 function GivenLine({ part }: { part: ApprovalPart }) {
   const { openSettings } = useApp()
   const values = part.action === 'online' ? [] : part.fields
+  // The card's title, « Aller sur sanef.com », reads inside the line as its other parts do: lowercase.
+  const title = part.title.charAt(0).toLowerCase() + part.title.slice(1)
   return (
     <div className="tool-line">
-      autorisé d’office · {part.given} · {part.title}
+      autorisé d’office · {part.given} · {title}
       {values.length > 0 && <span className="selectable"> · {values.map((f) => `${f.label} : ${f.value || '(vide)'}`).join(' · ')}</span>} ·{' '}
       <button className="link" onClick={() => openSettings('approvals')}>
         autorisations

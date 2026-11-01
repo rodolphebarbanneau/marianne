@@ -332,7 +332,7 @@ describe('prompt', () => {
     expect(p).toContain('# Acting')
     expect(p).toMatch(/concrete thing to do[\s\S]*situation to navigate/)
     for (const tool of ['services', 'procedures', 'service_propose', 'request_setup', 'task_propose']) expect(p).toContain(`(${tool})`)
-    expect(p).toContain('Create nothing (no task, no service, no procedure followed) until the user picks')
+    expect(p).toContain('Call no tool that proposes or creates something (task_propose, service_propose), and start no procedure, until the user picks')
     expect(p).toContain('Never ask in the conversation for what a tool asks on a card')
     expect(p).toContain('never work around it')
   })

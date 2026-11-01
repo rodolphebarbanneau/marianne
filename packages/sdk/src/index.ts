@@ -460,7 +460,7 @@ export interface ServiceTaskRhythm {
 /**
  * A planned task a service proposes, for what it covers (a vehicle): data, which Marianne lays out
  * on the sheet the user reads before saying yes. A service proposes and never schedules: nothing
- * runs without that yes, and a task can only look and report.
+ * runs without that yes, a run can only look and report, and its follow-up is the user's to start.
  */
 export interface ServiceTaskTemplate {
   /** Stable within the service, for one entity: "tolls:<vehicle id>". */

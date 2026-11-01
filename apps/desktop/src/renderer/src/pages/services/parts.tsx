@@ -77,16 +77,20 @@ export function Origin({ listing, inline }: { listing: Pick<Listing, 'official' 
 /** "1 site", "2 sites", "aucun site". */
 export const sites = (hosts: string[]) => (hosts.length ? `${hosts.length} site${hosts.length > 1 ? 's' : ''}` : 'aucun site')
 
-/** What a service reaches, where Marianne acts for it, and what it reads: "2 sites", "Marianne agit sur 1 site", "lit : vos plaques". */
+/**
+ * What a service reaches, where Marianne acts for it, and what it reads: "2 sites", "Marianne agit sur 1 site", "lit : vos plaques".
+ * Next to where Marianne acts, what the service reaches says it is its own: « aucun site de lui-même ».
+ */
 export function Access({ listing }: { listing: Pick<Listing, 'hosts' | 'sites' | 'reads'> }) {
   const reads = listing.reads.map((f) => PROFILE_FIELD_SHORT[f])
   return (
     <span className="stack" style={{ gap: 2 }}>
       <span className="dim" title={listing.hosts.join(', ')}>
         {sites(listing.hosts)}
+        {listing.sites.length > 0 && ' de lui-même'}
       </span>
       {listing.sites.length > 0 && (
-        <span className="small" title={`Marianne pourra agir pour vous sur : ${listing.sites.join(', ')} ; ${ON_SITES}`}>
+        <span className="small" title={`Marianne pourra agir pour vous sur : ${listing.sites.join(', ')} · ${ON_SITES}`}>
           Marianne agit sur {sites(listing.sites)}
         </span>
       )}

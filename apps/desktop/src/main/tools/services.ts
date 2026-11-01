@@ -70,7 +70,7 @@ export function offerFields(s: Pick<ServiceState, 'manifest' | 'tools'>): Array<
     { label: 'service', value: `3615 ${serviceCode(m)} · ${m.name}` },
     { label: 'ce qu’il fait', value: m.description },
     { label: 'se connecte à', value: m.hosts.join(', ') || 'aucun site' },
-    ...(m.sites.length ? [{ label: 'Marianne pourra agir pour vous sur', value: `${m.sites.join(', ')} ; ${ON_SITES}` }] : []),
+    ...(m.sites.length ? [{ label: 'Marianne pourra agir pour vous sur', value: `${m.sites.join(', ')} · ${ON_SITES}` }] : []),
     { label: 'lira de votre profil', value: reads ? `${reads}, pour ${m.permissions.purpose}, si vous l’acceptez` : 'rien' },
     { label: 'outils pour Marianne', value: s.tools.map((t) => t.label).join(', ') || 'aucun' }
   ]
@@ -131,7 +131,7 @@ export const servicesTools = [
     title: 'Propose a service',
     tokens: false,
     description:
-      'Proposes to the user, on a card, one of Marianne’s own services that covers their request and isn’t on (not added, or switched off): what it does, what it reaches, what it would read of their profile. The card leads to « avant d’ajouter », where adding stays their own act, and the service asks there what it reads. Waits for what they do, then tells you. Its tools reach you only in the next turn, which Marianne starts herself once it is added. Never a community service. Refused or unanswered: carry on without it, and don’t propose it again in this folder.',
+      'Proposes to the user, on a card, one of Marianne’s own services that covers their request and isn’t on (not added, or switched off): what it does, what it reaches, the sites where Marianne would act for them for it (acts on), what it would read of their profile. The card leads to « avant d’ajouter », where adding stays their own act, and the service asks there what it reads. Waits for what they do, then tells you. Its tools reach you only in the next turn, which Marianne starts herself once it is added. Never a community service. Refused or unanswered: carry on without it, and don’t propose it again in this folder.',
     input: {
       code: z.string().trim().min(1).max(40).describe('The service’s code, as services lists it'),
       reason: z.string().trim().min(1).max(200).describe('How it helps with the user’s request, in one sentence for the user (in French)')

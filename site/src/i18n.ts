@@ -61,7 +61,7 @@ const fr = {
     captions: {
       dossier: 'Une question, une réponse claire. Marianne consulte ses services et ses sources, puis vous dit quoi faire, et avant quand.',
       accord:
-        'Marianne propose de vous rappeler la suite le jour venu. Rien n’est enregistré, rempli, signé ni envoyé sans votre accord, donné sur une carte comme celle-ci.',
+        'Marianne propose de vous rappeler la suite le jour venu. Rien n’est enregistré ni rempli sans votre accord, sur une carte comme celle-ci ou d’avance, comme vous l’avez choisi ; rien n’est signé, payé ni envoyé sans votre oui sur une carte.',
       demarches:
         'Chaque domaine a son tableau de bord : vos échéances, vos véhicules, les démarches guidées. Les tâches planifiées reviennent à leur jour : un rappel, ou une vérification que Marianne fait pour vous.',
       navigateur:
@@ -90,7 +90,7 @@ const fr = {
       {
         code: 'ACCORD',
         title: 'C’est vous qui décidez',
-        text: 'Tout ce qui change votre profil, remplit un formulaire, signe, paie ou envoie passe d’abord par une carte : Marianne attend votre accord.'
+        text: 'Tout ce qui change votre profil, remplit un formulaire, signe, paie ou envoie attend votre accord : sur une carte, ou d’avance, comme vous l’avez choisi. Signer, payer et envoyer, toujours sur une carte.'
       },
       {
         code: 'NAVIGATEUR',
@@ -267,7 +267,7 @@ const fr = {
       {
         title: 'Vous décidez, toujours',
         text: [
-          'Une IA peut aider. Elle ne décide pas à votre place. Rien ne change votre profil, ne remplit un formulaire, ne signe, ne paie ni n’envoie sans votre accord, donné sur une carte qui vous montre tout.'
+          'Une IA peut aider. Elle ne décide pas à votre place. Rien ne change votre profil, ne remplit un formulaire, ne signe, ne paie ni n’envoie sans votre accord : sur une carte qui vous montre tout, ou d’avance, pour ce que vous avez choisi. Signer, payer et envoyer passent toujours par une carte.'
         ]
       },
       {
@@ -370,7 +370,7 @@ const en: typeof fr = {
     captions: {
       dossier: 'A question, a clear answer. Marianne checks its services and sources, then tells you what to do, and by when.',
       accord:
-        'Marianne offers to remind you of what comes next, on the day. Nothing is saved, filled in, signed or sent without your approval, given on a card like this one.',
+        'Marianne offers to remind you of what comes next, on the day. Nothing is saved or filled in without your approval, on a card like this one or ahead, as you chose; nothing is signed, paid or sent without your yes on a card.',
       demarches:
         'Each area of your paperwork has its dashboard: your deadlines, your vehicles, the guided formalities. Planned tasks come back on their day: a reminder, or a check Marianne makes for you.',
       navigateur:
@@ -399,7 +399,7 @@ const en: typeof fr = {
       {
         code: 'ACCORD',
         title: 'You decide',
-        text: 'Anything that changes your profile, fills in a form, signs, pays or sends goes through a card first: Marianne waits for your approval.'
+        text: 'Anything that changes your profile, fills in a form, signs, pays or sends waits for your approval: on a card, or ahead, as you chose. Signing, paying and sending, always on a card.'
       },
       {
         code: 'NAVIGATEUR',
@@ -567,7 +567,7 @@ const en: typeof fr = {
       {
         title: 'You decide, always',
         text: [
-          'An AI can help. It doesn’t decide for you. Nothing changes your profile, fills in a form, signs, pays or sends without your approval, given on a card that shows you everything.'
+          'An AI can help. It doesn’t decide for you. Nothing changes your profile, fills in a form, signs, pays or sends without your approval: on a card that shows you everything, or ahead, for what you chose. Signing, paying and sending always go through a card.'
         ]
       },
       {

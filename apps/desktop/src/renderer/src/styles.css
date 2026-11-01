@@ -3037,6 +3037,11 @@ button.card:hover {
   display: block;
   margin: var(--s4) 0 6px;
 }
+/* A page's small notes (an empty list, a word under its rows): in the rows' column, a little apart from what follows. */
+.settings-page > p.small {
+  max-width: 800px;
+  margin-bottom: var(--s3);
+}
 /* A page's subtitle, close under its title: what the page is about, in a sentence or two. */
 .settings-page .psub {
   max-width: 800px;

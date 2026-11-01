@@ -438,7 +438,8 @@ export function ReviewDialog({ subject, onAdded, onClose }: { subject: ReviewSub
                       </span>
                     ))
                   ) : (
-                    <span className="dim">aucun site</span>
+                    // Right above where Marianne acts for it: the service itself, on its own, goes nowhere.
+                    <span className="dim">aucun site{facts.sites.length > 0 && ' de lui-même'}</span>
                   )}
                 </Can>
                 {facts.sites.length > 0 && (
@@ -448,7 +449,7 @@ export function ReviewDialog({ subject, onAdded, onClose }: { subject: ReviewSub
                         {h}
                       </span>
                     ))}{' '}
-                    <span className="small dim">: dans son navigateur, pour ce service ; {ON_SITES}</span>
+                    <span className="small dim">: dans son navigateur, pour ce service · {ON_SITES}</span>
                   </Can>
                 )}
                 {/* Every service knows the commune of the user's address (never the address itself): always said. */}

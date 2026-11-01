@@ -20,38 +20,43 @@ export function PaymentPane() {
   }, [])
   return (
     <>
+      {/* « carte » here is the bank card: the confirmation Marianne shows is « votre oui ». */}
       <div className="note">
-        Marianne paie avec vos cartes sur la page de paiement d’un site qu’elle connaît, après votre oui sur une carte, à chaque paiement. Elles sont rangées
-        dans votre archive chiffrée ; le moteur n’en connaît que le nom, la marque, les 4 derniers chiffres et l’expiration.
+        Marianne paie avec vos cartes sur la page de paiement d’un site qu’elle connaît, avec votre oui à chaque paiement : elle vous montre d’abord le site, la
+        carte et le montant. Elles sont rangées dans votre archive chiffrée ; le moteur n’en connaît que le nom, la marque, les 4 derniers chiffres et
+        l’expiration.
       </div>
-      <div className="rows">
-        {cards.map((c) => (
-          <div key={c.id} className="row">
-            <span>
-              <span className="hi">{cardTitle(c)}</span>
-              <br />
-              <span className="small dim">{c.holder}</span>
-            </span>
-            <span className={`small ${expired(c.expiry) ? 'bad' : 'dim'}`}>
-              {expired(c.expiry) ? 'expirée' : c.cvvStored ? 'cryptogramme enregistré' : 'cryptogramme demandé à chaque paiement'}
-            </span>
-            <span>
-              <button className="btn small" onClick={() => setEditing(c)}>
-                modifier
-              </button>{' '}
-              <button
-                className="btn small danger"
-                aria-label={`supprimer la carte ${cardTitle(c)}`}
-                title="supprimer la carte"
-                onClick={() => confirm(`Supprimer la carte « ${cardTitle(c)} » de l’archive ?`) && void api.deleteCard(c.id)}
-              >
-                ✕
-              </button>
-            </span>
-          </div>
-        ))}
-      </div>
-      {!cards.length && <p className="dim">Aucune carte pour l’instant.</p>}
+      {/* No rows drawn for no card: the empty line says it, small, as Autorisations does. */}
+      {cards.length > 0 && (
+        <div className="rows">
+          {cards.map((c) => (
+            <div key={c.id} className="row">
+              <span>
+                <span className="hi">{cardTitle(c)}</span>
+                <br />
+                <span className="small dim">{c.holder}</span>
+              </span>
+              <span className={`small ${expired(c.expiry) ? 'bad' : 'dim'}`}>
+                {expired(c.expiry) ? 'expirée' : c.cvvStored ? 'cryptogramme enregistré' : 'cryptogramme demandé à chaque paiement'}
+              </span>
+              <span>
+                <button className="btn small" onClick={() => setEditing(c)}>
+                  modifier
+                </button>{' '}
+                <button
+                  className="btn small danger"
+                  aria-label={`supprimer la carte ${cardTitle(c)}`}
+                  title="supprimer la carte"
+                  onClick={() => confirm(`Supprimer la carte « ${cardTitle(c)} » de l’archive ?`) && void api.deleteCard(c.id)}
+                >
+                  ✕
+                </button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {!cards.length && <p className="small dim">Aucune carte pour l’instant.</p>}
       {editing ? (
         <CardForm key={editing === 'new' ? 'new' : editing.id} card={editing === 'new' ? null : editing} onDone={() => setEditing(null)} />
       ) : (
@@ -128,25 +133,28 @@ function CardForm({ card, onDone }: { card: PaymentCard | null; onDone: () => vo
         <label className="small" style={{ display: 'block', margin: '8px 0 4px' }}>
           <input type="checkbox" checked={storeCvv} onChange={(e) => setStoreCvv(e.target.checked)} /> enregistrer le cryptogramme
         </label>
-        <p className="small dim">
-          Plus simple : vous n’avez plus rien à taper. Mais qui ouvrirait votre archive aurait alors tout pour payer avec cette carte. Sinon, vous le tapez dans
-          la carte de paiement de Marianne, à chaque fois.
+        <p className="small dim" style={{ maxWidth: 800 }}>
+          Plus simple : vous n’avez plus rien à taper. Mais qui ouvrirait votre archive aurait alors tout pour payer avec cette carte. Sinon, vous le tapez au
+          moment de payer, dans Marianne, à chaque fois.
         </p>
+        {/* In the form's grid, as wide as the other fields, and apart from the words above. */}
         {storeCvv && (
-          <Field
-            label="cryptogramme"
-            error={cvv ? (cvvWrong ?? undefined) : undefined}
-            hint={cvvKept ? 'laissez vide pour garder celui enregistré' : (cvvWrong ?? '')}
-          >
-            <input
-              type="password"
-              inputMode="numeric"
-              autoComplete="off"
-              maxLength={4}
-              value={cvv}
-              onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-            />
-          </Field>
+          <div className="form-grid" style={{ marginTop: 'var(--s3)' }}>
+            <Field
+              label="cryptogramme"
+              error={cvv ? (cvvWrong ?? undefined) : undefined}
+              hint={cvvKept ? 'laissez vide pour garder celui enregistré' : (cvvWrong ?? '')}
+            >
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={4}
+                value={cvv}
+                onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              />
+            </Field>
+          </div>
         )}
         {error && <p className="bad small">{error}</p>}
         <div className="acts">
