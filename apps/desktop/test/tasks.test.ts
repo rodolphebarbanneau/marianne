@@ -372,15 +372,53 @@ describe('a service’s task, as its template says it now', () => {
     expect(tasks.get(old.id)?.followUp).toBeUndefined()
   })
 
-  it('never widens its sites: a template listing others is said in the log, once', () => {
+  it('never widens its sites: a template listing others is said in the log, once, and what it allows there isn’t taken', () => {
     const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined)
-    const task = tasks.create(TOLLS)
-    tasks.templates = () => [template({ sites: ['www.sanef.com', 'paiement.aliae.com', 'www.autre.example'] })]
+    const task = tasks.create({ ...TOLLS, allows: ['aller sur www.sanef.com et paiement.aliae.com'] })
+    tasks.templates = () => [
+      template({
+        sites: ['www.sanef.com', 'paiement.aliae.com', 'www.autre.example'],
+        allows: ['aller sur www.sanef.com, paiement.aliae.com et www.autre.example']
+      })
+    ]
     tasks.refresh()
     tasks.refresh()
-    expect(tasks.get(task.id)?.sites).toEqual(['www.sanef.com', 'paiement.aliae.com'])
+    expect(tasks.get(task.id)).toMatchObject({ sites: ['www.sanef.com', 'paiement.aliae.com'], allows: ['aller sur www.sanef.com et paiement.aliae.com'] })
     expect(warn).toHaveBeenCalledOnce()
     expect(warn.mock.calls[0].join(' ')).toMatch(/tolls:v1 of 3615 PEAGE.*keeps those its sheet showed/)
+    // The same sites in another order are the same sites.
+    tasks.templates = () => [template({ sites: ['paiement.aliae.com', 'www.sanef.com'], allows: ['aller sur paiement.aliae.com et www.sanef.com'] })]
+    tasks.refresh()
+    expect(tasks.get(task.id)?.allows).toEqual(['aller sur paiement.aliae.com et www.sanef.com'])
+  })
+
+  it('types the plate the user corrected: what it is about, as its service names it now, while it is the same vehicle', async () => {
+    const task = tasks.create({ ...TOLLS, entity: { id: 'v1', label: 'AB-123-CD' }, allows: ['chercher avec la plaque AB-123-CD'] })
+    let typed = ''
+    turn = async (t) => ((typed = t.entity?.label ?? ''), { outcome: 'nothing' })
+    tasks.templates = () => [template({ entity: { id: 'v1', label: 'AB-124-CD' }, allows: ['chercher avec la plaque AB-124-CD'] })]
+    await tasks.tick()
+    expect(typed).toBe('AB-124-CD')
+    expect(tasks.get(task.id)).toMatchObject({ entity: { id: 'v1', label: 'AB-124-CD' }, allows: ['chercher avec la plaque AB-124-CD'] })
+    // Its folder, named after the old plate, which nothing masks any more, takes the new one; a name the user gave stays.
+    expect(folders.get(task.folderId)?.title).toBe('Péages en flux libre · AB-124-CD')
+    folders.update(task.folderId, { title: 'La voiture' })
+    tasks.templates = () => [template({ entity: { id: 'v1', label: 'AB-125-CD' } })]
+    tasks.refresh()
+    expect(folders.get(task.folderId)?.title).toBe('La voiture')
+    // Never another vehicle's.
+    tasks.templates = () => [template({ entity: { id: 'v2', label: 'EF-456-GH' } })]
+    tasks.refresh()
+    expect(tasks.get(task.id)?.entity).toEqual({ id: 'v1', label: 'AB-125-CD' })
+  })
+
+  it('run by hand, runs as its template says it now', async () => {
+    const task = tasks.create({ ...TOLLS, entity: { id: 'v1', label: 'AB-123-CD' }, first: '2027-04-30' })
+    let typed = ''
+    turn = async (t) => ((typed = t.entity?.label ?? ''), { outcome: 'nothing' })
+    tasks.templates = () => [template({ entity: { id: 'v1', label: 'AB-124-CD' } })]
+    await tasks.runNow(task.id)
+    expect(typed).toBe('AB-124-CD')
   })
 
   it('leaves alone a task its service no longer proposes, another template’s, and the user’s own', () => {
@@ -400,6 +438,19 @@ describe('a service’s task, as its template says it now', () => {
     tasks.isOffered = (t) => t.id === offered.id
     expect(Object.fromEntries(tasks.listed().map((t) => [t.id, t.offered]))).toEqual({ [offered.id]: true, [gone.id]: false })
     expect(tasks.get(offered.id)).not.toHaveProperty('offered')
+  })
+
+  it('asks the services what they propose once for all the tasks it tells the window', () => {
+    tasks.create(TOLLS)
+    tasks.create({ ...TOLLS, origin: { kind: 'service', service: 'peage', template: 'tolls:v2' } })
+    const proposed = [template()]
+    const templates = vi.fn(() => proposed)
+    tasks.templates = templates
+    const given: unknown[] = []
+    tasks.isOffered = (_t, list) => (given.push(list), true)
+    tasks.listed()
+    expect(templates).toHaveBeenCalledOnce()
+    expect(given).toEqual([proposed, proposed])
   })
 })
 

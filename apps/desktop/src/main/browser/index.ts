@@ -7,7 +7,7 @@ import { maskCards } from '../cards'
 import { keychain, loginFits } from '../keychain'
 import { log } from '../log'
 import { session } from '../session'
-import { ARRIVALS_KEPT, CARD_CLEAR_SCRIPT, CARD_FILL_SCRIPT, CARD_SCAN_SCRIPT, PAY_PRESS_SCRIPT, type Arrival, type CardFrame } from './payment'
+import { ARRIVALS_KEPT, CARD_CLEAR_SCRIPT, CARD_FILL_SCRIPT, CARD_SCAN_SCRIPT, PAY_PRESS_SCRIPT, providerOf, type Arrival, type CardFrame } from './payment'
 import { holdToRun, mayOpen, type RunGuard } from './run-guard'
 import {
   CLICK_SCRIPT,
@@ -37,6 +37,8 @@ const PARTITION = 'marianne-web'
  */
 const RUN_PARTITION = 'marianne-run'
 const MAX_PAGE_CHARS = 40_000
+/** Keys that move about a page, or only change another key: pressing them types nothing. */
+const MOVING_KEYS = /^(Tab|Escape|Shift|Control|Alt|AltGraph|Meta|CapsLock|NumLock|ScrollLock|Arrow(Up|Down|Left|Right)|Page(Up|Down)|Home|End|F\d{1,2})$/
 
 /** A view's address; none for the blank page a lock leaves, which is nobody's page. */
 function addressOf(wc: Electron.WebContents | undefined): string {
@@ -202,6 +204,13 @@ class Browser extends EventEmitter {
       return { action: 'deny' }
     })
     if (run) holdToRun(wc, () => this.runGuard)
+    // What the user types in their page (a card, a sign-in) is said with its address (tools/browser.ts). Marianne's
+    // own typing and clicks go through page scripts (executeJavaScript), which send no input event: only their keys come here.
+    else
+      wc.on('before-input-event', (_e, input) => {
+        const url = addressOf(wc)
+        if (input.type !== 'keyUp' && !MOVING_KEYS.test(input.key) && url) this.emit('typed', url)
+      })
     this.follow(wc)
     for (const event of ['did-navigate', 'did-navigate-in-page', 'page-title-updated', 'did-start-loading', 'did-stop-loading'] as const) {
       wc.on(event as 'did-navigate', () => this.changed())
@@ -465,7 +474,8 @@ class Browser extends EventEmitter {
   /**
    * The card fields of the page, in each of its frames that `may` receive a card (payment.ts,
    * frameMayReceive, from the origins of the frame and of those above it), tagged there for
-   * fillCard. A frame that can't be read is left out.
+   * fillCard. A frame that can't be read gives no field; a payment provider's is listed all the
+   * same, `unread`: it may hold a card.
    */
   async cardFields(may: (origins: string[]) => boolean): Promise<CardFrame[]> {
     const wc = this.agentPage()
@@ -480,6 +490,7 @@ class Browser extends EventEmitter {
       } catch {
         // The host only: never what the frame holds.
         log.warn('Card fields: could not read a frame on', hostOf(frame.origin))
+        if (providerOf(frame.origin)) found.push({ node: frame.frameTreeNodeId, origins, fields: [], pay: [], unread: true })
       }
     }
     return found

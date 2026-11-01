@@ -49,14 +49,18 @@ const page = vi.hoisted(() => {
     state.version++
     state.next = null
   }
-  /** Who listens to the browser's state: the tools, and a hand-over waiting for the page back. */
-  const listeners = new Set<(state: unknown) => void>()
+  /** Who listens to the browser: to its state, the tools and a hand-over waiting for the page back; to the user's typing, the tools. */
+  const listeners: Record<string, Set<(value: unknown) => void>> = { state: new Set(), typed: new Set() }
   /** The user takes the page (« prendre la main »), or gives it back: the browser tells its listeners. */
   const hands = (controller: 'agent' | 'human') => {
     state.controller = controller
-    for (const listener of [...listeners]) listener({ url: state.url, folderId: state.folderId, controller })
+    for (const listener of [...listeners.state]) listener({ url: state.url, folderId: state.folderId, controller })
   }
-  return Object.assign(state, { go, listeners, hands })
+  /** The user types in the page, as the browser tells it: its address. */
+  const types = () => {
+    for (const listener of [...listeners.typed]) listener(state.url)
+  }
+  return Object.assign(state, { go, listeners, hands, types })
 })
 
 vi.mock('electron', () => ({ app: { getVersion: () => '0' } }))
@@ -92,8 +96,8 @@ vi.mock('../src/main/browser', () => {
     settled: vi.fn(async () => undefined),
     reveal: vi.fn(),
     back: vi.fn(),
-    on: vi.fn((event: string, listener: (state: unknown) => void) => void (event === 'state' && page.listeners.add(listener))),
-    off: vi.fn((event: string, listener: (state: unknown) => void) => void (event === 'state' && page.listeners.delete(listener)))
+    on: vi.fn((event: string, listener: (value: unknown) => void) => void page.listeners[event]?.add(listener)),
+    off: vi.fn((event: string, listener: (value: unknown) => void) => void page.listeners[event]?.delete(listener))
   }
   return { browser, HumanControlError }
 })
@@ -438,22 +442,45 @@ describe('the pay click that follows', () => {
     await click(f)
     expect(parts).toHaveLength(asked + 1)
     expect(parts.at(-1)).toMatchObject({ action: 'commit', title: 'Cliquer sur « Payer 12,40 € »' })
-    // A step that doesn't pay goes as on any declared page. Once the page changed, a pay button still asks while the
-    // card's fields are on it (the card filled may pay again), and goes as a step on the way once they are gone.
-    page.elements = [{ ...PAY_BUTTON, label: 'Accepter les conditions' }]
-    await call(f, 'read_page')
-    expect(await click(f)).toMatch(/^Clicked « Accepter les conditions »/)
+    // Once the page changed, a step that commits still asks while the card's fields are on it (the card filled may
+    // pay again, whatever the button says), and goes as a step on the way once they are gone.
     page.version++
-    page.elements = [PAY_BUTTON]
-    await call(f, 'read_page')
-    expect(await click(f)).toMatch(/^Clicked « Payer 12,40 € »\. Now on/)
-    expect(parts).toHaveLength(asked + 2)
-    expect(parts.at(-1)).toMatchObject({ action: 'commit', title: 'Cliquer sur « Payer 12,40 € »' })
+    for (const label of ['Accepter les conditions', 'Payer 12,40 €']) {
+      page.elements = [{ ...PAY_BUTTON, label }]
+      await call(f, 'read_page')
+      expect(await click(f)).toContain(`Clicked « ${label} ». Now on`)
+      expect(parts.at(-1)).toMatchObject({ action: 'commit', title: `Cliquer sur « ${label} »` })
+    }
+    expect(parts).toHaveLength(asked + 3)
     page.version++
     page.frames = []
     await call(f, 'read_page')
     expect(await click(f)).toMatch(/^Clicked « Payer 12,40 € »\. Now on/)
-    expect(parts).toHaveLength(asked + 2)
+    expect(parts).toHaveLength(asked + 3)
+  })
+
+  it('nor once the turn it was asked in is over: the call it outlived covers no click and presses nothing', async () => {
+    reply = { answer: 'approve', cvv: CVV }
+    // The turn ends (the user stops it, its time runs out) while the card is filled.
+    const f = onAxepta()
+    vi.mocked(browser.fillCard).mockImplementationOnce(async () => (approvals.expire(f), true))
+    expect(await call(f, 'pay_by_card', PAY)).toMatch(
+      /^refused: Filled .* but the conversation’s turn ended meanwhile: nothing was pressed, and no pay click is covered/
+    )
+    page.elements = [PAY_BUTTON]
+    await call(f, 'read_page')
+    const asked = parts.length
+    expect(await click(f)).not.toMatch(/as part of the payment/)
+    expect(parts).toHaveLength(asked + 1)
+    // The pay button in the provider's frame isn't pressed.
+    const monetico = 'https://p.monetico-services.com'
+    const g = on(`${SANEF}/client/`, [
+      { node: 7, origins: [SANEF, monetico], fields: [field('c1', 'number'), field('c2', 'expiry'), field('c3', 'cvv')], pay: ['Payer'] }
+    ])
+    vi.mocked(browser.fillCard).mockImplementationOnce(async () => (approvals.expire(g), true))
+    expect(await call(g, 'pay_by_card', PAY)).toMatch(/turn ended meanwhile: nothing was pressed/)
+    expect(page.pressed).toEqual([])
+    expect(browser.pressPay).not.toHaveBeenCalled()
   })
 
   it('ends with the turn it was given in, and with a hand-over', async () => {
@@ -506,42 +533,59 @@ describe('the pay click that follows', () => {
   })
 })
 
-describe('a pay button on a declared site, without a payment’s yes', () => {
+describe('a click that commits on a declared site, without a payment’s yes', () => {
   const PAY_BUTTON = { id: 'e1', role: 'button', label: 'Payer 12,40 €', type: 'submit', secret: false, card: false }
-  const click = (f: string) => call(f, 'click', { element: 'e1', purpose: 'payer les passages', consequential: false })
-  /** On Sanef's page with `frames`, its pay button read: a click there, and whether it asked. */
-  async function payOn(f: string, frames: CardFrame[] = []): Promise<{ result: string; asked: boolean }> {
-    Object.assign(page, { url: `${SANEF}/client/index.html#basket`, title: 'Paiement', folderId: f, frames, elements: [PAY_BUTTON] })
+  /** Steps that commit without reading as paying, which may pay all the same once a card is in play: an icon has no label. */
+  const OTHER_STEPS = ['Finaliser ma commande', 'Je confirme', 'Commander', 'OK', '']
+  /**
+   * On Sanef's page with `frames`, a button read (its pay button by default): a click there, and whether it asked.
+   * What the engine says it is for: paying, by default.
+   */
+  async function payOn(
+    f: string,
+    frames: CardFrame[] = [],
+    label = PAY_BUTTON.label,
+    purpose = 'payer les passages'
+  ): Promise<{ result: string; asked: boolean }> {
+    Object.assign(page, { url: `${SANEF}/client/index.html#basket`, title: 'Paiement', folderId: f, frames, elements: [{ ...PAY_BUTTON, label }] })
     await call(f, 'read_page')
     const before = parts.length
-    const result = await click(f)
-    return { result, asked: parts.length > before && parts.at(-1)!.title === 'Cliquer sur « Payer 12,40 € »' }
+    const result = await call(f, 'click', { element: 'e1', purpose, consequential: false })
+    return { result, asked: parts.length > before && parts.at(-1)!.title === `Cliquer sur « ${label || 'cet élément'} »` }
+  }
+  /** Whether each of these steps asks there now, by its label alone: the engine says nothing of paying. */
+  const each = async (f: string, frames: CardFrame[] = []) => {
+    const asked: boolean[] = []
+    for (const label of [PAY_BUTTON.label, ...OTHER_STEPS]) asked.push((await payOn(f, frames, label, 'passer à l’étape suivante')).asked)
+    return asked
   }
   const folder = () => folders.create({ title: 'Péages', engine: 'claude' }).id
 
   it('goes as a step on the way while nothing but the payment card could pay', async () => {
     expect(await payOn(folder())).toEqual({ result: expect.stringMatching(/^Clicked « Payer 12,40 € »/), asked: false })
+    expect(await each(folder())).toEqual([false, false, false, false, false, false])
   })
 
-  it('asks while a frame of the page holds a card’s fields: the user may have typed theirs', async () => {
-    expect((await payOn(folder(), SANEF_FRAMES)).asked).toBe(true)
-    // Not a step that doesn't read as paying.
-    const f = folder()
-    Object.assign(page, { folderId: f, frames: SANEF_FRAMES, elements: [{ ...PAY_BUTTON, label: 'Accepter les conditions' }] })
-    await call(f, 'read_page')
-    expect(await click(f)).toMatch(/^Clicked « Accepter les conditions »/)
+  it('asks, whatever its label, while a frame of the page holds a card’s fields, or is a payment provider’s it can’t read: the user may have typed theirs', async () => {
+    expect(await each(folder(), SANEF_FRAMES)).toEqual([true, true, true, true, true, true])
+    expect((await payOn(folder(), [{ node: 2, origins: [SANEF, PAYLINE], fields: [], pay: [], unread: true }], 'Je confirme')).asked).toBe(true)
+    // Not a step that doesn't commit.
+    expect(await payOn(folder(), SANEF_FRAMES, 'Rechercher', 'chercher les passages')).toEqual({
+      result: expect.stringMatching(/^Clicked « Rechercher »/),
+      asked: false
+    })
   })
 
   it('asks once Marianne signed in on the site, in any folder, until the lock', async () => {
     vi.spyOn(keychain, 'forUrl').mockReturnValue([{ id: 'k1', label: 'perso' }] as never)
     const f = on(`${SANEF}/connexion`)
     expect(await call(f, 'sign_in')).toMatch(/^Filled the username and password/)
-    expect((await payOn(f)).asked).toBe(true)
+    expect(await each(f)).toEqual([true, true, true, true, true, true])
     // The browser's sign-in is every folder's.
-    expect((await payOn(folder())).asked).toBe(true)
+    expect((await payOn(folder(), [], 'Finaliser ma commande')).asked).toBe(true)
     session.lock()
     session.open(memoryArchive())
-    expect((await payOn(folder())).asked).toBe(false)
+    expect(await each(folder())).toEqual([false, false, false, false, false, false])
   })
 
   it('asks once the user had the page in hand there: handed over, or taken', async () => {
@@ -551,7 +595,7 @@ describe('a pay button on a declared site, without a payment’s yes', () => {
     page.hands('human')
     page.hands('agent')
     expect(await handing).toMatch(/^The user handed control back/)
-    expect((await payOn(f)).asked).toBe(true)
+    expect(await each(f)).toEqual([true, true, true, true, true, true])
     // « prendre la main », with no hand-over asked.
     session.lock()
     session.open(memoryArchive())
@@ -559,6 +603,20 @@ describe('a pay button on a declared site, without a payment’s yes', () => {
     page.hands('human')
     page.hands('agent')
     expect((await payOn(g)).asked).toBe(true)
+  })
+
+  it('asks once the user typed in the page there, without taking it, until the lock', async () => {
+    const f = on(`${SANEF}/client/index.html#basket`, [])
+    page.types()
+    expect(await each(f)).toEqual([true, true, true, true, true, true])
+    session.lock()
+    session.open(memoryArchive())
+    expect((await payOn(folder())).asked).toBe(false)
+    // Typed while the archive was locked: nothing of it is kept.
+    session.lock()
+    page.types()
+    session.open(memoryArchive())
+    expect((await payOn(folder())).asked).toBe(false)
   })
 })
 

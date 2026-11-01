@@ -102,8 +102,12 @@ export function cvvProblem(typed: string, brand: CardBrand): string | null {
 export const cardTitle = (card: Pick<PaymentCard, 'brand' | 'last4' | 'label' | 'expiry'>) =>
   [`${BRAND_LABELS[card.brand]} •••• ${card.last4}`, card.label, card.expiry].filter(Boolean).join(' · ')
 
-/** Characters that show nothing, which a page may slip between digits (zero-width spaces and joiners, the word joiner, the byte order mark). */
-const ZERO_WIDTH = /[​-‍⁠﻿]/g
+/**
+ * Characters that show nothing, which a page may slip between digits: the soft hyphen, zero-width
+ * spaces and joiners, the direction marks and embeddings, the word joiner and invisible operators,
+ * the direction isolates, the byte order mark.
+ */
+const ZERO_WIDTH = /[\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g
 
 /**
  * `text` with each of `numbers` (digits only) masked wherever it appears, its digits run together or

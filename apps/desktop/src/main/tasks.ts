@@ -119,21 +119,32 @@ export function templateTask(template: TaskTemplate, rhythm: number): NewTask | 
   }
 }
 
+/** The title of the folder a task makes for itself: its own, and what it is about. */
+const folderTitle = (title: string, entity: PlannedTask['entity']) => (entity ? `${title} · ${entity.label}` : title)
+
+/** Whether two lists of sites hold the same sites, in any order. */
+const sameSites = (a: string[], b: string[]) => [...a].sort().join(' ') === [...b].sort().join(' ')
+
 /**
- * A service's task as its template says it now: its follow-up, its instruction, what it allows and
- * what it never does, which an update of the service may have changed since the user planned it (a
- * task planned before follow-ups existed has none). Never its sites: what its runs reach stays what
- * the user saw on the sheet. Null when nothing changed.
+ * A service's task as its template says it now: its follow-up, its instruction, what it never does,
+ * which an update of the service may have changed since the user planned it (a task planned before
+ * follow-ups existed has none), and what it is about as the service names it now, when it is still
+ * the same one (a plate the user corrected: its runs and follow-ups type that one). Never its sites:
+ * what its runs reach stays what the user saw on the sheet; what it allows, which names them, only
+ * while the template lists those same sites. Null when nothing changed.
  */
 export function refreshedTask(task: PlannedTask, template: TaskTemplate): PlannedTask | null {
   const followUp = template.followUp ? { label: template.followUp.label, instruction: template.followUp.instruction } : undefined
+  const entity = task.entity && template.entity?.id === task.entity.id ? { id: task.entity.id, label: template.entity.label } : task.entity
+  const allows = sameSites(task.sites, template.sites) ? template.allows : task.allows
   const same =
     task.instruction === template.instruction &&
-    JSON.stringify(task.allows) === JSON.stringify(template.allows) &&
+    JSON.stringify(task.allows) === JSON.stringify(allows) &&
     task.never === template.never &&
-    JSON.stringify(task.followUp) === JSON.stringify(followUp)
+    JSON.stringify(task.followUp) === JSON.stringify(followUp) &&
+    task.entity?.label === entity?.label
   if (same) return null
-  const fresh: PlannedTask = { ...task, instruction: template.instruction, allows: template.allows, never: template.never, followUp }
+  const fresh: PlannedTask = { ...task, entity, instruction: template.instruction, allows, never: template.never, followUp }
   if (!followUp) delete fresh.followUp
   return fresh
 }
@@ -165,8 +176,11 @@ class Tasks extends EventEmitter {
   isBusy: () => boolean = () => false
   /** Adds the reminder's line to the folder. Set by the chat runner. */
   addLine: (folderId: string, text: string, outcome: TaskOutcome) => void = () => {}
-  /** Whether what a task relies on is still there: a service switched off, a plate taken back. Set by the chat runner. */
-  isOffered: (task: PlannedTask) => boolean = () => true
+  /**
+   * Whether what a task relies on is still there: a service switched off, a plate taken back; among
+   * `templates` when given (what the services propose, read once for many tasks). Set by the chat runner.
+   */
+  isOffered: (task: PlannedTask, templates?: TaskTemplate[]) => boolean = () => true
   /** The task whose follow-up the user started the turn under way in a folder with, until that turn ends. Set by the chat runner. */
   followingUp: (folderId: string | undefined) => PlannedTask | null = () => null
   /** What the built-in services that are on propose now. Set by the chat runner. */
@@ -195,13 +209,15 @@ class Tasks extends EventEmitter {
 
   /** The tasks as the window gets them: each with whether what it relies on is still there (`offered`). */
   listed(): PlannedTask[] {
-    return this.list().map((t) => ({ ...t, offered: this.isOffered(t) }))
+    const templates = this.templates()
+    return this.list().map((t) => ({ ...t, offered: this.isOffered(t, templates) }))
   }
 
   /**
    * Each service's task takes what its template says now (refreshedTask), when its service still
-   * proposes it: a task planned before an update keeps none of the old words, nor misses a follow-up.
-   * Its sites stay its own; a template that lists others is said in the log.
+   * proposes it: a task planned before an update keeps none of the old words, nor misses a follow-up,
+   * nor types a plate the user has since corrected. Its sites stay its own; a template that lists
+   * others is said in the log.
    */
   refresh(templates = this.templates()): void {
     for (const task of this.list()) {
@@ -211,7 +227,13 @@ class Tasks extends EventEmitter {
       if (!template) continue
       const fresh = refreshedTask(task, template)
       if (fresh) this.put(fresh)
-      if ([...template.sites].sort().join(' ') !== [...task.sites].sort().join(' ') && !this.moved.has(task.id)) {
+      // Its folder, named after the plate it was planned with, takes the new one: the old one is no longer
+      // the profile's, so nothing would mask it. A title the user gave stays theirs.
+      if (fresh && fresh.entity?.label !== task.entity?.label) {
+        const folder = folders.get(task.folderId)
+        if (folder?.title === folderTitle(task.title, task.entity)) folders.update(folder.id, { title: folderTitle(task.title, fresh.entity) })
+      }
+      if (!sameSites(template.sites, task.sites) && !this.moved.has(task.id)) {
         this.moved.add(task.id)
         log.warn(`Task ${origin.template} of 3615 ${origin.service.toUpperCase()}: its template lists other sites; it keeps those its sheet showed.`)
       }
@@ -227,7 +249,7 @@ class Tasks extends EventEmitter {
   create(input: NewTask): PlannedTask {
     const today = dayOf()
     const engine = input.engine ?? configStore.get().engines.default
-    const title = input.entity ? `${input.title} · ${input.entity.label}` : input.title
+    const title = folderTitle(input.title, input.entity)
     const folder = input.folderId ? folders.get(input.folderId) : folders.create({ title, engine, domain: input.domain || undefined })
     if (!folder) throw new Error('Dossier introuvable.')
     if (folder.task) throw new Error('Ce dossier a déjà sa tâche planifiée.')
@@ -342,6 +364,8 @@ class Tasks extends EventEmitter {
 
   /** Run a task now, whatever its day: « lancer maintenant ». */
   async runNow(id: string): Promise<void> {
+    // As before a scheduled run: the task as its template says it now.
+    this.refresh()
     const task = this.get(id)
     if (!task) throw new Error('Tâche introuvable.')
     if (!task.on) throw new Error('Cette tâche est en pause.')
