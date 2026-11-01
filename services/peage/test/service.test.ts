@@ -1,8 +1,9 @@
-import { ToolError, type ServiceTool } from '@marianne/sdk/main'
+import { ToolError, type ServiceTool, type ToolCall } from '@marianne/sdk/main'
 import { fakeContext, type FakeContextOptions } from '@marianne/sdk/testing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as z from 'zod'
 import pkg from '../package.json'
+import help from '../src/help.md?raw'
 import { service } from '../src/main'
 import { NETWORKS } from '../src/networks'
 import type { PeageMethods, Trip, Vehicles } from '../src/types'
@@ -20,7 +21,7 @@ const setup = (profile: FakeContextOptions['profile'] = GRANTED) => {
   // As Marianne's MCP server does: the arguments are parsed with the tool's input first.
   const tool = (name: string) => {
     const t = runtime.tools?.find((x) => x.name === name) as ServiceTool
-    return (args: unknown = {}) => t.run(z.object(t.input).parse(args), {})
+    return (args: unknown = {}, call: ToolCall = {}) => t.run(z.object(t.input).parse(args), call)
   }
   return { runtime, methods, tool, stored }
 }
@@ -32,16 +33,45 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers())
 
 describe('the runtime', () => {
-  it('lends three tools, none that pays, a guide and instructions', () => {
+  it('lends four tools, none that pays, a guide and instructions', () => {
     const { runtime } = setup()
     expect(runtime.tools?.map((t) => [t.name, !!t.readOnly])).toEqual([
       ['networks', true],
       ['trips', true],
-      ['add_trip', false]
+      ['add_trip', false],
+      ['mark_paid', false]
     ])
     expect(runtime.skills?.[0]).toMatch(/^---\nname: free-flow-tolls\ntitle: Péage en flux libre\ndescription: .+\n---\n/)
     expect(runtime.instructions).toContain('never state one')
     expect(runtime.instructions).toContain('open_site')
+  })
+
+  it('lends the tools its manifest declares, with their labels', () => {
+    const { runtime } = setup()
+    expect(runtime.tools?.map((t) => ({ name: t.name, label: t.label }))).toEqual(pkg.marianne.tools)
+  })
+
+  it('has Marianne pay with the user’s saved card, on their yes, and mark the trips paid once the site confirms', () => {
+    const { runtime } = setup()
+    expect(runtime.instructions).toContain('then pay with pay_by_card')
+    expect(runtime.instructions).toContain('hand_over when the bank asks for a confirmation (3-D Secure)')
+    expect(runtime.instructions).toContain('propose adding one (request_setup, target payment)')
+    expect(runtime.instructions).toContain('Once the site confirms the payment, mark the trips paid with peage_mark_paid')
+    expect(runtime.instructions).toContain('forward the SMS to 33700')
+    expect(runtime.skills?.[0]).toContain('Paie avec `pay_by_card`')
+    expect(runtime.skills?.[0]).toContain('marque les trajets payés avec `peage_mark_paid`')
+    // The 72 hours: to pay, and how far back Sanef's search by period reaches, each with where it is said.
+    expect(runtime.skills?.[0]).toContain('dans les 72 heures qui suivent le passage')
+    expect(runtime.skills?.[0]).toContain("chez Sanef, cette recherche ne remonte qu'aux 72 dernières heures (page « Payer sans se connecter » de sanef.com)")
+    expect(`${runtime.instructions}\n${runtime.skills?.[0]}`).not.toMatch(/\d+[,.]\d{2} ?€/)
+  })
+
+  it('says in its guide, briefly and without a heading, that Marianne may pay with the user', () => {
+    expect(help.trim().length).toBeGreaterThan(40)
+    expect(help.length).toBeLessThan(900)
+    expect(help).not.toMatch(/^#/m)
+    expect(help).toContain('« payer maintenant »')
+    expect(help).toContain('Elle ne paie jamais')
   })
 })
 
@@ -119,10 +149,10 @@ describe('peage_networks', () => {
   it('gives each section’s official pages and deadline, and no amount', async () => {
     const text = await setup().tool('networks')()
     expect(text).toContain('### A13-A14 Paris–Normandie (id a13-a14)')
-    expect(text).toContain('- Pay online by plate (official): https://www.sanef.com/')
+    expect(text).toContain('- Pay online by plate (official): https://www.sanef.com/client/index.html?lang=fr#basket')
     expect(text).toContain('- Time to pay: 72 h after the passage')
     expect(text).toContain('### A79 Sazeret – Digoin (id a79)')
-    expect(text).toContain('https://paiement.aliae.com/fr/')
+    expect(text).toContain('- Pay online by plate (official): https://paiement.aliae.com/fr/form/payment')
     expect(text).toContain("doesn't know the amounts")
     expect(text).toContain('Operators send no payment link by SMS')
     expect(text).not.toMatch(/\d+[,.]\d{2} ?€/)
@@ -137,7 +167,7 @@ describe('peage_trips', () => {
     expect(text).toContain('## Unpaid trips (1)')
     expect(text).toContain('| trip | vehicle | network | passage (Paris) | pay by (Paris) | status |')
     expect(text).toContain(`| ${trip.id} | AB-123-CD (id v1) | A13-A14 Paris–Normandie (a13-a14) | 2026-10-28 14:30 | 2026-10-31 14:30 | 2 d 23 h left |`)
-    expect(text).toContain('Official payment pages: A13-A14 → https://www.sanef.com/ (Sanef).')
+    expect(text).toContain('Official payment pages: A13-A14 → https://www.sanef.com/client/index.html?lang=fr#basket (Sanef).')
     expect(text).toContain('Never state or guess an amount.')
     expect(text).toContain('Vehicles: AB-123-CD (id v1); EF-456-GH (id v2).')
     expect(text).not.toContain('Marked paid')
@@ -176,7 +206,7 @@ describe('peage_add_trip', () => {
     expect(text).toBe(
       [
         `Recorded: trip ${trip.id}, A79 Sazeret – Digoin, EF-456-GH (id v2), passage 2026-10-28 14:30 (Paris).`,
-        "To pay by 2026-10-31 14:30 (Paris), on https://paiement.aliae.com/fr/ (ALIAE) or another way of peage_networks; the deadline is in the user's deadlines.",
+        "To pay by 2026-10-31 14:30 (Paris), on https://paiement.aliae.com/fr/form/payment (ALIAE) or another way of peage_networks; the deadline is in the user's deadlines.",
         "3615 PEAGE doesn't know the amounts due: the operator's official payment page shows them from the plate. Never state or guess an amount."
       ].join('\n')
     )
@@ -203,5 +233,50 @@ describe('peage_add_trip', () => {
     await expect(setup({ granted: ['vehicles.plate'], vehicles: [] }).tool('add_trip')({ vehicle: 'v1', network: 'a79', at: PASSAGE })).rejects.toThrow(
       'The user has no vehicle in their profile: they add one in Réglages › Foyer & entités (marianne:settings/household).'
     )
+  })
+})
+
+describe('peage_mark_paid', () => {
+  it('marks a recorded trip paid, now, in the service’s own record: its deadline goes', async () => {
+    const { runtime, methods, tool, stored } = setup()
+    const [trip] = methods.addTrip({ vehicleId: 'v1', network: 'a13-a14', at: PASSAGE })
+    expect(await tool('mark_paid')({ trip: trip.id })).toBe(
+      `Marked paid: trip ${trip.id}, A13-A14 Paris–Normandie, AB-123-CD (id v1), passage 2026-10-28 14:30 (Paris). Its deadline left the user's reminders; they can undo it on 3615 PEAGE's screen.`
+    )
+    expect(stored.get('trips')).toEqual([{ ...trip, paidAt: NOW.toISOString() }])
+    expect(runtime.deadlines?.()).toEqual([])
+  })
+
+  it('leaves a trip already marked paid as it was', async () => {
+    const { methods, tool } = setup()
+    const [trip] = methods.addTrip({ vehicleId: 'v1', network: 'a79', at: PASSAGE })
+    await tool('mark_paid')({ trip: trip.id })
+    vi.setSystemTime(new Date('2026-10-28T16:00:00Z'))
+    expect(await tool('mark_paid')({ trip: trip.id })).toBe(
+      `Already marked paid 2026-10-28 15:00 (Paris): trip ${trip.id}, A79 Sazeret – Digoin, AB-123-CD (id v1), passage 2026-10-28 14:30 (Paris).`
+    )
+    expect(methods.trips()).toEqual([{ ...trip, paidAt: NOW.toISOString() }])
+  })
+
+  it('refuses an id it doesn’t know, naming the unpaid trips, or saying to record the passage first', async () => {
+    const { methods, tool } = setup()
+    const markPaid = tool('mark_paid')
+    const none = markPaid({ trip: 'abc12345' })
+    await expect(none).rejects.toBeInstanceOf(ToolError)
+    await expect(none).rejects.toThrow(
+      'No trip has the id "abc12345", and no unpaid trip is recorded: record the passage with peage_add_trip first, then mark it paid.'
+    )
+    const [trip] = methods.addTrip({ vehicleId: 'v2', network: 'a79', at: PASSAGE })
+    await expect(markPaid({ trip: 'abc12345' })).rejects.toThrow(`No trip has the id "abc12345". Unpaid trips: ${trip.id} (A79, passage 2026-10-28 14:30).`)
+    expect(methods.trips()).toEqual([trip])
+  })
+
+  it('is never a planned task’s run’s: nobody watches it, and a trip marked paid loses its reminder', async () => {
+    const { methods, tool } = setup()
+    const [trip] = methods.addTrip({ vehicleId: 'v1', network: 'a13-a14', at: PASSAGE })
+    const failure = tool('mark_paid')({ trip: trip.id }, { folderId: 'f1', run: true })
+    await expect(failure).rejects.toBeInstanceOf(ToolError)
+    await expect(failure).rejects.toThrow("A planned task's run doesn't mark trips paid")
+    expect(methods.trips()).toEqual([trip])
   })
 })

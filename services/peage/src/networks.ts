@@ -10,6 +10,8 @@ const MINISTRY = 'https://www.ecologie.gouv.fr/peage-flux-libre'
 /** The ministry of Transport's answer to written question 10290 (JO, 18 November 2025): 72 hours, the notice and its amounts. */
 const ANSWER = 'https://www.assemblee-nationale.fr/dyn/17/questions/QANR5L17QE10290'
 const SANEF_SCAMS = 'https://www.autoroutes.sanef.com/fr/assistance/flux-libre/phishing-vous-avez-un-doute'
+/** Sanef's « Payer sans se connecter »: one page, by plate and without an account, for the A13-A14 and the A4 at Boulay. */
+const SANEF_PAY = 'https://www.sanef.com/client/index.html?lang=fr#basket'
 
 const NOTICE = (operator: string) =>
   `Passé 72 h, ${operator} dresse un procès-verbal et envoie par courrier un avis de paiement au titulaire de la carte grise : le péage, plus une indemnité forfaitaire de 90 €, ramenée à 10 € si vous payez sous 15 jours. Sans paiement sous deux mois, une amende forfaitaire majorée de 375 € est émise.`
@@ -23,7 +25,7 @@ export const NETWORKS: readonly TollNetwork[] = [
     short: 'A13-A14',
     motorways: ['A13', 'A14'],
     operator: 'Sanef',
-    payUrl: 'https://www.sanef.com/',
+    payUrl: SANEF_PAY,
     accountUrl: 'https://www.sanef.com/client/index.html',
     deadlineHours: 72,
     channels: [
@@ -34,8 +36,14 @@ export const NETWORKS: readonly TollNetwork[] = [
     ],
     penalties: NOTICE('Sanef'),
     phone: '09 708 08 709',
-    sources: [MINISTRY, ANSWER, 'https://www.autoroutes.sanef.com/fr/assistance/compte-client/compte-client-obligatoire', SANEF_SCAMS],
-    checked: '2026-10-28'
+    sources: [
+      MINISTRY,
+      ANSWER,
+      'https://www.autoroutes.sanef.com/fr/assistance/compte-client/compte-client-obligatoire',
+      'https://www.autoroutes.sanef.com/fr/assistance/flux-libre/solutions-de-paiement',
+      SANEF_SCAMS
+    ],
+    checked: '2026-11-01'
   },
   {
     id: 'a79',
@@ -43,7 +51,8 @@ export const NETWORKS: readonly TollNetwork[] = [
     short: 'A79',
     motorways: ['A79'],
     operator: 'ALIAE',
-    payUrl: 'https://paiement.aliae.com/fr/',
+    // « Payer un trajet ou un avis de paiement »: the plate is one of its three ways to search.
+    payUrl: 'https://paiement.aliae.com/fr/form/payment',
     deadlineHours: 72,
     channels: [
       'badge de télépéage bien fixé au pare-brise : prélèvement vers le 15 du mois suivant',
@@ -59,7 +68,7 @@ export const NETWORKS: readonly TollNetwork[] = [
       'https://paiement.aliae.com/fr/quels-sont-les-moyens-de-paiement-pour-regler-mon-trajet-en-flux-libre--8310394478509599828',
       'https://paiement.aliae.com/fr/attention-aux-arnaques-faux-sites-de-paiement-sms-et-e-mails--5852543856745076374'
     ],
-    checked: '2026-10-28'
+    checked: '2026-11-01'
   },
   {
     id: 'a4-boulay',
@@ -67,7 +76,7 @@ export const NETWORKS: readonly TollNetwork[] = [
     short: 'A4 Boulay',
     motorways: ['A4'],
     operator: 'Sanef',
-    payUrl: 'https://www.sanef.com/',
+    payUrl: SANEF_PAY,
     accountUrl: 'https://www.sanef.com/client/index.html',
     deadlineHours: 72,
     channels: [
@@ -79,8 +88,12 @@ export const NETWORKS: readonly TollNetwork[] = [
     penalties:
       'Passé 72 h après le premier passage : un rappel par courrier la première fois, sinon un avis de paiement avec une indemnité forfaitaire (90 €, ramenée à 10 € si vous payez sous 15 jours). Sans paiement sous deux mois, l’amende forfaitaire majorée est de 375 €.',
     phone: '09 708 08 709',
-    sources: ['https://www.autoroutes.sanef.com/en/assistance/boulay/how-boulay-works', MINISTRY],
-    checked: '2026-10-28'
+    sources: [
+      'https://www.autoroutes.sanef.com/en/assistance/boulay/how-boulay-works',
+      'https://www.autoroutes.sanef.com/fr/assistance/boulay/paiement-en-ligne',
+      MINISTRY
+    ],
+    checked: '2026-11-01'
   }
 ]
 

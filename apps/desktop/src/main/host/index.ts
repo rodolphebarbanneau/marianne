@@ -645,7 +645,8 @@ class ServiceHost extends EventEmitter {
           // A service never sees the user's identifiers: [[tokens]] are refused in its arguments.
           tokens: false,
           // Nor does a community service see the folder: it goes as far as the card, and stops there (CommunityService).
-          run: (args, ctx) => t.run(args as never, { folderId: ctx.folderId })
+          // A planned task's run is said, so that a service's tool can keep it to looking and reporting.
+          run: (args, ctx) => t.run(args as never, { folderId: ctx.folderId, ...(ctx.run ? { run: true } : {}) })
         }
       })
     )

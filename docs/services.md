@@ -239,7 +239,7 @@ const days = cached((id: string, all: boolean) => daysBefore(ctx, id, all), {
   - `label` is French, as the conversation shows the call; `description` and results are English, for the model.
   - Arguments never carry the user's identifiers: the host refuses `[[tokens]]` in them.
   - Throw `ToolError` for a failure the model should read (nothing found, a missing argument).
-  - `run(args, call)` gets, in `call.folderId`, the folder whose conversation called it.
+  - `run(args, call)` gets, in `call.folderId`, the folder whose conversation called it, and in `call.run` whether a planned task's run did: nobody is watching a run, so a tool that marks something done for the user refuses it.
 - `skills`: guides the engines read when a request calls for them: Markdown with a front matter (`name`, `title`, `description`), imported as text (`import guide from './skills/x.md?raw'`).
 - `instructions`: a few lines (English) added to the engines' instructions while the service is on. With its `skills`, they are where what the service is for, and how a request it covers is carried out, is said: Marianne's own prompt is generic, and names no service.
 - `summary(domain)`: its line on the dashboard of one of its domains (`ServiceSummary`: a French sentence, an urgency, the `params` to open it with), or null. It is data: Marianne lays out every service's line the same way.

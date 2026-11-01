@@ -165,6 +165,11 @@ export interface ServiceContext {
 export interface ToolCall {
   /** The folder whose conversation called the tool. */
   folderId?: string
+  /**
+   * A planned task's run made the call: nobody is watching, and a run only looks and reports. A
+   * tool that changes what the user counts on (marks something done) refuses it.
+   */
+  run?: boolean
 }
 
 export interface ServiceTool<S extends z.ZodRawShape = z.ZodRawShape> {
