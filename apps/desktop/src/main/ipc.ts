@@ -34,7 +34,7 @@ import { exportAll } from './export'
 import { folders } from './folders'
 import { everyLabel } from '../shared/tasks'
 import type { CreateTask, PlannedTask, TaskEvery } from '../shared/types'
-import { tasks } from './tasks'
+import { offeredTemplate, tasks, templateTask } from './tasks'
 import { keychain } from './keychain'
 import { searchAddress, searchCommunes, lookupSiren } from './lookup'
 import { openedArchives } from './opened-archives'
@@ -259,24 +259,10 @@ export function registerIpc(): void {
       })
     }
     // The instruction and the sites come from the service here, never from the window.
-    const template = services.taskTemplates().find((t) => t.service === request.service && t.id === request.template)
-    const rhythm = template?.rhythms[request.rhythm]
-    if (!template || !rhythm) throw new Error('Cette tâche n’est plus proposée.')
-    return tasks.create({
-      title: template.title,
-      domain: template.domain,
-      runner: 'marianne',
-      origin: { kind: 'service', service: template.service, template: template.id },
-      every: rhythm.every,
-      everyLabel: rhythm.label,
-      entity: template.entity,
-      instruction: template.instruction,
-      sites: template.sites,
-      allows: template.allows,
-      never: template.never,
-      why: rhythm.note,
-      notify: request.notify
-    })
+    const template = offeredTemplate(services.taskTemplates(), tasks.list(), request.service, request.template)
+    const task = template && templateTask(template, request.rhythm)
+    if (!task) throw new Error('Cette tâche n’est plus proposée.')
+    return tasks.create({ ...task, notify: request.notify })
   })
   handle('updateTask', (id: string, patch: { every?: TaskEvery; notify?: PlannedTask['notify'] }) => {
     if (patch.every) checkEvery(patch.every)

@@ -19,7 +19,7 @@ import { approvals } from './approvals'
 import { browser } from './browser'
 import { configStore } from './config'
 import { content } from './content'
-import { forgetTranscripts, listSkills, runsSince, runTurn, systemPrompt, taskMessage, userMessage, type EngineEvent } from './engines'
+import { carryOnMessage, forgetTranscripts, listSkills, runsSince, runTurn, systemPrompt, taskMessage, userMessage, type EngineEvent } from './engines'
 import { folders, redoFrom, titleFrom } from './folders'
 import { log } from './log'
 import { profile } from './profile/store'
@@ -338,7 +338,46 @@ class Chat extends EventEmitter {
     for (const controller of this.active.values()) controller.abort()
   }
 
-  private async turn(folder: Folder, messages: ChatMessage[], user: ChatMessage, run?: { text: string; timeoutMs: number }): Promise<ChatMessage> {
+  /**
+   * The user added services from Marianne's cards in the turn just over (service_propose). A turn
+   * lists its tools as it starts, so the engine sees theirs only in a new one: Marianne carries on in
+   * a turn of her own, opened by a line, as if the user had said to go on. Once per addition: the
+   * cards it reads are that turn's, and a turn that was stopped or failed leaves it to the user.
+   */
+  private carryOn(folderId: string, answer: ChatMessage): void {
+    if (answer.status !== 'done' || !session.unlocked) return
+    const states = services.states()
+    const cards = answer.parts.filter((p): p is ApprovalPart => p.type === 'approval' && p.kind === 'add' && p.status === 'accepted' && !!p.service)
+    // Still on, and Marianne's own: the user may have switched it off again meanwhile.
+    const added = cards.flatMap(({ service }) => {
+      const s = states.find((x) => x.manifest.id === service!.code)
+      return s?.on && s.builtIn ? [{ s, off: service!.off }] : []
+    })
+    const folder = folders.get(folderId)
+    if (!added.length || !folder || this.active.has(folderId)) return
+    const codes = added.map(({ s }) => `3615 ${s.manifest.id.toUpperCase()}`)
+    const verb = added.every(({ off }) => off) ? 'réactivé' : 'ajouté'
+    const line: ChatMessage = {
+      id: randomUUID(),
+      role: 'system',
+      at: new Date().toISOString(),
+      parts: [{ type: 'text', text: `${codes.join(' et ')} ${verb}${codes.length > 1 ? 's' : ''} · Marianne reprend` }],
+      note: 'resume'
+    }
+    const messages = [...folders.messages(folderId), line]
+    folders.saveMessages(folderId, messages)
+    const named = added.map(({ s }) => `3615 ${s.manifest.id.toUpperCase()} (${s.manifest.name})`)
+    void this.turn(folder, messages, line, undefined, carryOnMessage(named))
+  }
+
+  private async turn(
+    folder: Folder,
+    messages: ChatMessage[],
+    user: ChatMessage,
+    run?: { text: string; timeoutMs: number },
+    /** A turn Marianne starts herself (carryOn): what the engine reads, in place of the user's words. */
+    resumed?: string
+  ): Promise<ChatMessage> {
     const engine = folder.engine
     const cfg = configStore.get()
     // A run's only way out is the browser and the sites it was given: not the engine's own web tools.
@@ -377,7 +416,7 @@ class Chat extends EventEmitter {
       // documents aren't a run's business. A resumed session of the user's hears what runs reported since.
       const history = run ? [] : resume ? runsSince(earlier) : earlier
       const attachments = user.parts.filter((p) => p.type === 'page' || p.type === 'document')
-      const text = run?.text ?? user.parts.map((p) => (p.type === 'text' ? p.text : '')).join('\n')
+      const text = run?.text ?? resumed ?? user.parts.map((p) => (p.type === 'text' ? p.text : '')).join('\n')
       const tokens = profile.tokens()
       // Claude names its session up front; the others give theirs in their first event.
       const sessionId = resume ? w.folder.sessions[engine] : engine === 'claude' ? randomUUID() : undefined
@@ -389,6 +428,7 @@ class Chat extends EventEmitter {
         system: systemPrompt({
           skills: listSkills(),
           services: services.instructions(),
+          idle: services.idle(),
           notes: redact(profile.get().notes, tokens),
           web,
           legifrance: legifranceReady()
@@ -451,6 +491,14 @@ class Chat extends EventEmitter {
       // Read again: what the turn did to its folder (a task planned) is the window's to show.
       this.emit('folder', { folder: (session.unlocked && folders.get(folder.id)) || w.folder, messages, running: false })
       log.info(`Turn ${folder.id} ${answer.status} in ${answer.ms}ms (${engine}/${answer.model})`)
+      // Never from a run: it can't add a service, and nobody would be there to carry on with.
+      if (!run) {
+        try {
+          this.carryOn(folder.id, answer)
+        } catch (err) {
+          log.warn('Could not carry on in', folder.id, (err as Error).message)
+        }
+      }
     }
     return answer
   }

@@ -10,6 +10,7 @@ import { api } from '../lib/api'
 import { clock } from '../lib/format'
 import { useTokens } from '../lib/tokens'
 import { serviceToolLabel, useServices } from '../host'
+import { ServiceOffer } from './service-offer'
 
 /** Labels of the app's own tools, as the conversation shows them; services label theirs. */
 const TOOL_LABELS: Record<string, string> = {
@@ -33,6 +34,8 @@ const TOOL_LABELS: Record<string, string> = {
   task_progress: 'avancement',
   task_propose: 'tâche planifiée',
   task_report: 'fin de la vérification',
+  services: 'services',
+  service_propose: 'proposition de service',
   read_form: 'lecture du formulaire',
   fill_form: 'remplissage du formulaire',
   search_service_public: 'service public · recherche',
@@ -107,7 +110,7 @@ function ApprovalCard({ part }: { part: ApprovalPart }) {
   const pending = part.status === 'pending'
   const sending = part.kind === 'service'
   const status = { pending: '', accepted: sending ? 'envoyé' : 'accepté', refused: 'refusé', expired: 'sans suite' }[part.status]
-  const kind = { proposal: 'proposition', form: 'formulaire', online: 'votre accord', service: 'votre accord' }[part.kind]
+  const kind = { proposal: 'proposition', form: 'formulaire', online: 'votre accord', service: 'votre accord', add: 'service' }[part.kind]
   return (
     <div className={`inline-card${pending ? ' ask' : ''}`}>
       <span className="h">
@@ -275,6 +278,8 @@ export const Message = memo(function Message({ message }: { message: ChatMessage
         ) : p.type === 'approval' ? (
           p.given ? (
             <GivenLine key={p.id} part={p} />
+          ) : p.kind === 'add' ? (
+            <ServiceOffer key={p.id} part={p} />
           ) : (
             <ApprovalCard key={p.id} part={p} />
           )

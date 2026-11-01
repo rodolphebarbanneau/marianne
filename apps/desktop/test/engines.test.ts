@@ -2,9 +2,11 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { Archive } from '@marianne/archive'
+import { readManifest } from '@marianne/sdk'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import { ClaudeStream, CodexStream, resultText, VibeStream, type EngineEvent } from '../src/main/engines/events'
-import { recap, systemPrompt, userMessage } from '../src/main/engines/prompt'
+import { carryOnMessage, recap, systemPrompt, userMessage } from '../src/main/engines/prompt'
+import { BUILTIN_SERVICES } from '../src/main/host/registry'
 import { MCP_SERVER_NAME } from '../src/main/mcp-name'
 import { clearScratch, scratchDir, scratchName } from '../src/main/engines/scratch'
 import { parseSkill } from '../src/main/engines/skills'
@@ -321,6 +323,61 @@ describe('prompt', () => {
     })
     expect(p).toContain('- taxes: déclaration de revenus')
     expect(p).toContain('# What the user says about themselves\n\nJe suis apprenti.')
+  })
+
+  it('acts: a concrete thing gets done, a situation gets mapped out, and a card asks what needs the user’s yes', () => {
+    const p = systemPrompt({ ...base, legifrance: true })
+    expect(p).toContain('you carry out what they decided, through your tools, and every step that commits them waits for their yes')
+    expect(p).not.toContain('the user decides and sends')
+    expect(p).toContain('# Acting')
+    expect(p).toMatch(/concrete thing to do[\s\S]*situation to navigate/)
+    for (const tool of ['services', 'procedures', 'service_propose', 'request_setup', 'task_propose']) expect(p).toContain(`(${tool})`)
+    expect(p).toContain('Create nothing (no task, no service, no procedure followed) until the user picks')
+    expect(p).toContain('Never ask in the conversation for what a tool asks on a card')
+    expect(p).toContain('never work around it')
+  })
+
+  it('stays generic: no service, no domain’s scenario; the services say theirs', () => {
+    const p = systemPrompt({ ...base, legifrance: true })
+    for (const { pkg } of BUILTIN_SERVICES) {
+      const m = readManifest(pkg)
+      expect(p, m.id).not.toMatch(new RegExp(`\\b${m.id}\\b`, 'i'))
+      expect(p, m.id).not.toContain(m.name)
+    }
+    expect(p).not.toMatch(/toll|péage|taxe foncière|avis de taxe/i)
+    // Examples that only show a format stay.
+    expect(p).toContain('[[nir]]')
+    expect(p).toContain('[vos démarches](marianne:procedures)')
+  })
+
+  it('names Marianne’s services that aren’t on, in a line each, after those that are', () => {
+    const idle = [
+      {
+        manifest: { id: 'vignette', name: 'Vignette', description: 'la vignette de vos véhicules', domains: ['mobility' as const] },
+        added: false,
+        available: true
+      },
+      { manifest: { id: 'ciel', name: 'Ciel', description: 'le temps qu’il fait', domains: [] }, added: true, available: true },
+      { manifest: { id: 'carte2', name: 'Cartes', description: 'des cartes', domains: [] }, added: true, available: false }
+    ]
+    const p = systemPrompt({ ...base, legifrance: true, services: '## 3615 ANNUAIRE · Annuaire (code annuaire)\n\nFinds offices.', idle })
+    expect(p).toContain('# Services\n\nThe services that are on (3615 codes) lend you their tools (named <code>_<tool>):\n\n## 3615 ANNUAIRE')
+    expect(p).toContain('## Not on')
+    expect(p).toContain('- vignette · Vignette: la vignette de vos véhicules (mobility) · not added')
+    expect(p).toContain('- ciel · Ciel: le temps qu’il fait (no domain) · switched off')
+    expect(p).toContain('- carte2 · Cartes: des cartes (no domain) · unavailable for now')
+    expect(p.indexOf('## 3615 ANNUAIRE')).toBeLessThan(p.indexOf('## Not on'))
+    // None on: said, and the others still listed.
+    expect(systemPrompt({ ...base, legifrance: true, idle })).toContain('# Services\n\nNo service is on.\n\n## Not on')
+    expect(systemPrompt({ ...base, legifrance: true })).not.toContain('# Services')
+  })
+
+  it('tells the engine, in the turn Marianne starts herself, that the services added are on and to carry on', () => {
+    expect(carryOnMessage(['3615 VIGNETTE (Vignette)'])).toMatch(
+      /^The user just added 3615 VIGNETTE \(Vignette\) from your card: it is on now, and its tools are in your tool list/
+    )
+    expect(carryOnMessage(['3615 A (a)', '3615 B (b)'])).toContain('3615 A (a) and 3615 B (b) from your cards: they are on now')
+    expect(carryOnMessage(['3615 A (a)'])).toContain("This message is Marianne's, not the user's: carry on with the user's request")
   })
 
   it('puts the date, attachments and text in the user message', () => {

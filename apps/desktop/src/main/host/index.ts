@@ -671,6 +671,15 @@ class ServiceHost extends EventEmitter {
   }
 
   /**
+   * The built-in services that aren't on: not added (in « découvrir »), switched off, or waiting for
+   * a connection. The engines know they exist, to propose one that covers a request. Never a
+   * community service: one that isn't on is the user's to find on the Services page.
+   */
+  idle(): ServiceState[] {
+    return this.states().filter((s) => s.builtIn && !s.on)
+  }
+
+  /**
    * Their lines of "Aujourd'hui"; a failing service is left out. Not read by any screen yet: the
    * day's agenda (3615 CALENDRIER) will.
    */

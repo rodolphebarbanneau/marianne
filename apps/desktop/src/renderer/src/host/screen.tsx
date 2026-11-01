@@ -163,6 +163,15 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
   useEffect(() => {
     if (added) void api.serviceOpened(id)
   }, [id, added])
+  // A built-in service the user hasn't added, opened by a link (Marianne's answer, a guide): « avant
+  // d’ajouter » at once, once, its note under it to come back to.
+  const unadded = !!state && state.builtIn && !state.added
+  const reviewed = useRef(false)
+  useEffect(() => {
+    if (!unadded || reviewed.current) return
+    reviewed.current = true
+    setReviewing(true)
+  }, [unadded])
   useEffect(() => {
     if (!barred) return
     const onKey = (e: KeyboardEvent) => {
@@ -383,12 +392,15 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
   )
 }
 
-/** What a service asks to read of the profile, the first time it opens: field by field, the user decides. */
-function Consent({ state }: { state: ServiceState }) {
+/**
+ * What a service asks to read of the profile, the first time it opens, or right after Marianne's card
+ * led to adding it (folder/service-offer.tsx): field by field, the user decides.
+ */
+export function Consent({ state, onAnswered }: { state: ServiceState; onAnswered?: () => void }) {
   const m = state.manifest
   // Opinions are sensitive (RGPD, article 9): never ticked in advance; the rest is.
   const [chosen, setChosen] = useState<ProfileField[]>(m.permissions.profile.filter((f) => !f.startsWith('opinions.')))
-  const answer = (granted: ProfileField[]) => void api.setServiceAccess(m.id, granted)
+  const answer = (granted: ProfileField[]) => void api.setServiceAccess(m.id, granted).then(onAnswered)
   // The news it reads come through Marianne (ctx.news), which also says what it gets without the user's sources.
   const news = 'les journaux, Marianne les lit pour lui'
   const reach = m.hosts.length
