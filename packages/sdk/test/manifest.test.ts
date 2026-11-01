@@ -3,7 +3,9 @@ import {
   allowedUrl,
   departmentOf,
   foldText,
+  followUpProblem,
   ManifestError,
+  MAX_SITES,
   MAX_TABS,
   readManifest,
   serviceCode,
@@ -151,6 +153,54 @@ describe('the tools it declares', () => {
   })
 })
 
+describe('the sites Marianne acts on for it', () => {
+  it('reads them, none by default', () => {
+    expect(readManifest(pkg({ sites: ['www.sanef.com', 'paiement.aliae.com'] })).sites).toEqual(['www.sanef.com', 'paiement.aliae.com'])
+    expect(readManifest(pkg({})).sites).toEqual([])
+  })
+
+  it('refuses what isn’t a host name, the same site twice, more than a few', () => {
+    const fails = (sites: unknown) => () => readManifest(pkg({ sites }))
+    for (const sites of ['www.sanef.com', ['https://www.sanef.com'], ['www.sanef.com/payer'], ['Sanef.com'], ['localhost'], [7]])
+      expect(fails(sites), JSON.stringify(sites)).toThrow(`"marianne.sites" must list at most ${MAX_SITES} host names`)
+    expect(fails(['www.sanef.com', 'www.sanef.com'])).toThrow('a site is listed twice')
+    const nine = Array.from({ length: MAX_SITES + 1 }, (_, i) => `paiement${i}.example.fr`)
+    expect(fails(nine)).toThrow(`at most ${MAX_SITES} host names`)
+  })
+
+  it('refuses a site shared by many, by the rule Marianne gives it', () => {
+    const sharedHost = (host: string) => ['github.io', 'gouv.fr'].includes(host.replace(/^www\./, ''))
+    expect(() => readManifest(pkg({ sites: ['www.sanef.com', 'gouv.fr'] }), { sharedHost })).toThrow(
+      'site "gouv.fr" is shared by many sites (a hosting service or a public suffix)'
+    )
+    expect(() => readManifest(pkg({ sites: ['www.github.io'] }), { sharedHost })).toThrow('site "www.github.io" is shared')
+    expect(readManifest(pkg({ sites: ['mairie.github.io'] }), { sharedHost }).sites).toEqual(['mairie.github.io'])
+  })
+})
+
+describe('a planned task’s follow-up', () => {
+  const followUp = { label: 'payer maintenant', instruction: 'Pay what the run found, with the user.' }
+
+  it('takes a short lowercase label and an instruction; none is fine', () => {
+    expect(followUpProblem(followUp)).toBeNull()
+    expect(followUpProblem(undefined)).toBeNull()
+    expect(followUpProblem({ ...followUp, label: 'x'.repeat(24) })).toBeNull()
+  })
+
+  it('refuses another shape, a label a button can’t hold, an empty or endless instruction', () => {
+    for (const wrong of [null, 'payer maintenant', { label: 'payer maintenant' }])
+      expect(followUpProblem(wrong), JSON.stringify(wrong)).toMatch(/^its follow-up( must be|'s instruction)/)
+    for (const label of ['', 'x'.repeat(25), 'Payer maintenant', ' payer', 'payer\nmaintenant', 7])
+      expect(followUpProblem({ ...followUp, label }), JSON.stringify(label)).toBe(
+        "its follow-up's label must be one line in lowercase, of at most 24 characters"
+      )
+    for (const instruction of ['', '  ', 'x'.repeat(2001), 7])
+      expect(followUpProblem({ ...followUp, instruction }), JSON.stringify(instruction)).toBe(
+        "its follow-up's instruction must say what Marianne does, in at most 2000 characters"
+      )
+  })
+})
+
 describe('the icon', () => {
   const icon = {
     palette: { j: 'jaune', J: 'jaune-sombre', w: 'blanc', C: 'cyan-clair' },
@@ -213,7 +263,8 @@ describe('search and order', () => {
     icon: null,
     tools: [],
     search: null,
-    news: false
+    news: false,
+    sites: []
   })
   const meteo = manifest('meteo', 'Météo', 'daily', ['pluie'])
   const carte = manifest('carte', 'Carte de France', 'territory')

@@ -267,6 +267,11 @@ function manifestOf(bytes: Uint8Array, reserved: ReadonlySet<string>, protectedH
     problems.push(
       `3615 ${serviceCode(manifest)} demande les titres de presse que lit Marianne (« news » dans son manifeste) : seuls ses services officiels les reçoivent.`
     )
+  // Where Marianne acts for the user goes past what « avant d’ajouter » reviews of a community service: its own hosts, its own screen.
+  if (manifest.sites.length)
+    problems.push(
+      `3615 ${serviceCode(manifest)} déclare des sites où Marianne agirait pour vous (« sites » dans son manifeste) : seuls ses services officiels le peuvent.`
+    )
   // The user's sources serve the headlines Marianne reads (ctx.news): its sandbox never gets them, so asking for them would only make the user say yes to nothing.
   if (manifest.permissions.profile.includes('opinions.sources'))
     problems.push(
@@ -281,8 +286,9 @@ function manifestOf(bytes: Uint8Array, reserved: ReadonlySet<string>, protectedH
  * The service in the bytes of a .3615 file, checked: its entries (only PACKAGE_ENTRIES, at the
  * root, within the size limits, intact) and its manifest (valid for the SDK, a version, not the
  * code of a service built into Marianne: `reserved`; links only on its own hosts, none on a
- * site of Marianne's: `protectedHosts`; neither the headlines nor the user's news sources, which
- * only built-in services get). Throws PackageRefused saying what is wrong.
+ * site of Marianne's: `protectedHosts`; neither the headlines nor the user's news sources, nor
+ * sites for Marianne to act on, which only built-in services get). Throws PackageRefused saying
+ * what is wrong.
  */
 export function unpackService(bytes: Uint8Array, options: { reserved: ReadonlySet<string>; protectedHosts?: ReadonlySet<string> }): UnpackedService {
   if (bytes.length > MAX_SERVICE_FILE_BYTES)

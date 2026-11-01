@@ -4,6 +4,7 @@ import { readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { clipboard } from 'electron'
 import {
+  followUpProblem,
   readManifest,
   serviceCode,
   type DomainId,
@@ -16,6 +17,7 @@ import {
 } from '@marianne/sdk'
 import { forgetCached, type HomeCommune, type ServiceModule, type ServiceRuntime } from '@marianne/sdk/main'
 import type { ServiceFileReview } from '../../shared/catalogue'
+import { isSharedHost } from '../../shared/hosts'
 import type { TodayEvent } from '../../shared/public'
 import { accelOf } from '../../shared/shortcuts'
 import type { TaskTemplate, TileState } from '../../shared/types'
@@ -143,6 +145,8 @@ class ServiceHost extends EventEmitter {
   private community: CommunitySources | null = null
   /** The centre of the communes the user's address was in, for community services (never the address's own place). */
   private centres = new Map<string, { latitude: number; longitude: number } | null>()
+  /** The task templates left out (their follow-up wasn't right), by service and id: said once in the log. */
+  private leftOut = new Set<string>()
 
   /** Read the manifests and activate the services, and hear of the community services added on this computer; once, at start. */
   start(community: CommunitySources): void {
@@ -152,7 +156,8 @@ class ServiceHost extends EventEmitter {
     for (const { pkg, module, starter } of BUILTIN_SERVICES) {
       let manifest: ServiceManifest
       try {
-        manifest = readManifest(pkg)
+        // Its sites stand for one site each: never a whole hosting service or a public suffix.
+        manifest = readManifest(pkg, { sharedHost: isSharedHost })
         if (seen.has(manifest.id)) throw new Error(`two services named ${manifest.id}`)
       } catch (err) {
         log.error('Service left out:', (err as Error).message)
@@ -278,6 +283,7 @@ class ServiceHost extends EventEmitter {
       if (manifest.news) throw new Error(`${manifest.id} asks for ctx.news, which only built-in services get`)
       if (manifest.permissions.profile.includes('opinions.sources'))
         throw new Error(`${manifest.id} asks for opinions.sources, which serve ctx.news: only built-in services get them`)
+      if (manifest.sites.length) throw new Error(`${manifest.id} declares sites for Marianne to act on, which only built-in services may`)
     } catch (err) {
       // What the manifest says is quoted in the message (a field, a link): one line in the log.
       log.error(`Community service ${pkg.code} left out:`, logLine((err as Error).message))
@@ -661,13 +667,22 @@ class ServiceHost extends EventEmitter {
     const active = this.active()
     const parts = active.map(({ manifest, runtime, community }) => {
       const head = `## 3615 ${manifest.id.toUpperCase()} · ${manifest.name} (code ${manifest.id})`
-      if (!community) return `${head}\n\n${runtime!.instructions?.trim() || manifest.description}`
+      if (!community) return `${head}\n\n${runtime!.instructions?.trim() || manifest.description}${actsOn(manifest)}`
       if (community.trust === 'validated') return `${head}\n\nCommunity service, reviewed by Marianne. ${runtime!.instructions?.trim() || manifest.description}`
       // Not reviewed: its code alone heads it, and its description (one line, 200 characters at most) says what it is.
       return `## 3615 ${manifest.id.toUpperCase()} (code ${manifest.id})\n\nCommunity service, not reviewed by Marianne. ${manifest.description}`
     })
     if (active.some((s) => s.community)) parts.push(COMMUNITY_NOTE)
     return parts.join('\n\n')
+  }
+
+  /**
+   * The sites the built-in services that are on declare (their manifests' `sites`): where Marianne
+   * acts for the user for them, as she does on the content's public sites. Never a community
+   * service's, which may declare none. The « autonomie » level counts them among the sites she knows.
+   */
+  declaredSites(): string[] {
+    return [...new Set(this.active().flatMap(({ manifest, builtIn }) => (builtIn ? manifest.sites : [])))]
   }
 
   /**
@@ -730,13 +745,27 @@ class ServiceHost extends EventEmitter {
 
   /**
    * The tasks the built-in services that are on propose. Not the community's: a task's instruction
-   * feeds the engine, and its sites are reached without asking.
+   * feeds the engine, and its sites are reached without asking. A template outside the service's
+   * domains, or whose follow-up isn't right, is left out.
    */
   taskTemplates(): TaskTemplate[] {
     return this.active().flatMap(({ manifest, runtime, builtIn }) => {
       if (!builtIn) return []
       try {
-        return (runtime!.tasks?.() ?? []).filter((t) => manifest.domains.includes(t.domain)).map((t) => ({ ...t, service: manifest.id }))
+        return (runtime!.tasks?.() ?? []).flatMap((t) => {
+          if (!manifest.domains.includes(t.domain)) return []
+          const wrong = followUpProblem(t.followUp)
+          if (wrong) {
+            // Asked whenever the Démarches pages show: said once in the log.
+            const key = `${manifest.id}:${t.id}`
+            if (!this.leftOut.has(key)) log.warn(`Task ${logLine(t.id, 80)} of 3615 ${manifest.id.toUpperCase()} left out: ${wrong}`)
+            this.leftOut.add(key)
+            return []
+          }
+          // Its follow-up as plain data: it is copied onto the task the user plans.
+          const followUp = t.followUp ? { followUp: { label: t.followUp.label, instruction: t.followUp.instruction } } : {}
+          return [{ ...t, ...followUp, service: manifest.id }]
+        })
       } catch (err) {
         log.warn(`Tasks of 3615 ${manifest.id.toUpperCase()}:`, (err as Error).message)
         return []
@@ -846,6 +875,9 @@ class ServiceHost extends EventEmitter {
     for (const s of this.active()) if (s.sync.due()) await s.sync.run()
   }
 }
+
+/** Where Marianne acts for a built-in service, for the engines: its declared sites, if any. */
+const actsOn = (m: ServiceManifest) => (m.sites.length ? `\n\nActs on: ${m.sites.join(', ')} (where you act for the user for it, in the browser).` : '')
 
 /** Engines see a service's tool as "<code>_<name>": parlement_ballots. */
 const toolName = (m: ServiceManifest, name: string) => `${m.id}_${name}`

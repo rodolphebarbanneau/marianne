@@ -1,4 +1,4 @@
-import type { DomainId, ServiceTaskTemplate, ServiceTile, TaskEvery } from '@marianne/sdk'
+import type { DomainId, ServiceTaskFollowUp, ServiceTaskTemplate, ServiceTile, TaskEvery } from '@marianne/sdk'
 
 /**
  * Types shared by the main process and the screens. Identifiers are in English; everything the
@@ -8,7 +8,7 @@ import type { DomainId, ServiceTaskTemplate, ServiceTile, TaskEvery } from '@mar
 export type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? (T[K] extends unknown[] ? T[K] : DeepPartial<T[K]>) : T[K] }
 
 /** The ten domains of public life: part of the services' contract, so listed once, in the SDK. */
-export type { DomainId, ServiceTaskTemplate, TaskEvery }
+export type { DomainId, ServiceTaskFollowUp, ServiceTaskTemplate, TaskEvery }
 
 // ---------------------------------------------------------------- engines
 
@@ -311,6 +311,11 @@ export interface ChatMessage {
   note?: 'compacted' | 'task' | 'resume'
   /** note 'task': how the run ended, once it has. */
   outcome?: TaskOutcome
+  /**
+   * A user message sent by a planned task's follow-up (its button on a run's line): the task's id.
+   * The message shows the label; the engine reads the instruction the task keeps.
+   */
+  followUp?: string
 }
 
 /** One folder = one conversation, a unit of work like a branch and its pull request. */
@@ -384,6 +389,11 @@ export interface PlannedTask {
   never?: string
   /** French: why this rhythm. */
   why?: string
+  /**
+   * A service's task: what Marianne offers to do with the user once a run found something, copied
+   * from its template when it was planned (`label` French, `instruction` English).
+   */
+  followUp?: ServiceTaskFollowUp
   notify: 'found' | 'always'
   /** Its next day, YYYY-MM-DD: it runs at the first opening on or after it. */
   next: string

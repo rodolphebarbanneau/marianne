@@ -47,5 +47,8 @@ export const sameEvery = (a: TaskEvery, b: TaskEvery) => a.unit === b.unit && a.
 /** The rhythms offered for a task: its own comes first when it isn't among them. */
 export const rhythmChoices = (current: TaskEvery) => (RHYTHMS.some((r) => sameEvery(r, current)) ? RHYTHMS : [current, ...RHYTHMS])
 
+/** What a task's card says of its follow-up, as the task_propose card does: « si elle trouve quelque chose : payer maintenant ». */
+export const followUpLine = (t: { followUp?: { label: string } }) => (t.followUp ? [`si elle trouve quelque chose : ${t.followUp.label}`] : [])
+
 /** What an entity's card says of a task proposed and not taken: the service's words, or its title. */
 export const notPlanned = (t: TaskTemplate) => t.unplanned ?? `${t.title} : non planifiée`

@@ -170,6 +170,12 @@ export interface ServiceDeclaration {
   search?: { placeholder: string }
   /** It reads headlines through Marianne (ctx.news): no press host to declare. Built-in services only. */
   news?: boolean
+  /**
+   * The sites where Marianne acts for the user in her browser for this service (its payment or account
+   * pages), as host names: not what the service itself reaches, which `hosts` says. At most MAX_SITES.
+   * Built-in services only: a community service that declares them is refused when it is added.
+   */
+  sites?: string[]
 }
 
 /** The fields of a service's package.json that Marianne reads. */
@@ -205,6 +211,8 @@ export interface ServiceManifest {
   search: { placeholder: string } | null
   /** It reads headlines through Marianne (ctx.news). */
   news: boolean
+  /** Where Marianne acts for the user for it (see ServiceDeclaration.sites). */
+  sites: string[]
 }
 
 export class ManifestError extends Error {
@@ -213,6 +221,19 @@ export class ManifestError extends Error {
 
 /** How long a manifest's words may be: they show in Marianne's lists, and go to the engines. */
 export const MANIFEST_LIMITS = { name: 60, description: 200, label: 48, keyword: 40, purpose: 200 } as const
+
+/** At most this many sites where Marianne acts for a service: its payment and account pages, not the web. */
+export const MAX_SITES = 8
+
+/** How a manifest is read, beyond what the SDK checks itself. */
+export interface ManifestOptions {
+  /**
+   * Whether a host is shared by many sites (a hosting service, a public suffix: github.io, gouv.fr).
+   * Marianne gives hers, by the Public Suffix List, which the SDK doesn't carry: a declared site that
+   * is one is refused, for it would stand for every site under it.
+   */
+  sharedHost?: (host: string) => boolean
+}
 
 const code = (n: number) => String.fromCharCode(n)
 /** Control characters and line separators: a manifest's words are single lines. */
@@ -227,7 +248,7 @@ export const TOOL_NAME = /^[a-z][a-z0-9_]*$/
 const isStrings = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string')
 
 /** The manifest of a service package; throws a ManifestError saying what is wrong. */
-export function readManifest(pkg: unknown): ServiceManifest {
+export function readManifest(pkg: unknown, options: ManifestOptions = {}): ServiceManifest {
   const p = (pkg ?? {}) as Partial<ServicePackage>
   const where = typeof p.name === 'string' ? p.name : 'a service package'
   const fail = (what: string): never => {
@@ -279,6 +300,12 @@ export function readManifest(pkg: unknown): ServiceManifest {
   if (m.search !== undefined && (typeof m.search !== 'object' || m.search === null || !isLine(m.search.placeholder, MANIFEST_LIMITS.label)))
     fail(`"marianne.search" must be { "placeholder": one line of at most ${MANIFEST_LIMITS.label} characters }`)
   if (m.news !== undefined && typeof m.news !== 'boolean') fail('"marianne.news" must be true or false')
+  const sites = m.sites ?? []
+  if (!isStrings(sites) || sites.length > MAX_SITES || !sites.every((h) => HOST.test(h)))
+    fail(`"marianne.sites" must list at most ${MAX_SITES} host names (paiement.example.fr)`)
+  if (new Set(sites).size !== sites.length) fail('a site is listed twice in "marianne.sites"')
+  const shared = options.sharedHost && sites.find((h) => options.sharedHost!(h))
+  if (shared) fail(`site "${shared}" is shared by many sites (a hosting service or a public suffix): list the one site Marianne acts on`)
   const author = typeof p.author === 'string' ? p.author : (p.author?.name ?? '')
   return {
     id: code,
@@ -298,7 +325,8 @@ export function readManifest(pkg: unknown): ServiceManifest {
     icon: m.icon ? { palette: { ...m.icon.palette }, pixels: [...m.icon.pixels] } : null,
     tools: tools.map((t) => ({ name: t.name, label: t.label.trim() })),
     search: m.search ? { placeholder: m.search.placeholder.trim() } : null,
-    news: m.news === true
+    news: m.news === true,
+    sites: [...sites]
   }
 }
 
@@ -458,6 +486,34 @@ export interface ServiceTaskTemplate {
   instruction: string
   /** The hosts she may open at each run without asking again, for this task only. */
   sites: string[]
+  /** What she offers to do with the user once a run found something; none: the run's report is all. */
+  followUp?: ServiceTaskFollowUp
+}
+
+/**
+ * A task's follow-up: once a run found something, a button on that run's line in the task's folder,
+ * which starts a turn of the conversation with the user there. `label`: French, lowercase, short,
+ * what the button and the user's message say (« payer maintenant »). `instruction`: English, what
+ * Marianne does then; as in any conversation, each step that commits the user waits for their yes.
+ */
+export interface ServiceTaskFollowUp {
+  label: string
+  instruction: string
+}
+
+/** How long a follow-up's words may be: its label is a button's. */
+export const FOLLOW_UP_LIMITS = { label: 24, instruction: 2000 } as const
+
+/** What is wrong with a template's follow-up, or null: Marianne leaves out a template whose follow-up isn't right. */
+export function followUpProblem(followUp: unknown): string | null {
+  if (followUp === undefined) return null
+  const f = followUp as Partial<ServiceTaskFollowUp> | null
+  if (typeof f !== 'object' || f === null) return 'its follow-up must be { label, instruction }'
+  if (!isLine(f.label, FOLLOW_UP_LIMITS.label) || f.label.trim() !== f.label || /^\p{Lu}/u.test(f.label))
+    return `its follow-up's label must be one line in lowercase, of at most ${FOLLOW_UP_LIMITS.label} characters`
+  if (typeof f.instruction !== 'string' || !f.instruction.trim() || f.instruction.length > FOLLOW_UP_LIMITS.instruction)
+    return `its follow-up's instruction must say what Marianne does, in at most ${FOLLOW_UP_LIMITS.instruction} characters`
+  return null
 }
 
 /**

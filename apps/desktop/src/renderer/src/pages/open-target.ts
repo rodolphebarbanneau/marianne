@@ -16,7 +16,7 @@ export function useOpenTarget(documentTitle: (id: string) => string = () => ''):
           .catch((err: unknown) => toast(errorText(err)))
       switch (target.kind) {
         case 'folder':
-          return go({ kind: 'folder', id: target.id })
+          return go({ kind: 'folder', id: target.id, ...(target.at ? { at: target.at } : {}) })
         case 'service':
           return go({ kind: 'service', id: target.id, params: target.params ?? {} })
         case 'domain':

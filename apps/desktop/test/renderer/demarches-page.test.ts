@@ -64,7 +64,7 @@ const service = (code: string, more: Partial<ServiceState> & { domains?: string[
     ...rest
   }
 }
-const none: TodoSources = { folders: [], deadlines: [], documents: [], tasks: [] }
+const none: TodoSources = { folders: [], deadlines: [], documents: [], tasks: [], services: [] }
 const line = (sources: Partial<TodoSources>) => domainLine('mobility', { ...none, ...sources }, NOW)
 
 describe('a domain’s line of the sommaire', () => {

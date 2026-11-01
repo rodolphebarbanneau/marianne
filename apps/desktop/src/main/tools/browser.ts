@@ -8,6 +8,7 @@ import { browser, HumanControlError, type PageElement, type PageView } from '../
 import type { FormField } from '../browser/scripts'
 import { content } from '../content'
 import { siteOf } from '../../shared/hosts'
+import { services } from '../host'
 import { keychain } from '../keychain'
 import { profile } from '../profile/store'
 import { session } from '../session'
@@ -72,8 +73,12 @@ function runOf(ctx: ToolContext): PlannedTask | null {
 const refusal = (decision: Decision, nothing: string) =>
   new ToolError(`${decision === 'refused' ? 'The user refused' : 'No answer from the user'}: ${nothing}. Do not retry; ask them what they want to do.`)
 
-/** The sites the « autonomie » level lets Marianne go to without asking. */
-const known = () => knownSites(content.get().sites.map((s) => s.url))
+/**
+ * The sites Marianne knows, by registrable domain: the content's public sites, and those the built-in
+ * services that are on declare (`sites`), never a community service's. The « autonomie » level lets
+ * her go there and fill forms without asking.
+ */
+export const known = (): Set<string> => knownSites([...content.get().sites.map((s) => s.url), ...services.declaredSites()])
 
 /**
  * Consent to go to the site of `url` from this folder, as the approval policy decides: the user's yes

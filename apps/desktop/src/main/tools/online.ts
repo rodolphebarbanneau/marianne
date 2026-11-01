@@ -13,8 +13,8 @@ export type AskOnline = 'folder' | 'site'
 
 /**
  * The sites Marianne knows, where the « autonomie » level lets her go and fill forms without asking:
- * the content's public sites, reviewed with it, by registrable domain. Never a whole hosting service
- * or a public suffix. Sites that built-in services declare are to join them, given here too.
+ * the content's public sites, reviewed with it, and the sites built-in services declare, reviewed
+ * with them, by registrable domain. Never a whole hosting service or a public suffix.
  */
 export function knownSites(urls: string[]): Set<string> {
   return new Set(urls.map(siteOf).filter((site) => site && !isSharedHost(site)))

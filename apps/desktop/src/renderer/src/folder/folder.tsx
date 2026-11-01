@@ -5,11 +5,11 @@ import { serviceCode, type ServiceState } from '@marianne/sdk'
 import { ENGINE_LABELS } from '@shared/config'
 import { accelOf, matches } from '@shared/shortcuts'
 import type { Site } from '@shared/sites'
-import type { DomainId, EngineId, Folder, FolderView } from '@shared/types'
+import type { ChatMessage, DomainId, EngineId, Folder, FolderView } from '@shared/types'
 import { useApp } from '../app/context'
 import { Popover, SnoozeMenu } from '../app/sidebar'
 import { MoreIcon } from '../components/icons'
-import { Loading } from '../components/ui'
+import { Loading, Spinner } from '../components/ui'
 import { useServices } from '../host'
 import { api, errorText, isMac } from '../lib/api'
 import { useSites } from '../lib/content'
@@ -20,12 +20,20 @@ import { useTasks } from '../lib/tasks'
 import { TaskEditDialog } from '../pages/tasks/dialogs'
 import { Composer } from './composer'
 import { Message } from './message'
-import { foldLabel, foldRuns, nextLabel, runLabel, type QuietRun } from './runs'
+import { followUpOffer, foldLabel, foldRuns, nextLabel, runLabel, type QuietRun } from './runs'
 
-/** One folder = one conversation: its header (title, steps, pièces), the conversation, the composer. */
-export function FolderScreen({ id }: { id: string }) {
+/**
+ * One folder = one conversation: its header (title, steps, pièces), the conversation, the composer.
+ * `at: 'run'`: opened at the line of the run that found something, rather than at the end.
+ */
+export function FolderScreen({ id, at }: { id: string; at?: 'run' }) {
   const app = useApp()
   const [view, setView] = useState<FolderView | null>(null)
+  const task = useTasks().find((t) => t.id === view?.folder.task)
+  const services = useServices()
+  const offer = view ? followUpOffer(task, services, view.messages) : null
+  /** Opened at a run's line: placed there once, then the user's to scroll. */
+  const placed = useRef(false)
   const [procedure, setProcedure] = useState<Procedure | null>(null)
   const conv = useRef<HTMLDivElement>(null)
   const column = useRef<HTMLDivElement>(null)
@@ -75,6 +83,18 @@ export function FolderScreen({ id }: { id: string }) {
     if (lastUserId) toEnd()
   }, [lastUserId])
 
+  // Opened at the run that found something (« à faire »): its line and its follow-up at the top, once
+  // the tasks and the services say it is offered; the conversation no longer follows its end.
+  useEffect(() => {
+    const el = conv.current
+    const line = el?.querySelector<HTMLElement>('[data-follow-up]')
+    if (placed.current || at !== 'run' || !el || !line) return
+    placed.current = true
+    stick.current = false
+    setAway(true)
+    el.scrollTop += line.getBoundingClientRect().top - el.getBoundingClientRect().top - 12
+  }, [at, offer?.lineId])
+
   // ANNULATION stops Marianne, RÉPÉTITION writes the last answer again, on the keys Réglages gives them; pg↑ / pg↓
   // scroll the conversation, from the composer too. A dialog over the folder keeps its keys.
   const shortcuts = app.config.shortcuts
@@ -122,7 +142,11 @@ export function FolderScreen({ id }: { id: string }) {
           <div className="column" ref={column}>
             {foldRuns(messages).map((row) =>
               row.kind === 'message' ? (
-                <Message key={row.message.id} message={row.message} />
+                offer?.lineId === row.message.id ? (
+                  <FollowUpLine key={row.message.id} line={row.message} label={offer.label} folderId={folder.id} running={running} />
+                ) : (
+                  <Message key={row.message.id} message={row.message} />
+                )
               ) : (
                 <QuietRuns key={row.key} runs={row.runs} onToggle={() => (stick.current = false)} />
               )
@@ -146,6 +170,31 @@ export function FolderScreen({ id }: { id: string }) {
           placeholder="Répondre à Marianne…"
         />
       </div>
+    </div>
+  )
+}
+
+/**
+ * The line of the run that found something, with its task's follow-up: a click starts it, a turn of
+ * the conversation whose message reads as the label. Not while Marianne answers in the folder.
+ */
+function FollowUpLine({ line, label, folderId, running }: { line: ChatMessage; label: string; folderId: string; running: boolean }) {
+  const { toast } = useApp()
+  const [busy, setBusy] = useState(false)
+  const start = () => {
+    setBusy(true)
+    api
+      .followUp(folderId, line.id)
+      .catch((err: unknown) => toast(errorText(err)))
+      .finally(() => setBusy(false))
+  }
+  return (
+    <div className="compacted" data-follow-up>
+      {line.parts.map((p) => (p.type === 'text' ? p.text : '')).join(' ')}
+      <button className="btn small primary" disabled={running || busy} aria-busy={busy} onClick={start}>
+        {busy && <Spinner />}
+        {label}
+      </button>
     </div>
   )
 }

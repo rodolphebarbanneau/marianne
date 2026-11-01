@@ -93,6 +93,14 @@ The manifest is the `marianne` field of the service's `package.json`. `readManif
 - `connections`: Marianne's connections it relies on (`geo` for the communes). The service is unavailable while one is off.
 - `news`: `true` when it reads headlines through Marianne (`ctx.news`, [below](#news)) rather than from the press itself: no press host to declare. Built-in services only: a community service that declares it is refused when it is added.
 
+**Where Marianne acts for it**
+
+- `sites`: the sites where Marianne acts for the user in her browser for this service, its payment or account pages, as host names: `["www.sanef.com", "paiement.aliae.com"]`. Not what the service reaches (`hosts`): the service itself never goes there.
+  - At most `MAX_SITES` (8), each one site: never a whole hosting service or a public suffix (github.io, gouv.fr). The SDK checks the names; Marianne refuses the others by the Public Suffix List (`readManifest`'s `sharedHost`), and leaves the service out.
+  - « Avant d’ajouter », the Services page's table (« Marianne agit sur »), Marianne's card when she proposes the service, the `services` tool and the engines' instructions (« acts on ») show them.
+  - While the service is on, they count among the sites Marianne knows: at « autonomie », she goes there and fills forms without asking, as on the content's public sites. Paying, signing and sending still take the user's yes on a card.
+  - Built-in services only: a community service that declares them is refused when it is added.
+
 **What it reads of the user**
 
 - `permissions`: what of the profile it asks to read, among `PROFILE_FIELDS` (`vehicles.plate`, `vehicles.model`…, `opinions.leaning`, `opinions.themes`, `opinions.sources`), and what for, in one French line: `{ "profile": ["vehicles.plate"], "purpose": "retrouver vos passages en flux libre" }`.
@@ -159,8 +167,8 @@ The domains are Marianne's: the fixed themes of the user's file (identity, healt
 
 ## What Marianne does with the services
 
-- **She knows them.** The engines read the instructions of the services that are on, and a line of each built-in service that isn't (not added, or switched off): its code, name, description and domains. That line is all Marianne's prompt says of a service: what it is for, and how to use it, are its instructions' and guides' to say ([below](#what-activate-returns)). The `services` tool tells more: the tools, what each reaches and reads, and the planned tasks those that are on propose.
-- **She proposes a built-in service** that covers a request and isn't on (`service_propose`), on a card in the conversation: what it does, the hosts it reaches, the profile fields it would read and why, its tools. The card leads to « avant d’ajouter », where adding stays the user's act; the profile fields it asks for are asked right after, so that it works without the user opening its screen. Refused or unanswered, she doesn't propose it again in that folder.
+- **She knows them.** The engines read the instructions of the services that are on (and the sites each acts on), and a line of each built-in service that isn't (not added, or switched off): its code, name, description and domains. That line is all Marianne's prompt says of a service: what it is for, and how to use it, are its instructions' and guides' to say ([below](#what-activate-returns)). The `services` tool tells more: the tools, what each reaches, acts on and reads, and the planned tasks those that are on propose.
+- **She proposes a built-in service** that covers a request and isn't on (`service_propose`), on a card in the conversation: what it does, the hosts it reaches, the sites where she would act for it, the profile fields it would read and why, its tools. The card leads to « avant d’ajouter », where adding stays the user's act; the profile fields it asks for are asked right after, so that it works without the user opening its screen. Refused or unanswered, she doesn't propose it again in that folder.
 - **Never a community service.** Marianne neither lists to the engines nor proposes one that isn't on: the user finds them on the Services page.
 - **A link** of hers to a built-in service the user hasn't added (`marianne:service/<code>`) opens its « avant d’ajouter ».
 
@@ -337,6 +345,11 @@ A `ServiceTaskTemplate` says:
   Anything else is refused, and the run reports "waiting".
 
 - `sites`: the hosts she may open at each run without asking again, for this task only.
+- `followUp`, optional: what she offers to do with the user once a run found something, `{ "label": "payer maintenant", "instruction": "…" }`. `label`: French, lowercase, 24 characters at most; `instruction`: English, what she does then (`FOLLOW_UP_LIMITS`).
+  - The sheet and Marianne's card say it (« si elle trouve quelque chose : payer maintenant »), and the task keeps it, copied from the template when it is planned.
+  - When a run reports « found », the woken folder shows the label as a button on that run's line, and « à faire » opens the folder there. Not while the task is paused or its service is off, and only on the last run's line, until the user starts it.
+  - A click is a turn of the conversation, the user's: their message reads as the label, and the engine reads the instruction the task kept, as their request. Never what the run wrote: that reaches the engine as a run's report. As in any conversation, the user's standing permissions apply, and each step that commits them waits for their yes on a card.
+  - `followUpProblem` (`@marianne/sdk`) says what is wrong with one: Marianne leaves out a template whose follow-up isn't right.
 
 **Built-in services only for now.** A task's instruction feeds the engine and its sites are reached without asking, so it is content that can inject: the host doesn't read a community service's `tasks()`.
 
@@ -547,7 +560,7 @@ The 3615 kiosk: its head is the page's one search (the 3615 bar: a code or words
 - Import anything of the app (`apps/desktop`): only `@marianne/sdk`, its own files and its own dependencies.
 - Reach a host it hasn't declared, from any side.
 - See the user's identifiers. It gets the commune of their address, the profile fields they granted it, and what they store in it.
-- Act on a website for the user: a payment, a signature, a form go through Marianne (`host.ask`), in the built-in browser, with the user's approval.
+- Act on a website for the user: a payment, a signature, a form go through Marianne (`host.ask`, a task's follow-up), in the built-in browser, with the user's approval.
 - Keep personal data outside `ctx.storage` (the encrypted archive): `dataDir` is for public data.
 
 ## Tests
@@ -564,6 +577,7 @@ Each package has its own `test/` and `vitest.config.ts`; `npm test` at the root 
   - `news`, for `"news": true`: what `ctx.news` reads, `{ read, sources, articles, filtered }`.
 - **A sync job's logic**: through `execute` from `@marianne/sdk/sync`, with a fake `download`.
 - **A tile**: with `checkTile` ([above](#the-tile)).
+- **A task's follow-up**: with `followUpProblem` ([above](#planned-tasks)).
 
 ## Community services
 
@@ -683,7 +697,8 @@ Its pages load everything through Marianne's own `marianne-service:` scheme (`ap
 ### The limits of this version
 
 - **No sync job**: it would run with Node, out of any sandbox. A file with a `sync.js` is refused; `ctx.dataDir` is `''` and `ctx.sync` does nothing.
-- **No planned tasks**: the host doesn't read its `tasks()` ([why](#planned-tasks)).
+- **No planned tasks**: the host doesn't read its `tasks()` ([why](#planned-tasks)), so no follow-up either.
+- **No sites to act on**: Marianne acts for the user only where her own services say (`sites`), sites reviewed with them. A file whose manifest declares any is refused, by `marianne-pack` too.
 - **A screen of its own**: it lays out by its view's width, as a built-in screen does by its column's, but it can't reach the window.
   - `ServiceTools` are drawn at the top of its screen, rather than at the end of the tab bar.
   - A `Modal` covers its screen, not the whole window.

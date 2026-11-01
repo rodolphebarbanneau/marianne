@@ -78,7 +78,7 @@ export function ProceduresPage() {
   const [creating, setCreating] = useState(false)
   const input = useRef<HTMLInputElement>(null)
 
-  const sources = useMemo(() => ({ folders, deadlines, documents, tasks }), [folders, deadlines, documents, tasks])
+  const sources = useMemo(() => ({ folders, deadlines, documents, tasks, services }), [folders, deadlines, documents, tasks, services])
   const items = useMemo(() => todoItems(sources), [sources])
   const urgent = items.filter(presses)
   const later = items.filter((x) => !presses(x))

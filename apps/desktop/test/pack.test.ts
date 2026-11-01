@@ -76,6 +76,17 @@ describe('marianne-pack', () => {
     }
   })
 
+  it('refuses sites to act on, which Marianne refuses too: they are her own services’', { timeout: 60_000 }, async () => {
+    const dir = copyOfExample('sites')
+    const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ ...pkg, marianne: { ...pkg.marianne, sites: ['paiement.bonjour.example'] } }))
+    await expect(pack(dir, { out: join(root, 'sites') })).rejects.toThrow(
+      '"marianne.sites" (the sites Marianne acts on for a service) is for her own services only'
+    )
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ ...pkg, marianne: { ...pkg.marianne, news: true } }))
+    await expect(pack(dir, { out: join(root, 'sites') })).rejects.toThrow('"marianne.news" (the headlines Marianne reads) is for her own services only')
+  })
+
   it('refuses a tool its manifest doesn’t declare, and an import Marianne doesn’t give', { timeout: 60_000 }, async () => {
     const undeclared = copyOfExample('tools')
     const pkg = JSON.parse(readFileSync(join(undeclared, 'package.json'), 'utf8'))

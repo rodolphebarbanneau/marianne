@@ -6,7 +6,7 @@ import { api, errorText } from '../../lib/api'
 import { runCell } from '../../lib/demarches'
 import { SourceChip } from '../demarches/todo-row'
 import { TaskEditDialog } from './dialogs'
-import { nextShort, runLine, runWhen, withEntity } from './model'
+import { followUpLine, nextShort, runLine, runWhen, withEntity } from './model'
 
 /** A planned task at full size, and the small parts every list of tasks shows. */
 
@@ -74,7 +74,10 @@ export function TaskCard({ task }: { task: PlannedTask }) {
           <OriginTag task={task} />
           <span>{task.everyLabel}</span>
         </span>
-        <Does lines={task.allows ?? []} notes={[task.never ?? '', task.why ? `pourquoi ce rythme : ${task.why}` : ''].filter(Boolean)} />
+        <Does
+          lines={[...(task.allows ?? []), ...followUpLine(task)]}
+          notes={[task.never ?? '', task.why ? `pourquoi ce rythme : ${task.why}` : ''].filter(Boolean)}
+        />
       </div>
       <div className="log">
         <span className="label">ses dernières fois</span>
@@ -136,7 +139,7 @@ export function PropCard({ template, onPlan }: { template: TaskTemplate; onPlan:
           <OriginTag task={{ origin: { kind: 'service', service: template.service, template: template.id } }} />
           <span>{rhythm?.label}</span>
         </span>
-        <Does lines={template.allows} notes={[]} />
+        <Does lines={[...template.allows, ...followUpLine(template)]} notes={[]} />
       </div>
       <div className="log">{rhythm?.note && <span className="small dim">{rhythm.note}</span>}</div>
       <div className="cmd">

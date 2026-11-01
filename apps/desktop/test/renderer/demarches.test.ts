@@ -12,6 +12,7 @@ import {
   searchRows,
   shortDate,
   todoItems,
+  type TodoSources,
   weekLabels,
   weekMarks,
   weeksFrom,
@@ -75,7 +76,7 @@ const task = (more: Partial<PlannedTask>): PlannedTask => ({
   runs: [],
   ...more
 })
-const none = { folders: [], deadlines: [], documents: [], tasks: [] }
+const none: TodoSources = { folders: [], deadlines: [], documents: [], tasks: [], services: [] }
 
 describe('when something falls', () => {
   it('says it in words near, and as a date far', () => {
@@ -168,6 +169,29 @@ describe('à faire', () => {
     const items = todoItems({ ...none, tasks: [waiting, paused] }, undefined, NOW)
     expect(items.map((x) => x.target)).toEqual([{ kind: 'folder', id: 'tf' }])
     expect(items[0].detail).toBe('le site demande un code')
+  })
+
+  it('brings back a task that found something it offers to follow up, opening its folder at that run, while its service is on', () => {
+    const run = { at: '2026-10-30T07:00:00Z', outcome: 'found' as const, text: '1 passage sur l’A13 le 29/10' }
+    const followUp = { label: 'payer maintenant', instruction: 'Pay what the run found.' }
+    const peage = (on: boolean) => [{ manifest: { id: 'peage' }, on }] as TodoSources['services']
+    const items = todoItems({ ...none, tasks: [task({ runs: [run], followUp })], services: peage(true) }, undefined, NOW)
+    expect(items).toEqual([
+      expect.objectContaining({
+        rank: 1,
+        when: { text: 'une tâche a trouvé', tone: 'you' },
+        detail: '1 passage sur l’A13 le 29/10 · « payer maintenant » dans son dossier',
+        act: 'ouvrir',
+        target: { kind: 'folder', id: 'tf', at: 'run' },
+        wait: 'une tâche a trouvé'
+      })
+    ])
+    // Found without a follow-up, paused, its service off, its folder read: nothing waits for the user.
+    expect(todoItems({ ...none, tasks: [task({ runs: [run] })], services: peage(true) }, undefined, NOW)).toEqual([])
+    expect(todoItems({ ...none, tasks: [task({ runs: [run], followUp, on: false })], services: peage(true) }, undefined, NOW)).toEqual([])
+    expect(todoItems({ ...none, tasks: [task({ runs: [run], followUp })], services: peage(false) }, undefined, NOW)).toEqual([])
+    const read = [folder({ id: 'tf', unread: false })]
+    expect(todoItems({ ...none, tasks: [task({ runs: [run], followUp })], services: peage(true), folders: read }, undefined, NOW)).toEqual([])
   })
 
   it('lets go of a task that waited once the user has opened its folder', () => {

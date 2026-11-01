@@ -63,6 +63,7 @@ async function proposeServiceTask(
         { label: 'Marianne pourra', value: template.allows.join(' · ') },
         { label: 'sites sans redemander', value: template.sites.join(', ') || 'aucun' },
         { label: 'jamais', value: template.never },
+        ...(template.followUp ? [{ label: 'si elle trouve quelque chose', value: template.followUp.label }] : []),
         { label: 'vous prévenir', value: 'seulement si elle trouve' },
         { label: 'dossier', value: folder.task ? `un nouveau dossier, « ${title} » : celui-ci a déjà sa tâche` : 'celui-ci' }
       ]

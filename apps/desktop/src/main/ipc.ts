@@ -216,6 +216,7 @@ export function registerIpc(): void {
   handle('setFolderStep', (id: string, step: number, done: boolean) => void folders.setStep(id, step, done))
   handle('send', (req: SendRequest) => chat.send(req))
   handle('regenerate', (id: string) => chat.regenerate(id))
+  handle('followUp', (folderId: string, lineId: string) => chat.followUp(folderId, lineId))
   on('cancel', (id: string) => chat.cancel(id))
   on('respondApproval', (id: string, answer: ApprovalAnswer) => approvals.respond(id, answer))
   handle('attachFiles', async (folderId?: string): Promise<DocumentPart[]> => {

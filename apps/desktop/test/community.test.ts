@@ -236,6 +236,13 @@ describe('a .3615 file', () => {
     expect(problems(service({ 'package.json': manifest({ search: { placeholder: 'chercher une pharmacie' } }) }))).toEqual([])
   })
 
+  it('may not declare sites for Marianne to act on: only her own services do', () => {
+    expect(problems(service({ 'package.json': manifest({ sites: ['paiement.pharmagarde.example'] }) }))).toEqual([
+      '3615 PHARMAGARDE déclare des sites où Marianne agirait pour vous (« sites » dans son manifeste) : seuls ses services officiels le peuvent.'
+    ])
+    expect(problems(service({ 'package.json': manifest({ sites: [] }) }))).toEqual([])
+  })
+
   it('may not ask for the user’s news sources: they serve the headlines, which its sandbox never gets', () => {
     const asking = (profile: string[]) => manifest({ permissions: { profile, purpose: 'trier les titres' } })
     expect(problems(service({ 'package.json': asking(['opinions.themes', 'opinions.sources']) }))).toEqual([
