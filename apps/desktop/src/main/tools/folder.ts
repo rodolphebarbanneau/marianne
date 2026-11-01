@@ -2,7 +2,7 @@ import { domainInfo } from '@marianne/profile'
 import * as z from 'zod'
 import type { Folder } from '../../shared/types'
 import { content } from '../content'
-import { listSkills, readSkill } from '../engines/skills'
+import { guides, listSkills, readSkill } from '../engines/skills'
 import { folders } from '../folders'
 import { documents } from '../profile/documents'
 import { DOMAIN_IDS, tool, ToolError } from './tool'
@@ -107,7 +107,7 @@ export const folderTools = [
     description:
       'Reads a method guide (skill) by its name, among those listed in your instructions. Read the matching guide before handling a request of that kind.',
     input: { name: z.string() },
-    run: async ({ name }) => {
+    run: async ({ name }, ctx) => {
       const body = readSkill(name.trim())
       if (!body)
         throw new ToolError(
@@ -115,6 +115,8 @@ export const folderTools = [
             .map((s) => s.name)
             .join(', ')}.`
         )
+      // Read here: a service's guide won't come again with its first use (guides.ts).
+      if (ctx.folderId) guides.noteRead(ctx.folderId, name.trim())
       return body
     }
   })

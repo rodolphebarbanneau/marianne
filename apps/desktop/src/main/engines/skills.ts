@@ -4,7 +4,9 @@ import { splitFrontMatter } from '@marianne/content'
 import { content } from '../content'
 import { log } from '../log'
 import { paths } from '../paths'
+import { GuideLedger, type Guide } from '../guides'
 import { services } from '../host'
+import { siteAllowed } from '../tasks'
 import type { SkillInfo } from '../../shared/types'
 
 /**
@@ -78,3 +80,21 @@ export function listSkills(): SkillInfo[] {
 export function readSkill(name: string): string | null {
   return all().find((s) => s.name === name)?.body ?? null
 }
+
+/** The guides each service that is on ships, by the names the skill tool knows (the user's own of a name in its place). */
+function serviceGuides(): Array<{ service: string; guides: Guide[] }> {
+  const by = new Map<string, Guide[]>()
+  for (const { service, text, community } of services.skills()) {
+    const parsed = parseSkill(text, `${service}.md`)
+    const name = community ? `${service}-${parsed.name}` : parsed.name
+    const body = readSkill(name)
+    if (body) by.set(service, [...(by.get(service) ?? []), { name, body }])
+  }
+  return [...by].map(([service, guides]) => ({ service, guides }))
+}
+
+/** What each folder had of the services' guides (guides.ts). */
+export const guides = new GuideLedger({
+  guides: serviceGuides,
+  onSites: (service, url) => siteAllowed({ sites: services.declaredSites(service) }, url)
+})

@@ -21,6 +21,8 @@ export interface Tool<S extends z.ZodRawShape = z.ZodRawShape> {
   readOnly?: boolean
   /** False: [[tokens]] are refused in the arguments (a URL would carry the values to any site). */
   tokens?: boolean
+  /** The service whose tool it is (host): its guides come with its first use in a folder (guides.ts). */
+  service?: string
   run: (args: z.output<z.ZodObject<S>>, ctx: ToolContext) => Promise<string>
 }
 
