@@ -307,6 +307,12 @@ describe('prompt', () => {
     expect(systemPrompt({ ...base, legifrance: true })).toContain(`mcp__${MCP_SERVER_NAME}__read_service_public`)
   })
 
+  it('names the guides’ tool with its prefix, as Marianne’s and not a skill of the engine’s own', () => {
+    // Claude Code called « skill », the name of a tool of its own that Marianne turns off, and went on without the guide.
+    const p = systemPrompt({ ...base, legifrance: true })
+    expect(p).toContain(`Marianne's skill tool, one of hers like the others (mcp__${MCP_SERVER_NAME}__skill in Claude Code's list)`)
+  })
+
   it('tells the engine how to cite laws, with or without Légifrance', () => {
     expect(systemPrompt({ ...base, legifrance: true })).toContain('use the Légifrance tools')
     const without = systemPrompt({ ...base, legifrance: false })

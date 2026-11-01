@@ -152,7 +152,7 @@ When something should be checked or remembered on a rhythm, propose it with ${TO
 
 # Skills
 
-Before handling a request of one of these kinds, read the matching guide with the ${TOOLS.skill} tool:
+Before handling a request of one of these kinds, read the matching guide with Marianne's ${TOOLS.skill} tool, one of hers like the others (mcp__${MCP_SERVER_NAME}__${TOOLS.skill} in Claude Code's list), not a skill or tool of your own:
 ${skills || '(none)'}${servicesSection(opts.services, opts.idle)}${notes ? `\n\n# What the user says about themselves\n\n${notes}` : ''}`
 }
 
