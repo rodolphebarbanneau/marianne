@@ -16,6 +16,7 @@ Link the issue: "Fixes #123".
 
 <!--
 Each host it declares (marianne.hosts): what it reads there, and the terms that data is published under (a licence, the site's conditions of use).
+Each site it declares (marianne.sites, a built-in service only): which pages Marianne acts on there for the user (a payment, an account), and why they are the operator's own.
 What it keeps: dataDir for public data only, ctx.storage for anything of the user's.
 What of the profile it asks (marianne.permissions), and why.
 For a change, only what changes; "Unchanged" if nothing does.
@@ -59,7 +60,7 @@ For a change that leaves the tile as it was: "Unchanged", with its screenshot al
 - [ ] Screenshot of its tile pinned at the top of « mes services »
 - [ ] A new service: `services/<code>/`, named `@marianne/service-<code>`, its code in lowercase letters and digits, the folder's name
 - [ ] A new service: registered in the `devDependencies` of `apps/desktop/package.json` and in both registries (`main/host/registry.ts`, `renderer/src/host/registry.ts`), `starter` decided
-- [ ] It reaches only its declared hosts, never sees the user's identifiers, and acts on no website for the user (that goes through `host.ask`)
+- [ ] It reaches only its declared hosts, never sees the user's identifiers, and acts on no website for the user itself (that goes through `host.ask`); Marianne acts only on its `sites`, none for a community service
 - [ ] Tabs: ids in English, labels in French and lowercase, each with its key; none for a screen of one page
 - [ ] `src/help.md`: French, under 900 characters, no heading and no keys
 - [ ] Icon: eight by eight, the palette's names only, readable at 24 pixels in every theme
