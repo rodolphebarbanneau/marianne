@@ -337,6 +337,15 @@ describe('prompt', () => {
     expect(p).toContain('never work around it')
   })
 
+  it('pays by card through its tool, never asking for a card in the conversation', () => {
+    const p = systemPrompt({ ...base, legifrance: true })
+    expect(p).toContain('Paying by card goes through pay_by_card')
+    expect(p).toContain('Never ask for card details in the conversation, nor type them')
+    expect(p).toContain('(request_setup, target payment)')
+    expect(p).toMatch(/3-D Secure[^\n]*hand_over/)
+    expect(p).toContain('documents, payment, space')
+  })
+
   it('stays generic: no service, no domain’s scenario; the services say theirs', () => {
     const p = systemPrompt({ ...base, legifrance: true })
     for (const { pkg } of BUILTIN_SERVICES) {

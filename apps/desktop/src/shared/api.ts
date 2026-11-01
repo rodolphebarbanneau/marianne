@@ -31,6 +31,8 @@ import type {
   TaskTemplate,
   KeychainEntry,
   KeychainInput,
+  PaymentCard,
+  PaymentCardInput,
   PublicSourceId,
   SendRequest,
   SessionState,
@@ -181,8 +183,12 @@ export interface MarianneApi {
    */
   followUp(folderId: string, lineId: string): Promise<void>
   cancel(folderId: string): void
-  /** « toujours… » keeps the standing permission the card offered, and only that one. */
-  respondApproval(id: string, answer: ApprovalAnswer): void
+  /**
+   * « toujours… » keeps the standing permission the card offered, and only that one. `cvv`: the
+   * security code typed in a payment card that asks for it, used once by the main process for that
+   * payment, never stored.
+   */
+  respondApproval(id: string, answer: ApprovalAnswer, cvv?: string): void
   /** Pick files: they join the archive as the folder's pièces. */
   attachFiles(folderId?: string): Promise<Attachment[]>
 
@@ -235,6 +241,14 @@ export interface MarianneApi {
   /** The stored password, for the user to see or copy. */
   revealKeychain(id: string): Promise<string>
   onKeychain(cb: () => void): () => void
+
+  // ---------- payment cards ----------
+  /** The saved cards, without their number or security code: those never come back to the window once saved. */
+  listCards(): Promise<PaymentCard[]>
+  /** A card added or changed, checked by the main process (Luhn, expiry, code); refused with why, in French. */
+  saveCard(input: PaymentCardInput): Promise<PaymentCard>
+  deleteCard(id: string): Promise<void>
+  onCards(cb: () => void): () => void
 
   // ---------- built-in browser ----------
   browserState(): Promise<BrowserState>

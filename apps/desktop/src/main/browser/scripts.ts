@@ -1,6 +1,9 @@
+import { CARD_KIND } from './payment'
+
 /**
  * Scripts run in the pages of the built-in browser. They only read and fill what is visible,
- * never password, file or hidden fields, and never submit anything by themselves.
+ * never password, file or hidden fields, and never submit anything by themselves. A bank card's
+ * fields are pay_by_card's alone (payment.ts): never read, filled or typed into here.
  */
 
 /** Fill the login form of a page: the password field and the username field before it. */
@@ -35,10 +38,12 @@ export interface FormField {
 }
 
 /**
- * The fields of the form on the page, each tagged with a data-marianne-field id. Passwords, files
- * and buttons are left out: they are never filled.
+ * The fields of the form on the page, each tagged with a data-marianne-field id. Passwords, files,
+ * a bank card's fields and buttons are left out: they are never filled. A field that may be another
+ * card's (« numéro de carte » alone) is listed, its value masked.
  */
 export const FORM_READ_SCRIPT = `(() => {
+  const cardKind = ${CARD_KIND}
   const visible = (el) => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length) && getComputedStyle(el).visibility !== 'hidden'
   const text = (el) => (el ? (el.innerText || el.textContent || '') : '').replace(/\\s+/g, ' ').trim()
   const labelOf = (el) => {
@@ -57,6 +62,8 @@ export const FORM_READ_SCRIPT = `(() => {
   let n = 0
   for (const el of document.querySelectorAll('input, select, textarea')) {
     if (skip.includes(el.type) || el.disabled || !visible(el) || secret(el)) continue
+    const card = el.tagName === 'TEXTAREA' ? null : cardKind(el)
+    if (card && card.sure) continue
     if (el.type === 'radio') {
       const key = el.name || 'radio' + n
       let g = groups.get(key)
@@ -78,7 +85,7 @@ export const FORM_READ_SCRIPT = `(() => {
       label: labelOf(el),
       type: el.tagName === 'SELECT' ? 'select' : el.tagName === 'TEXTAREA' ? 'textarea' : el.type || 'text',
       required: el.required,
-      value: el.type === 'checkbox' ? String(el.checked) : el.value,
+      value: el.type === 'checkbox' ? String(el.checked) : card && el.value ? '(masqué)' : el.value,
       options: el.tagName === 'SELECT' ? [...el.options].map((o) => text(o) || o.value) : undefined
     })
   }
@@ -121,9 +128,11 @@ export const FORM_FILL_SCRIPT = (values: Record<string, string>) => `(() => {
 
 /**
  * What the engine can act on: links, buttons and fields, each tagged with a data-marianne-el id,
- * with the page's visible text (clipped). Password fields are listed but never readable.
+ * with the page's visible text (clipped). Password fields and a bank card's fields are listed but
+ * never readable; no field that may be a card's is labelled by its value.
  */
 export const PAGE_READ_SCRIPT = `(() => {
+  const cardKind = ${CARD_KIND}
   const visible = (el) => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length) && getComputedStyle(el).visibility !== 'hidden'
   const text = (el) => (el ? (el.innerText || el.textContent || '') : '').replace(/\\s+/g, ' ').trim()
   const elements = []
@@ -133,8 +142,9 @@ export const PAGE_READ_SCRIPT = `(() => {
     const id = 'e' + ++n
     el.setAttribute('data-marianne-el', id)
     const role = el.getAttribute('role') || (el.tagName === 'A' ? 'link' : el.tagName === 'BUTTON' ? 'button' : el.tagName === 'SELECT' ? 'select' : el.tagName === 'TEXTAREA' ? 'textarea' : el.type === 'submit' || el.type === 'button' ? 'button' : 'field')
-    const label = (text(el) || el.getAttribute('aria-label') || el.value || el.placeholder || el.title || el.name || '').slice(0, 120)
-    elements.push({ id, role, label, type: el.type || '', secret: el.type === 'password' })
+    const card = el.matches('input, select') ? cardKind(el) : null
+    const label = (text(el) || el.getAttribute('aria-label') || (card ? '' : el.value) || el.placeholder || el.title || el.name || '').slice(0, 120)
+    elements.push({ id, role, label, type: el.type || '', secret: el.type === 'password', card: !!(card && card.sure) })
     if (elements.length >= 300) break
   }
   return { url: location.href, title: document.title, text: ((document.body && document.body.innerText) || '').slice(0, 30000), elements }

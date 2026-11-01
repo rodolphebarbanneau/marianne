@@ -259,6 +259,35 @@ describe('the cards and the lines, in the main process', () => {
     expect(parts[0].status).toBe('refused')
   })
 
+  it('a payment card’s security code goes with the yes to the tool that asked, and nowhere else', async () => {
+    const PAYMENT = {
+      kind: 'payment' as const,
+      title: 'Payer par carte sur sanef.com',
+      fields: [{ label: 'carte', value: 'Visa •••• 4242 · perso · 09/38' }],
+      askCvv: true
+    }
+    const given: string[] = []
+    const onCvv = (cvv: string) => void given.push(cvv)
+    const asked = approvals.ask('f1', { action: 'commit' }, PAYMENT, { onCvv })
+    expect(parts).toMatchObject([{ status: 'pending', kind: 'payment', action: 'commit', askCvv: true }])
+    expect(parts[0].always).toBeUndefined()
+    approvals.respond(parts[0].id, 'approve', '737')
+    expect(await asked).toEqual({ decision: 'accepted', ahead: false })
+    expect(given).toEqual(['737'])
+    expect(JSON.stringify(parts)).not.toContain('737')
+
+    // Refused, it goes nowhere; nor on a card that asks for none.
+    parts = []
+    const refused = approvals.ask('f1', { action: 'commit' }, PAYMENT, { onCvv })
+    approvals.respond(parts[0].id, 'refuse', '738')
+    expect((await refused).decision).toBe('refused')
+    parts = []
+    const other = approvals.ask('f1', { action: 'commit' }, { ...PAYMENT, askCvv: undefined }, { onCvv })
+    approvals.respond(parts[0].id, 'approve', '739')
+    await other
+    expect(given).toEqual(['737'])
+  })
+
   it('a run gets neither', async () => {
     accounts.updateSettings({ approvals: { level: 'autonomous', rules: [rule('form', SITE)] } })
     expect(await approvals.ask('f1', form(true), CARD, { run: true })).toEqual({ decision: 'expired', ahead: false })

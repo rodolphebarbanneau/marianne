@@ -6,6 +6,7 @@ import { app } from 'electron'
 import type { BugReport, BugReportRequest } from '../shared/bug-report'
 import { ENGINE_LABELS } from '../shared/config'
 import { ANALYSIS_PROMPT, analysisMessage, conversationCourse, diagnosticsText, logTail, parseAnalysis, scrub, titleFrom, type Machine } from './bug-report'
+import { cards } from './cards'
 import { configStore } from './config'
 import { engineStatus, runTurn } from './engines'
 import { folders } from './folders'
@@ -98,8 +99,9 @@ async function diagnostics(req: BugReportRequest): Promise<string> {
 /** The report of what the user saw, analyzed by their engine if they asked and it is ready. */
 export async function prepareBugReport(req: BugReportRequest): Promise<BugReport> {
   const tokens = session.unlocked ? profile.tokens() : []
+  const numbers = cards.numbers()
   const who = machine()
-  const clean = (text: string) => scrub(text, tokens, who)
+  const clean = (text: string) => scrub(text, tokens, who, numbers)
   const words = clean(String(req.description ?? '').slice(0, 4000)).trim()
   const cfg = configStore.get().engines
   const id = cfg.default

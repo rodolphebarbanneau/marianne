@@ -205,6 +205,7 @@ describe('setup cards', () => {
     expect(setupCard('account:impots')?.page).toBe('sites')
     expect(setupCard('browser')).toEqual({ page: 'browser', label: 'le navigateur' })
     expect(setupCard('approvals')).toEqual({ page: 'approvals', label: 'vos autorisations' })
+    expect(setupCard('payment')).toEqual({ page: 'payment', label: 'vos cartes de paiement' })
     // Légifrance is off by default: turn the source on first.
     expect(setupCard('legifrance')?.page).toBe('data')
     expect(setupCard('account:nowhere')).toBeNull()

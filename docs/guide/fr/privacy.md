@@ -2,11 +2,11 @@
 
 ## Sur votre ordinateur
 
-Tout ce que vous confiez à Marianne, vos dossiers, vos pièces et votre profil, est dans votre archive, chiffrée avec votre phrase de passe. Marianne n’a pas de serveur et pas de compte en ligne : rien ne lui est envoyé.
+Tout ce que vous confiez à Marianne, vos dossiers, vos pièces, votre profil et vos cartes de paiement, est dans votre archive, chiffrée avec votre phrase de passe. Marianne n’a pas de serveur et pas de compte en ligne : rien ne lui est envoyé.
 
 ## Ce que voit le moteur
 
-Le moteur, Claude Code, Codex ou Mistral Vibe, travaille avec votre compte chez son éditeur. Il reçoit le texte de vos conversations et ce dont il a besoin pour vous aider, mais jamais vos identifiants en clair : numéro de sécurité sociale, numéro fiscal, nom, adresse, IBAN… sont remplacés par des jetons, et remis à leur place seulement sur votre écran. Les conditions de l’éditeur s’appliquent à ce qu’il reçoit. Il ne reçoit jamais votre sensibilité politique, ni vos thèmes, ni vos sources d’information.
+Le moteur, Claude Code, Codex ou Mistral Vibe, travaille avec votre compte chez son éditeur. Il reçoit le texte de vos conversations et ce dont il a besoin pour vous aider, mais jamais vos identifiants en clair : numéro de sécurité sociale, numéro fiscal, nom, adresse, IBAN… sont remplacés par des jetons, et remis à leur place seulement sur votre écran. Les conditions de l’éditeur s’appliquent à ce qu’il reçoit. Il ne reçoit jamais votre sensibilité politique, ni vos thèmes, ni vos sources d’information. Ni le numéro de vos cartes, ni leur cryptogramme : il n’en connaît que le nom, la marque, les 4 derniers chiffres et l’expiration, et ces numéros sont masqués dans les pages qu’il lit.
 
 ## Ce qui va en ligne
 

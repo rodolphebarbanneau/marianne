@@ -30,6 +30,14 @@ Payer, signer, envoyer, déposer, déclarer, certifier et supprimer attendent to
 
 Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à droite (le bouton « navigateur ») ; glissez son bord gauche pour l’élargir ou le rétrécir, et un double-clic sur ce bord lui rend sa largeur par défaut. Elle vous demande votre accord avant d’aller en ligne, comme vous l’avez choisi ([Votre accord](#votre-accord)), et toujours avant de signer, payer ou envoyer ; refuser les cookies d’un site (« tout refuser »), elle le fait sans demander. Vous pouvez « prendre la main » à tout moment. Quand elle a besoin de vous (FranceConnect, un code reçu par SMS), elle ouvre le navigateur du dossier ; si vous êtes sur un autre écran, un message vous le dit, et le navigateur s’ouvre quand vous revenez au dossier. Le reste du temps, Réglages › Navigateur › « afficher le navigateur » décide : « quand Marianne le propose », « toujours », ou « jamais, il travaille hors de vue ». Ce navigateur oublie tout quand l’archive se verrouille.
 
+## Payer par carte
+
+Dans Réglages › Paiement, vous pouvez enregistrer vos cartes bancaires : un nom pour la reconnaître (« perso »), le titulaire, le numéro et la date d’expiration. Marianne vérifie le numéro quand vous le tapez, puis ne le montre plus que masqué (« Visa •••• 4242 · perso · 09/28 ») : pour le changer, vous le tapez de nouveau. Le cryptogramme n’est pas enregistré, sauf si vous cochez « enregistrer le cryptogramme » pour cette carte : c’est plus simple, mais qui ouvrirait votre archive aurait alors tout pour payer avec.
+
+Quand il faut payer sur un site qu’elle connaît (un site public de sa liste, ou un site où agit l’un de vos services officiels), ou sur la page de paiement où ce site vous envoie, Marianne vous montre une carte de paiement : le site, la page, la carte, le montant qu’elle a lu sur la page et ce qu’elle va remplir. Si le cryptogramme n’est pas enregistré, vous le tapez dans cette carte : il sert à ce paiement seulement. Après « approuver », elle remplit votre carte sur la page, puis appuie sur le bouton de paiement : ce même oui vaut pour ce seul clic, sur cette page, pendant quelques minutes. Si votre banque demande une confirmation (un code, son application), Marianne vous passe la main. Sur un autre site, ou quand elle ne sait pas dire quel champ est lequel, elle ne remplit rien : vous tapez votre carte vous-même.
+
+Ni le numéro ni le cryptogramme ne parviennent au moteur : il ne connaît de vos cartes que leur nom, leur marque, leurs 4 derniers chiffres et leur expiration. Une tâche planifiée ne paie jamais.
+
 ## Les pages
 
 - **Démarches** : les domaines de votre vie administrative (impôts, santé, logement, famille…), chacun avec sa page et ses démarches guidées, étape par étape.
@@ -81,7 +89,7 @@ Une tâche commence avec « + nouvelle tâche », depuis ce que vos services pro
 - **Un jour, pas une heure.** Une vérification se fait à la première ouverture de son jour, ou à la première qui suit. Elle ne se fait que Marianne ouverte et votre archive déverrouillée, elle attend que Marianne ait fini ce qu’elle fait pour vous, et elle s’efface dès que vous demandez quelque chose.
 - **Elle ne peut pas vous protéger si vous n’ouvrez pas Marianne.** Un péage se paie dans les 72 heures : quelques jours sans ouvrir Marianne, et un passage peut dépasser son délai.
 - **Elle utilise votre moteur.** Chaque vérification utilise votre moteur, comme le ferait une question, avec au plus 12 vérifications par jour. Un rappel ne coûte rien.
-- **Marianne ne paie jamais.** Une vérification peut seulement regarder et rendre compte : elle ne paie pas, ne signe pas, n’envoie rien, et rien de ce qu’elle lit sur une page ne peut l’y amener. Elle va sur les sites que vous lui avez donnés, pour cette vérification seulement, et sur aucun autre. Si un site veut un code, ou que quelque chose a besoin de vous, elle s’arrête et vous prévient.
+- **Une vérification ne paie jamais.** Elle peut seulement regarder et rendre compte : elle ne paie pas, ne signe pas, n’envoie rien, et rien de ce qu’elle lit sur une page ne peut l’y amener. Elle va sur les sites que vous lui avez donnés, pour cette vérification seulement, et sur aucun autre. Si un site veut un code, ou que quelque chose a besoin de vous, elle s’arrête et vous prévient.
 
 Quand une vérification ne trouve rien, le dossier se rendort, et sa conversation replie ces vérifications en une ligne : cliquez dessus pour les lire. Quand elle trouve quelque chose ou a besoin de vous, le dossier revient et une notification vous prévient, sans dire de quelle tâche il s’agit : un écran verrouillé peut l’afficher. Ce qui vous attend paraît aussi dans « à faire ».
 
@@ -91,7 +99,7 @@ Dans le dossier d’une tâche, « modifier la tâche » change son rythme ou la
 
 ## Votre profil
 
-Dans Réglages › Moi, vous pouvez renseigner votre identité, votre foyer et vos pièces. C’est facultatif : cela aide Marianne à préparer vos démarches. Voir [Vos données](privacy.md) pour ce que le moteur en voit.
+Dans Réglages › Moi, vous pouvez renseigner votre identité, votre foyer, vos pièces et vos cartes de paiement ([Payer par carte](#payer-par-carte)). C’est facultatif : cela aide Marianne à préparer vos démarches. Voir [Vos données](privacy.md) pour ce que le moteur en voit.
 
 Dans Réglages › Identité, vous pouvez aussi indiquer, si vous le souhaitez, les groupes politiques dont vous vous sentez proche, les thèmes qui comptent pour vous, et vos sources d’information. Votre sensibilité sert seulement à comparer : 3615 PARLEMENT vous dit si vos élus votent comme vos idées, sans rien trier ni cacher. Vos thèmes font remonter les titres et les scrutins qui en parlent. Vous choisissez quels services peuvent les lire, et voyez quand ils l’ont fait.
 

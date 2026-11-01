@@ -30,6 +30,14 @@ Paying, signing, sending, submitting, declaring, certifying and deleting always 
 
 Marianne opens the sites it needs in the folder's browser, on the right (the « navigateur », browser, button); drag its left edge to widen or narrow it, and double-click that edge to put its default width back. It asks for your approval before going online, as you chose ([Your approval](#your-approval)), and always before signing, paying or sending; refusing a site's cookies (« tout refuser »), it does without asking. You can take over (« prendre la main ») at any time. When it needs you (FranceConnect, a code received by text message), it opens the folder's browser; if you are on another screen, a message tells you, and the browser opens when you come back to the folder. The rest of the time, Réglages › Navigateur › « afficher le navigateur » (Settings › Browser › show the browser) decides: « quand Marianne le propose » (when Marianne offers), « toujours » (always), or « jamais, il travaille hors de vue » (never, it works out of sight). This browser forgets everything when the archive locks.
 
+## Paying by card
+
+In Réglages › Paiement (Settings › Payment), you can save your bank cards: a name to tell it apart (« perso »), the holder, the number and the expiry date. Marianne checks the number as you type it, then only ever shows it masked (« Visa •••• 4242 · perso · 09/28 »): to change it, you type it again. The security code (« cryptogramme ») isn't saved, unless you tick « enregistrer le cryptogramme » (save the security code) for that card: it's simpler, but whoever opened your archive would then have everything needed to pay with it.
+
+When something must be paid on a site it knows (a public site of its list, or a site where one of your official services acts), or on the payment page that site sends you to, Marianne shows you a payment card: the site, the page, the card, the amount it read on the page and what it will fill in. If the security code isn't saved, you type it in that card: it's used for that payment only. Once you « approuver » (approve), it fills your card in on the page, then presses the pay button: the same yes covers that one click, on that page, for a few minutes. If your bank asks for a confirmation (a code, its app), Marianne hands over to you. On another site, or when it can't tell which field is which, it fills nothing: you type your card yourself.
+
+Neither the number nor the security code reaches the engine: all it knows of your cards is their name, brand, last 4 digits and expiry. A planned task never pays.
+
 ## The pages
 
 - **Démarches** (formalities): the areas of your administrative life (taxes, health, housing, family…), each with its own page and its guided formalities, step by step.
@@ -81,7 +89,7 @@ A task starts from « + nouvelle tâche » (new task), from what your services p
 - **A day, not a time.** A check runs at the first opening of its day, or the first one after it. It only runs while Marianne is open and your archive unlocked, it waits for Marianne to finish what it's doing for you, and it gives way as soon as you ask something.
 - **It can't protect you if you don't open Marianne.** A toll must be paid within 72 hours: a few days without opening Marianne, and a passage can go past its deadline.
 - **It spends your engine.** Each check uses your engine, as a question would, with at most 12 checks a day. A reminder costs nothing.
-- **Marianne never pays.** A check can only look and report: it doesn't pay, sign or send, and nothing it reads on a page can make it. It reaches the sites you gave it, for that check only, and no other. If a site wants a code, or anything else needs you, it stops and tells you.
+- **A check never pays.** It can only look and report: it doesn't pay, sign or send, and nothing it reads on a page can make it. It reaches the sites you gave it, for that check only, and no other. If a site wants a code, or anything else needs you, it stops and tells you.
 
 When a check finds nothing, the folder goes back to sleep, and its conversation folds these checks into one line: click it to read them. When it finds something or needs you, the folder comes back and a notification tells you, without saying which task: a locked screen may show it. What waits for you also shows in « à faire ».
 
@@ -91,7 +99,7 @@ In a task's folder, « modifier la tâche » (edit the task) changes its rhythm 
 
 ## Your profile
 
-In Réglages › Moi (Settings › Me), you can fill in your identity, your household and your documents. It's optional: it helps Marianne prepare your formalities. See [Your data](privacy.md) for what the engine sees of it.
+In Réglages › Moi (Settings › Me), you can fill in your identity, your household, your documents and your payment cards ([Paying by card](#paying-by-card)). It's optional: it helps Marianne prepare your formalities. See [Your data](privacy.md) for what the engine sees of it.
 
 In Réglages › Identité, you may also say which political groups you feel close to, which themes matter to you, and your news sources, if you wish. Your leaning only serves to compare: 3615 PARLEMENT tells you whether your representatives vote as your ideas, without sorting or hiding anything. Your themes bring forward the headlines and the ballots about them. You choose which services may read them, and see when they did.
 

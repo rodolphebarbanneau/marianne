@@ -99,6 +99,7 @@ The manifest is the `marianne` field of the service's `package.json`. `readManif
   - At most `MAX_SITES` (8), each one site: never a whole hosting service or a public suffix (github.io, gouv.fr). The SDK checks the names; Marianne refuses the others by the Public Suffix List (`readManifest`'s `sharedHost`), and leaves the service out.
   - « Avant d’ajouter », the Services page's table (« Marianne agit sur »), Marianne's card when she proposes the service, the `services` tool and the engines' instructions (« acts on ») show them.
   - While the service is on, they count among the sites Marianne knows: at « autonomie », she goes there and fills forms without asking, as on the content's public sites. Paying, signing and sending still take the user's yes on a card.
+  - They are where Marianne pays by card with the user's saved card (`pay_by_card`), and the payment providers' pages they send the browser to ([design.md](design.md#tools-cards-and-the-browser)): declare the operator's own pages, never the provider's.
   - Built-in services only: a community service that declares them is refused when it is added.
 
 **What it reads of the user**

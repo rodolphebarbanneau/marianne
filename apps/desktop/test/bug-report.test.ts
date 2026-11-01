@@ -41,6 +41,13 @@ describe('a bug report’s scrubbing', () => {
     expect(scrub(text, [], windows)).toBe(['mail <email>', 'tel <phone> or <phone>', 'iban <iban>', 'plate <plate>', 'case <number>'].join('\n'))
   })
 
+  it('takes out card numbers: those stored, however written, and any in groups', () => {
+    const stored = ['4242424242424242']
+    expect(scrub('paid with 4242.4242.4242.4242 then 4242424242424242', [], windows, stored)).toBe('paid with <card> then <card>')
+    expect(scrub('card 5555-5555-5555-4444 refused', [], windows)).toBe('card <card> refused')
+    expect(scrub('card 5555 5555 5555 4444 refused', [], windows)).toBe('card <number> refused')
+  })
+
   it('keeps an address’s site, not its path or its query', () => {
     expect(scrub('GET https://www.impots.gouv.fr/dossier/4567?id=12 failed', [], windows)).toBe('GET https://www.impots.gouv.fr/… failed')
     expect(scrub('see https://www.service-public.fr', [], windows)).toBe('see https://www.service-public.fr')

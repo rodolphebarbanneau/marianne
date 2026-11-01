@@ -2,11 +2,11 @@
 
 ## On your computer
 
-Everything you give Marianne, your folders, your documents and your profile, is in your archive, encrypted with your passphrase. Marianne has no server and no online account: nothing is sent to it.
+Everything you give Marianne, your folders, your documents, your profile and your payment cards, is in your archive, encrypted with your passphrase. Marianne has no server and no online account: nothing is sent to it.
 
 ## What the engine sees
 
-The engine, Claude Code, Codex or Mistral Vibe, works with your account at its maker. It receives the text of your conversations and what it needs to help you, but never your identifiers in clear: social security number, tax number, name, address, IBAN… are replaced by tokens, and put back in place only on your screen. The maker's terms apply to what it receives. It never receives your political leaning, your themes or your news sources.
+The engine, Claude Code, Codex or Mistral Vibe, works with your account at its maker. It receives the text of your conversations and what it needs to help you, but never your identifiers in clear: social security number, tax number, name, address, IBAN… are replaced by tokens, and put back in place only on your screen. The maker's terms apply to what it receives. It never receives your political leaning, your themes or your news sources. Nor your cards' numbers or security codes: all it knows of them is their name, brand, last 4 digits and expiry, and those numbers are masked in the pages it reads.
 
 ## What goes online
 

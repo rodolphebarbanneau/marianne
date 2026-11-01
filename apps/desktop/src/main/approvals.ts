@@ -8,8 +8,9 @@ import { tasks } from './tasks'
 
 /**
  * Cards the engine puts in a folder's conversation: things that need the user's yes (a change
- * to the profile, a form to fill, a consequential step online, a service to add) — the tool call
- * waits for the answer — links to a settings page, and progress of a task in the built-in browser.
+ * to the profile, a form to fill, a consequential step online, a payment by card, a service to
+ * add) — the tool call waits for the answer — links to a settings page, and progress of a task in
+ * the built-in browser.
  * The chat runner inserts them into the answer being written; the user answers from the window.
  *
  * Whether an action needs a card is the approval policy's to say (shared/approvals.ts): what the
@@ -28,6 +29,8 @@ interface Pending {
   /** The standing permission the card offers with « toujours… »: the one kept if the user chooses it. */
   offer: Offer | null
   resolve: (d: Decision) => void
+  /** A payment card's security code, typed in it: handed to the tool that asked, never kept here. */
+  onCvv?: (cvv: string) => void
   timer: NodeJS.Timeout
   started: number
 }
@@ -52,15 +55,15 @@ class Approvals extends EventEmitter {
    * Whether an action may go, as the approval policy decides from the account's level, its standing
    * permissions and the floor. Allowed ahead, it goes at once and shows as a line (`ahead`); otherwise
    * a card asks, offering « toujours… » when the action can be allowed ahead, and `onCard` is told
-   * before it shows; `until` settles it as the user's answer would. A planned task's run (`run`, or
-   * the folder's) gets neither: no. Neither does a line that can't be shown: nothing goes out of the
-   * user's sight.
+   * before it shows; `until` settles it as the user's answer would; `onCvv` gets the security code a
+   * payment card asks for (`askCvv`), typed with the yes. A planned task's run (`run`, or the folder's)
+   * gets neither: no. Neither does a line that can't be shown: nothing goes out of the user's sight.
    */
   async ask(
     folderId: string | undefined,
     request: ApprovalRequest,
     card: Omit<Card, 'action' | 'always' | 'given'>,
-    options: { run?: boolean; onCard?: () => void; until?: Promise<Decision> } = {}
+    options: { run?: boolean; onCard?: () => void; until?: Promise<Decision>; onCvv?: (cvv: string) => void } = {}
   ): Promise<{ decision: Decision; ahead: boolean }> {
     const run = !!options.run || !!tasks.runningIn(folderId)
     const verdict = decide(request, accounts.settings().approvals, run)
@@ -82,7 +85,8 @@ class Approvals extends EventEmitter {
           folderId,
           { ...card, action: request.action, ...(offer ? { always: alwaysLabel(offer) } : {}) },
           offer,
-          options.until
+          options.until,
+          options.onCvv
         )
         return { decision, ahead: false }
       }
@@ -94,25 +98,32 @@ class Approvals extends EventEmitter {
    * gives. `until`: what the user does elsewhere settles it too (the service a card proposes, added
    * in « avant d’ajouter »); whichever comes first, once.
    */
-  request(folderId: string | undefined, card: Card, offer: Offer | null = null, until?: Promise<Decision>): Promise<Decision> {
+  request(folderId: string | undefined, card: Card, offer: Offer | null = null, until?: Promise<Decision>, onCvv?: (cvv: string) => void): Promise<Decision> {
     // Nobody watches a planned task's run: no card shows there. Its tools refuse before asking; this holds if one didn't.
     if (!folderId || !this.canShow(folderId) || tasks.runningIn(folderId)) return Promise.resolve('expired')
     const part: ApprovalPart = { ...card, type: 'approval', id: randomUUID(), status: 'pending' }
     return new Promise((resolve) => {
       const timer = setTimeout(() => this.settle(part.id, 'expired'), WAIT_MS)
-      this.pending.set(part.id, { folderId, part, offer, resolve, timer, started: Date.now() })
+      this.pending.set(part.id, { folderId, part, offer, resolve, onCvv, timer, started: Date.now() })
       this.emit('part', folderId, part)
       void until?.then((decision) => this.settle(part.id, decision))
     })
   }
 
-  respond(id: string, answer: ApprovalAnswer): void {
+  /**
+   * The user's answer to a card. `cvv`: the security code typed in a payment card that asks for it,
+   * handed to the tool waiting on it with the yes, and nowhere else: not in the card, the conversation
+   * or the log.
+   */
+  respond(id: string, answer: ApprovalAnswer, cvv?: string): void {
     const p = this.pending.get(id)
     if (!p) return
     // The standing permission kept is the one the card offered, never one the window would name.
     const kept = answer === 'always' && !!p.offer
     if (kept) this.keep(p.offer!)
-    this.settle(id, answer === 'approve' || answer === 'always' ? 'accepted' : 'refused', kept)
+    const yes = answer === 'approve' || answer === 'always'
+    if (yes && p.part.askCvv && typeof cvv === 'string') p.onCvv?.(cvv)
+    this.settle(id, yes ? 'accepted' : 'refused', kept)
   }
 
   /** A turn ended or was cancelled: its open cards expire. */

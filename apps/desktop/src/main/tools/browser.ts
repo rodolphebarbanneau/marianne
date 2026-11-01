@@ -1,20 +1,23 @@
 import { siteReady } from '@marianne/profile'
 import * as z from 'zod'
+import { cardTitle, cvvProblem, expired, parseExpiry } from '../../shared/cards'
 import type { LoginKind } from '../../shared/sites'
-import type { BrowserState, PlannedTask } from '../../shared/types'
+import type { BrowserState, PaymentCard, PlannedTask } from '../../shared/types'
 import { accounts } from '../account'
 import { approvals, type Decision } from '../approvals'
 import { browser, HumanControlError, type PageElement, type PageView } from '../browser'
+import { cardFills, frameMayReceive, paymentRoute, planCard, type CardFieldKind, type CardPlan } from '../browser/payment'
 import type { FormField } from '../browser/scripts'
+import { cards } from '../cards'
 import { content } from '../content'
-import { siteOf } from '../../shared/hosts'
+import { hostOf, siteOf } from '../../shared/hosts'
 import { services } from '../host'
 import { keychain } from '../keychain'
 import { profile } from '../profile/store'
 import { session } from '../session'
 import { siteAllowed, tasks } from '../tasks'
 import { callingFolder } from './folder'
-import { consequential, Consents, knownSites, reading } from './online'
+import { consequential, Consents, knownSites, PAY_GRANT_MS, PayGrants, reading } from './online'
 import { clip, DOMAIN_IDS, fold, plural, tool, TOKEN, ToolError, type ToolContext } from './tool'
 
 /**
@@ -22,10 +25,12 @@ import { clip, DOMAIN_IDS, fold, plural, tool, TOKEN, ToolError, type ToolContex
  * agreed to go online (on a card, or ahead: main/approvals.ts), reads pages, clicks and types;
  * anything that commits the user waits for their yes on a card, and they can take control at any
  * time (CAPTCHA, code received by SMS, FranceConnect). Passwords never reach the engine: sign-in
- * comes from the keychain.
+ * comes from the keychain. Nor do cards: paying by card fills the user's saved card after their yes.
  */
 
 const consents = new Consents()
+/** The pay click each folder's approved payment covers (pay_by_card, click). */
+const payGrants = new PayGrants()
 /** The page each folder read last: clicks and typing act on its elements. */
 const pages = new Map<string, { url: string; elements: Map<string, PageElement> }>()
 /** The form each folder read last: fills apply to that page only. */
@@ -34,6 +39,7 @@ const forms = new Map<string, { url: string; fields: FormField[] }>()
 // What the user allowed and what Marianne read go away with the session.
 session.on('locked', () => {
   consents.clear()
+  payGrants.clear()
   pages.clear()
   forms.clear()
 })
@@ -138,7 +144,8 @@ function remember(folderId: string, view: PageView): string {
   pages.set(folderId, { url: browser.currentUrl(), elements: new Map(view.elements.map((e) => [e.id, e])) })
   const elements = view.elements.map((e) => {
     const type = e.type && e.type !== e.role ? ` (${e.type})` : ''
-    return `- ${e.id} · ${e.role}${type} · « ${e.label || 'no label'} »${e.secret ? ' · password: sign_in fills it' : ''}`
+    const secret = e.card ? ' · card field: pay_by_card fills it' : e.secret ? ' · password: sign_in fills it' : ''
+    return `- ${e.id} · ${e.role}${type} · « ${e.label || 'no label'} »${secret}`
   })
   return `# ${view.title || '(untitled)'}\n${view.url}\n\n${clip(view.text.trim(), 20_000)}\n\n## Elements\n\n${elements.join('\n') || '(none)'}`
 }
@@ -165,6 +172,45 @@ function handedBack(timeoutMs: number): Promise<'back' | 'locked' | 'timeout'> {
 }
 
 const LOGIN: Record<LoginKind, string> = { franceconnect: 'FranceConnect', account: 'own account', none: 'no sign-in' }
+
+/** The saved card to pay with: the one named (its label, or its last four digits), or the only one that hasn't expired; otherwise a ToolError that lists them. */
+function pickCard(wanted: string | undefined): PaymentCard {
+  const all = cards.list()
+  if (!all.length)
+    throw new ToolError(
+      'No card is saved. Propose adding one (request_setup, target payment), or let the user type theirs in the page (hand_over). Never ask for card details in the conversation.'
+    )
+  const listing = all.map((c) => `- ${cardTitle(c)}${expired(c.expiry) ? ' (expired)' : ''}`).join('\n')
+  const name = wanted?.trim() ?? ''
+  const digits = name.replace(/\D/g, '')
+  const found = name ? all.filter((c) => fold(c.label) === fold(name) || (digits.length === 4 && digits === c.last4)) : all.filter((c) => !expired(c.expiry))
+  if (found.length !== 1) {
+    const why = name
+      ? found.length
+        ? `Several saved cards match « ${name} »`
+        : `No saved card « ${name} »`
+      : found.length
+        ? 'Several saved cards'
+        : 'Every saved card has expired'
+    throw new ToolError(`${why}. The user's cards (give card: its label or its last four digits):\n${listing}`)
+  }
+  if (expired(found[0].expiry)) throw new ToolError(`That card has expired: use another, or let the user type theirs (hand_over).\n${listing}`)
+  return found[0]
+}
+
+/** The fields a plan fills, in French for the card and in English for the engine. */
+const FIELD_WORDS: Record<CardFieldKind, [string, string]> = {
+  number: ['numéro', 'card number'],
+  expiry: ['date d’expiration', 'expiry'],
+  month: ['date d’expiration', 'expiry'],
+  year: ['date d’expiration', 'expiry'],
+  holder: ['titulaire', 'holder'],
+  cvv: ['cryptogramme', 'security code']
+}
+function filledWords(plan: CardPlan, language: 0 | 1): string {
+  const words = [...new Set(plan.targets.map((t) => FIELD_WORDS[t.kind][language]))]
+  return language ? words.join(', ').replace(/, ([^,]+)$/, ' and $1') : words.join(', ')
+}
 
 const describeField = (f: FormField) =>
   `- ${f.id} · ${f.label || '(no label)'} · ${f.type}${f.required ? ' · required' : ''}${f.value ? ` · current « ${f.value.slice(0, 60)} »` : ''}${f.options?.length ? ` · options: ${f.options.slice(0, 15).join(' | ')}` : ''}`
@@ -269,26 +315,31 @@ export const browserTools = [
       const read = element(folderId, url, id)
       const label = (await act(() => browser.elementLabel(id))) || read.label
       const run = runOf(ctx)
+      let paid = false
       if (run) {
         if (flagged || !reading({ ...read, label }, purpose)) throw beyondRun(`click « ${label || id} »`)
       } else if (flagged || consequential({ ...read, label }, purpose)) {
+        // The pay click that follows a payment the user approved on this very page (pay_by_card) goes on that yes, once.
+        paid = payGrants.take(folderId, url, browser.pageVersion(), label)
         const shown = label || 'cet élément'
         // The floor: a card for this one click, at every level, whatever the user allowed ahead.
-        const { decision } = await approvals.ask(
-          folderId,
-          { action: 'commit' },
-          {
-            kind: 'online',
-            title: `Cliquer sur « ${shown} »`,
-            reason: purpose,
-            fields: [
-              { label: 'site', value: siteOf(url) },
-              { label: 'page', value: title || url },
-              { label: 'élément', value: shown }
-            ]
-          },
-          { onCard: () => browser.setWaiting(`cliquer sur « ${shown} »`) }
-        )
+        const { decision } = paid
+          ? { decision: 'accepted' as const }
+          : await approvals.ask(
+              folderId,
+              { action: 'commit' },
+              {
+                kind: 'online',
+                title: `Cliquer sur « ${shown} »`,
+                reason: purpose,
+                fields: [
+                  { label: 'site', value: siteOf(url) },
+                  { label: 'page', value: title || url },
+                  { label: 'élément', value: shown }
+                ]
+              },
+              { onCard: () => browser.setWaiting(`cliquer sur « ${shown} »`) }
+            )
         browser.setWaiting('')
         if (decision !== 'accepted') throw refusal(decision, 'nothing was clicked')
         // The page may have changed while the card waited: click only what the user saw.
@@ -310,7 +361,8 @@ export const browserTools = [
           throw new ToolError(`The click led to ${siteOf(after.url)}. ${(err as Error).message} Went back to the previous page.`)
         }
       }
-      return `Clicked « ${label || id} ». Now on ${after.url}${after.title ? ` (« ${after.title} »)` : ''}: read_page to see it.`
+      const covered = paid ? ', as part of the payment the user approved' : ''
+      return `Clicked « ${label || id} »${covered}. Now on ${after.url}${after.title ? ` (« ${after.title} »)` : ''}: read_page to see it.`
     }
   }),
 
@@ -324,6 +376,8 @@ export const browserTools = [
       const { folderId, url } = await current(ctx)
       const read = element(folderId, url, id)
       if (read.secret) throw new ToolError('Never type a password: sign_in fills the login from the keychain, or hand_over lets the user type it.')
+      if (read.card)
+        throw new ToolError('Never type card details: pay_by_card fills the card fields from the user’s saved card, or hand_over lets them type theirs.')
       if (read.role === 'link' || read.role === 'button') throw new ToolError(`${id} is a ${read.role}, not a field: use click.`)
       if (TOKEN.test(value)) throw new ToolError('Tokens with no value in the profile: use request_setup so the user fills them in.')
       // In a run, the one identifier the user agreed to on the sheet, exactly: its entity's. Nothing
@@ -417,7 +471,7 @@ export const browserTools = [
     title: 'Form reading',
     readOnly: true,
     description:
-      'The fields of the form on the page (f1, f2…): label, type, options and current values. Passwords and files are left out. Call it before fill_form, and again when the page changes.',
+      'The fields of the form on the page (f1, f2…): label, type, options and current values. Passwords, a bank card’s fields (pay_by_card fills them) and files are left out. Call it before fill_form, and again when the page changes.',
     input: {},
     run: async (_args, ctx) => {
       const { folderId, url } = await current(ctx)
@@ -462,6 +516,93 @@ export const browserTools = [
       if (browser.currentUrl() !== read.url) throw new ToolError('The page changed since the form was read: nothing was filled. Read it again.')
       const { filled, missing } = await act(() => browser.fillForm(Object.fromEntries(fields.map((f) => [f.id, f.value]))))
       return `Filled ${plural(filled.length, 'field')}${missing.length ? `; not filled (option not found or field gone): ${missing.join(', ')}` : ''}. Nothing was submitted: once the user has checked it, submit it with click (they approve it), or let them send it.`
+    }
+  }),
+
+  tool({
+    name: 'pay_by_card',
+    title: 'Card payment',
+    description:
+      'Pays by card on this folder’s page with one of the user’s saved cards (Réglages › Paiement). It finds the card fields, in the page and in its payment provider’s frames, and asks the user’s yes on a card that shows the site, the page, the card and the amount you read on the page (they type the security code there when it isn’t saved); then it fills the number, expiry, holder and code. The card’s details never reach you. Only on a site Marianne knows (the public sites, the sites her services that are on act on), or a payment provider’s page one of them sent the browser to; elsewhere, let the user pay (hand_over). That yes also covers the one pay click that follows on this page (click). Without card, it takes the only saved card, or lists them.',
+    input: {
+      card: z.string().max(80).optional().describe('The saved card to use: its label or its last four digits, as this tool lists them'),
+      amount: z.string().min(1).max(60).describe('The amount to pay as the page shows it, e.g. « 12,40 € »: the user sees it as read on the page'),
+      reason: z.string().max(300).describe('What is paid, in one sentence for the user (in French)')
+    },
+    run: async ({ card: wanted, amount, reason }, ctx) => {
+      // Nobody watches a run, and a run never pays: the gate keeps this tool from runs (tasks.ts); this holds if it didn't.
+      if (ctx.run) throw beyondRun('pay')
+      const { folderId, url, title } = await current(ctx)
+      const route = paymentRoute(url, browser.arrival(), (site) => known().has(site))
+      if (!route)
+        throw new ToolError(
+          `${siteOf(url)} is not a site where Marianne pays by card: only the sites she knows (the public sites, the sites her services that are on act on), or a payment provider’s page one of them sent the browser to. Let the user pay themselves: hand_over.`
+        )
+      const card = pickCard(wanted)
+      const expiry = parseExpiry(card.expiry)!
+      const version = browser.pageVersion()
+      const frames = await act(() => browser.cardFields((origins) => frameMayReceive(origins, url)))
+      const plan = planCard(frames, { ...expiry, holder: card.holder, digits: cards.secret(card.id)?.number.length ?? 0 })
+      if (typeof plan === 'string')
+        throw new ToolError(
+          `Marianne can’t fill a card on this page: ${plan}. If the page asks for the card at a later step, go on to it and call this tool again; otherwise let the user type their card (hand_over).`
+        )
+
+      // What the user approves: where the card goes (the provider whose page or frame takes it), the card, the amount as read.
+      const via = route.provider ?? plan.via
+      const where = route.provider ? hostOf(url) : hostOf(plan.targets.find((t) => t.secret === 'number')!.origins.at(-1)!)
+      const site = !via ? route.site : route.provider ? `via ${via.name} pour ${route.site} · ${where}` : `${route.site} · via ${via.name} · ${where}`
+      const shown = `Payer par carte ${route.provider ? 'pour' : 'sur'} ${route.site}`
+      // The security code typed in the card: kept here until the fields are filled, never in the card nor the conversation.
+      let typed = ''
+      const { decision } = await approvals.ask(
+        folderId,
+        { action: 'commit' },
+        {
+          kind: 'payment',
+          title: shown,
+          reason,
+          fields: [
+            { label: 'site', value: site },
+            { label: 'page', value: title || url },
+            { label: 'carte', value: cardTitle(card) },
+            { label: 'montant lu sur la page', value: amount },
+            { label: 'remplit', value: filledWords(plan, 0) },
+            ...(plan.pay ? [{ label: 'puis', value: `appuie sur « ${plan.pay.label} » dans le formulaire de paiement` }] : [])
+          ],
+          ...(plan.cvv && !card.cvvStored ? { askCvv: true } : {})
+        },
+        { onCard: () => browser.setWaiting(shown.toLowerCase()), onCvv: (cvv) => (typed = cvv) }
+      )
+      browser.setWaiting('')
+      if (decision !== 'accepted') throw refusal(decision, 'nothing was filled')
+      // The page may have changed while the card waited: fill only the one the user saw.
+      if (browser.currentUrl() !== url || browser.pageVersion() !== version)
+        throw new ToolError('The page changed while the user was deciding: nothing was filled. Read it again.')
+      const secret = cards.secret(card.id)
+      if (!secret) throw new ToolError('The card was removed meanwhile: nothing was filled.')
+      const cvv = plan.cvv ? (card.cvvStored ? secret.cvv : typed) : ''
+      typed = ''
+      if (plan.cvv && cvvProblem(cvv, card.brand))
+        throw new ToolError('No valid security code came with the user’s yes: nothing was filled. Ask them whether to try again.')
+      const whole = await act(() => browser.fillCard(cardFills(plan, { number: secret.number, cvv })))
+      if (!whole)
+        throw new ToolError(
+          'The card form changed while it was being filled: nothing is left filled. Read the page again, or let the user type their card (hand_over).'
+        )
+
+      const filled = `Filled the ${filledWords(plan, 1)} of ${cardTitle(card)} on ${route.site}`
+      const confirm = 'If the bank then asks for a confirmation (3-D Secure: a code, its app), use hand_over. Tell the user once the site confirms the payment.'
+      if (plan.pay) {
+        // The pay button lives in the provider's frame, where click can't reach: pressed here, on the same yes, once the form had a moment to check the card.
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        const pressed = browser.pageVersion() === version && (await act(() => browser.pressPay(plan.pay!)))
+        if (!pressed)
+          return `${filled}, but couldn’t press « ${plan.pay.label} » in the payment form: ask the user to press it themselves (hand_over). ${confirm}`
+        return `${filled} and pressed « ${plan.pay.label} » in the payment form, as the user approved. Read the page (read_page). ${confirm}`
+      }
+      payGrants.give(folderId, url, browser.pageVersion())
+      return `${filled}. Nothing is paid yet: read the page (read_page) and click its pay button (click): the user’s yes covers that one click, on this page, for ${PAY_GRANT_MS / 60_000} minutes. ${confirm}`
     }
   })
 ]

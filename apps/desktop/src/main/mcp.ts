@@ -5,6 +5,7 @@ import { redact, resolveDeep } from '@marianne/profile'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { app } from 'electron'
+import { maskCards } from './cards'
 import { log } from './log'
 import { MCP_SERVER_NAME } from './mcp-name'
 import { profile } from './profile/store'
@@ -18,7 +19,8 @@ import { ToolError, type Tool, type ToolContext } from './tools/tool'
  * carry a token generated at each launch: other programs on the computer can't use it.
  *
  * It is also where the privacy boundary holds: [[tokens]] in tool arguments are replaced by the
- * user's values here, and every result is scrubbed of them before it goes back to the engine.
+ * user's values here, and every result is scrubbed of them before it goes back to the engine, and
+ * of the stored card numbers too, whatever a tool (a service's) let through.
  */
 
 export { MCP_SERVER_NAME }
@@ -68,7 +70,7 @@ function buildServer(ctx: ToolContext, tools: 'all' | 'none'): McpServer {
 
 /**
  * One call of a tool, as an engine makes it: the planned task's run gate, [[tokens]] resolved in
- * its arguments (refused for a service's), its result scrubbed of them.
+ * its arguments (refused for a service's), its result scrubbed of them and of card numbers.
  */
 export async function callTool(t: Tool, args: unknown, ctx: ToolContext): Promise<{ content: { type: 'text'; text: string }[]; isError?: boolean }> {
   const started = Date.now()
@@ -89,10 +91,10 @@ export async function callTool(t: Tool, args: unknown, ctx: ToolContext): Promis
       throw new ToolError(`A planned task's run cannot send the user's identifiers through ${t.name}. Stop here and report "waiting" with task_report.`)
     const text = await t.run(resolved as never, { ...ctx, run, resolved: replaced })
     log.info(`tool ${t.name} ok in ${Date.now() - started}ms`)
-    return { content: [{ type: 'text' as const, text: redact(text, profile.tokens()) }] }
+    return { content: [{ type: 'text' as const, text: maskCards(redact(text, profile.tokens())) }] }
   } catch (err) {
     // Messages may quote the resolved arguments: scrubbed for the log as for the engine.
-    const message = redact((err as Error).message ?? String(err), tokens)
+    const message = maskCards(redact((err as Error).message ?? String(err), tokens))
     // By name: a service's ToolError may come from its own copy of the SDK.
     if ((err as Error).name === 'ToolError') log.info(`tool ${t.name}: ${message.slice(0, 120)}`)
     else log.warn(`tool ${t.name} failed: ${message}`)

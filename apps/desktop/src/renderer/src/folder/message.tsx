@@ -5,7 +5,7 @@ import type { ServiceState } from '@marianne/sdk'
 import type { ApprovalPart, Attachment, ChatMessage, ProgressPart, SetupPart, ToolPart } from '@shared/types'
 import { useApp } from '../app/context'
 import { Markdown, resolveTokens } from '../components/markdown'
-import { Spinner } from '../components/ui'
+import { Field, Spinner } from '../components/ui'
 import { api } from '../lib/api'
 import { clock } from '../lib/format'
 import { useTokens } from '../lib/tokens'
@@ -38,6 +38,7 @@ const TOOL_LABELS: Record<string, string> = {
   service_propose: 'proposition de service',
   read_form: 'lecture du formulaire',
   fill_form: 'remplissage du formulaire',
+  pay_by_card: 'paiement par carte',
   search_service_public: 'service public · recherche',
   read_service_public: 'service public · fiche',
   find_office: 'annuaire',
@@ -103,14 +104,21 @@ function ToolLine({ part }: { part: ToolPart }) {
 /**
  * Something that needs the user's yes: the exact values, and the decision: « approuver », the
  * standing permission the card offers (« toujours… »), « refuser ». A step that commits the user
- * offers no « toujours » and says so.
+ * offers no « toujours » and says so. A payment may ask for the card's security code: typed here,
+ * it goes to the main process with the yes, and stays nowhere (not in the card, not in the window).
  */
 function ApprovalCard({ part }: { part: ApprovalPart }) {
   const { setBrowserOpen } = useApp()
+  const [cvv, setCvv] = useState('')
   const pending = part.status === 'pending'
   const sending = part.kind === 'service'
+  const asksCvv = pending && part.kind === 'payment' && !!part.askCvv
+  const answer = (reply: 'approve' | 'always' | 'refuse') => {
+    api.respondApproval(part.id, reply, asksCvv && reply !== 'refuse' ? cvv : undefined)
+    setCvv('')
+  }
   const status = { pending: '', accepted: sending ? 'envoyé' : 'accepté', refused: 'refusé', expired: 'sans suite' }[part.status]
-  const kind = { proposal: 'proposition', form: 'formulaire', online: 'votre accord', service: 'votre accord', add: 'service' }[part.kind]
+  const kind = { proposal: 'proposition', form: 'formulaire', online: 'votre accord', service: 'votre accord', add: 'service', payment: 'paiement' }[part.kind]
   return (
     <div className={`inline-card${pending ? ' ask' : ''}`}>
       <span className="h">
@@ -132,20 +140,35 @@ function ApprovalCard({ part }: { part: ApprovalPart }) {
             </tbody>
           </table>
         )}
+        {asksCvv && (
+          <Field
+            label="cryptogramme"
+            hint="les 3 chiffres au dos de la carte (4 au recto d’une American Express), pour ce paiement seulement : jamais enregistré, jamais envoyé au moteur"
+          >
+            <input
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={4}
+              value={cvv}
+              onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+            />
+          </Field>
+        )}
         {pending && (
           <div className="acts">
-            <button className="btn primary" onClick={() => api.respondApproval(part.id, 'approve')}>
+            <button className="btn primary" disabled={asksCvv && !/^\d{3,4}$/.test(cvv)} onClick={() => answer('approve')}>
               {sending ? 'envoyer' : 'approuver'}
             </button>
             {part.always && (
-              <button className="btn" onClick={() => api.respondApproval(part.id, 'always')}>
+              <button className="btn" onClick={() => answer('always')}>
                 {part.always}
               </button>
             )}
-            <button className="btn" onClick={() => api.respondApproval(part.id, 'refuse')}>
+            <button className="btn" onClick={() => answer('refuse')}>
               refuser
             </button>
-            {(part.kind === 'form' || part.kind === 'online') && (
+            {(part.kind === 'form' || part.kind === 'online' || part.kind === 'payment') && (
               <button className="btn" onClick={() => setBrowserOpen(true)}>
                 voir la page ◨
               </button>
