@@ -117,7 +117,8 @@ describe('a community service’s deadlines, for the engines', () => {
         opened: {},
         reviewed: { bonjour: { sha256: pkg.sha256, version: '1.0.0' } }
       },
-      browser: { askOnline: 'folder', show: 'always' }
+      approvals: { level: 'balanced', rules: [] },
+      browser: { show: 'always' }
     } as never)
     vi.spyOn(accounts, 'updateSettings').mockImplementation(() => undefined as never)
     services.start({

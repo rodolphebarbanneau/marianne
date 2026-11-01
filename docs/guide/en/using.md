@@ -10,9 +10,19 @@ Ongoing folders are in the left column, with « chercher » (search) at the top 
 
 Anything that changes your profile, fills in a form, signs, pays or sends goes through you first: Marianne shows it to you on a card, and waits for your approval.
 
+In Réglages › Autorisations (Settings › Permissions), you choose what it may do without asking:
+
+- **« tout demander »** (ask everything): each new site of each folder, each form and each save to your profile is asked.
+- **« équilibré »** (balanced, to begin with): going online is asked once per folder, and each form and each save too.
+- **« autonomie »** (autonomy): Marianne goes without asking to the sites it knows (the public sites of its list), fills in forms there and saves your deadlines; other sites are asked once per folder.
+
+On a card, between « approuver » (approve) and « refuser » (refuse), « toujours pour sanef.com » (always for sanef.com), « toujours pour les formulaires de sanef.com » (always for sanef.com's forms) or « toujours pour les échéances » (always for deadlines) spares you the same question the next times, in all your folders. These permissions are in Réglages › Autorisations, with the day you gave them, and « retirer » (remove) to take them back. What Marianne does this way stays written in the conversation, on an « autorisé d’office » (allowed ahead) line, with the values of the form or the deadline.
+
+Paying, signing, sending, submitting, declaring, certifying and deleting always wait for your yes, on a card, every time, whatever you chose. Only deadlines can be saved to your profile without asking: your identity, your numbers, your address, your accounts, your ID documents, your household and your entities are asked every time. Planned tasks never use these permissions.
+
 ## The built-in browser
 
-Marianne opens the sites it needs in the folder's browser, on the right (the « navigateur », browser, button); drag its left edge to widen or narrow it, and double-click that edge to put its default width back. It asks for your approval before going online, and always before signing, paying or sending. You can take over (« prendre la main ») at any time. When it needs you (FranceConnect, a code received by text message), it opens the folder's browser; if you are on another screen, a message tells you, and the browser opens when you come back to the folder. The rest of the time, Réglages › Navigateur › « afficher le navigateur » (Settings › Browser › show the browser) decides: « quand Marianne le propose » (when Marianne offers), « toujours » (always), or « jamais, il travaille hors de vue » (never, it works out of sight). This browser forgets everything when the archive locks.
+Marianne opens the sites it needs in the folder's browser, on the right (the « navigateur », browser, button); drag its left edge to widen or narrow it, and double-click that edge to put its default width back. It asks for your approval before going online, as you chose ([Your approval](#your-approval)), and always before signing, paying or sending; refusing a site's cookies (« tout refuser »), it does without asking. You can take over (« prendre la main ») at any time. When it needs you (FranceConnect, a code received by text message), it opens the folder's browser; if you are on another screen, a message tells you, and the browser opens when you come back to the folder. The rest of the time, Réglages › Navigateur › « afficher le navigateur » (Settings › Browser › show the browser) decides: « quand Marianne le propose » (when Marianne offers), « toujours » (always), or « jamais, il travaille hors de vue » (never, it works out of sight). This browser forgets everything when the archive locks.
 
 ## The pages
 

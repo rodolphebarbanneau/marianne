@@ -2,9 +2,10 @@ import { readContent } from '@marianne/content'
 import { files } from '@marianne/content/files'
 import { EMPTY_PROFILE, type Profile } from '@marianne/profile'
 import { describe, expect, it } from 'vitest'
+import { siteOf } from '../src/shared/hosts'
 import { computeDeadline, weekday } from '../src/main/tools/calendar'
 import { articleNumber, findCode } from '../src/main/tools/legifrance'
-import { consequential, Consents, reading } from '../src/main/tools/online'
+import { consequential, Consents, knownSites, reading } from '../src/main/tools/online'
 import { setupCard } from '../src/main/tools/profile'
 import { normalizeValues, opId, plan } from '../src/main/tools/proposals'
 import { ToolError } from '../src/main/tools/tool'
@@ -146,6 +147,15 @@ describe('consequential clicks', () => {
     expect(consequential(button('Se connecter', 'submit'))).toBe(false)
   })
 
+  it('says no to a cookie banner without asking, and only that', () => {
+    expect(consequential(button('Tout refuser', 'submit'))).toBe(false)
+    expect(consequential(button('Continuer sans accepter →'))).toBe(false)
+    expect(consequential(button('Tout refuser et payer'))).toBe(true)
+    expect(consequential(button('Continuer sans accepter et valider', 'submit'))).toBe(true)
+    // What the engine says the click is for still counts.
+    expect(consequential(button('Tout refuser'), 'Payer le passage')).toBe(true)
+  })
+
   it('reads what the click is for, too', () => {
     expect(consequential({ role: 'field', type: 'checkbox', label: 'on' })).toBe(false)
     expect(consequential({ role: 'field', type: 'checkbox', label: 'on' }, 'Certifier l’exactitude des informations')).toBe(true)
@@ -168,12 +178,33 @@ describe('online consents', () => {
   })
 })
 
+describe('the sites Marianne knows', () => {
+  it('are the content’s public sites, by registrable domain', () => {
+    const known = knownSites(SITES.map((s) => s.url))
+    expect(known.has('impots.gouv.fr')).toBe(true)
+    expect(SITES.filter((s) => !known.has(siteOf(s.url))).map((s) => s.url)).toEqual([])
+  })
+
+  it('never a whole hosting service or a public suffix', () => {
+    const known = knownSites([
+      'https://cfspart.impots.gouv.fr/x',
+      'https://mairie.github.io/',
+      'https://gouv.fr/',
+      'https://www.free.fr/',
+      'https://github.io/',
+      'nothing'
+    ])
+    expect([...known].sort()).toEqual(['impots.gouv.fr', 'mairie.github.io'])
+  })
+})
+
 describe('setup cards', () => {
   it('sends each target to its settings page', () => {
     expect(setupCard('address')).toEqual({ page: 'identity', label: 'votre adresse' })
     expect(setupCard('vehicles')).toEqual({ page: 'household', label: 'vos véhicules' })
     expect(setupCard('account:impots')?.page).toBe('sites')
     expect(setupCard('browser')).toEqual({ page: 'browser', label: 'le navigateur' })
+    expect(setupCard('approvals')).toEqual({ page: 'approvals', label: 'vos autorisations' })
     // Légifrance is off by default: turn the source on first.
     expect(setupCard('legifrance')?.page).toBe('data')
     expect(setupCard('account:nowhere')).toBeNull()

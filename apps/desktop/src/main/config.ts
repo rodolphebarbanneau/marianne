@@ -38,11 +38,25 @@ const OPEN_KEYS = ['shortcuts']
 const ACCOUNT_OPEN_KEYS = ['access', 'reads', 'opened', 'reviewed']
 
 /** What an older Marianne kept under another name: the starred services are the pinned ones, in their order. */
-function upgraded(stored: unknown): unknown {
-  if (!isObject(stored) || !isObject(stored.services)) return stored
+function pinned(stored: Record<string, unknown>): Record<string, unknown> {
+  if (!isObject(stored.services)) return stored
   const { starred, ...services } = stored.services
   if (!Array.isArray(starred)) return stored
   return { ...stored, services: Array.isArray(services.pinned) ? services : { ...services, pinned: starred } }
+}
+
+/**
+ * Going online was asked for each site or once per folder (`browser.askOnline`): the « tout demander »
+ * and « équilibré » levels now. The old setting isn't a default any more, so the next save leaves it out.
+ */
+function levelled(stored: Record<string, unknown>): Record<string, unknown> {
+  const ask = isObject(stored.browser) ? stored.browser.askOnline : undefined
+  if (isObject(stored.approvals) || (ask !== 'site' && ask !== 'folder')) return stored
+  return { ...stored, approvals: { level: ask === 'site' ? 'ask' : 'balanced' } }
+}
+
+function upgraded(stored: unknown): unknown {
+  return isObject(stored) ? levelled(pinned(stored)) : stored
 }
 
 /** An account's settings: what its archive keeps, over the defaults, and `patch` on top. */

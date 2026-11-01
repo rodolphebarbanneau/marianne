@@ -36,7 +36,8 @@ export const DEFAULT_CONFIG: DeviceConfig = {
 export const DEFAULT_ACCOUNT_SETTINGS: AccountSettings = {
   display: 'initials',
   services: { pinned: [], added: [], offered: [], disabled: [], access: {}, reads: {}, opened: {}, reviewed: {} },
-  browser: { askOnline: 'folder', show: 'ask' }
+  approvals: { level: 'balanced', rules: [] },
+  browser: { show: 'ask' }
 }
 
 /** Default config folder of each engine, and the variable that moves it. */

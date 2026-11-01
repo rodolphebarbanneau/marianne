@@ -167,8 +167,40 @@ export interface AccountSettings {
     opened: Record<string, string>
     reviewed: Record<string, { sha256: string; version: string }>
   }
-  browser: { askOnline: 'folder' | 'site'; show: 'ask' | 'always' | 'never' }
+  /** How much Marianne asks before acting for the user (shared/approvals.ts). */
+  approvals: ApprovalSettings
+  browser: { show: 'ask' | 'always' | 'never' }
 }
+
+/**
+ * What Marianne may do without a card: « tout demander » (`ask`), « équilibré » (`balanced`, going
+ * online asked once per folder) or « autonomie » (`autonomous`, the sites Marianne knows).
+ */
+export type ApprovalLevel = 'ask' | 'balanced' | 'autonomous'
+
+/** The kinds of action that may need the user's yes (shared/approvals.ts). */
+export type ApprovalAction = 'online' | 'form' | 'profile' | 'task' | 'commit' | 'service'
+
+/** The only kinds a standing permission can cover: going to a site, filling forms on a site, saving deadlines. */
+export type StandingAction = Extract<ApprovalAction, 'online' | 'form' | 'profile'>
+
+/** A standing permission, given with « toujours … » on a card, until the user takes it back in Réglages › Autorisations. */
+export interface ApprovalRule {
+  id: string
+  action: StandingAction
+  /** online, form: the site it covers (a registrable domain). None for profile: it covers deadlines only. */
+  site?: string
+  /** When the user gave it (ISO). */
+  at: string
+}
+
+export interface ApprovalSettings {
+  level: ApprovalLevel
+  rules: ApprovalRule[]
+}
+
+/** The user's answer to a card: « approuver », « toujours … » (the standing permission the card offers), « refuser ». */
+export type ApprovalAnswer = 'approve' | 'always' | 'refuse'
 
 /**
  * A pinned service's tile, as the Services page shows it: the last one its service returned
@@ -218,17 +250,24 @@ export interface DocumentPart {
 
 /**
  * Something that needs the user's yes: a change to the profile, a form to fill, a consequential
- * step online (sign, pay, send). The turn waits for the answer.
+ * step online (sign, pay, send). The turn waits for the answer. Or, with `given`, the line of such
+ * an action the user allowed ahead, which went without a card.
  */
 export interface ApprovalPart {
   type: 'approval'
   id: string
   kind: 'proposal' | 'form' | 'online' | 'service'
+  /** The kind of action, as the approval policy knows it; absent on cards older than it. */
+  action?: ApprovalAction
   title: string
   reason?: string
   /** What will be written or done, with real values (never sent to the engine). */
   fields: Array<{ label: string; value: string }>
   status: 'pending' | 'accepted' | 'refused' | 'expired'
+  /** While pending, the standing permission the card offers (« toujours pour sanef.com »); once answered, kept only if the user chose it. */
+  always?: string
+  /** Allowed ahead, and how (« toujours pour sanef.com », « autonomie »): the action went without a card. */
+  given?: string
 }
 
 /** A missing setting the engine needs: a link to where the user sets it. */

@@ -9,6 +9,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
  * sites only (redirects, clicks and popups included, and a call that outlives its run), clicks on
  * what plainly searches or moves, typing the one identifier of its sheet, never a card. The run is
  * a real one (tasks.ts), the calls go through the engine's gate (mcp.ts), the browser is faked.
+ * And beside it, what a conversation may reach without a card: what the user allowed ahead, no more.
  */
 
 // ~/.marianne points at a temporary folder, before paths.ts reads it.
@@ -88,6 +89,7 @@ import { taskTools } from '../src/main/tools/tasks'
 import { folders } from '../src/main/folders'
 import { reading } from '../src/main/tools/online'
 import type { Tool } from '../src/main/tools/tool'
+import type { ApprovalPart } from '../src/shared/types'
 
 /** A fake archive: tasks and folders only need keyed records. */
 function memoryArchive(): Archive {
@@ -156,7 +158,7 @@ beforeEach(() => {
   vi.mocked(browser.type).mockClear()
   vi.mocked(browser.back).mockClear()
   vi.mocked(browser.reveal).mockClear()
-  vi.spyOn(accounts, 'settings').mockReturnValue({ browser: { askOnline: 'folder', show: 'always' } } as never)
+  vi.spyOn(accounts, 'settings').mockReturnValue({ approvals: { level: 'balanced', rules: [] }, browser: { show: 'always' } } as never)
   vi.spyOn(profile, 'tokens').mockReturnValue([{ token: 'vehicle.1.plate', label: 'plaque', value: PLATE, kind: 'id' } satisfies TokenDef])
   // Any card would be accepted at once: a run that asked one would get through, and be caught here.
   request = vi.spyOn(approvals, 'request').mockResolvedValue('accepted')
@@ -433,6 +435,106 @@ describe('the gate, in a run', () => {
     const { result } = await during((f) => call(f, 'click', { element: 'e1', ...CLICK }, fake))
     expect(result).toMatch(/^refused:/)
     expect(fake.run).not.toHaveBeenCalled()
+  })
+})
+
+describe('what the user allowed ahead, in a run', () => {
+  /** The most a conversation could go without a card: « autonomie », and standing permissions for the run's site and another. */
+  const allowedAhead = () =>
+    vi.spyOn(accounts, 'settings').mockReturnValue({
+      approvals: {
+        level: 'autonomous',
+        rules: [
+          { id: 'r1', action: 'online', site: 'evil.example', at: '2026-10-30T08:00:00.000Z' },
+          { id: 'r2', action: 'form', site: 'sanef.com', at: '2026-10-30T08:00:00.000Z' }
+        ]
+      },
+      browser: { show: 'always' }
+    } as never)
+
+  it('opens no other site for it', async () => {
+    allowedAhead()
+    const { result } = await during((f) => call(f, 'open_site', { url: 'https://evil.example/', ...OPEN }))
+    expect(result).toMatch(/^refused:/)
+    expect(browser.open).not.toHaveBeenCalled()
+  })
+
+  it('lets nothing through, and shows neither a card nor a line', async () => {
+    allowedAhead()
+    approvals.canShow = () => true
+    const shown = vi.fn()
+    approvals.on('part', shown)
+    try {
+      const { result } = await during((f) =>
+        Promise.all([
+          approvals.ask(f, { action: 'form', site: 'sanef.com', known: true }, { kind: 'form', title: 'Remplir', fields: [] }),
+          approvals.ask(
+            f,
+            { action: 'online', site: 'evil.example', known: false, consented: { site: false, folder: false } },
+            { kind: 'online', title: 'Aller', fields: [] }
+          ),
+          approvals.ask(f, { action: 'profile', deadline: true }, { kind: 'proposal', title: 'Ajouter une échéance', fields: [] })
+        ])
+      )
+      expect(result).toEqual([
+        { decision: 'expired', ahead: false },
+        { decision: 'expired', ahead: false },
+        { decision: 'expired', ahead: false }
+      ])
+      expect(shown).not.toHaveBeenCalled()
+      expect(request).not.toHaveBeenCalled()
+    } finally {
+      approvals.off('part', shown)
+      approvals.canShow = () => false
+    }
+  })
+})
+
+describe('going online from a conversation, as the user allowed ahead', () => {
+  let lines: ApprovalPart[] = []
+  const onPart = (_folderId: string, part: ApprovalPart) => void (part.given && lines.push(part))
+  const conversation = () => folders.create({ title: 'Péages', engine: 'claude' }).id
+  beforeEach(() => {
+    lines = []
+    approvals.on('part', onPart)
+    approvals.canShow = () => true
+    vi.spyOn(accounts, 'settings').mockReturnValue({
+      approvals: { level: 'balanced', rules: [{ id: 'r1', action: 'online', site: 'sanef.com', at: '2026-10-30T08:00:00.000Z' }] },
+      browser: { show: 'always' }
+    } as never)
+  })
+  afterEach(() => {
+    approvals.off('part', onPart)
+    approvals.canShow = () => false
+  })
+
+  it('goes to a site the user allowed without a card, says so once, and keeps it from the folder’s consents', async () => {
+    const f = conversation()
+    expect(await call(f, 'open_site', { url: 'https://www.sanef.com/passages', ...OPEN })).toMatch(/^Opened/)
+    await call(f, 'read_page')
+    await call(f, 'open_site', { url: 'https://www.sanef.com/aide', ...OPEN })
+    expect(request).not.toHaveBeenCalled()
+    expect(lines).toMatchObject([{ action: 'online', given: 'toujours pour sanef.com' }])
+    // Allowed ahead for that site only: another one is asked, though the folder asks once at « équilibré ».
+    await call(f, 'open_site', { url: 'https://evil.example/', ...OPEN })
+    expect(request).toHaveBeenCalledOnce()
+  })
+
+  it('asks on its own for where such a site’s address led, and goes back without the yes', async () => {
+    page.redirects['https://www.sanef.com/sortie'] = 'https://evil.example/'
+    request.mockResolvedValueOnce('refused')
+    const result = await call(conversation(), 'open_site', { url: 'https://www.sanef.com/sortie', ...OPEN })
+    expect(result).toMatch(/^refused:.*led to evil\.example/)
+    expect(request).toHaveBeenCalledOnce()
+    expect(browser.back).toHaveBeenCalledOnce()
+  })
+
+  it('takes where an address led as part of opening it, when the user said yes to it on a card', async () => {
+    page.redirects['https://www.impots.gouv.fr/'] = 'https://www.franceconnect.gouv.fr/'
+    const f = conversation()
+    expect(await call(f, 'open_site', { url: 'https://www.impots.gouv.fr/', ...OPEN })).toMatch(/^Opened https:\/\/www\.franceconnect/)
+    expect(await call(f, 'read_page')).toMatch(/^# Page de/)
+    expect(request).toHaveBeenCalledOnce()
   })
 })
 

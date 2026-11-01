@@ -19,7 +19,7 @@ The app itself is in French: this guide quotes its labels as they appear on scre
 
 - [Installing Marianne](install.md): the command-line AI engine, the download, connecting the engine, updates.
 - [Getting started](getting-started.md): creating your archive, the passphrase, the recovery key, the PIN.
-- [Using Marianne](using.md): folders, the browser, pages, the news, the Parliament's videos, planned tasks, the keys.
+- [Using Marianne](using.md): folders, your approval, the browser, pages, the news, the Parliament's videos, planned tasks, the keys.
 - [Your data](privacy.md): what stays on your computer, what the engine sees, backups.
 - [Help](help.md): when something goes wrong, writing to us, testing the alpha.
 - [About](about.md): the app, its author, contributing, the license and credits.

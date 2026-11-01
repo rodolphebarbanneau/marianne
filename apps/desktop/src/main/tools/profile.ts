@@ -25,6 +25,7 @@ const SETTINGS_PAGES: Record<string, string> = {
   sites: 'vos sites et accès',
   engines: 'vos moteurs',
   browser: 'le navigateur',
+  approvals: 'vos autorisations',
   privacy: 'la confidentialité',
   data: 'les données publiques',
   services: 'les services',
@@ -78,7 +79,7 @@ export const profileTools = [
     name: 'request_setup',
     title: 'Setup request',
     description:
-      'When the answer needs something the user has not set up (an account’s number, the address, a business…), shows a card that takes them to the settings page where they fill it in. Targets: those the profile tool lists as not set up (address, id_documents, companies, employers, vehicles, properties, notes, account:<site id> such as account:impots); legifrance (access to the law texts); or a settings page: identity, household, documents, space, security, accounts, sites, engines, browser, privacy, data, services, sources, display, shortcuts, skills, about. Never ask for an identifier in the conversation: use this tool.',
+      'When the answer needs something the user has not set up (an account’s number, the address, a business…), shows a card that takes them to the settings page where they fill it in. Targets: those the profile tool lists as not set up (address, id_documents, companies, employers, vehicles, properties, notes, account:<site id> such as account:impots); legifrance (access to the law texts); or a settings page: identity, household, documents, space, security, accounts, sites, engines, browser, approvals, privacy, data, services, sources, display, shortcuts, skills, about. Never ask for an identifier in the conversation: use this tool.',
     input: {
       target: z.string().describe('e.g. "account:impots", "address", "sites"'),
       reason: z.string().describe('Why it is needed, in one sentence to the user (in French)')
@@ -97,7 +98,7 @@ export const profileTools = [
     name: 'propose',
     title: 'Proposal',
     description:
-      'Proposes a change to the profile: the user sees a card with the exact values and accepts or refuses; you get the outcome. Kinds and fields: deadline (title, date YYYY-MM-DD, domain, note); company (siren, name, legalForm, activity, created, address, role director|partner|entrepreneur|other, regime micro|sole_trader|corporate_tax|income_tax|association, frequency monthly|quarterly, vat exempt|simplified|normal, yearEnd MM-DD); employer (name, siren, position, contract permanent|fixed_term|temporary|apprenticeship|civil_service|other, start, end, idcc); vehicle (plate, model, firstRegistration, lastInspection, critair); property (address, inseeCode, use main_home|second_home|rental, status tenant|owner|hosted, rent, leaseStart, landlord); id_document (type id_card|passport|driving_licence|residence_permit|health_card, number, issued, expires, holder "me" or a household member id); account (siteId and the site’s fields, e.g. tax_number); person (civility mr|ms, birthName, usedName, firstNames, birthDate, birthPlace, birthCountry, nationality, nir, iban, familyStatus, workStatus, phone, email; operation update); address (street, complement, postcode, city, since; operation update); household_member (relation spouse|child|other, firstName, lastName, birthDate, dependent); journal (domain, text: a record of a formality done, saved without a card). Tokens [[…]] are accepted. To update or delete, give the id (from profile or deadlines).',
+      'Proposes a change to the profile: the user sees a card with the exact values and accepts or refuses; you get the outcome. Adding or updating a deadline may go without a card when they allowed it ahead. Kinds and fields: deadline (title, date YYYY-MM-DD, domain, note); company (siren, name, legalForm, activity, created, address, role director|partner|entrepreneur|other, regime micro|sole_trader|corporate_tax|income_tax|association, frequency monthly|quarterly, vat exempt|simplified|normal, yearEnd MM-DD); employer (name, siren, position, contract permanent|fixed_term|temporary|apprenticeship|civil_service|other, start, end, idcc); vehicle (plate, model, firstRegistration, lastInspection, critair); property (address, inseeCode, use main_home|second_home|rental, status tenant|owner|hosted, rent, leaseStart, landlord); id_document (type id_card|passport|driving_licence|residence_permit|health_card, number, issued, expires, holder "me" or a household member id); account (siteId and the site’s fields, e.g. tax_number); person (civility mr|ms, birthName, usedName, firstNames, birthDate, birthPlace, birthCountry, nationality, nir, iban, familyStatus, workStatus, phone, email; operation update); address (street, complement, postcode, city, since; operation update); household_member (relation spouse|child|other, firstName, lastName, birthDate, dependent); journal (domain, text: a record of a formality done, saved without a card). Tokens [[…]] are accepted. To update or delete, give the id (from profile or deadlines).',
     input: {
       kind: z.enum(KINDS),
       operation: z.enum(['add', 'update', 'delete']).default('add'),
@@ -118,7 +119,15 @@ export const profileTools = [
       const normalized = normalizeValues(kind, values)
       const place = kind === 'address' ? await locate(normalized) : undefined
       const proposal = plan(kind, operation, id, normalized, profile.get(), content.get().sites, place)
-      const decision = await approvals.request(ctx.folderId, { kind: 'proposal', title: proposal.title, reason, fields: proposal.fields })
+      // Only a deadline added or updated can be allowed ahead: identity, numbers, the address, accounts,
+      // documents, entities, the household and any deletion take a card every time.
+      const deadline = kind === 'deadline' && operation !== 'delete'
+      const { decision, ahead } = await approvals.ask(
+        ctx.folderId,
+        { action: 'profile', deadline },
+        { kind: 'proposal', title: proposal.title, reason, fields: proposal.fields },
+        { run: !!ctx.run }
+      )
       if (decision === 'refused') throw new ToolError('The user refused: nothing was changed. Do not propose it again unless they ask.')
       if (decision === 'expired') throw new ToolError('No answer from the user (or no conversation to show the card in): nothing was changed.')
       // Applied to the profile as it is now: the user may have changed it while the card waited.
@@ -130,7 +139,7 @@ export const profileTools = [
       }
       profile.apply(current.op)
       const saved = opId(current.op)
-      return `Accepted and saved (${kind}, ${operation}${saved ? `, id ${saved}` : ''}).`
+      return `${ahead ? 'Saved without a card, as the user allowed ahead' : 'Accepted and saved'} (${kind}, ${operation}${saved ? `, id ${saved}` : ''}).`
     }
   }),
 

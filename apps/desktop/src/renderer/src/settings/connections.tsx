@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { LEVELS, ruleLabel } from '@shared/approvals'
 import { ENGINE_BADGES, ENGINE_HOMES, ENGINE_LABELS } from '@shared/config'
 import { siteOf } from '@shared/hosts'
 import type { Site } from '@shared/sites'
@@ -8,7 +9,7 @@ import { useApp } from '../app/context'
 import { Field, Modal, Spinner } from '../components/ui'
 import { api, errorText, useLive } from '../lib/api'
 import { useSites } from '../lib/content'
-import { when } from '../lib/format'
+import { shortDate, when } from '../lib/format'
 import { useProfile } from '../lib/profile'
 
 /** Public-service websites and APIs: the login kept in the archive, the identifiers each one needs. */
@@ -379,28 +380,16 @@ export function EnginesPane() {
 }
 
 export function BrowserPane() {
-  const { settings, setSettings } = useApp()
+  const { settings, setSettings, openSettings } = useApp()
   if (!settings) return null
   return (
     <div className="rows">
       <div className="row">
         <span>aller en ligne</span>
-        <span>
-          <label style={{ marginRight: 14 }}>
-            <input type="radio" checked={settings.browser.askOnline === 'folder'} onChange={() => void setSettings({ browser: { askOnline: 'folder' } })} />
-            demander une fois par dossier
-          </label>
-          <label>
-            <input type="radio" checked={settings.browser.askOnline === 'site'} onChange={() => void setSettings({ browser: { askOnline: 'site' } })} />
-            demander pour chaque nouveau site
-          </label>
-        </span>
-        <span />
-      </div>
-      <div className="row">
-        <span>signer, payer, envoyer</span>
-        <span className="dim">toujours avec votre accord, sans exception</span>
-        <span />
+        <span className="dim">ce que Marianne fait sans vous demander se règle dans Autorisations</span>
+        <button className="btn small" onClick={() => openSettings('approvals')}>
+          autorisations →
+        </button>
       </div>
       <div className="row">
         <span>afficher le navigateur</span>
@@ -417,6 +406,81 @@ export function BrowserPane() {
         <span />
       </div>
     </div>
+  )
+}
+
+/**
+ * How much Marianne asks before acting for the user: the level, the floor no level lowers, and the
+ * standing permissions given on cards (« toujours… »), each with the way to take it back.
+ */
+export function ApprovalsPane() {
+  const { settings, setSettings } = useApp()
+  const [error, setError] = useState('')
+  if (!settings) return null
+  const { level, rules } = settings.approvals
+  const remove = (id: string) => {
+    setError('')
+    void api.removeApprovalRule(id).catch((err) => setError(errorText(err)))
+  }
+  return (
+    <>
+      <div className="note">
+        Avant d’agir pour vous, Marianne vous demande votre accord sur une carte. Vous choisissez ici ce qu’elle peut faire sans demander : ce qu’elle fait
+        ainsi reste écrit dans la conversation, « autorisé d’office ».
+      </div>
+      <div className="rows">
+        <div className="row">
+          <span>niveau</span>
+          <span>
+            {LEVELS.map((l) => (
+              <label key={l.id} style={{ display: 'block', marginBottom: 6 }}>
+                <input type="radio" name="approvals-level" checked={level === l.id} onChange={() => void setSettings({ approvals: { level: l.id } })} />{' '}
+                {l.label}
+                {l.id === 'balanced' && <span className="small dim"> (par défaut)</span>}
+                <br />
+                <span className="small dim">{l.text}</span>
+              </label>
+            ))}
+          </span>
+          <span />
+        </div>
+        <div className="row">
+          <span>payer, signer, envoyer</span>
+          <span className="dim">
+            déposer, déclarer, certifier et supprimer aussi : votre oui sur une carte, à chaque fois, à tous les niveaux. Aucune autorisation ne s’y applique.
+          </span>
+          <span />
+        </div>
+        <div className="row">
+          <span>votre profil</span>
+          <span className="dim">
+            seules les échéances peuvent s’enregistrer sans demander. Tout autre changement, et toute suppression, vous est demandé à chaque fois.
+          </span>
+          <span />
+        </div>
+      </div>
+      <span className="label sub">autorisations données</span>
+      <div className="rows">
+        {rules.map((r) => (
+          <div key={r.id} className="row">
+            <span>{ruleLabel(r)}</span>
+            <span className="small dim">donnée le {shortDate(r.at)}, dans tous vos dossiers</span>
+            <button className="link small" onClick={() => remove(r.id)}>
+              retirer
+            </button>
+          </div>
+        ))}
+      </div>
+      {!rules.length && (
+        <p className="small dim">
+          Aucune pour l’instant. Une carte vous en propose une avec « toujours… » : aller sur un site, remplir ses formulaires, enregistrer vos échéances.
+        </p>
+      )}
+      {error && <p className="small bad">{error}</p>}
+      <p className="small dim">
+        Les tâches planifiées ne s’en servent jamais : elles vont seulement sur les sites de leur fiche, pour regarder et vous rendre compte.
+      </p>
+    </>
   )
 }
 

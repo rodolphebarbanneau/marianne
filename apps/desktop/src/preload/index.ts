@@ -60,6 +60,7 @@ const INVOKE = [
   'exportAll',
   'getAccountSettings',
   'setAccountSettings',
+  'removeApprovalRule',
   'listFolders',
   'listTasks',
   'taskTemplates',
