@@ -1450,13 +1450,13 @@ button.card:hover {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 24px;
   align-items: center;
-  padding: 10px 12px;
+  padding: 8px 12px;
   background-image: radial-gradient(circle at 1.5px 1.5px, color-mix(in srgb, var(--dot) 46%, transparent) 0.6px, transparent 0.9px);
   background-size: 4px 4px;
 }
 .kiosk-head .ask {
   font-family: var(--retro);
-  font-size: calc(var(--pixel-size) * 1.45);
+  font-size: calc(var(--pixel-size) * 1.2);
   line-height: 1;
   color: var(--hi);
   letter-spacing: 0.08em;
@@ -1464,16 +1464,16 @@ button.card:hover {
 .codebar {
   display: flex;
   align-items: stretch;
-  margin-top: 10px;
+  margin-top: 8px;
   max-width: 600px;
 }
 .codebar .pre {
   font-family: var(--retro);
-  font-size: calc(var(--pixel-size) * 1.35);
+  font-size: calc(var(--pixel-size) * 1.12);
   line-height: 1;
   background: var(--fg);
   color: var(--noir);
-  padding: 5px 10px 3px;
+  padding: 4px 9px 2px;
   letter-spacing: 0.08em;
 }
 .codebar .cfield {
@@ -1497,7 +1497,7 @@ button.card:hover {
   background: transparent;
   padding: 0;
   font-family: var(--retro);
-  font-size: calc(var(--pixel-size) * 1.35);
+  font-size: calc(var(--pixel-size) * 1.12);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent);
@@ -1518,7 +1518,7 @@ button.card:hover {
   height: 1.05em;
   background: var(--accent);
   animation: blink 1s steps(1) infinite;
-  font-size: calc(var(--pixel-size) * 1.05);
+  font-size: calc(var(--pixel-size) * 0.9);
 }
 /* Typing: the whole bar lights up, 3615 and its frame in yellow; the field itself draws no outline. */
 .codebar input:focus,
@@ -1533,10 +1533,10 @@ button.card:hover {
 }
 .codebar .envoi {
   font-family: var(--retro);
-  font-size: calc(var(--pixel-size) * 1.05);
+  font-size: calc(var(--pixel-size) * 0.95);
   background: var(--blanc);
   color: var(--noir);
-  padding: 0 12px;
+  padding: 0 10px;
   margin-left: 8px;
   display: inline-flex;
   align-items: center;
@@ -1547,6 +1547,11 @@ button.card:hover {
 }
 .minitel-art .blinkcell {
   animation: blink 1s steps(1) infinite;
+}
+/* The art is as tall as the head's lines at the default text size. With a smaller text it takes some of the padding
+   rather than making the head taller. */
+.kiosk-head .minitel-art {
+  margin-block: -6px;
 }
 /* Narrow: the Minitel gives way to the bar. */
 @container kiosk (max-width: 620px) {
@@ -4052,7 +4057,7 @@ button.choice:hover {
 }
 .codebar.q .cfield input:placeholder-shown {
   font-family: var(--retro);
-  font-size: calc(var(--pixel-size) * 1.35);
+  font-size: calc(var(--pixel-size) * 1.12);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   caret-color: transparent;

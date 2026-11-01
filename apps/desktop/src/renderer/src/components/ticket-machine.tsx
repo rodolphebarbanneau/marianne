@@ -1,8 +1,8 @@
 import { usePixelRatio } from '@marianne/sdk/view'
 
 /**
- * The ticket machine: to Démarches what the Minitel is to Services, on its grid (25 × 24 cells of
- * 3 px) and in its language. A machine with a tricolour band, a screen pointing down at the slot,
+ * The ticket machine: to Démarches what the Minitel is to Services, on its grid (27 × 27 cells of
+ * 2 px) and in its language. A machine with a tricolour band, a screen pointing down at the slot,
  * a green button. At rest the slot blinks; a number typed prints a ticket showing it, and on a
  * domain's page the ticket stays out, as if the user held it.
  */
@@ -10,35 +10,38 @@ import { usePixelRatio } from '@marianne/sdk/view'
 const screen = (g: string) => `....bll${g}uub....`
 
 const ART = [
-  '.....lllllllllllllll.....',
-  '....nnnnnnnnnnnnnnnnn....',
-  '....BBBBBBWWWWWrrrrrr....',
-  '....blnnnnnnnnnnnnnub....',
-  '....blmsssssssssssnub....',
-  screen('sssssssssss'),
-  screen('sscccccccss'),
-  screen('ssscccccsss'),
-  screen('sssscccssss'),
-  screen('ssssscsssss'),
-  '....blmsssssssssssnub....',
-  '....bbnnnnnnnnnnnnnbb....',
-  '....blnnnnnnnnnvvnnub....',
-  '....blnnnnnnnnnvvnnub....',
-  '....blnnsssssssssnnub....',
-  ...Array<string>(5).fill('....blnnnnnnnnnnnnnub....'),
-  '....bbnnnnnnnnnnnnnbb....',
-  '...nnnnnnnnnnnnnnnnnnn...',
-  '..lllllllllllllllllllll..',
-  '.zzzzzzzzzzzzzzzzzzzzzzz.'
+  '.....lllllllllllllllll.....',
+  '....nnnnnnnnnnnnnnnnnnn....',
+  '....BBBBBBWWWWWWWrrrrrr....',
+  '....BBBBBBWWWWWWWrrrrrr....',
+  '....blnnnnnnnnnnnnnnnub....',
+  '....blmsssssssssssssnub....',
+  screen('sssssssssssss'),
+  screen('sscccccccccss'),
+  screen('ssscccccccsss'),
+  screen('sssscccccssss'),
+  screen('ssssscccsssss'),
+  screen('sssssscssssss'),
+  '....blmsssssssssssssnub....',
+  '....bbnnnnnnnnnnnnnnnbb....',
+  '....blnnnnnnnnnnnnnnnub....',
+  '....blnnnnnnnnnnnvvnnub....',
+  '....blnnnnnnnnnnnvvnnub....',
+  '....blnnnsssssssssnnnub....',
+  ...Array<string>(5).fill('....blnnnnnnnnnnnnnnnub....'),
+  '....bbnnnnnnnnnnnnnnnbb....',
+  '...nnnnnnnnnnnnnnnnnnnnn...',
+  '..lllllllllllllllllllllll..',
+  '.zzzzzzzzzzzzzzzzzzzzzzzzz.'
 ]
 
 /** The ticket, over the machine: white, with a torn edge. */
 const TICKET = ['WWWWWWWWW', 'WWWWWWWWW', 'WWWWWWWWW', 'WWWWWWWWW', 'WWWWWWWWW', 'WWWWWWWWW', 'WWWWWWWWW', 'W.W.W.W.W']
-const TICKET_AT = { x: 8, y: 15 }
+const TICKET_AT = { x: 9, y: 18 }
 /** Its two digits, 3 × 5 cells. */
-const NUMBER_AT = { x: 9, y: 16 }
+const NUMBER_AT = { x: 10, y: 19 }
 /** The cells of the slot that blink at rest. */
-const SLOT = { y: 14, xs: [11, 12, 13] }
+const SLOT = { y: 17, xs: [12, 13, 14] }
 
 const DIGITS: Record<string, string[]> = {
   0: ['111', '101', '101', '101', '111'],
@@ -87,10 +90,12 @@ export function ticketCells(number: number | null): Cell[] {
   return [...paper, ...digits]
 }
 
-/** In whole screen pixels, three CSS pixels a cell or as near as they allow. */
+/** In whole screen pixels, two CSS pixels a cell or as near as they allow: the size of the head's lines, not taller. */
 export function TicketMachine({ number }: { number: number | null }) {
   const ratio = usePixelRatio()
-  const cell = Math.max(1, Math.round(3 * ratio))
+  const cell = Math.max(1, Math.round(2 * ratio))
+  const W = ART[0].length
+  const H = ART.length
   const rect = (x: number, y: number, ink: string, blink = false) => (
     <rect
       key={`${x}:${y}:${ink}`}
@@ -105,9 +110,9 @@ export function TicketMachine({ number }: { number: number | null }) {
   return (
     <svg
       className="mosaic minitel-art"
-      width={(25 * cell) / ratio}
-      height={(24 * cell) / ratio}
-      viewBox={`0 0 ${25 * cell} ${24 * cell}`}
+      width={(W * cell) / ratio}
+      height={(H * cell) / ratio}
+      viewBox={`0 0 ${W * cell} ${H * cell}`}
       shapeRendering="crispEdges"
       aria-hidden
     >

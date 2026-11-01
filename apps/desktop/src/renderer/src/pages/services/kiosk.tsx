@@ -15,33 +15,36 @@ import { KioskHead } from '../../components/kiosk-head'
  * front lip. Its screen reads 3615 and waits; a letter typed in the bar lights an e.
  */
 const ART = [
-  '..lllllllllllllllllllll..',
-  '.nnnnnnnnnnnnnnnnnnnnnnn.',
-  '.bbdddddddddddddddddddbb.',
-  '.blmnssssssssssssssknuub.',
-  '.bllsssssssssssssssssuub.',
-  '.bllsyyysyyyssyssyyysuub.',
-  '.bllsssysysssyyssysssuub.',
-  '.bllsyyysyyyssyssyyysuub.',
-  '.bllsssysysyssyssssysuub.',
-  '.bllsyyysyyysyyysyyysuub.',
-  '.bllsssssssssssssssssurb.',
-  '.bllsesesesesesesesesuub.',
-  '.blmnsssssssssssssssnunn.',
-  '.bbnnnnnnnnnnnnnnnnnnnbb.',
-  '.nnnnnnnnnnnnnnnnnnnnnnn.',
-  '..mmmmmmmmmmmmmmmmmmmmm..',
-  '...ddddddddddddddddddd...',
-  '..nmmnmmnmmnmmnvvnnnnnn..',
-  '.nnknknknknknknknnknknkn.',
-  '.nnnknknknknknknnnnnnnnn.',
-  '.nnnnnkkkkkkknnnnnknknkn.',
-  '.lllllllllllllllllllllll.',
-  'bbyyyybbbbbbbbbbbbbnnnbbb',
-  '.zzzzzzzzzzzzzzzzzzzzzzz.'
+  '..lllllllllllllllllllllll..',
+  '.nnnnnnnnnnnnnnnnnnnnnnnnn.',
+  '.bbdddddddddddddddddddddbb.',
+  '.blmnssssssssssssssssknuub.',
+  '.bllsssssssssssssssssssuub.',
+  '.bllsssssssssssssssssssuub.',
+  '.bllssyyysyyyssyssyyyssuub.',
+  '.bllssssysysssyyssyssssuub.',
+  '.bllssyyysyyyssyssyyyssuub.',
+  '.bllssssysysyssyssssyssuub.',
+  '.bllssyyysyyysyyysyyyssuub.',
+  '.bllsssssssssssssssssssurb.',
+  '.bllssesesesesesesesessuub.',
+  '.bllsssssssssssssssssssuub.',
+  '.blmnsssssssssssssssssnunn.',
+  '.bbnnnnnnnnnnnnnnnnnnnnnbb.',
+  '.nnnnnnnnnnnnnnnnnnnnnnnnn.',
+  '.nnnnnnnnnnnnnnnnnnnnnnnnn.',
+  '..mmmmmmmmmmmmmmmmmmmmmmm..',
+  '...ddddddddddddddddddddd...',
+  '..nmmnmmnmmnmmnmmnvvnnnnn..',
+  '.nnknknknknknknknknnknknkn.',
+  '.nnnknknknknknknknnnnnnnnn.',
+  '.nnnnnkkkkkkkkknnnnnknknkn.',
+  '.lllllllllllllllllllllllll.',
+  'bbyyyybbbbbbbbbbbbbbbnnnbbb',
+  '.zzzzzzzzzzzzzzzzzzzzzzzzz.'
 ]
 /** The echo's first cell and how many there are, the last kept for the cursor. */
-const ECHO = { x: 5, cells: 8 }
+const ECHO = { x: 6, cells: 8 }
 
 /** The colours of its parts, from the theme's tokens. */
 const INK: Record<string, string> = {
@@ -61,10 +64,10 @@ const INK: Record<string, string> = {
   z: 'color-mix(in srgb, var(--rule) 60%, transparent)'
 }
 
-/** In whole screen pixels, three CSS pixels a cell or as near as they allow. */
+/** In whole screen pixels, two CSS pixels a cell or as near as they allow: the size of the head's lines, not taller. */
 function MinitelArt({ typed }: { typed: number }) {
   const ratio = usePixelRatio()
-  const cell = Math.max(1, Math.round(3 * ratio))
+  const cell = Math.max(1, Math.round(2 * ratio))
   const W = ART[0].length
   const H = ART.length
   const cursor = Math.min(typed, ECHO.cells - 1)
@@ -123,3 +126,5 @@ export const ServicesHead = forwardRef<
     />
   )
 })
+
+export { ART as MINITEL_ART }
