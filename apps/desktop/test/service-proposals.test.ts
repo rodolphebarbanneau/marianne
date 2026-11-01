@@ -460,8 +460,16 @@ describe('the sites a service declares, and a task’s follow-up', () => {
     addVignette()
     expect(services.declaredSites()).toEqual(['paiement.vignette.example'])
     expect(services.instructions()).toContain('Use vignette_zones.\n\nActs on: paiement.vignette.example (where you act for the user for it, in the browser).')
+    // One service's, by its code: where a run of its own task clicks through a search.
+    expect(services.declaredSites('vignette')).toEqual(['paiement.vignette.example'])
+    expect(services.declaredSites('ciel')).toEqual([])
+    // A community service's, never: one that declares sites is left out, and an unknown code has none.
+    accounts.updateSettings({ services: { added: [...accounts.settings().services.added, 'atelier'] } })
+    expect(services.declaredSites('atelier')).toEqual([])
+    expect(services.declaredSites('bonjour')).toEqual([])
     services.switch('vignette', false)
     expect(services.declaredSites()).toEqual([])
+    expect(services.declaredSites('vignette')).toEqual([])
   })
 
   it('leaves out a template whose follow-up isn’t right, and keeps the others’ as plain data', () => {

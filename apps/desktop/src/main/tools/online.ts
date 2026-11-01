@@ -5,7 +5,8 @@ import { fold } from './tool'
  * The two rules of acting online for the user. Going to a website needs their consent first: on a
  * card, once per folder or once per site of a folder, unless they allowed it ahead (the approval
  * policy, shared/approvals.ts). And a step that commits them (sign, pay, send, submit, confirm,
- * declare, delete…) needs their yes every time.
+ * declare, delete…) needs their yes every time; on a site Marianne's own services declare, only
+ * what binds them beyond paying does, paying there taking pay_by_card's card (`binding`).
  */
 
 /** Whether a consent covers every site of its folder, or its own site only. */
@@ -107,6 +108,31 @@ export interface Clickable {
 export function reading(element: Clickable, purpose = ''): boolean {
   const label = plain(element.label)
   return !commits(purpose) && (DECLINES.test(label) || (!commits(label) && READS.test(label)))
+}
+
+/**
+ * What binds the user beyond paying, folded: signing; sending, transmitting, submitting, filing;
+ * declaring; deleting; certifying, attesting, « sur l'honneur », « je m'engage »; subscribing;
+ * cancelling a contract (résilier, annuler mon…, clôturer); waiving a right; a direct debit's
+ * mandate, which pays without a card. French stems and words, then English.
+ */
+const BINDS = [
+  /\b(envo[iy]|transm|soum(et|is)|suppr|souscri|resili|renonc|prelev)/,
+  /\b(sign(er|ez|e|es|ature|atures)|depos(er|ez|e)|declar(er|ez|e)|certifi(er|ez|e|es)|attest(er|ez|e)|honneur|m'engag(e|er)|abonn(er|ez)|m'abonne|clotur(er|ez)|mandat)(?![a-z])/,
+  /\bannuler (ma|mon|mes|la|le|les|l'|votre|vos|cette|ce)\b/,
+  /\b(send|submit|transmit|delete|remove|(declare|certify|attest(s|ed)?|hono(u)?r|(un)?subscribe|terminate|waive|mandate|direct debit|sign(?! ?(in|up|on|out)\b))(?![a-z]))/,
+  /\bcancel (my|the|your|this)\b/
+]
+const binds = (text: string) => BINDS.some((re) => re.test(plain(text)))
+
+/**
+ * Whether clicking an element binds the user beyond paying (BINDS), from its label or what the
+ * engine says it is for. On a site Marianne's own services declare, it is what still asks in a
+ * conversation, and what a run of one of their tasks may not click: the steps on the way there
+ * (searching, validating, going on to pay) don't, and paying takes pay_by_card's card.
+ */
+export function binding(element: Clickable, purpose = ''): boolean {
+  return binds(purpose) || binds(element.label)
 }
 
 /** A button that pays (or confirms the payment) and does nothing else of the floor: no sending, signing, deleting, cancelling. */
