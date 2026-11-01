@@ -11,6 +11,7 @@ import { clock } from '../lib/format'
 import { useTokens } from '../lib/tokens'
 import { serviceToolLabel, useServices } from '../host'
 import { ServiceOffer } from './service-offer'
+import { toolArg } from './tool-arg'
 
 /** Labels of the app's own tools, as the conversation shows them; services label theirs. */
 const TOOL_LABELS: Record<string, string> = {
@@ -67,17 +68,6 @@ const TOOL_LABELS: Record<string, string> = {
 export function toolLabel(name: string, services: ServiceState[]): string {
   const short = name.replace(/^mcp__[^_]+__/, '').replace(/^marianne[_.-]/, '')
   return TOOL_LABELS[short] ?? serviceToolLabel(services, short) ?? short.replace(/_/g, ' ')
-}
-
-/** The most telling argument of a call: the query, the id, the url… */
-function toolArg(input: unknown): string {
-  if (!input || typeof input !== 'object') return ''
-  const o = input as Record<string, unknown>
-  for (const key of ['query', 'url', 'id', 'name', 'number', 'address', 'commune', 'kind', 'domain', 'label']) {
-    if (typeof o[key] === 'string' || typeof o[key] === 'number') return String(o[key])
-  }
-  const first = Object.values(o).find((v) => typeof v === 'string')
-  return typeof first === 'string' ? first : ''
 }
 
 function ToolLine({ part }: { part: ToolPart }) {
