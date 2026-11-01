@@ -78,7 +78,12 @@ vi.mock('../src/main/host/registry', () => {
           tools: [{ name: 'zones', label: 'zones à faibles émissions' }],
           sites: ['paiement.vignette.example']
         },
-        { tools: [zones], tasks: () => [template, wrong], instructions: 'Use vignette_zones.' }
+        {
+          tools: [zones],
+          tasks: () => [template, wrong],
+          instructions: 'Use vignette_zones.',
+          skills: ['---\nname: low-emission-zones\ntitle: Zones à faibles émissions\ndescription: rouler en ville\n---\n\n# Zones\n\nRead the zones first.']
+        }
       ),
       service('ciel', 'Ciel', 'le temps qu’il fait', {}, {}),
       service('partage', 'Partage', 'des pages de tous', { sites: ['github.io'] }, {})
@@ -114,6 +119,7 @@ import { callTool } from '../src/main/mcp'
 import { profile } from '../src/main/profile/store'
 import { session } from '../src/main/session'
 import { offeredTemplate, tasks, templateTask } from '../src/main/tasks'
+import { folderTools } from '../src/main/tools/folder'
 import { servicesTools } from '../src/main/tools/services'
 import { taskTools } from '../src/main/tools/tasks'
 import type { ApprovalPart, ChatMessage, PlannedTask } from '../src/shared/types'
@@ -488,5 +494,19 @@ describe('the sites a service declares, and a task’s follow-up', () => {
     expect(await zones.run({}, { folderId: 'f1' })).toBe('none')
     expect(await zones.run({}, { folderId: 'f1', run: null })).toBe('none')
     expect(await zones.run({}, { folderId: 'f1', run: { id: 't1' } as PlannedTask })).toBe('none, for a run')
+  })
+
+  it('gives its guide with its first use in a folder, as the engine calls it, unless the engine read it there', async () => {
+    addVignette()
+    const zones = services.tools().find((t) => t.name === 'vignette_zones')!
+    const text = async (folderId: string) => (await callTool(zones, {}, { folderId })).content[0].text
+    expect(await text('g1')).toMatch(
+      /^none\n\n---\n\nThe guide « low-emission-zones », which comes with this service's first use in the folder.+\n\n# Zones\n\nRead the zones first\.$/s
+    )
+    expect(await text('g1')).toBe('none')
+    // Read with the skill tool first: it doesn't come again.
+    const skill = folderTools.find((t) => t.name === 'skill')!
+    expect((await callTool(skill, { name: 'low-emission-zones' }, { folderId: 'g2' })).content[0].text).toContain('Read the zones first.')
+    expect(await text('g2')).toBe('none')
   })
 })

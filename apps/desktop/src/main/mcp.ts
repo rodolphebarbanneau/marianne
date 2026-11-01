@@ -6,6 +6,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { app } from 'electron'
 import { maskCards } from './cards'
+import { guides } from './engines/skills'
+import { GuideLedger } from './guides'
 import { log } from './log'
 import { MCP_SERVER_NAME } from './mcp-name'
 import { profile } from './profile/store'
@@ -92,7 +94,9 @@ export async function callTool(t: Tool, args: unknown, ctx: ToolContext): Promis
     // A run's one identifier, its entity's, goes through type_text only, which checks it is exactly that one.
     if (run && replaced && t.name !== 'type_text')
       throw new ToolError(`A planned task's run cannot send the user's identifiers through ${t.name}. Stop here and report "waiting" with task_report.`)
-    const text = await t.run(resolved as never, { ...ctx, run, followUp, resolved: replaced })
+    const result = await t.run(resolved as never, { ...ctx, run, followUp, resolved: replaced })
+    // The service's guides, with its first use in the folder: an engine may go on without reading them.
+    const text = result + (ctx.folderId ? GuideLedger.text(guides.forCall(ctx.folderId, t, resolved)) : '')
     log.info(`tool ${t.name} ok in ${Date.now() - started}ms`)
     return { content: [{ type: 'text' as const, text: maskCards(redact(text, profile.tokens())) }] }
   } catch (err) {
