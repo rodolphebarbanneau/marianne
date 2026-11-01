@@ -225,8 +225,9 @@ const posters = new Map(
     captions.forEach((c) => (c.hidden = c.dataset.caption !== caption()))
     const at = screens.indexOf(current())
     dots.forEach((d, k) => d.classList.toggle('on', k === at))
-    // In the reel, the screens on either side are the next a finger brings: they load now.
-    if (phone.matches) for (const s of [screens[at - 1], screens[at + 1]]) if (s instanceof HTMLImageElement) s.loading = 'eager'
+    // In the reel, the screen a step or a tab leads to, and those on either side, the next a finger
+    // brings, load now: none of them shows an empty frame for want of having been asked for.
+    if (phone.matches) for (const s of screens.slice(Math.max(0, at - 1), at + 2)) if (s instanceof HTMLImageElement) s.loading = 'eager'
     // A film starts from its beginning each time it comes on.
     const on = current()
     if (on instanceof HTMLVideoElement && on.currentTime) on.currentTime = 0
@@ -381,8 +382,10 @@ const posters = new Map(
   const enlarge = () => {
     const screen = current()
     const text = captions.find((c) => c.dataset.caption === caption())!.textContent!.trim()
+    // Class `screen`, as in the gallery: Minitel 1 greys it the same (global.css).
     if (screen instanceof HTMLVideoElement) {
       const film = document.createElement('video')
+      film.className = 'screen'
       film.src = screen.dataset.full!
       film.poster = screen.poster
       film.muted = true
@@ -393,10 +396,24 @@ const posters = new Map(
       film.addEventListener('loadedmetadata', () => (film.currentTime = screen.currentTime), { once: true })
       sheet.replaceChildren(film)
     } else {
+      // The image the gallery shows, already there, until the largest has come: the frame is never
+      // empty while it loads.
+      const shown = screen as HTMLImageElement
       const img = document.createElement('img')
-      img.src = screen.dataset.full!
-      img.alt = (screen as HTMLImageElement).alt || text
+      img.className = 'screen'
+      img.src = shown.currentSrc || screen.dataset.full!
+      img.alt = shown.alt || text
       sheet.replaceChildren(img)
+      if (img.src !== new URL(screen.dataset.full!, location.href).href) {
+        const full = new Image()
+        full.src = screen.dataset.full!
+        full
+          .decode()
+          .then(() => {
+            if (img.isConnected) img.src = full.src
+          })
+          .catch(() => {})
+      }
     }
     dialog.querySelector('.says')!.textContent = text
     enlarged = true
@@ -515,7 +532,7 @@ const posters = new Map(
     background: var(--bg-sunken);
     box-shadow:
       0 0 0 1px rgba(0, 0, 0, 0.6),
-      0 40px 120px -30px rgba(61, 90, 254, 0.55),
+      0 40px 120px -30px color-mix(in srgb, var(--bleu) 55%, transparent),
       0 0 0 6px color-mix(in srgb, var(--bg-raised) 70%, transparent);
     overflow: hidden;
   }
@@ -657,6 +674,8 @@ const posters = new Map(
   }
   dialog.enlarged::backdrop {
     background: rgba(4, 6, 20, 0.96);
+    /* The theme's black where the backdrop inherits the page's colours. */
+    background: color-mix(in srgb, var(--noir, #04061a) 96%, transparent);
     backdrop-filter: blur(6px);
   }
   dialog.enlarged .frame,
@@ -668,7 +687,7 @@ const posters = new Map(
     aspect-ratio: 1440 / 900;
     border: 1px solid var(--rule);
     background: var(--bg-sunken);
-    box-shadow: 0 30px 120px -20px rgba(61, 90, 254, 0.5);
+    box-shadow: 0 30px 120px -20px color-mix(in srgb, var(--bleu) 50%, transparent);
   }
   dialog.enlarged .frame > :global(*) {
     display: block;
