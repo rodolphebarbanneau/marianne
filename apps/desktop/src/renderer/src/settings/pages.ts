@@ -22,6 +22,7 @@ export const SETTINGS_GROUPS: Array<{ label: string; pages: Array<{ id: string; 
       { id: 'sites', label: 'Sites et API' },
       { id: 'engines', label: 'Moteurs' },
       { id: 'browser', label: 'Navigateur' },
+      { id: 'approvals', label: 'Autorisations' },
       { id: 'privacy', label: 'Confidentialité' },
       { id: 'data', label: 'Données publiques' }
     ]

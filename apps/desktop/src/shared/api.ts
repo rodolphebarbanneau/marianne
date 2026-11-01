@@ -12,6 +12,7 @@ import type {
   AccountInfo,
   AccountSettings,
   AppInfo,
+  ApprovalAnswer,
   Attachment,
   BrowserState,
   DeepPartial,
@@ -150,6 +151,8 @@ export interface MarianneApi {
   getAccountSettings(): Promise<AccountSettings>
   setAccountSettings(patch: DeepPartial<AccountSettings>): Promise<AccountSettings>
   onAccountSettings(cb: (s: AccountSettings) => void): () => void
+  /** Réglages › Autorisations, « retirer »: a standing permission goes. They are given on a card only (respondApproval). */
+  removeApprovalRule(id: string): Promise<void>
 
   // ---------- folders ----------
   listFolders(): Promise<FolderSummary[]>
@@ -171,7 +174,8 @@ export interface MarianneApi {
   send(request: SendRequest): Promise<string>
   regenerate(folderId: string): Promise<void>
   cancel(folderId: string): void
-  respondApproval(id: string, accepted: boolean): void
+  /** « toujours… » keeps the standing permission the card offered, and only that one. */
+  respondApproval(id: string, answer: ApprovalAnswer): void
   /** Pick files: they join the archive as the folder's pièces. */
   attachFiles(folderId?: string): Promise<Attachment[]>
 

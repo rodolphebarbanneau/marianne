@@ -8,7 +8,7 @@ Marianne is a desktop citizen assistant for people living in France: their right
 - **Masked for the engines.** Identifiers (social security number, tax number, names, address, IBAN…) become `[[tokens]]` before anything reaches an engine, and are put back on the user's screen only.
   - A household member's, a company's, an employer's, a vehicle's or a home's tokens carry its number (`[[vehicle.2.plate]]`), given once and kept. A token in an earlier conversation or a planned task still means the same record after an earlier one is deleted.
 - **Chat first.** One folder is one conversation: a unit of work, like a branch and its pull request.
-- **The user decides.** Anything that changes the profile, fills a form, signs, pays or sends goes through an approval card.
+- **The user decides.** Anything that changes the profile, fills a form, signs, pays or sends goes through the user's approval: on a card, or ahead, by what the user set for going online, filling forms on a site or saving deadlines (their level, a standing permission), shown in the conversation and revocable. Signing, paying, sending, submitting, declaring and deleting take a card every time, at every level ([below](#tools-cards-and-the-browser)).
 - **Add-ons for information.** The Services (3615 codes) are packages of their own, built on an SDK: see [services.md](services.md).
 - **Reviewed content.** The engines' skills, the guided démarches, the official calendar, the public sites and the news sources are a package of their own, reviewed, and updated between releases as a bundle the project signs: see [content.md](content.md).
 - **Two languages.** Code, identifiers and engine-facing text are in English; everything the user reads is in French.
@@ -58,7 +58,7 @@ Services, Démarches and a domain's page open with the same head (`KioskHead`), 
 
 ### Settings, keys and the rest
 
-- **Settings**: a dialog over the app, in five groups: MOI (identity, household, documents), ARCHIVE (space, security, accounts), CONNEXIONS (sites, engines, browser, privacy, public data), PAGES (services), APPLICATION (display, shortcuts, skills, about).
+- **Settings**: a dialog over the app, in five groups: MOI (identity, household, documents), ARCHIVE (space, security, accounts), CONNEXIONS (sites, engines, browser, approvals, privacy, public data), PAGES (services), APPLICATION (display, shortcuts, skills, about).
 - **Keyboard** (`shared/shortcuts.ts`): every shortcut can be changed.
 
   | keys           | what                                                       |
@@ -139,9 +139,26 @@ Marianne's MCP tools:
 
 The MCP server resolves `[[tokens]]` in a tool's arguments and scrubs its result before it goes back to the engine.
 
+One place decides whether an action waits for the user's yes on a card: the approval policy (`shared/approvals.ts`, pure), from the account's level, its standing permissions and the floor; `main/approvals.ts` then shows the card, or the line of what was allowed ahead. Each tool says what it asks to do:
+
+| action  | covers                                     | allowed ahead                                                       |
+| ------- | ------------------------------------------ | ------------------------------------------------------------------- |
+| online  | going to a site from a folder              | yes: « toujours pour sanef.com »                                    |
+| form    | `fill_form` on a site                      | yes: « toujours pour les formulaires de sanef.com »                 |
+| profile | `propose`                                  | adding or updating a deadline only: « toujours pour les échéances » |
+| task    | `task_propose`                             | no                                                                  |
+| commit  | a consequential click                      | never, at any level: the floor                                      |
+| service | a call to a community service not reviewed | no                                                                  |
+
+- **The level** (Réglages › Autorisations): « tout demander » asks going online for each new site of each folder; « équilibré », the default, once per folder; at both, every form and every save to the profile asks. « autonomie » goes without asking to the sites Marianne knows (the content's public sites), fills forms and saves deadlines there, and asks other sites once per folder.
+- **Standing permissions**: a card of a kind that can be allowed ahead offers « toujours… » between « approuver » and « refuser ». The permission is kept in the account's settings, for every folder, and listed in Réglages › Autorisations with when it was given and « retirer ». The main process keeps the one the card offered, never one the window names, and the window can only take one back.
+- **The floor**: what commits the user (signing, paying, sending, submitting, declaring, certifying, deleting) takes a card for each single action, at every level, and its card says so; nothing allowed ahead covers it. Nor any other change to the profile (identity, numbers, address, accounts, ID documents, entities, household, any deletion), nor planning a task.
+- **Seen all the same**: an action allowed ahead shows in the conversation as a line, « autorisé d’office · toujours pour sanef.com » or « · autonomie », with the values of a form or a deadline, and a link to Réglages › Autorisations; going online, once per site and folder. A line or a card that can't be shown is a no.
+- **Never in a run**: a planned task's run gets no card and nothing allowed ahead ([below](#what-a-run-may-do-look-and-report)).
+
 The built-in browser belongs to a folder: shown in the right column, or kept out of sight.
 
-- Going online needs consent, once per folder or per site. Signing, paying and sending always need approval.
+- Going online needs consent. What the user said yes to on a card is the folder's, in memory until the lock. What was allowed ahead covers its own site only: it isn't the folder's consent, and an address that led elsewhere asks for that site on its own. A click that may commit the user asks every time (`tools/online.ts`); refusing a cookie banner (« tout refuser », « continuer sans accepter ») doesn't.
 - **A site** is a registrable domain, by the Public Suffix List and its private part (`shared/hosts.ts`, tldts): cfspart.impots.gouv.fr is impots.gouv.fr's, while x.asso.fr and evil.asso.fr are two sites, as are two sites on github.io. The keychain groups its logins the same way.
 - The user can take control (« prendre la main ») at any time. In a conversation, Marianne hands over for CAPTCHAs, codes and FranceConnect.
 - Its cookies live in memory only.
@@ -192,7 +209,7 @@ Nobody watches a run, and it reads pages anyone can write. So the rule is enforc
 - **Its hosts only.** A run reaches the hosts listed on its task and what is under them, over https, for that run only. « www.x » is that site, with or without its www, not every host under x. A task proposed in a conversation names one site, never a whole hosting service or a public suffix (github.io, asso.fr), nor free.fr, ovh.net or wordpress.com, which the list leaves out.
 - **Its own browser.** It browses in a view and a session of its own, emptied before and after each run: it never has the user's sign-ins, and the user's page waits aside. Its browser stays out of sight.
 - **Guarded before anything leaves** (`browser/run-guard.ts`): a link, a form, a script, a frame or a server's redirect elsewhere is stopped; a popup opens only on those hosts; nothing downloads, and nothing goes to the system (mail, phone). The tools check again where the page landed.
-- **Not the folder's consents.** It neither reads nor adds to them: those were given to a conversation.
+- **Not the folder's consents, nor the user's permissions.** It neither reads nor adds to the folder's consents: those were given to a conversation. Neither the level nor a standing permission applies to it (`main/approvals.ts` checks it again).
 - **Bound to its run.** Each call keeps to the run it started in. A call the run outlives (the user's message stopped it while a page loaded) stops, rather than go on as a conversation's.
 
 ### What comes back

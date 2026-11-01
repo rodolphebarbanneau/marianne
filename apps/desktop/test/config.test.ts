@@ -44,4 +44,24 @@ describe('config merge', () => {
     expect(accountSettings({ services: { starred: ['peage'], pinned: ['meteo'] } }).services.pinned).toEqual(['meteo'])
     expect(accountSettings({ services: { opened: { meteo: '2026-10-30T08:00:00.000Z' } } }).services.opened).toEqual({ meteo: '2026-10-30T08:00:00.000Z' })
   })
+
+  it('reads going online asked for each site as « tout demander », once per folder as « équilibré », and leaves the old setting out', () => {
+    const each = accountSettings({ browser: { askOnline: 'site', show: 'never' } })
+    expect(each.approvals).toEqual({ level: 'ask', rules: [] })
+    expect(each.browser).toEqual({ show: 'never' })
+    expect(accountSettings({ browser: { askOnline: 'folder', show: 'ask' } }).approvals.level).toBe('balanced')
+    // A new account, or one whose levels are already there: the old setting says nothing.
+    expect(accountSettings({}).approvals).toEqual({ level: 'balanced', rules: [] })
+    expect(accountSettings({ approvals: { level: 'autonomous', rules: [] }, browser: { askOnline: 'site' } }).approvals.level).toBe('autonomous')
+    expect(accountSettings({ browser: { askOnline: 'nowhere' } }).approvals.level).toBe('balanced')
+  })
+
+  it('reads back the standing permissions as they were saved, and a patch replaces them whole', () => {
+    const rule = { id: 'r1', action: 'online' as const, site: 'sanef.com', at: '2026-11-01T08:00:00.000Z' }
+    const saved = accountSettings({}, { approvals: { rules: [rule] } })
+    const read = accountSettings(JSON.parse(JSON.stringify(saved)))
+    expect(read.approvals).toEqual({ level: 'balanced', rules: [rule] })
+    expect(accountSettings(read, { approvals: { level: 'ask' } }).approvals).toEqual({ level: 'ask', rules: [rule] })
+    expect(accountSettings(read, { approvals: { rules: [] } }).approvals.rules).toEqual([])
+  })
 })

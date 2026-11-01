@@ -8,6 +8,7 @@ import type { BugReportRequest } from '../shared/bug-report'
 import type {
   AccountSettings,
   AppInfo,
+  ApprovalAnswer,
   BrowserState,
   DeepPartial,
   DeviceConfig,
@@ -200,6 +201,7 @@ export function registerIpc(): void {
   })
   handle('getAccountSettings', () => accounts.settings())
   handle('setAccountSettings', (patch: DeepPartial<AccountSettings>) => accounts.updateSettings(patch))
+  handle('removeApprovalRule', (id: string) => approvals.removeRule(id))
 
   // ---------- folders ----------
   handle('listFolders', () => folders.list())
@@ -215,7 +217,7 @@ export function registerIpc(): void {
   handle('send', (req: SendRequest) => chat.send(req))
   handle('regenerate', (id: string) => chat.regenerate(id))
   on('cancel', (id: string) => chat.cancel(id))
-  on('respondApproval', (id: string, accepted: boolean) => approvals.respond(id, accepted))
+  on('respondApproval', (id: string, answer: ApprovalAnswer) => approvals.respond(id, answer))
   handle('attachFiles', async (folderId?: string): Promise<DocumentPart[]> => {
     const folder = folderId ? folders.get(folderId) : null
     const added = await addFiles('Joindre des pièces', folder?.domain || 'identity', folderId)

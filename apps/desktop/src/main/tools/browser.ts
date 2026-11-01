@@ -13,14 +13,15 @@ import { profile } from '../profile/store'
 import { session } from '../session'
 import { siteAllowed, tasks } from '../tasks'
 import { callingFolder } from './folder'
-import { consequential, Consents, reading } from './online'
+import { consequential, Consents, knownSites, reading } from './online'
 import { clip, DOMAIN_IDS, fold, plural, tool, TOKEN, ToolError, type ToolContext } from './tool'
 
 /**
  * Marianne online, in the built-in browser: she opens public-service websites once the user
- * agreed to go online, reads pages, clicks and types; anything that commits the user waits for
- * their yes on a card, and they can take control at any time (CAPTCHA, code received by SMS,
- * FranceConnect). Passwords never reach the engine: sign-in comes from the keychain.
+ * agreed to go online (on a card, or ahead: main/approvals.ts), reads pages, clicks and types;
+ * anything that commits the user waits for their yes on a card, and they can take control at any
+ * time (CAPTCHA, code received by SMS, FranceConnect). Passwords never reach the engine: sign-in
+ * comes from the keychain.
  */
 
 const consents = new Consents()
@@ -71,28 +72,41 @@ function runOf(ctx: ToolContext): PlannedTask | null {
 const refusal = (decision: Decision, nothing: string) =>
   new ToolError(`${decision === 'refused' ? 'The user refused' : 'No answer from the user'}: ${nothing}. Do not retry; ask them what they want to do.`)
 
-/** Consent to go to the site of `url` from this folder: once per folder, or once per site, as the user chose. */
-async function online(folderId: string, url: string, reason: string, run: PlannedTask | null): Promise<void> {
+/** The sites the « autonomie » level lets Marianne go to without asking. */
+const known = () => knownSites(content.get().sites.map((s) => s.url))
+
+/**
+ * Consent to go to the site of `url` from this folder, as the approval policy decides: the user's yes
+ * on a card, or given in the folder before, or allowed ahead (their level, a standing permission).
+ * True when the user said yes in this folder; false when it was allowed ahead, which covers that
+ * site only and isn't kept as the folder's consent.
+ */
+async function online(folderId: string, url: string, reason: string, run: PlannedTask | null): Promise<boolean> {
   const site = siteOf(url)
   // A run has the sites the user gave it. It neither reads nor adds to the folder's consents: those
   // were given to a conversation, and what a run opens mustn't widen what a conversation may.
   if (run) {
-    if (siteAllowed(run, url)) return
+    if (siteAllowed(run, url)) return false
     throw beyondRun(`reach ${site}`)
   }
-  const ask = accounts.settings().browser.askOnline
-  if (consents.has(folderId, site, ask)) return
-  const decision = await approvals.request(folderId, {
-    kind: 'online',
-    title: `Aller sur ${site} ?`,
-    reason,
-    fields: [
-      { label: 'site', value: site },
-      { label: 'accord', value: ask === 'folder' ? 'pour tous les sites de ce dossier' : 'pour ce site, dans ce dossier' }
-    ]
-  })
+  const consented = { site: consents.has(folderId, site, 'site'), folder: consents.has(folderId, site, 'folder') }
+  const each = accounts.settings().approvals.level === 'ask'
+  const { decision, ahead } = await approvals.ask(
+    folderId,
+    { action: 'online', site, known: known().has(site), consented },
+    {
+      kind: 'online',
+      title: `Aller sur ${site}`,
+      reason,
+      fields: [
+        { label: 'site', value: site },
+        { label: 'accord', value: each ? 'pour ce site, dans ce dossier' : 'pour tous les sites de ce dossier' }
+      ]
+    }
+  )
   if (decision !== 'accepted') throw refusal(decision, `not going to ${site}`)
-  consents.add(folderId, site)
+  if (!ahead) consents.add(folderId, site)
+  return !ahead
 }
 
 /** The folder's page, while Marianne drives it and the user agreed to its site. */
@@ -181,7 +195,7 @@ export const browserTools = [
     title: 'Open a site',
     tokens: false,
     description:
-      'Opens a page in Marianne’s built-in browser, for this folder. The first time (in the folder, or on each site, as the user chose), they are asked to agree to go online. Open the most precise page (form, simulator, sign-in page), then read it with read_page. The browser may run out of sight: set show when the user should watch.',
+      'Opens a page in Marianne’s built-in browser, for this folder. Going to a site needs the user’s agreement: a card asks them, unless they allowed it ahead in their settings. Open the most precise page (form, simulator, sign-in page), then read it with read_page. The browser may run out of sight: set show when the user should watch.',
     input: {
       url: z.string().url().describe('https address of the page'),
       reason: z.string().describe('What it is for, in one sentence for the user (in French): shown when asking them to go online'),
@@ -192,7 +206,7 @@ export const browserTools = [
       if (!/^https:\/\//i.test(url)) throw new ToolError('Only https addresses are opened.')
       if (browser.state().controller === 'human') throw new ToolError(HUMAN)
       const run = runOf(ctx)
-      await online(folderId, url, reason, run)
+      const asked = await online(folderId, url, reason, run)
       await act(() => browser.open(url, folderId))
       const setting = accounts.settings().browser.show
       // A planned task's run happens out of sight: it doesn't take the user's screen.
@@ -200,10 +214,19 @@ export const browserTools = [
       if (visible) browser.reveal()
       await browser.settled()
       const { url: landed, title } = browser.state()
-      // Where the address led: its redirects are part of opening it, for a conversation. A run stops there.
-      // Read again: a run the user's message ended while the page loaded stops here, adding nothing.
+      // Where the address led: its redirects are part of opening it, when the user said yes to it in this
+      // conversation. A run stops there; read again, one the user's message ended while the page loaded
+      // stops here, adding nothing. Allowed ahead, the yes covers its own site: another one is asked on its own.
       if (landed && runOf(ctx)) await online(folderId, landed, reason, run)
-      else if (landed) consents.add(folderId, siteOf(landed))
+      else if (landed && asked) consents.add(folderId, siteOf(landed))
+      else if (landed && siteOf(landed) !== siteOf(url)) {
+        try {
+          await online(folderId, landed, reason, null)
+        } catch (err) {
+          browser.back()
+          throw new ToolError(`The address led to ${siteOf(landed)}. ${(err as Error).message} Went back to the previous page.`)
+        }
+      }
       pages.delete(folderId)
       forms.delete(folderId)
       const login = keychain.hasLogin(landed || url)
@@ -245,17 +268,22 @@ export const browserTools = [
         if (flagged || !reading({ ...read, label }, purpose)) throw beyondRun(`click « ${label || id} »`)
       } else if (flagged || consequential({ ...read, label }, purpose)) {
         const shown = label || 'cet élément'
-        browser.setWaiting(`cliquer sur « ${shown} »`)
-        const decision = await approvals.request(folderId, {
-          kind: 'online',
-          title: `Cliquer sur « ${shown} »`,
-          reason: purpose,
-          fields: [
-            { label: 'site', value: siteOf(url) },
-            { label: 'page', value: title || url },
-            { label: 'élément', value: shown }
-          ]
-        })
+        // The floor: a card for this one click, at every level, whatever the user allowed ahead.
+        const { decision } = await approvals.ask(
+          folderId,
+          { action: 'commit' },
+          {
+            kind: 'online',
+            title: `Cliquer sur « ${shown} »`,
+            reason: purpose,
+            fields: [
+              { label: 'site', value: siteOf(url) },
+              { label: 'page', value: title || url },
+              { label: 'élément', value: shown }
+            ]
+          },
+          { onCard: () => browser.setWaiting(`cliquer sur « ${shown} »`) }
+        )
         browser.setWaiting('')
         if (decision !== 'accepted') throw refusal(decision, 'nothing was clicked')
         // The page may have changed while the card waited: click only what the user saw.
@@ -399,7 +427,7 @@ export const browserTools = [
     name: 'fill_form',
     title: 'Form filling',
     description:
-      'Fills fields of the form read by read_form, once the user has confirmed on a card that shows every value. Use tokens such as [[nir]] or [[tax_number]] for their identifiers: Marianne replaces them on their side. For a list or radio buttons, give the exact label of an option. Never fills a password, and never submits the form.',
+      'Fills fields of the form read by read_form, once the user has confirmed on a card that shows every value, or allowed forms on this site ahead (the conversation then shows the values). Use tokens such as [[nir]] or [[tax_number]] for their identifiers: Marianne replaces them on their side. For a list or radio buttons, give the exact label of an option. Never fills a password, and never submits the form.',
     input: {
       fields: z
         .array(z.object({ id: FIELD, value: z.string() }))
@@ -415,14 +443,14 @@ export const browserTools = [
       const unknown = fields.filter((f) => !byId.has(f.id)).map((f) => f.id)
       if (unknown.length) throw new ToolError(`Unknown fields: ${unknown.join(', ')}. Read the form again.`)
       if (fields.some((f) => TOKEN.test(f.value))) throw new ToolError('Tokens with no value in the profile: use request_setup so the user fills them in.')
-      const title = `Remplir ${plural(fields.length, 'champ')} sur ${siteOf(url)}`
-      browser.setWaiting(title.toLowerCase())
-      const decision = await approvals.request(folderId, {
-        kind: 'form',
-        title,
-        reason,
-        fields: fields.map((f) => ({ label: byId.get(f.id)?.label || f.id, value: f.value }))
-      })
+      const site = siteOf(url)
+      const title = `Remplir ${plural(fields.length, 'champ')} sur ${site}`
+      const { decision } = await approvals.ask(
+        folderId,
+        { action: 'form', site, known: known().has(site) },
+        { kind: 'form', title, reason, fields: fields.map((f) => ({ label: byId.get(f.id)?.label || f.id, value: f.value })) },
+        { run: !!ctx.run, onCard: () => browser.setWaiting(title.toLowerCase()) }
+      )
       browser.setWaiting('')
       if (decision !== 'accepted') throw refusal(decision, 'nothing was filled')
       // The page may have changed while the card waited: fill only the one the user saw.

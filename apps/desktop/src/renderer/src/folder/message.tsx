@@ -1,4 +1,5 @@
 import { memo, useState } from 'react'
+import { FLOOR } from '@shared/approvals'
 import { ENGINE_LABELS } from '@shared/config'
 import type { ServiceState } from '@marianne/sdk'
 import type { ApprovalPart, Attachment, ChatMessage, ProgressPart, SetupPart, ToolPart } from '@shared/types'
@@ -96,7 +97,11 @@ function ToolLine({ part }: { part: ToolPart }) {
   )
 }
 
-/** Something that needs the user's yes: the exact values, and the decision. */
+/**
+ * Something that needs the user's yes: the exact values, and the decision: « approuver », the
+ * standing permission the card offers (« toujours… »), « refuser ». A step that commits the user
+ * offers no « toujours » and says so.
+ */
 function ApprovalCard({ part }: { part: ApprovalPart }) {
   const { setBrowserOpen } = useApp()
   const pending = part.status === 'pending'
@@ -108,6 +113,7 @@ function ApprovalCard({ part }: { part: ApprovalPart }) {
       <span className="h">
         {kind} · {part.title}
         {status && ` · ${status}`}
+        {!pending && part.always && ` · ${part.always}`}
       </span>
       <div className="in">
         {part.reason && <p className="dim">{part.reason}</p>}
@@ -125,10 +131,15 @@ function ApprovalCard({ part }: { part: ApprovalPart }) {
         )}
         {pending && (
           <div className="acts">
-            <button className="btn primary" onClick={() => api.respondApproval(part.id, true)}>
+            <button className="btn primary" onClick={() => api.respondApproval(part.id, 'approve')}>
               {sending ? 'envoyer' : 'approuver'}
             </button>
-            <button className="btn" onClick={() => api.respondApproval(part.id, false)}>
+            {part.always && (
+              <button className="btn" onClick={() => api.respondApproval(part.id, 'always')}>
+                {part.always}
+              </button>
+            )}
+            <button className="btn" onClick={() => api.respondApproval(part.id, 'refuse')}>
               refuser
             </button>
             {(part.kind === 'form' || part.kind === 'online') && (
@@ -137,15 +148,35 @@ function ApprovalCard({ part }: { part: ApprovalPart }) {
               </button>
             )}
             <span className="small dim">
-              {part.kind === 'online'
-                ? 'cela vous engage : Marianne ne le fait jamais sans vous'
-                : part.kind === 'form' || sending
-                  ? 'rien n’est envoyé sans votre accord'
-                  : 'rien n’est modifié sans votre accord'}
+              {part.action === 'commit'
+                ? FLOOR
+                : part.kind === 'online'
+                  ? 'rien n’est signé, payé ni envoyé sans votre oui'
+                  : part.kind === 'form' || sending
+                    ? 'rien n’est envoyé sans votre accord'
+                    : 'rien n’est modifié sans votre accord'}
             </span>
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+/**
+ * An action the user allowed ahead, which went without a card: one line, how it was allowed, the
+ * values a form or a deadline had, and where to take it back.
+ */
+function GivenLine({ part }: { part: ApprovalPart }) {
+  const { openSettings } = useApp()
+  const values = part.action === 'online' ? [] : part.fields
+  return (
+    <div className="tool-line">
+      autorisé d’office · {part.given} · {part.title}
+      {values.length > 0 && <span className="selectable"> · {values.map((f) => `${f.label} : ${f.value || '(vide)'}`).join(' · ')}</span>} ·{' '}
+      <button className="link" onClick={() => openSettings('approvals')}>
+        autorisations
+      </button>
     </div>
   )
 }
@@ -242,7 +273,11 @@ export const Message = memo(function Message({ message }: { message: ChatMessage
         ) : p.type === 'tool' ? (
           <ToolLine key={p.id} part={p} />
         ) : p.type === 'approval' ? (
-          <ApprovalCard key={p.id} part={p} />
+          p.given ? (
+            <GivenLine key={p.id} part={p} />
+          ) : (
+            <ApprovalCard key={p.id} part={p} />
+          )
         ) : p.type === 'setup' ? (
           <SetupCard key={i} part={p} />
         ) : p.type === 'progress' ? (

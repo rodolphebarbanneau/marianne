@@ -54,24 +54,30 @@ export const taskTools = [
           `${shared} is shared by many sites (a hosting service or a public suffix): list the one site the task needs (mairie.github.io, not github.io).`
         )
       const label = everyLabel(every)
-      const decision = await approvals.request(folder.id, {
-        kind: 'proposal',
-        title: `Planifier « ${title} » ?`,
-        reason: why ?? '',
-        fields: [
-          { label: 'tâche', value: title },
-          { label: 'qui', value: runner === 'marianne' ? 'Marianne vérifie' : 'un rappel' },
-          { label: 'quand', value: `${label}, à votre première ouverture du jour prévu` },
-          ...(folder.domain ? [{ label: 'domaine', value: domainInfo(folder.domain).short }] : []),
-          ...(runner === 'marianne'
-            ? [
-                { label: 'à chaque fois', value: instruction ?? '' },
-                { label: 'sites sans redemander', value: sites.join(', ') || 'aucun' },
-                { label: 'jamais', value: NEVER }
-              ]
-            : [])
-        ]
-      })
+      // A task is never allowed ahead: what it will do alone, the user reads on its card each time.
+      const { decision } = await approvals.ask(
+        folder.id,
+        { action: 'task' },
+        {
+          kind: 'proposal',
+          title: `Planifier « ${title} » ?`,
+          reason: why ?? '',
+          fields: [
+            { label: 'tâche', value: title },
+            { label: 'qui', value: runner === 'marianne' ? 'Marianne vérifie' : 'un rappel' },
+            { label: 'quand', value: `${label}, à votre première ouverture du jour prévu` },
+            ...(folder.domain ? [{ label: 'domaine', value: domainInfo(folder.domain).short }] : []),
+            ...(runner === 'marianne'
+              ? [
+                  { label: 'à chaque fois', value: instruction ?? '' },
+                  { label: 'sites sans redemander', value: sites.join(', ') || 'aucun' },
+                  { label: 'jamais', value: NEVER }
+                ]
+              : [])
+          ]
+        },
+        { run: !!ctx.run }
+      )
       if (decision !== 'accepted')
         throw new ToolError(`${decision === 'refused' ? 'The user refused' : 'No answer from the user'}: nothing was planned. Do not retry.`)
       const task = tasks.create({

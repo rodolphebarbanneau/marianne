@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { Boundary, SearchField } from '../components/ui'
 import { AccountsPane, SecurityPane, SpacePane } from './archive'
-import { BrowserPane, DataPane, EnginesPane, PrivacyPane, SitesPane } from './connections'
+import { ApprovalsPane, BrowserPane, DataPane, EnginesPane, PrivacyPane, SitesPane } from './connections'
 import { AboutPane, DisplayPane, ShortcutsPane, SkillsPane } from './application'
 import { DocumentsPane, HouseholdPane, IdentityPane } from './me'
 import { ServicesPane } from './pages-panes'
@@ -18,6 +18,7 @@ const PANES: Record<string, () => React.ReactNode> = {
   sites: () => <SitesPane />,
   engines: () => <EnginesPane />,
   browser: () => <BrowserPane />,
+  approvals: () => <ApprovalsPane />,
   privacy: () => <PrivacyPane />,
   data: () => <DataPane />,
   services: () => <ServicesPane />,

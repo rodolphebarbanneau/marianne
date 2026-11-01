@@ -165,6 +165,7 @@ class Chat extends EventEmitter {
       const target = w?.messages.flatMap((m) => m.parts).find((p): p is ApprovalPart => p.type === 'approval' && p.id === part.id)
       if (!target || !w) return
       target.status = part.status
+      target.always = part.always
       this.push(w)
     })
   }

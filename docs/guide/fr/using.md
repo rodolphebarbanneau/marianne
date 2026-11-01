@@ -10,9 +10,19 @@ Les dossiers en cours sont dans la colonne de gauche, avec « chercher » en hau
 
 Tout ce qui change votre profil, remplit un formulaire, signe, paie ou envoie passe d’abord par vous : Marianne vous le montre sur une carte, et attend votre accord.
 
+Dans Réglages › Autorisations, vous choisissez ce qu’elle peut faire sans demander :
+
+- **« tout demander »** : chaque nouveau site de chaque dossier, chaque formulaire et chaque enregistrement dans votre profil vous sont demandés.
+- **« équilibré »** (au départ) : aller en ligne vous est demandé une fois par dossier, et chaque formulaire et chaque enregistrement aussi.
+- **« autonomie »** : Marianne va sans demander sur les sites qu’elle connaît (les sites publics de sa liste), y remplit les formulaires et enregistre vos échéances ; les autres sites vous sont demandés une fois par dossier.
+
+Sur une carte, entre « approuver » et « refuser », « toujours pour sanef.com », « toujours pour les formulaires de sanef.com » ou « toujours pour les échéances » vous évite la même question les fois suivantes, dans tous vos dossiers. Ces autorisations sont dans Réglages › Autorisations, avec le jour où vous les avez données, et « retirer » pour les reprendre. Ce que Marianne fait ainsi reste écrit dans la conversation, sur une ligne « autorisé d’office », avec les valeurs du formulaire ou de l’échéance.
+
+Payer, signer, envoyer, déposer, déclarer, certifier et supprimer attendent toujours votre oui, sur une carte, à chaque fois, quel que soit votre choix. Seules les échéances peuvent s’enregistrer dans votre profil sans demander : votre identité, vos numéros, votre adresse, vos comptes, vos pièces, votre foyer et vos entités vous sont demandés à chaque fois. Les tâches planifiées ne se servent jamais de ces autorisations.
+
 ## Le navigateur intégré
 
-Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à droite (le bouton « navigateur ») ; glissez son bord gauche pour l’élargir ou le rétrécir, et un double-clic sur ce bord lui rend sa largeur par défaut. Elle vous demande votre accord avant d’aller en ligne, et toujours avant de signer, payer ou envoyer. Vous pouvez « prendre la main » à tout moment. Quand elle a besoin de vous (FranceConnect, un code reçu par SMS), elle ouvre le navigateur du dossier ; si vous êtes sur un autre écran, un message vous le dit, et le navigateur s’ouvre quand vous revenez au dossier. Le reste du temps, Réglages › Navigateur › « afficher le navigateur » décide : « quand Marianne le propose », « toujours », ou « jamais, il travaille hors de vue ». Ce navigateur oublie tout quand l’archive se verrouille.
+Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à droite (le bouton « navigateur ») ; glissez son bord gauche pour l’élargir ou le rétrécir, et un double-clic sur ce bord lui rend sa largeur par défaut. Elle vous demande votre accord avant d’aller en ligne, comme vous l’avez choisi ([Votre accord](#votre-accord)), et toujours avant de signer, payer ou envoyer ; refuser les cookies d’un site (« tout refuser »), elle le fait sans demander. Vous pouvez « prendre la main » à tout moment. Quand elle a besoin de vous (FranceConnect, un code reçu par SMS), elle ouvre le navigateur du dossier ; si vous êtes sur un autre écran, un message vous le dit, et le navigateur s’ouvre quand vous revenez au dossier. Le reste du temps, Réglages › Navigateur › « afficher le navigateur » décide : « quand Marianne le propose », « toujours », ou « jamais, il travaille hors de vue ». Ce navigateur oublie tout quand l’archive se verrouille.
 
 ## Les pages
 
