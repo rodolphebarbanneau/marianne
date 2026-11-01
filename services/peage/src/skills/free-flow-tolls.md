@@ -16,10 +16,14 @@ Sur une autoroute en flux libre, il n'y a pas de barrière : des portiques lisen
 
 ## Payer avec l'utilisateur
 
-- Ouvre la page officielle de paiement du réseau avec `open_site` (l'utilisateur accepte d'aller en ligne), puis `read_page`.
-- Saisis la plaque avec son jeton (`[[vehicle.1.plate]]`…), retrouve le passage et montre à l'utilisateur la date et le montant affichés par le site.
-- Le paiement passe par sa carte d'accord : un clic qui paie attend son oui. Les données de carte bancaire sont les siennes : `hand_over` pour qu'il les saisisse lui-même.
-- Une fois payé, rappelle-lui de cocher « c'est payé » dans 3615 PEAGE (marianne:service/peage).
+1. Ouvre la page de paiement par plaque du réseau (`payUrl` dans `peage_networks`) avec `open_site`, puis `read_page`. Refuse les cookies ; chez ALIAE, choisis la recherche par « Plaque d'immatriculation ».
+2. Saisis la plaque avec son jeton (`[[vehicle.1.plate]]`…) et lance la recherche, sans période de location. Montre à l'utilisateur ce qui est dû, tel que la page l'affiche : les passages, leur date quand elle est donnée, le montant.
+3. Remplis ce que la page demande avant la carte (chez ALIAE : nom, adresse de facturation, e-mail, exigés pour le 3-D Secure) avec `read_form` puis `fill_form`, avec les jetons de ses identifiants. Un bouton qui mène au paiement (« Poursuivre vers le paiement ») demande son oui sur une carte.
+4. Paie avec `pay_by_card`, en donnant le montant lu sur la page : sa carte de paiement est le oui de l'utilisateur, et couvre le clic sur le bouton de paiement qui suit. Ne demande jamais un numéro de carte dans la conversation.
+5. `hand_over` quand la banque demande une confirmation (3-D Secure : un code, son application), ou quand l'utilisateur préfère saisir sa carte lui-même. Sans carte enregistrée, propose d'en ajouter une (`request_setup`, cible `payment`), ou `hand_over`.
+6. Une fois le paiement confirmé par le site, marque les trajets payés avec `peage_mark_paid`. Un passage payé qui n'était pas noté : `peage_add_trip` d'abord, si la page donne sa date et son heure. Sans confirmation du site, ne marque rien.
+
+Sans compte, le site peut montrer qu'une somme est due sans le détail de chaque passage : chez Sanef, seul le conducteur principal déclaré dans un compte le voit avant de payer (FAQ de la page de paiement de sanef.com).
 
 ## Avis de paiement reçu par courrier
 
@@ -35,5 +39,7 @@ Sur une autoroute en flux libre, il n'y a pas de barrière : des portiques lisen
 ## Pièges
 
 - Un badge de télépéage mal fixé peut ne pas être détecté : le passage reste alors à payer par la plaque.
-- Pour une voiture de location, le site de paiement permet de limiter la recherche à la période de location.
+- Un passage peut mettre jusqu'à 24 heures à apparaître sur le site de paiement (Sanef le dit sur sa page de paiement) : « rien à payer » juste après le passage ne veut pas dire payé.
+- Pour une voiture de location, le site de paiement permet de limiter la recherche à la période de location ; chez Sanef, cette recherche ne remonte qu'aux 72 dernières heures (page « Payer sans se connecter » de sanef.com).
+- Chez ALIAE, une plaque inconnue du fichier national des immatriculations ouvre un avertissement (« Continuer » ou « Annuler ») : vérifie la plaque avec l'utilisateur avant de continuer.
 - L'A69 (Toulouse–Castres) et l'A40 (ATMB) préparent le flux libre ; tant qu'elles ne figurent pas dans `peage_networks`, renvoie vers le site de leur société d'autoroute sans affirmer de délai.

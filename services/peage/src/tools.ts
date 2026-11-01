@@ -6,7 +6,7 @@ import { checkTrip, type TripProblem, type TripStore } from './store'
 import { durationEn, stamp } from './time'
 import type { Trip, TollNetwork } from './types'
 
-/** The tools engines see as peage_<name>: the catalog, the user's trips and what is due, and recording a trip. None pays. */
+/** The tools engines see as peage_<name>: the catalog, the user's trips and what is due, recording a trip and marking one paid. None pays. */
 
 const NO_AMOUNTS = "3615 PEAGE doesn't know the amounts due: the operator's official payment page shows them from the plate. Never state or guess an amount."
 const SCAMS =
@@ -103,7 +103,7 @@ export function createTools(ctx: Pick<ServiceContext, 'profile'>, store: TripSto
       label: 'trajets à payer',
       description:
         "The user's free-flow trips recorded in 3615 PEAGE: the unpaid ones, soonest deadline first, with the deadline (passage + the network's time to pay, Paris time) and the time left; " +
-        'with paid: true, also those they marked paid. Lists their vehicles too (ids for peage_add_trip). Amounts are not known: never state one.',
+        'with paid: true, also those they marked paid. Each trip has its id (for peage_mark_paid); lists their vehicles too (ids for peage_add_trip). Amounts are not known: never state one.',
       input: { paid: z.boolean().default(false).describe('Also list the trips marked paid') },
       readOnly: true,
       run: async ({ paid: withPaid }) => {
@@ -155,6 +155,33 @@ export function createTools(ctx: Pick<ServiceContext, 'profile'>, store: TripSto
           `To pay by ${stamp(due)} (Paris), on ${network.payUrl} (${network.operator}) or another way of peage_networks; the deadline is in the user's deadlines.`,
           NO_AMOUNTS
         ].join('\n')
+      }
+    }),
+
+    defineTool({
+      name: 'mark_paid',
+      label: 'marquer un trajet payé',
+      description:
+        "Marks one of the user's recorded trips paid in 3615 PEAGE, once the operator's site has confirmed the payment, or the user tells you they paid: its deadline leaves their reminders. " +
+        "Give the trip's id (peage_trips). It pays nothing and needs no card: it is the service's own record, which the user can undo on its screen.",
+      input: { trip: z.string().trim().min(1).describe('The trip id, as peage_trips lists it') },
+      run: async ({ trip: id }, call) => {
+        // Nobody watches a run, and what it reads may lie: a trip marked paid would lose its reminder.
+        if (call.run) throw new ToolError("A planned task's run doesn't mark trips paid: it reports what it found, and paying happens with the user.")
+        const trips = store.list()
+        const trip = trips.find((t) => t.id === id)
+        if (!trip) {
+          const due = unpaid(trips)
+          throw new ToolError(
+            due.length
+              ? `No trip has the id "${id}". Unpaid trips: ${due.map((t) => `${t.id} (${networkOf(t.network)?.short ?? t.network}, passage ${stamp(new Date(t.at))})`).join('; ')}.`
+              : `No trip has the id "${id}", and no unpaid trip is recorded: record the passage with peage_add_trip first, then mark it paid.`
+          )
+        }
+        const what = `trip ${trip.id}, ${networkOf(trip.network)?.name ?? trip.network}, ${vehicleName(ctx.profile.vehicles(), trip.vehicleId)}, passage ${stamp(new Date(trip.at))} (Paris)`
+        if (trip.paidAt) return `Already marked paid ${stamp(new Date(trip.paidAt))} (Paris): ${what}.`
+        store.setPaid(trip.id, new Date())
+        return `Marked paid: ${what}. Its deadline left the user's reminders; they can undo it on 3615 PEAGE's screen.`
       }
     })
   ]

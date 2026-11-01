@@ -223,7 +223,7 @@ Nobody watches a run, and it reads pages anyone can write. So the rule is enforc
 - **Its tools** (`RUN_READS` in `tasks.ts` names the reading ones; a new tool stays out until it is named there):
   - of the app's: `open_site`, `click`, `type_text`, `task_progress`, `task_report`;
   - reading tools: its page, and what stays on this computer without the user's data (skills, démarches, public sites, a deadline's date). Never their profile, deadlines or documents, nor a tool that asks a service elsewhere, whose query would leave by a host the task doesn't list;
-  - of the services': its own service's only.
+  - of the services': its own service's only, told the call is a run's (`call.run`), so that one which marks something done (a toll paid) refuses it.
 - **No commitment.** It can't fill a form, sign in, plan a task or propose a service. It clicks only what plainly searches or moves through a page, never what could commit (`reading` in `tools/online.ts`).
 - **One identifier at most.** It types only the identifier of the entity the user agreed to, exactly, and nothing at all for a task without one. No other tool carries an identifier out of a run.
 - **No web of its own.** The engine's own web tools are off.

@@ -31,6 +31,10 @@
       "toll"
     ],
     "hosts": [],
+    "sites": [
+      "www.sanef.com",
+      "paiement.aliae.com"
+    ],
     "domains": [
       "mobility"
     ],
@@ -70,6 +74,10 @@
       {
         "name": "add_trip",
         "label": "ajouter un trajet"
+      },
+      {
+        "name": "mark_paid",
+        "label": "marquer un trajet payé"
       }
     ]
   },

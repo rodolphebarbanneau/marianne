@@ -12,12 +12,12 @@ import type { PeageMethods, Vehicles } from './types'
  * 3615 PEAGE: free-flow motorway tolls. The operators publish no API, so the service keeps the
  * trips the user records, reminds them of the time to pay, opens the official payment page and
  * warns about fake toll messages. It never pays: the user does, on the official site, or
- * Marianne does with them, in its browser, through their approval card.
+ * Marianne does with them, in its browser, with their saved card once they said yes on her card.
  */
 
-export const INSTRUCTIONS = `- Free-flow motorway sections (A13-A14, A79, the A4 at Boulay) have no barriers: the toll is paid afterwards, within 72 hours of the passage, by plate on the operator's official site, at a Nirio tobacconist, or automatically with a toll badge or an account. peage_networks gives each section's official pages, deadline and ways to pay; peage_trips the user's trips and what is due; peage_add_trip records a passage they tell you about.
-- The service doesn't know the amounts: never state one. The official payment page shows it from the plate.
-- Payment happens only on the operator's official site: open it with open_site (the user agrees to go online), find the passage with the plate token; paying waits for the user's approval card, and they type their card details themselves (hand_over).
+export const INSTRUCTIONS = `- Free-flow motorway sections (A13-A14, A79, the A4 at Boulay) have no barriers: the toll is paid afterwards, within 72 hours of the passage, by plate on the operator's official site, at a Nirio tobacconist, or automatically with a toll badge or an account. peage_networks gives each section's official pages, deadline and ways to pay; peage_trips the user's trips and what is due; peage_add_trip records a passage they tell you about; peage_mark_paid marks a recorded trip paid.
+- The service doesn't know the amounts: never state one. The official payment page shows what is due from the plate.
+- Payment happens only on the operator's official pay-by-plate page (payUrl): open it with open_site, type the plate's token, show the user what the page says is due, fill what it asks before the card (fill_form, tokens for identifiers), then pay with pay_by_card: its card is their yes. hand_over when the bank asks for a confirmation (3-D Secure), or when they prefer to type their card themselves; without a saved card, propose adding one (request_setup, target payment). Once the site confirms the payment, mark the trips paid with peage_mark_paid. The free-flow-tolls guide has the steps.
 - Never pay from a link received by SMS or email: operators send no payment link by SMS. A message claiming an unpaid toll is a scam; tell the user to delete it and forward the SMS to 33700.`
 
 /** What the view reads when a trip can't be recorded. */

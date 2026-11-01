@@ -9,6 +9,13 @@ describe('the manifest', () => {
     expect(m).toMatchObject({ id: 'peage', name: 'Péage en flux libre', category: 'daily', domains: ['mobility'], hosts: [] })
     expect(m.permissions).toEqual({ profile: ['vehicles.plate'], purpose: 'vous rappeler les péages en flux libre à payer et ouvrir le paiement officiel' })
   })
+
+  it('declares the operators’ payment sites, where Marianne acts for the user, and reaches none itself', () => {
+    const m = readManifest(pkg)
+    expect(m.sites).toEqual(['www.sanef.com', 'paiement.aliae.com'])
+    expect(m.hosts).toEqual([])
+    expect(m.tools.map((t) => t.name)).toEqual(['networks', 'trips', 'add_trip', 'mark_paid'])
+  })
 })
 
 describe('the catalog', () => {
@@ -37,5 +44,18 @@ describe('the catalog', () => {
   it('pays on the operators’ own sites only', () => {
     expect([...new Set(NETWORKS.map((n) => hostOf(n.payUrl)))]).toEqual(['www.sanef.com', 'paiement.aliae.com'])
     for (const url of SCAM_SOURCES) expect(new URL(url).protocol).toBe('https:')
+  })
+
+  it('opens each payment and account page on a site the manifest declares: pay_by_card pays only there', () => {
+    const { sites } = readManifest(pkg)
+    for (const n of NETWORKS) for (const url of [n.payUrl, ...(n.accountUrl ? [n.accountUrl] : [])]) expect(sites, `${n.id}: ${url}`).toContain(hostOf(url))
+  })
+
+  it('opens the pay-by-plate page itself, as checked on the operators’ sites', () => {
+    expect(NETWORKS.map((n) => [n.id, n.payUrl])).toEqual([
+      ['a13-a14', 'https://www.sanef.com/client/index.html?lang=fr#basket'],
+      ['a79', 'https://paiement.aliae.com/fr/form/payment'],
+      ['a4-boulay', 'https://www.sanef.com/client/index.html?lang=fr#basket']
+    ])
   })
 })

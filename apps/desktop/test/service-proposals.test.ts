@@ -42,7 +42,8 @@ vi.mock('../src/main/host/registry', () => {
     description: 'The low-emission zones.',
     input: {},
     readOnly: true,
-    run: async () => 'none'
+    // Says whether it was told a planned task's run called it.
+    run: async (_args: unknown, call: { run?: boolean }) => (call.run ? 'none, for a run' : 'none')
   }
   const template = {
     id: 'zfe:v1',
@@ -115,7 +116,7 @@ import { session } from '../src/main/session'
 import { offeredTemplate, tasks, templateTask } from '../src/main/tasks'
 import { servicesTools } from '../src/main/tools/services'
 import { taskTools } from '../src/main/tools/tasks'
-import type { ApprovalPart, ChatMessage } from '../src/shared/types'
+import type { ApprovalPart, ChatMessage, PlannedTask } from '../src/shared/types'
 
 function memoryArchive(): Archive {
   const records = new Map<string, Map<string, unknown>>()
@@ -466,5 +467,13 @@ describe('the sites a service declares, and a task’s follow-up', () => {
   it('leaves out a template whose follow-up isn’t right, and keeps the others’ as plain data', () => {
     addVignette()
     expect(services.taskTemplates().map((t) => [t.id, t.followUp])).toEqual([['zfe:v1', FOLLOW_UP]])
+  })
+
+  it('tells a service’s tool when a planned task’s run calls it, so that one which marks something done can refuse', async () => {
+    addVignette()
+    const zones = services.tools().find((t) => t.name === 'vignette_zones')!
+    expect(await zones.run({}, { folderId: 'f1' })).toBe('none')
+    expect(await zones.run({}, { folderId: 'f1', run: null })).toBe('none')
+    expect(await zones.run({}, { folderId: 'f1', run: { id: 't1' } as PlannedTask })).toBe('none, for a run')
   })
 })
