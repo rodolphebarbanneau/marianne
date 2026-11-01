@@ -28,6 +28,13 @@ export const FILL_SCRIPT = (username: string, password: string) => `(() => {
 
 export const READ_SCRIPT = `(() => ({ title: document.title, url: location.href, text: (document.body && document.body.innerText) || '' }))()`
 
+/**
+ * The first of an element's possible names that is one, its spaces collapsed (the page scripts' own
+ * function, run in tests as the pages run it). Some pages print a value they lack into the attribute:
+ * Sanef's plate field says aria-label="undefined", above its label « N° d’immatriculation ».
+ */
+export const NAME_OF = `(names) => names.map((v) => String(v ?? '').replace(/\\s+/g, ' ').trim()).find((s) => s && !/^(undefined|null)$/i.test(s)) || ''`
+
 export interface FormField {
   id: string
   label: string
@@ -46,11 +53,12 @@ export const FORM_READ_SCRIPT = `(() => {
   const cardKind = ${CARD_KIND}
   const visible = (el) => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length) && getComputedStyle(el).visibility !== 'hidden'
   const text = (el) => (el ? (el.innerText || el.textContent || '') : '').replace(/\\s+/g, ' ').trim()
+  const nameOf = ${NAME_OF}
   const labelOf = (el) => {
     const byFor = el.id ? document.querySelector('label[for="' + CSS.escape(el.id) + '"]') : null
     const ids = (el.getAttribute('aria-labelledby') || '').split(/\\s+/).filter(Boolean)
     const labelled = ids.map((i) => text(document.getElementById(i))).join(' ')
-    return (text(byFor) || text(el.closest('label')) || el.getAttribute('aria-label') || labelled || el.placeholder || el.title || el.name || '').slice(0, 140)
+    return nameOf([text(byFor), text(el.closest('label')), el.getAttribute('aria-label'), labelled, el.placeholder, el.title, el.name]).slice(0, 140)
   }
   const skip = ['hidden', 'password', 'file', 'submit', 'button', 'image', 'reset']
   // Shown passwords (type switched to text), one-time codes, captchas, card codes.
@@ -135,6 +143,13 @@ export const PAGE_READ_SCRIPT = `(() => {
   const cardKind = ${CARD_KIND}
   const visible = (el) => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length) && getComputedStyle(el).visibility !== 'hidden'
   const text = (el) => (el ? (el.innerText || el.textContent || '') : '').replace(/\\s+/g, ' ').trim()
+  const nameOf = ${NAME_OF}
+  // A field's own label, its first line: a label may hold the field's hints too (a counter, « * »).
+  const labelOf = (el) => {
+    if (!el.matches('input, select, textarea')) return ''
+    const label = (el.id && document.querySelector('label[for="' + CSS.escape(el.id) + '"]')) || el.closest('label')
+    return label ? nameOf((label.innerText || label.textContent || '').split('\\n')) : ''
+  }
   const elements = []
   let n = 0
   for (const el of document.querySelectorAll('a[href], button, input, select, textarea, [role=button], [role=link], [role=checkbox], [role=tab], [onclick]')) {
@@ -143,7 +158,7 @@ export const PAGE_READ_SCRIPT = `(() => {
     el.setAttribute('data-marianne-el', id)
     const role = el.getAttribute('role') || (el.tagName === 'A' ? 'link' : el.tagName === 'BUTTON' ? 'button' : el.tagName === 'SELECT' ? 'select' : el.tagName === 'TEXTAREA' ? 'textarea' : el.type === 'submit' || el.type === 'button' ? 'button' : 'field')
     const card = el.matches('input, select') ? cardKind(el) : null
-    const label = (text(el) || el.getAttribute('aria-label') || (card ? '' : el.value) || el.placeholder || el.title || el.name || '').slice(0, 120)
+    const label = nameOf([text(el), el.getAttribute('aria-label'), labelOf(el), card ? '' : el.value, el.placeholder, el.title, el.name]).slice(0, 120)
     elements.push({ id, role, label, type: el.type || '', secret: el.type === 'password', card: !!(card && card.sure) })
     if (elements.length >= 300) break
   }
