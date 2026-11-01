@@ -729,6 +729,23 @@ textarea.notes {
   background: var(--accent);
   color: var(--noir);
 }
+/* A page's key after its name: the palette's keycap, quieter, lit with the page shown. */
+.tabs-bar .pkey {
+  margin-left: 8px;
+  padding: 0 4px;
+  font-family: inherit;
+  font-size: 0.72em;
+  line-height: 1.45;
+  vertical-align: 1px;
+  color: var(--muted);
+}
+.tabs-bar button:hover .pkey {
+  color: var(--dim);
+}
+.tabs-bar button.on .pkey {
+  color: color-mix(in srgb, var(--noir) 75%, var(--accent));
+  border-color: color-mix(in srgb, var(--noir) 40%, var(--accent));
+}
 .titlebar .right {
   margin-left: auto;
   display: flex;
@@ -1240,9 +1257,12 @@ button.card:hover {
     border-right: 0;
   }
 }
-/* A phone-wide window: the name gives way to the pages' tabs. */
+/* A phone-wide window: the name gives way to the pages' tabs, which keep their names without their keys. */
 @media (max-width: 560px) {
   .titlebar .mark {
+    display: none;
+  }
+  .tabs-bar .pkey {
     display: none;
   }
   .tabs-bar {

@@ -27,11 +27,21 @@ export function TitleBar() {
         </button>
       </div>
       <nav className="tabs-bar">
-        {TABS.map((page) => (
-          <button key={page} className={current === page ? 'on' : ''} title={label(page)} onClick={() => app.goPage(page)}>
-            {PAGE_LABELS[page]}
-          </button>
-        ))}
+        {/* Each page with its key after its name, as the bottom bar shows them: muted, lit with the page shown. */}
+        {TABS.map((page) => {
+          const key = label(page)
+          return (
+            <button
+              key={page}
+              className={current === page ? 'on' : ''}
+              title={key ? `${PAGE_LABELS[page]} (${key})` : undefined}
+              onClick={() => app.goPage(page)}
+            >
+              {PAGE_LABELS[page]}
+              {key && <kbd className="kbd pkey">{key}</kbd>}
+            </button>
+          )
+        })}
       </nav>
       <div className="right">
         <button
