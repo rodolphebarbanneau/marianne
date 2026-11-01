@@ -19,8 +19,7 @@ const fr = {
     services: 'Services',
     download: 'Télécharger',
     guide: 'Guide',
-    manifesto: 'Manifeste',
-    about: 'À propos'
+    manifesto: 'Manifeste'
   },
   ui: {
     mono: 'Minitel 1',
@@ -49,7 +48,8 @@ const fr = {
     next: 'suivant',
     zoom: 'AGRANDIR',
     zoomLabel: 'agrandir l’écran',
-    pan: 'faites glisser pour parcourir l’écran',
+    tap: 'touchez l’écran pour le voir de près',
+    pan: 'faites glisser pour parcourir l’écran, touchez-le pour le revoir en entier',
     close: 'fermer',
     tabs: {
       dossier: 'un dossier',
@@ -297,6 +297,10 @@ const fr = {
   },
   bar: { locked: 'rien ne quitte votre ordinateur', prev: 'précédent', next: 'suivant', top: 'haut de page', help: 'le guide' },
   footer: {
+    /** The footer's links, lowercase like its others, where the header's tabs take a capital. */
+    guide: 'guide',
+    manifesto: 'manifeste',
+    about: 'à propos',
     disclaimer:
       'Marianne est un projet indépendant, sans lien avec l’État ni avec aucune administration. Elle aide à comprendre et à préparer vos démarches, sans remplacer l’administration ni un conseil juridique.',
     code: 'le code source',
@@ -324,8 +328,7 @@ const en: typeof fr = {
     services: 'Services',
     download: 'Download',
     guide: 'Guide',
-    manifesto: 'Manifesto',
-    about: 'About'
+    manifesto: 'Manifesto'
   },
   ui: {
     mono: 'Minitel 1',
@@ -354,7 +357,8 @@ const en: typeof fr = {
     next: 'next',
     zoom: 'ENLARGE',
     zoomLabel: 'enlarge the screen',
-    pan: 'drag to move around the screen',
+    tap: 'tap the screen to see it up close',
+    pan: 'drag to move around the screen, tap it to see it whole again',
     close: 'close',
     tabs: {
       dossier: 'a folder',
@@ -593,6 +597,10 @@ const en: typeof fr = {
   },
   bar: { locked: 'nothing leaves your computer', prev: 'previous', next: 'next', top: 'top of the page', help: 'the guide' },
   footer: {
+    /** The footer's links, lowercase like its others, where the header's tabs take a capital. */
+    guide: 'guide',
+    manifesto: 'manifesto',
+    about: 'about',
     disclaimer:
       'Marianne is an independent project, not affiliated with the French State or any administration. It helps you understand and prepare your formalities, without replacing the administration or legal advice.',
     code: 'the source code',
