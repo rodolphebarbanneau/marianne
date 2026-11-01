@@ -317,7 +317,7 @@ export const browserTools = [
     title: 'Open a site',
     tokens: false,
     description:
-      'Opens a page in Marianne’s built-in browser, for this folder. Going to a site needs the user’s agreement: a card asks them, unless they allowed it ahead in their settings. Open the most precise page (form, simulator, sign-in page), then read it with read_page. The browser may run out of sight: set show when the user should watch.',
+      'Opens a page in Marianne’s built-in browser, for this folder. Going to a site needs the user’s agreement: a card asks them, unless they already said yes to it in this folder, allowed it ahead (their level, a standing permission), or started this turn from a planned task’s follow-up that covers the site. Open the most precise page (form, simulator, sign-in page), then read it with read_page. The browser may run out of sight: set show when the user should watch.',
     input: {
       url: z.string().url().describe('https address of the page'),
       reason: z.string().describe('What it is for, in one sentence for the user (in French): shown when asking them to go online'),
@@ -378,7 +378,7 @@ export const browserTools = [
     name: 'click',
     title: 'Click',
     description:
-      'Clicks an element of the page read (read_page). A click that commits the user (sign, pay, send, submit, confirm, declare, delete, certify…) waits for their yes on a card: Marianne judges from the element, and you must set consequential when you know it commits them whatever its label (a box « je certifie sur l’honneur »…). On a site Marianne’s services act on, the steps on the way (search, validate, continue, go on to pay) need no card, since paying there goes through pay_by_card’s, while signing, sending, declaring, deleting and the like still ask: set consequential on any click there that would pay without pay_by_card (a card saved in the site’s account, a one-click payment). If they refuse, do not retry: ask them.',
+      'Clicks an element of the page read (read_page). A click that commits the user (sign, pay, send, submit, confirm, declare, delete, certify…) waits for their yes on a card: Marianne judges from the element, and you must set consequential when you know it commits them whatever its label (a box « je certifie sur l’honneur »…). On a site Marianne’s services that are on act on, the steps on the way (search, validate, continue, go on to pay) need no card, since paying there goes through pay_by_card’s, while signing, sending, declaring, deleting and the like still ask. A click there whose label pays asks when the page holds card fields, or once the user’s account may be open on the site (sign_in, hand_over, the user took control), unless pay_by_card’s yes covers it. Set consequential on any click that would pay without pay_by_card (a card saved in the site’s account, a one-click payment). If they refuse, do not retry: ask them.',
     input: {
       element: ELEMENT,
       purpose: z.string().describe('What the click does, in one sentence for the user (in French): shown when it needs their yes'),
@@ -465,7 +465,7 @@ export const browserTools = [
     name: 'type_text',
     title: 'Typing',
     description:
-      'Types a value into a field of the page read (read_page). Use tokens such as [[nir]] or [[last_name]] for the user’s identifiers: Marianne replaces them on their side, and never with a password (sign_in). Nothing is sent until the form is submitted.',
+      'Types a value into a field of the page read (read_page). Use tokens such as [[nir]] or [[last_name]] for the user’s identifiers: Marianne replaces them on their side. Never a password (sign_in fills it), nor card details (pay_by_card fills them). On a site one of Marianne’s services acts on, an identifier typed asks as a form filled there does: a card shows the field and the value, unless the user allowed that site’s forms ahead or the follow-up this turn started from covers it. Nothing is sent until the form is submitted.',
     input: { element: ELEMENT, value: z.string().max(10_000) },
     run: async ({ element: id, value }, ctx) => {
       const { folderId, url } = await current(ctx)
@@ -607,7 +607,7 @@ export const browserTools = [
     name: 'fill_form',
     title: 'Form filling',
     description:
-      'Fills fields of the form read by read_form, once the user has confirmed on a card that shows every value, or allowed forms on this site ahead (the conversation then shows the values). Use tokens such as [[nir]] or [[tax_number]] for their identifiers: Marianne replaces them on their side. For a list or radio buttons, give the exact label of an option. Never fills a password, and never submits the form.',
+      'Fills fields of the form read by read_form, once the user has confirmed on a card that shows every value, or allowed forms on this site ahead, or started this turn from a follow-up that covers them (the conversation then shows the values). Use tokens such as [[nir]] or [[tax_number]] for their identifiers: Marianne replaces them on their side. For a list or radio buttons, give the exact label of an option. Never fills a password, and never submits the form.',
     input: {
       fields: z
         .array(z.object({ id: FIELD, value: z.string() }))
@@ -639,7 +639,7 @@ export const browserTools = [
       // The page may have changed while the card waited: fill only the one the user saw.
       if (browser.currentUrl() !== read.url) throw new ToolError('The page changed since the form was read: nothing was filled. Read it again.')
       const { filled, missing } = await act(() => browser.fillForm(Object.fromEntries(fields.map((f) => [f.id, f.value]))))
-      return `Filled ${plural(filled.length, 'field')}${missing.length ? `; not filled (option not found or field gone): ${missing.join(', ')}` : ''}. Nothing was submitted: once the user has checked it, submit it with click (they approve it), or let them send it.`
+      return `Filled ${plural(filled.length, 'field')}${missing.length ? `; not filled (option not found or field gone): ${missing.join(', ')}` : ''}. Nothing was submitted: once the user has checked it, submit it with click, or let them send it.`
     }
   }),
 
@@ -647,7 +647,7 @@ export const browserTools = [
     name: 'pay_by_card',
     title: 'Card payment',
     description:
-      'Pays by card on this folder’s page with one of the user’s saved cards (Réglages › Paiement). It finds the card fields, in the page and in its payment provider’s frames, and asks the user’s yes on a card that shows the site, the page, the card and the amount you read on the page (they type the security code there when it isn’t saved); then it fills the number, expiry, holder and code. The card’s details never reach you. Only on a site Marianne knows (the public sites, the sites her services that are on act on), or a payment provider’s page one of them sent the browser to; elsewhere, let the user pay (hand_over). That yes also covers the one pay click that follows on this page (click). Without card, it takes the only saved card, or lists them.',
+      'Pays by card on this folder’s page with one of the user’s saved cards (Réglages › Paiement). It finds the card fields, in the page and in its payment provider’s frames, and asks the user’s yes on a card that shows the site, the page, the card and the amount you read on the page (they type the security code there when it isn’t saved); then it fills the number, expiry, holder and code. The card’s details never reach you. Only on a site Marianne knows (the public sites, the sites her services that are on act on), or on a payment provider’s page that a page on a host her services act on sent the browser to (its form or its link); elsewhere, let the user pay (hand_over). That yes also covers the one pay click that follows on this page (click). Without card, it takes the only saved card that hasn’t expired, or lists them.',
     input: {
       card: z.string().max(80).optional().describe('The saved card to use: its label or its last four digits, as this tool lists them'),
       amount: z.string().min(1).max(60).describe('The amount to pay as the page shows it, e.g. « 12,40 € »: the user sees it as read on the page'),
@@ -662,7 +662,7 @@ export const browserTools = [
       const route = paymentRoute(url, browser.arrival(), (site, page) => (page === url ? known().has(site) : declared(page)))
       if (!route)
         throw new ToolError(
-          `${siteOf(url)} is not a site where Marianne pays by card: only the sites she knows (the public sites, the sites her services that are on act on), or a payment provider’s page one of them sent the browser to. Let the user pay themselves: hand_over.`
+          `${siteOf(url)} is not a site where Marianne pays by card: only the sites she knows (the public sites, the sites her services that are on act on), or a payment provider’s page that a page on a host her services act on sent the browser to. Let the user pay themselves: hand_over.`
         )
       const card = pickCard(wanted)
       const expiry = parseExpiry(card.expiry)!

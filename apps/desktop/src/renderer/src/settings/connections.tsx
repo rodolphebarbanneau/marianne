@@ -386,10 +386,14 @@ export function BrowserPane() {
     <div className="rows">
       <div className="row">
         <span>aller en ligne</span>
-        <span className="dim">ce que Marianne fait sans vous demander se règle dans Autorisations</span>
-        <button className="btn small" onClick={() => openSettings('approvals')}>
-          autorisations →
-        </button>
+        {/* The button in the value column, so that the text starts where its neighbours' do. */}
+        <span>
+          <span className="dim">ce que Marianne fait sans vous demander se règle dans Autorisations</span>{' '}
+          <button className="btn small" onClick={() => openSettings('approvals')}>
+            autorisations →
+          </button>
+        </span>
+        <span />
       </div>
       <div className="row">
         <span>afficher le navigateur</span>
@@ -455,6 +459,14 @@ export function ApprovalsPane() {
           <span>votre profil</span>
           <span className="dim">
             seules les échéances peuvent s’enregistrer sans demander. Tout autre changement, et toute suppression, vous est demandé à chaque fois.
+          </span>
+          <span />
+        </div>
+        <div className="row">
+          <span>sites de vos services</span>
+          <span className="dim">
+            sur les sites où agissent vos services officiels, Marianne passe les étapes sans vous demander (chercher, valider, continuer). Payer, signer et
+            envoyer y attendent toujours votre oui ; y aller et y remplir un formulaire suivent le niveau et vos autorisations.
           </span>
           <span />
         </div>

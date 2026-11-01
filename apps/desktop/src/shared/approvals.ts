@@ -138,6 +138,8 @@ export const FLOOR = 'payer, signer et envoyer attendent toujours votre oui'
 /**
  * What the sites a built-in service declares (`sites`) mean for the user, in one line wherever they are
  * shown (« avant d’ajouter », the services table, Marianne's card proposing the service): she clicks
- * the steps on the way there without a card, the floor still asking (tools/browser.ts, click).
+ * the steps on the way there without a card, the floor still asking (tools/browser.ts, click), while going
+ * there and filling its forms follow the user's level and standing permissions, as anywhere.
  */
-export const ON_SITES = 'elle y avance sans vous demander, sauf pour payer, signer ou envoyer'
+export const ON_SITES =
+  'elle y passe les étapes sans vous demander ; payer, signer ou envoyer attend votre oui, et y aller ou remplir un formulaire suit vos autorisations'

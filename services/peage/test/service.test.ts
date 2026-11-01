@@ -53,16 +53,21 @@ describe('the runtime', () => {
 
   it('has Marianne pay with the user’s saved card, on their yes, and mark the trips paid once the site confirms', () => {
     const { runtime } = setup()
-    expect(runtime.instructions).toContain('then pay with pay_by_card: its card is their one confirmation.')
+    expect(runtime.instructions).toContain("When you pay with the user, it is on the operator's official pay-by-plate page (payUrl), never from a link")
+    expect(runtime.instructions).toContain('then pay with pay_by_card: its card confirms the payment and covers the pay click that follows.')
     expect(runtime.instructions).toContain('Set consequential on a click that would pay without pay_by_card')
-    // The payment card is the one confirmation: nothing anticipates another card.
+    // The payment card confirms the payment; how many other cards the user's level asks is not for the service to promise.
+    expect(runtime.instructions).not.toContain('one confirmation')
     expect(runtime.instructions).not.toMatch(/no card of their own|card of its own/)
     expect(runtime.instructions).toContain('hand_over when the bank asks for a confirmation (3-D Secure)')
     expect(runtime.instructions).toContain('propose adding one (request_setup, target payment)')
     expect(runtime.instructions).toContain('Once the site confirms the payment, mark the trips paid with peage_mark_paid')
     expect(runtime.instructions).toContain('forward the SMS to 33700')
     expect(runtime.skills?.[0]).toContain('Paie avec `pay_by_card`')
-    expect(runtime.skills?.[0]).toContain("sa carte de paiement est la seule confirmation que donne l'utilisateur")
+    expect(runtime.skills?.[0]).toContain(
+      "l'utilisateur confirme le paiement sur sa carte de paiement, et ce oui couvre le clic sur le bouton de paiement qui suit"
+    )
+    expect(runtime.skills?.[0]).not.toContain('seule confirmation')
     expect(runtime.skills?.[0]).toContain(
       'clique les étapes du chemin (chez ALIAE : « Payer mes trajets », « carte bancaire », « Poursuivre vers le paiement »)'
     )

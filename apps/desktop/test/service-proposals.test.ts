@@ -265,7 +265,8 @@ describe('proposing a service', () => {
       // Where she would act, and what that means: she goes on there without asking, but to pay, sign or send.
       {
         label: 'Marianne pourra agir pour vous sur',
-        value: 'paiement.vignette.example ; elle y avance sans vous demander, sauf pour payer, signer ou envoyer'
+        value:
+          'paiement.vignette.example · elle y passe les étapes sans vous demander ; payer, signer ou envoyer attend votre oui, et y aller ou remplir un formulaire suit vos autorisations'
       },
       { label: 'lira de votre profil', value: 'la vignette Crit’Air de vos véhicules, pour vous dire où vous pouvez rouler, si vous l’acceptez' },
       { label: 'outils pour Marianne', value: 'zones à faibles émissions' }
