@@ -19,6 +19,7 @@ import {
   whenOf
 } from '../../src/renderer/src/lib/demarches'
 import { ticketCells, TICKET_MACHINE_ART } from '../../src/renderer/src/components/ticket-machine'
+import { MINITEL_ART } from '../../src/renderer/src/pages/services/kiosk'
 import type { FolderSummary, PlannedTask, TaskTemplate } from '../../src/shared/types'
 
 /** Friday 30 October 2026. */
@@ -313,16 +314,22 @@ describe('the search', () => {
 
 describe('the ticket machine', () => {
   it('is on the Minitel’s grid', () => {
-    expect(TICKET_MACHINE_ART).toHaveLength(24)
-    expect(TICKET_MACHINE_ART.every((row) => row.length === 25)).toBe(true)
+    const [width, height] = [MINITEL_ART[0].length, MINITEL_ART.length]
+    expect(MINITEL_ART.every((row) => row.length === width)).toBe(true)
+    expect(TICKET_MACHINE_ART).toHaveLength(height)
+    expect(TICKET_MACHINE_ART.every((row) => row.length === width)).toBe(true)
   })
 
   it('blinks at its slot at rest, and prints the number', () => {
-    expect(ticketCells(null).every((c) => c.blink)).toBe(true)
+    const slot = ticketCells(null)
+    expect(slot.every((c) => c.blink && TICKET_MACHINE_ART[c.y][c.x] === 's')).toBe(true)
     const cells = ticketCells(8)
     expect(cells.some((c) => c.ink === 'W')).toBe(true)
     expect(cells.some((c) => c.ink === 's')).toBe(true)
-    expect(cells.every((c) => c.x < 25 && c.y < 24)).toBe(true)
+    expect(cells.every((c) => c.x < TICKET_MACHINE_ART[0].length && c.y < TICKET_MACHINE_ART.length)).toBe(true)
+    // The ticket comes out of the slot: right under it, no wider.
+    expect(Math.min(...cells.map((c) => c.y))).toBe(slot[0].y + 1)
+    expect(cells.every((c) => TICKET_MACHINE_ART[slot[0].y][c.x] === 's')).toBe(true)
   })
 
   it('prints both digits, in their places', () => {

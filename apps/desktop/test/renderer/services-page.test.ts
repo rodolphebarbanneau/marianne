@@ -1,8 +1,11 @@
 import { readManifest, type ServiceState } from '@marianne/sdk'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { CatalogueEntry } from '../../src/shared/catalogue'
 import { catalogueRows, recommended } from '../../src/renderer/src/pages/services/discover'
 import { highlight, listings, nextSort, scoreOf, search, searchTerms, sortCatalogue, sortMine, trustRank } from '../../src/renderer/src/pages/services/model'
+import { ServicesHead } from '../../src/renderer/src/pages/services/kiosk'
 import { flatten } from '../../src/renderer/src/pages/services/search-view'
 
 const state = (
@@ -137,6 +140,17 @@ describe('the 3615 bar', () => {
       { text: 'eau', mark: true }
     ])
     expect(highlight('Météo', [])).toEqual([{ text: 'Météo', mark: false }])
+  })
+})
+
+describe('the Minitel beside the bar', () => {
+  it('lights an echo of its screen for each letter typed, the next one blinking', () => {
+    const head = (query: string) =>
+      renderToStaticMarkup(createElement(ServicesHead, { query, onQuery: () => undefined, onEnvoi: () => undefined, onKey: () => undefined }))
+    const lit = (html: string) => html.match(/fill:var\(--jaune\)/g)?.length ?? 0
+    // The yellow of 3615 on its screen, then two echoes more for two letters.
+    expect(lit(head('ab')) - lit(head(''))).toBe(2)
+    expect(head('ab').match(/class="blinkcell"/g)).toHaveLength(1)
   })
 })
 
