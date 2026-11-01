@@ -216,6 +216,8 @@ export interface CardFrame {
   fields: CardField[]
   /** The labels of its pay buttons (tagged p1, p2…), in a frame other than the page itself; none in the page, where click reaches. */
   pay: string[]
+  /** A payment provider's frame that couldn't be read: no field known, and a card may be typed there all the same. */
+  unread?: boolean
 }
 
 /**

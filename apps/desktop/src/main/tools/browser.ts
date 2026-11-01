@@ -38,12 +38,19 @@ const pages = new Map<string, { url: string; elements: Map<string, PageElement> 
 const forms = new Map<string, { url: string; fields: FormField[] }>()
 /**
  * The sites where something of the user's own may be in play this session: an account Marianne signed
- * in to (sign_in), a page the user had in hand (hand_over, « prendre la main »), where they may have
- * signed in or typed their card. There, a click that reads as paying may pay with what the site keeps,
+ * in to (sign_in), a page the user had in hand (hand_over, « prendre la main ») or typed in, where they
+ * may have signed in or typed their card. There, a click that commits may pay with what the site keeps,
  * without the payment card (click). By site, not by folder: the browser's sign-ins are the session's,
  * every folder's, until the lock empties them.
  */
 const personal = new Set<string>()
+/**
+ * How many of each folder's turns have ended: a payment approved in one turn presses or covers nothing
+ * once it is over (pay_by_card). Never reset, not even at the lock: a call that read it before must not
+ * find the same number after.
+ */
+const turns = new Map<string, number>()
+const turnOf = (folderId: string) => turns.get(folderId) ?? 0
 
 // What the user allowed and what Marianne read go away with the session.
 session.on('locked', () => {
@@ -54,10 +61,16 @@ session.on('locked', () => {
   personal.clear()
 })
 // A payment's yes covers its pay click within its turn only.
-approvals.on('ended', (folderId: string) => payGrants.end(folderId))
-// Wherever the user goes while the page is in their hands.
+approvals.on('ended', (folderId: string) => {
+  turns.set(folderId, turnOf(folderId) + 1)
+  payGrants.end(folderId)
+})
+// Wherever the user goes while the page is in their hands, and wherever they type in it.
 browser.on('state', (state: BrowserState) => {
   if (state.controller === 'human' && state.url && session.unlocked) personal.add(siteOf(state.url))
+})
+browser.on('typed', (url: string) => {
+  if (session.unlocked) personal.add(siteOf(url))
 })
 
 const HUMAN = 'The user has taken control of the browser: do not act on the page until they hand it back, then read it again (read_page).'
@@ -202,12 +215,12 @@ function element(folderId: string, url: string, id: string): PageElement {
 
 /**
  * Whether a frame of the page, any of them, holds a card's number or security code, filled or not
- * (pay_by_card's scan): a card may be typed there. A holder's name or an expiry alone may be an
- * account's or an identity card's.
+ * (pay_by_card's scan), or is a payment provider's that couldn't be read: a card may be typed there.
+ * A holder's name or an expiry alone may be an account's or an identity card's.
  */
 async function holdsCard(): Promise<boolean> {
   const frames = await act(() => browser.cardFields(() => true))
-  return frames.some((frame) => frame.fields.some((field) => field.kind === 'number' || field.kind === 'cvv'))
+  return frames.some((frame) => frame.unread || frame.fields.some((field) => field.kind === 'number' || field.kind === 'cvv'))
 }
 
 /** Keep the elements of a page read, for click and type_text, and describe it for the engine. */
@@ -378,7 +391,7 @@ export const browserTools = [
     name: 'click',
     title: 'Click',
     description:
-      'Clicks an element of the page read (read_page). A click that commits the user (sign, pay, send, submit, confirm, declare, delete, certify…) waits for their yes on a card: Marianne judges from the element, and you must set consequential when you know it commits them whatever its label (a box « je certifie sur l’honneur »…). On a site Marianne’s services that are on act on, the steps on the way (search, validate, continue, go on to pay) need no card, since paying there goes through pay_by_card’s, while signing, sending, declaring, deleting and the like still ask. A click there whose label pays asks when the page holds card fields, or once the user’s account may be open on the site (sign_in, hand_over, the user took control), unless pay_by_card’s yes covers it. Set consequential on any click that would pay without pay_by_card (a card saved in the site’s account, a one-click payment). If they refuse, do not retry: ask them.',
+      'Clicks an element of the page read (read_page). A click that commits the user (sign, pay, send, submit, confirm, declare, delete, certify…) waits for their yes on a card: Marianne judges from the element, and you must set consequential when you know it commits them whatever its label (a box « je certifie sur l’honneur »…). On a site Marianne’s services that are on act on, the steps on the way (search, validate, continue, go on to pay) need no card, since paying there goes through pay_by_card’s, while signing, sending, declaring, deleting and the like still ask. Every click there that commits asks when the page holds card fields, or once the user’s account may be open on the site (sign_in, hand_over, the user took control or typed in the page), unless pay_by_card’s yes covers it. Set consequential on any click that would pay without pay_by_card (a card saved in the site’s account, a one-click payment). If they refuse, do not retry: ask them.',
     input: {
       element: ELEMENT,
       purpose: z.string().describe('What the click does, in one sentence for the user (in French): shown when it needs their yes'),
@@ -407,11 +420,10 @@ export const browserTools = [
         const again = !paid && paying(label) && payGrants.pressedOn(folderId, url, version)
         // On a site Marianne's own services declare, the steps on the way (searching, validating, going on to pay) need
         // no card: paying there takes pay_by_card's. What binds the user beyond paying, or what the engine flags, asks.
-        // So does a click that reads as paying where something else could pay: a card in the page (the user's, typed
-        // in a hand-over), or an account of theirs open on the site, which may keep a card of its own.
-        const free =
-          paid ||
-          (!flagged && !again && declared(here) && !binding(clicked, purpose) && (!paying(label) || (!personal.has(siteOf(here)) && !(await holdsCard()))))
+        // So does every step that commits once something else could pay: a card in the page (the user's, typed in a
+        // hand-over), or an account of theirs open on the site, which may keep a card of its own. Then whatever the
+        // label says (« Je confirme », « Commander », an icon) may be the one that pays.
+        const free = paid || (!flagged && !again && declared(here) && !binding(clicked, purpose) && !personal.has(siteOf(here)) && !(await holdsCard()))
         const shown = label || 'cet élément'
         // The floor: a card for this one click, at every level, whatever the user allowed ahead.
         const { decision } = free
@@ -465,7 +477,7 @@ export const browserTools = [
     name: 'type_text',
     title: 'Typing',
     description:
-      'Types a value into a field of the page read (read_page). Use tokens such as [[nir]] or [[last_name]] for the user’s identifiers: Marianne replaces them on their side. Never a password (sign_in fills it), nor card details (pay_by_card fills them). On a site one of Marianne’s services acts on, an identifier typed asks as a form filled there does: a card shows the field and the value, unless the user allowed that site’s forms ahead or the follow-up this turn started from covers it. Nothing is sent until the form is submitted.',
+      'Types a value into a field of the page read (read_page). Use tokens such as [[nir]] or [[last_name]] for the user’s identifiers: Marianne replaces them on their side. Never a password (sign_in fills it), nor card details (pay_by_card fills them). An identifier typed asks as a form filled on that site does: a card shows the field and the value, unless the user allowed that site’s forms ahead or the follow-up this turn started from covers it. It never submits the form.',
     input: { element: ELEMENT, value: z.string().max(10_000) },
     run: async ({ element: id, value }, ctx) => {
       const { folderId, url } = await current(ctx)
@@ -479,10 +491,11 @@ export const browserTools = [
       // else is typed (no other identifier, no text of the engine's), and nothing at all without one.
       const run = runOf(ctx)
       if (run && (!run.entity || value !== run.entity.label)) throw beyondRun('type this')
-      // On a site Marianne's services declare, the submit that follows goes without a card (click): an identifier
-      // typed there asks as a form filled there does (fill_form), unless the user allowed it ahead. Elsewhere,
-      // nothing is sent before a submit that asks.
-      if (!run && ctx.resolved && declared(url)) {
+      // An identifier typed may leave before any click that asks: a page's script can send it as it is typed, its
+      // submit may read as moving on (« Continuer », « Rechercher »), and on a site Marianne's services declare it
+      // goes without a card (click). So it asks as a form filled there does (fill_form), on any site, unless the
+      // user allowed that site's forms ahead. Words of the engine's are its own, as in a message.
+      if (!run && ctx.resolved) {
         const site = siteOf(url)
         const title = `Remplir ${plural(1, 'champ')} sur ${site}`
         const go = goAhead(ctx)
@@ -499,7 +512,7 @@ export const browserTools = [
         if (browser.currentUrl() !== url) throw new ToolError('The page changed while the user was deciding: nothing was typed. Read it again.')
       }
       await act(() => browser.type(id, value))
-      return `Typed into « ${read.label || id} ». Nothing is sent until the form is submitted.`
+      return `Typed into « ${read.label || id} ». Nothing was submitted.`
     }
   }),
 
@@ -656,6 +669,8 @@ export const browserTools = [
     run: async ({ card: wanted, amount, reason }, ctx) => {
       // Nobody watches a run, and a run never pays: the gate keeps this tool from runs (tasks.ts); this holds if it didn't.
       if (ctx.run) throw beyondRun('pay')
+      // The turn it is called in: once that is over, the payment's yes neither presses nor covers a pay click.
+      const turn = turnOf(callingFolder(ctx.folderId).id)
       const { folderId, url, title } = await current(ctx)
       // The page itself on a site Marianne knows; or a provider's page that a declared page sent the browser to, as
       // going online reads it (online), never one any page of a known site's domain sent it to.
@@ -720,9 +735,12 @@ export const browserTools = [
 
       const filled = `Filled the ${filledWords(plan, 1)} of ${cardTitle(card)} on ${route.site}`
       const confirm = 'If the bank then asks for a confirmation (3-D Secure: a code, its app), use hand_over. Tell the user once the site confirms the payment.'
+      // The turn ended while the card was filled (stopped, out of time): the yes goes with it, and the user's next message asks again.
+      const ended = `${filled}, but the conversation’s turn ended meanwhile: nothing was pressed, and no pay click is covered.`
       if (plan.pay) {
         // The pay button lives in the provider's frame, where click can't reach: pressed here, on the same yes, once the form had a moment to check the card.
         await new Promise((resolve) => setTimeout(resolve, 500))
+        if (turnOf(folderId) !== turn) throw new ToolError(ended)
         const still = browser.pageVersion() === version
         // Marked before the press, as the click the grant covers is: what it leads to is part of this payment, and another pay click here asks.
         if (still) payGrants.press(folderId, url, version, browser.arrival()?.url)
@@ -731,6 +749,7 @@ export const browserTools = [
           return `${filled}, but couldn’t press « ${plan.pay.label} » in the payment form: ask the user to press it themselves (hand_over). ${confirm}`
         return `${filled} and pressed « ${plan.pay.label} » in the payment form, as the user approved. Read the page (read_page). ${confirm}`
       }
+      if (turnOf(folderId) !== turn) throw new ToolError(ended)
       payGrants.give(folderId, url, browser.pageVersion())
       return `${filled}. Nothing is paid yet: read the page (read_page) and click its pay button (click): the user’s yes covers that one click, on this page, for ${PAY_GRANT_MS / 60_000} minutes. ${confirm}`
     }

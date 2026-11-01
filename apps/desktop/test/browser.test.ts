@@ -16,15 +16,36 @@ const root = vi.hoisted(() => {
 })
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 
-/** Each view made, with its session and the addresses it loaded. */
-const made = vi.hoisted(() => [] as Array<{ partition: string; loaded: string[]; closed: boolean }>)
+/** A frame of a view's page, as the test sets it: its origin, the frame above it, and what reading it gives. */
+interface Frame {
+  origin: string
+  parent: Frame | null
+  name: string
+  frameTreeNodeId: number
+  detached: boolean
+  isDestroyed: () => boolean
+  executeJavaScript: () => Promise<unknown>
+}
+
+/** Each view made, with its session, the addresses it loaded, what listens to its page, and its page's frames. */
+const made = vi.hoisted(
+  () =>
+    [] as Array<{
+      partition: string
+      loaded: string[]
+      closed: boolean
+      listeners: Record<string, Array<(...args: unknown[]) => void>>
+      frames: unknown[]
+    }>
+)
 
 vi.mock('electron', () => {
   class WebContentsView {
     webContents: Record<string, unknown>
     constructor(options: { webPreferences: { partition: string } }) {
-      const view = { partition: options.webPreferences.partition, loaded: [] as string[], closed: false }
+      const view = { partition: options.webPreferences.partition, loaded: [] as string[], closed: false, listeners: {}, frames: [] }
       made.push(view)
+      const listeners: Record<string, Array<(...args: unknown[]) => void>> = view.listeners
       this.webContents = {
         loadURL: async (url: string) => void view.loaded.push(url),
         getURL: () => view.loaded.at(-1) ?? '',
@@ -33,7 +54,10 @@ vi.mock('electron', () => {
         navigationHistory: { canGoBack: () => false, canGoForward: () => false },
         setBackgroundThrottling: () => undefined,
         setWindowOpenHandler: () => undefined,
-        on: () => undefined,
+        on: (event: string, listener: (...args: unknown[]) => void) => void (listeners[event] ??= []).push(listener),
+        get mainFrame() {
+          return { framesInSubtree: view.frames }
+        },
         isDestroyed: () => view.closed,
         close: () => void (view.closed = true)
       }
@@ -98,6 +122,55 @@ describe('the user’s address during a run', () => {
     await browser.endRun()
     browser.off('taken', taken)
     expect(taken).toHaveBeenCalledOnce()
+  })
+})
+
+describe('what the user does in their page', () => {
+  /** The view the user's page is in, open on `url`. */
+  const userPage = (url: string) => {
+    browser.open(url, 'their-folder')
+    return made.find((v) => v.partition === 'marianne-web' && !v.closed && v.loaded.at(-1) === url)!
+  }
+  const press = (view: (typeof made)[number], key: string, type = 'keyDown') => {
+    for (const listener of view.listeners['before-input-event'] ?? []) listener({}, { type, key })
+  }
+
+  it('says where they typed: a key that types, not one that moves about; never in a run’s page', async () => {
+    const typed = vi.fn()
+    browser.on('typed', typed)
+    const page = userPage('https://www.sanef.com/client/')
+    for (const key of ['Tab', 'ArrowDown', 'PageDown', 'Escape', 'Shift']) press(page, key)
+    press(page, '4', 'keyUp')
+    expect(typed).not.toHaveBeenCalled()
+    press(page, '4')
+    press(page, 'v')
+    expect(typed.mock.calls).toEqual([['https://www.sanef.com/client/'], ['https://www.sanef.com/client/']])
+    typed.mockClear()
+    await runOn('https://www.sanef.com/passages')
+    for (const view of made.filter((v) => v.partition === 'marianne-run')) press(view, '4')
+    browser.off('typed', typed)
+    expect(typed).not.toHaveBeenCalled()
+  })
+
+  it('lists a payment provider’s frame it can’t read as one that may hold a card; no other frame it can’t read', async () => {
+    const page = userPage('https://www.sanef.com/client/')
+    const frame = (frameTreeNodeId: number, origin: string, parent: Frame | null, read: () => Promise<unknown>): Frame => ({
+      origin,
+      parent,
+      name: '',
+      frameTreeNodeId,
+      detached: false,
+      isDestroyed: () => false,
+      executeJavaScript: read
+    })
+    const unreadable = async () => {
+      throw new Error('The frame went away.')
+    }
+    const top = frame(1, 'https://www.sanef.com', null, async () => ({ fields: [], pay: [] }))
+    page.frames = [top, frame(2, 'https://payment.cdn.payline.com', top, unreadable), frame(3, 'https://ads.example', top, unreadable)]
+    expect(await browser.cardFields(() => true)).toEqual([
+      { node: 2, origins: ['https://www.sanef.com', 'https://payment.cdn.payline.com'], fields: [], pay: [], unread: true }
+    ])
   })
 })
 

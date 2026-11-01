@@ -544,7 +544,7 @@ describe('type_text in a run', () => {
   })
 })
 
-describe('type_text in a conversation, on the sites Marianne’s own services declare', () => {
+describe('type_text in a conversation: an identifier asks as a form on that site does', () => {
   const field = { id: 'e1', role: 'textbox', label: 'Plaque', type: 'text', secret: false }
   const conversation = () => folders.create({ title: 'Péages', engine: 'claude' }).id
   /** On a page, read, the cards asked so far forgotten. */
@@ -604,14 +604,42 @@ describe('type_text in a conversation, on the sites Marianne’s own services de
     ])
   })
 
-  it('asks nothing for words of the engine’s, nor off those sites, where the submit that follows asks', async () => {
+  it('asks nothing for words of the engine’s', async () => {
     const f = conversation()
     await at(f, SANEF_PAGE)
     expect(await type(f, 'Camille Martin')).toMatch(/^Typed into/)
+    expect(request).not.toHaveBeenCalled()
+  })
+
+  it('asks for an identifier off those sites too: a page’s script may send it as it is typed, and its submit may read as moving on', async () => {
+    for (const [url, site] of [
+      ['https://www.aliae.com/fr/', 'aliae.com'],
+      ['https://shop.example/recherche', 'shop.example']
+    ]) {
+      const f = conversation()
+      await at(f, url)
+      expect(await type(f, '[[vehicle.1.plate]]')).toMatch(/^Typed into/)
+      expect(request).toHaveBeenCalledOnce()
+      expect(request.mock.calls[0][1]).toMatchObject({
+        kind: 'form',
+        action: 'form',
+        title: `Remplir 1 champ sur ${site}`,
+        fields: [{ label: 'Plaque', value: PLATE }]
+      })
+    }
+    // A follow-up covers the forms of its service's declared hosts only.
+    const following = tasks.create({ ...TOLLS, followUp: { label: 'payer maintenant', instruction: 'Pay the passages the check found.' } })
+    tasks.followingUp = (id) => (id === following.folderId ? following : null)
+    await at(following.folderId, 'https://www.aliae.com/fr/')
+    expect(await type(following.folderId, '[[vehicle.1.plate]]')).toMatch(/^Typed into/)
+    expect(request).toHaveBeenCalledOnce()
+    // As the user allowed that site's forms ahead: « autonomie », on a site Marianne knows.
+    allowing('autonomous')
     const g = conversation()
     await at(g, 'https://www.aliae.com/fr/')
     expect(await type(g, '[[vehicle.1.plate]]')).toMatch(/^Typed into/)
     expect(request).not.toHaveBeenCalled()
+    expect(lines.filter((l) => l.action === 'form')).toMatchObject([{ given: 'autonomie', title: 'Remplir 1 champ sur aliae.com' }])
   })
 })
 

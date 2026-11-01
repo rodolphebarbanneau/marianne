@@ -103,6 +103,11 @@ describe('stored numbers masked out of a text', () => {
     expect(maskCardNumbers('4242 /\n4242 /\n4242 /\n4242', numbers)).toBe('•••• 4242')
     expect(maskCardNumbers('4242​4242‌4242‍4242', numbers)).toBe('•••• 4242')
     expect(maskCardNumbers('carte : 4⁠2﻿4 2 4242 4242 4242 !', numbers)).toBe('carte : •••• 4242 !')
+    // A soft hyphen, direction marks and controls, invisible operators.
+    for (const code of [0xad, 0x200e, 0x200f, 0x2061, 0x2062, 0x2063, 0x2064, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069]) {
+      const hidden = String.fromCodePoint(code)
+      expect(maskCardNumbers(`n° 4242${hidden}4242 4242${hidden}${hidden}4242`, numbers), code.toString(16)).toBe('n° •••• 4242')
+    }
     // Not across a wider gap, and a text with no number in it keeps what it had, invisible characters included.
     expect(maskCardNumbers('4242    4242    4242    4242', numbers)).toBe('4242    4242    4242    4242')
     expect(maskCardNumbers('Famille 👩‍👧, 4242 €', numbers)).toBe('Famille 👩‍👧, 4242 €')

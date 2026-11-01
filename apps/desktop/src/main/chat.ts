@@ -151,9 +151,9 @@ class Chat extends EventEmitter {
       const left = !!page.url && !tasks.byFolder(page.folderId) && browser.quietMs() < BROWSER_QUIET_MS
       return this.active.size > 0 || page.visible || page.controller === 'human' || left
     }
-    tasks.isOffered = (task) => {
+    tasks.isOffered = (task, templates) => {
       const { origin } = task
-      return origin.kind !== 'service' || services.taskTemplates().some((t) => t.service === origin.service && t.id === origin.template)
+      return origin.kind !== 'service' || (templates ?? services.taskTemplates()).some((t) => t.service === origin.service && t.id === origin.template)
     }
     tasks.templates = () => services.taskTemplates()
     tasks.runTurn = (task, line) => this.runTask(task, line)
@@ -248,7 +248,8 @@ class Chat extends EventEmitter {
     if (!folders.get(folderId)) throw new Error('Dossier introuvable.')
     if (!offered()) throw new Error('Cette suite n’est plus proposée.')
     await this.interruptRun()
-    // Read again: a run may have ended meanwhile, with a line of its own.
+    // Read again: a run may have ended meanwhile, with a line of its own; and as its template says it now (a plate corrected since).
+    tasks.refresh()
     const task = this.followable(folderId)
     const folder = folders.get(folderId)
     if (!task || !folder || !offered()) throw new Error('Cette suite n’est plus proposée.')

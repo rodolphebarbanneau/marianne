@@ -36,7 +36,14 @@ const fake = vi.hoisted(() => ({
   /** The services, as the host tells them. */
   services: [] as Array<{ manifest: { id: string; name: string }; on: boolean; builtIn: boolean }>,
   /** The tasks the services that are on propose, as the host tells them: what a service's task relies on, and what it says. */
-  templates: [] as Array<{ service: string; id: string; instruction?: string; sites: string[]; followUp?: { label: string; instruction: string } }>
+  templates: [] as Array<{
+    service: string
+    id: string
+    instruction?: string
+    sites: string[]
+    entity?: { id: string; label: string }
+    followUp?: { label: string; instruction: string }
+  }>
 }))
 
 vi.mock('electron', () => ({ app: { getVersion: () => '0', on: () => undefined, isPackaged: false } }))
@@ -320,7 +327,8 @@ describe('a service the user added from Marianne’s card', () => {
 describe('a planned task’s follow-up', () => {
   const FOLLOW_UP = { label: 'payer maintenant', instruction: 'Pay the unpaid passages the run found, on the operator’s payment page.' }
   /** 3615 PEAGE's task, planned from its template, with its follow-up. */
-  const planned = () => tasks.create({ ...TOLLS, origin: { kind: 'service', service: 'peage', template: 'tolls:v1' }, followUp: FOLLOW_UP })
+  const planned = (more: Partial<NewTask> = {}) =>
+    tasks.create({ ...TOLLS, origin: { kind: 'service', service: 'peage', template: 'tolls:v1' }, followUp: FOLLOW_UP, ...more })
   /** A run that found something, and wrote what a page told it. */
   const finds = async (turn: Turn) => {
     tasks.reportRun({ outcome: 'found', text: '1 passage sur l’A13' })
@@ -328,10 +336,10 @@ describe('a planned task’s follow-up', () => {
     turn.onEvent({ type: 'done' })
   }
   /** The task planned, and a run that found something: the line that offers the follow-up. */
-  const found = async () => {
+  const found = async (more: Partial<NewTask> = {}) => {
     fake.templates = [{ service: 'peage', id: 'tolls:v1', instruction: TOLLS.instruction, sites: TOLLS.sites!, followUp: FOLLOW_UP }]
     fake.run = finds
-    const task = planned()
+    const task = planned(more)
     await tasks.tick()
     const line = folders.messages(task.folderId)[0]
     expect(line).toMatchObject({ note: 'task', outcome: 'found', reported: true })
@@ -357,6 +365,17 @@ describe('a planned task’s follow-up', () => {
     const frame = turn.message.slice(turn.message.indexOf('<follow_up'))
     expect(frame).not.toContain('evil.example')
     expect(turn.message).toContain('(planned task run) Un passage à payer.')
+  })
+
+  it('reads the task as its template says it now: the plate the user corrected since the run, never the old one', async () => {
+    const { task, line } = await found({ entity: { id: 'v1', label: 'AB-123-CE' } })
+    // Corrected in the profile after the run: the service names the vehicle by its plate now.
+    fake.templates = [{ ...fake.templates[0], entity: { id: 'v1', label: PLATE } }]
+    await chat.followUp(task.folderId, line.id)
+    await over(task.folderId)
+    const [, turn] = vi.mocked(runTurn).mock.calls[1]
+    expect(turn.message).toContain('It is about: [[vehicle.1.plate]].')
+    expect(turn.message).not.toContain('AB-123-CE')
   })
 
   it('marks its turn, and that turn only, as the follow-up’s: its go-ahead ends with it, and neither the same message answered again nor one typed after it gets one', async () => {
