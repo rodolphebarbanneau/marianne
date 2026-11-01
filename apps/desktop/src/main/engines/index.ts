@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events'
+import { statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { ENGINE_HOMES, ENGINE_LABELS } from '../../shared/config'
@@ -51,13 +52,40 @@ function homeEnv(id: EngineId): Record<string, string> {
 const cliPath = (id: EngineId, refresh = false) => findCli(id, ENGINES[id].candidates(), refresh)
 
 const statusCache = new Map<EngineId, { at: number; status: EngineStatus }>()
+/** The checks under way: whoever asks meanwhile (the lock screen's warm-up, then its wait, the lights) waits for the same one. */
+const checking = new Map<EngineId, Promise<EngineStatus>>()
 
 configStore.on('change', (next, previous) => {
   for (const id of IDS) {
     const [a, b] = [next.engines[id], previous.engines[id]]
-    if (a.home !== b.home || a.useEnvKey !== b.useEnvKey) statusCache.delete(id)
+    if (a.home !== b.home || a.useEnvKey !== b.useEnvKey) {
+      statusCache.delete(id)
+      // A check started on the former settings answers its callers, but isn't kept.
+      checking.delete(id)
+    }
   }
 })
+
+/**
+ * The CLI's version, read again only when its file changes: each check would otherwise start the CLI
+ * one more time, and Codex's single binary (some 370 MB) takes about two seconds to start on Windows.
+ */
+const versions = new Map<string, { stamp: string; version: string }>()
+
+async function cliVersion(cli: string, env: NodeJS.ProcessEnv, refresh: boolean): Promise<string> {
+  let stamp = ''
+  try {
+    const { size, mtimeMs } = statSync(cli)
+    stamp = `${size}:${mtimeMs}`
+  } catch {
+    // Not a file we can see (a name on the PATH): read every time.
+  }
+  const known = versions.get(cli)
+  if (!refresh && stamp && known?.stamp === stamp) return known.version
+  const version = (await runAside(cli, ['--version'], { env, timeoutMs: 15_000 })).stdout.trim().split('\n')[0]
+  if (stamp) versions.set(cli, { stamp, version })
+  return version
+}
 
 /** The variables of `names` that `env` sets, as written there: on Windows, their names have no case. */
 function setNames(env: NodeJS.ProcessEnv, names: string[]): string[] {
@@ -86,9 +114,36 @@ async function runEnv(id: EngineId): Promise<NodeJS.ProcessEnv> {
   return key && !key.used ? withoutEnvKey(id, env) : env
 }
 
-export async function engineStatus(id: EngineId, refresh = false): Promise<EngineStatus> {
+export function engineStatus(id: EngineId, refresh = false): Promise<EngineStatus> {
   const cached = statusCache.get(id)
-  if (!refresh && cached && Date.now() - cached.at < 60_000) return cached.status
+  if (!refresh && cached && Date.now() - cached.at < 60_000) return Promise.resolve(cached.status)
+  const under = checking.get(id)
+  if (!refresh && under) return under
+  const job: Promise<EngineStatus> = checkEngine(id, refresh).then(
+    (status) => {
+      // Kept only if nothing overtook it: a forced check, or the engine's settings changed meanwhile.
+      if (checking.get(id) === job) {
+        checking.delete(id)
+        statusCache.set(id, { at: Date.now(), status })
+      }
+      return status
+    },
+    (err: unknown) => {
+      if (checking.get(id) === job) checking.delete(id)
+      throw err
+    }
+  )
+  checking.set(id, job)
+  return job
+}
+
+/** Check the enabled engines ahead, all at once: the lock screen asks while the user types, so that the unlock finds them checked. */
+export function warmEngines(): void {
+  const cfg = configStore.get().engines
+  for (const id of IDS) if (cfg[id].enabled) void engineStatus(id).catch(() => undefined)
+}
+
+async function checkEngine(id: EngineId, refresh: boolean): Promise<EngineStatus> {
   const engine = ENGINES[id]
   const label = ENGINE_LABELS[id]
   const cli = cliPath(id, refresh)
@@ -96,8 +151,10 @@ export async function engineStatus(id: EngineId, refresh = false): Promise<Engin
   if (cli) {
     const env = { ...shellEnv(), ...homeEnv(id) }
     try {
-      status.version = (await runAside(cli, ['--version'], { env, timeoutMs: 15_000 })).stdout.trim().split('\n')[0]
-      Object.assign(status, await engine.account(cli, withoutEnvKey(id, env), engineHome(id)))
+      // Side by side: two starts of a slow CLI cost the time of one.
+      const [version, account] = await Promise.all([cliVersion(cli, env, refresh), engine.account(cli, withoutEnvKey(id, env), engineHome(id))])
+      status.version = version
+      Object.assign(status, account)
       const key = envKeyName(id, env)
       if (key) {
         // With a sign-in of its own, the CLI would still take the key, billed apart: Marianne leaves
@@ -111,7 +168,6 @@ export async function engineStatus(id: EngineId, refresh = false): Promise<Engin
       status.error = `Impossible de lire l’état de ${label} : ${(err as Error).message}`
     }
   }
-  statusCache.set(id, { at: Date.now(), status })
   return status
 }
 

@@ -7,7 +7,7 @@ import { Guide } from '../app/guide'
 import { ReloadIcon } from '../components/icons'
 import { Logo } from '../components/logo'
 import { Identicon, Meter, Modal, Spinner } from '../components/ui'
-import { afterUnlock, lockIntent, opening } from '../lib/after-unlock'
+import { afterUnlock, lockIntent, opening, openingBar, type OpeningStep } from '../lib/after-unlock'
 import { api, errorText, isMac, useLive } from '../lib/api'
 import { accountLabel, clock, shortDate } from '../lib/format'
 import { NewPassword, PasswordInput, passwordProblem } from './password'
@@ -245,22 +245,22 @@ function Launch({ config, accounts, onOpen, onCreate }: { config: DeviceConfig; 
   )
 }
 
-/** The steps of the opening bar: the archive, then each assistant in use. */
-interface Opening {
-  steps: string[]
-  done: number
-}
-
 /** After this long on a step, the user may go in without waiting for the last assistants. */
 const SKIP_AFTER_MS = 10_000
 
 function Unlock({ account, pinAvailable, engines, onOther }: { account: AccountInfo; pinAvailable: boolean; engines: EngineId[]; onOther: () => void }) {
   const [mode, setMode] = useState<'pin' | 'password' | 'recovery'>(account.hasPin ? 'pin' : 'password')
   const [value, setValue] = useState('')
-  const [progress, setProgress] = useState<Opening | null>(null)
+  const [progress, setProgress] = useState<OpeningStep | null>(null)
   const [slow, setSlow] = useState(false)
   const [error, setError] = useState('')
   useEffect(() => setMode(account.hasPin ? 'pin' : 'password'), [account.id, account.hasPin])
+  // The assistants are checked while the user types, and again as they start typing should the first
+  // check have aged: by the time the archive is open, their state is usually there.
+  const typing = value !== ''
+  useEffect(() => {
+    if (engines.length) api.warmEngines()
+  }, [typing, engines.length])
   // Left mid-way (another account, the window closing): the application isn't held back any more.
   useEffect(() => () => opening.set(false), [])
   const running = !!progress
@@ -274,8 +274,7 @@ function Unlock({ account, pinAvailable, engines, onOther }: { account: AccountI
     e.preventDefault()
     if (!value || progress) return
     setError('')
-    const steps = ['ouverture de l’archive', ...engines.map((id) => `vérification de ${ENGINE_LABELS[id]}`)]
-    setProgress({ steps, done: 0 })
+    setProgress({ phase: 'archive' })
     // The session opens first; the window stays here until the assistants are checked.
     opening.set(true)
     try {
@@ -294,12 +293,19 @@ function Unlock({ account, pinAvailable, engines, onOther }: { account: AccountI
       setProgress(null)
       return
     }
-    // Checked here, their state is kept: the application opens with it, without checking again.
-    for (const [i, id] of engines.entries()) {
-      if (!opening.get()) return
-      setProgress({ steps, done: i + 1 })
-      await api.engineStatus(id).catch(() => undefined)
-    }
+    // Checked here, all at once, their state is kept: the application opens with it, without checking
+    // again. A check the warm-up started is waited for, not started over.
+    let checked = 0
+    const of = engines.length
+    if (of) setProgress({ phase: 'engines', checked, of })
+    await Promise.all(
+      engines.map((id) =>
+        api
+          .engineStatus(id)
+          .catch(() => undefined)
+          .then(() => opening.get() && setProgress({ phase: 'engines', checked: ++checked, of }))
+      )
+    )
     opening.set(false)
   }
 
@@ -348,8 +354,8 @@ function Unlock({ account, pinAvailable, engines, onOther }: { account: AccountI
           </div>
           {progress && (
             <div className="unlock-opening">
-              <OpeningBar {...progress} />
-              {slow && progress.done > 0 && (
+              <OpeningBar step={progress} />
+              {slow && progress.phase === 'engines' && (
                 <button type="button" className="link small" onClick={() => opening.set(false)}>
                   ouvrir sans attendre
                 </button>
@@ -382,14 +388,13 @@ function UnlockField({ mode, value, onChange }: { mode: 'pin' | 'password' | 're
   )
 }
 
-/** The opening bar, in place of the field: filled step by step, the next block blinking (a Meter, as every wait), what it's doing under it. */
-function OpeningBar({ steps, done }: Opening) {
+/** The opening bar, in place of the field: filled as the steps end, the next block blinking (a Meter, as every wait), what it's doing under it. */
+function OpeningBar({ step }: { step: OpeningStep }) {
+  const { share, text } = openingBar(step)
   return (
     <div className="opening-bar">
-      <Meter share={done / steps.length} />
-      <span>
-        {steps[done]}… <span className="dim">{`${done + 1}/${steps.length}`}</span>
-      </span>
+      <Meter share={share} />
+      <span>{text}…</span>
     </div>
   )
 }
