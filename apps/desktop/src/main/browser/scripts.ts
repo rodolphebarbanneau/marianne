@@ -35,6 +35,18 @@ export const READ_SCRIPT = `(() => ({ title: document.title, url: location.href,
  */
 export const NAME_OF = `(names) => names.map((v) => String(v ?? '').replace(/\\s+/g, ' ').trim()).find((s) => s && !/^(undefined|null)$/i.test(s)) || ''`
 
+/**
+ * The words a page shows just before a field with no label of its own, as ALIAE's plate field (a
+ * « Veuillez saisir votre plaque d’immatriculation * » block, then the input): its previous
+ * sibling's text, when short and holding no control of its own, without the « * » of a required one.
+ */
+export const SHOWN_BEFORE = `(el) => {
+  const s = el.previousElementSibling
+  if (!s || s.matches('input, select, textarea, button') || s.querySelector('input, select, textarea, button')) return ''
+  const t = (s.innerText || s.textContent || '').replace(/\\s+/g, ' ').trim().replace(/\\s*\\*$/, '')
+  return t.length <= 80 ? t : ''
+}`
+
 export interface FormField {
   id: string
   label: string
@@ -54,11 +66,12 @@ export const FORM_READ_SCRIPT = `(() => {
   const visible = (el) => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length) && getComputedStyle(el).visibility !== 'hidden'
   const text = (el) => (el ? (el.innerText || el.textContent || '') : '').replace(/\\s+/g, ' ').trim()
   const nameOf = ${NAME_OF}
+  const shownBefore = ${SHOWN_BEFORE}
   const labelOf = (el) => {
     const byFor = el.id ? document.querySelector('label[for="' + CSS.escape(el.id) + '"]') : null
     const ids = (el.getAttribute('aria-labelledby') || '').split(/\\s+/).filter(Boolean)
     const labelled = ids.map((i) => text(document.getElementById(i))).join(' ')
-    return nameOf([text(byFor), text(el.closest('label')), el.getAttribute('aria-label'), labelled, el.placeholder, el.title, el.name]).slice(0, 140)
+    return nameOf([text(byFor), text(el.closest('label')), el.getAttribute('aria-label'), labelled, shownBefore(el), el.placeholder, el.title, el.name]).slice(0, 140)
   }
   const skip = ['hidden', 'password', 'file', 'submit', 'button', 'image', 'reset']
   // Shown passwords (type switched to text), one-time codes, captchas, card codes.
@@ -144,11 +157,13 @@ export const PAGE_READ_SCRIPT = `(() => {
   const visible = (el) => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length) && getComputedStyle(el).visibility !== 'hidden'
   const text = (el) => (el ? (el.innerText || el.textContent || '') : '').replace(/\\s+/g, ' ').trim()
   const nameOf = ${NAME_OF}
-  // A field's own label, its first line: a label may hold the field's hints too (a counter, « * »).
+  const shownBefore = ${SHOWN_BEFORE}
+  // A field's own label, its first line (a label may hold the field's hints too: a counter, « * »);
+  // without one, the words just before it.
   const labelOf = (el) => {
     if (!el.matches('input, select, textarea')) return ''
     const label = (el.id && document.querySelector('label[for="' + CSS.escape(el.id) + '"]')) || el.closest('label')
-    return label ? nameOf((label.innerText || label.textContent || '').split('\\n')) : ''
+    return label ? nameOf((label.innerText || label.textContent || '').split('\\n')) : shownBefore(el)
   }
   const elements = []
   let n = 0

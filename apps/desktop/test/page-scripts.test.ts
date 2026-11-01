@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { NAME_OF } from '../src/main/browser/scripts'
+import { NAME_OF, SHOWN_BEFORE } from '../src/main/browser/scripts'
 
-/** The page scripts' own function, as the pages run it. */
+/** The page scripts' own functions, as the pages run them. */
 const nameOf = new Function(`return ${NAME_OF}`)() as (names: unknown[]) => string
+const shownBefore = new Function(`return ${SHOWN_BEFORE}`)() as (el: unknown) => string
 
 describe('naming what a page shows', () => {
   it('takes the first name there is, its spaces collapsed', () => {
@@ -18,5 +19,16 @@ describe('naming what a page shows', () => {
     expect(nameOf(['', 'null', 'NULL', '', 'AA123BB'])).toBe('AA123BB')
     // A word that only holds one: a name.
     expect(nameOf(['undefined value'])).toBe('undefined value')
+  })
+
+  it('names a field with no label by the words just before it (ALIAE’s plate field)', () => {
+    const block = (text: string, holds = false) => ({ innerText: text, matches: () => false, querySelector: () => (holds ? {} : null) })
+    const field = (before: unknown) => ({ previousElementSibling: before })
+    expect(shownBefore(field(block('Veuillez saisir votre plaque d’immatriculation \n*')))).toBe('Veuillez saisir votre plaque d’immatriculation')
+    // Nothing before it, a block that holds a control of its own, another field, a paragraph: no name.
+    expect(shownBefore(field(null))).toBe('')
+    expect(shownBefore(field(block('Nom', true)))).toBe('')
+    expect(shownBefore(field({ innerText: '', matches: () => true, querySelector: () => null }))).toBe('')
+    expect(shownBefore(field(block('Une phrase bien plus longue qu’un nom de champ, qui explique une démarche entière à la personne.')))).toBe('')
   })
 })
