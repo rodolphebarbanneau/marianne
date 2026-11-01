@@ -1,5 +1,6 @@
 import { redact, type TokenDef } from '@marianne/profile'
 import type { BugReport } from '../shared/bug-report'
+import { maskCardNumbers } from '../shared/cards'
 import type { ChatMessage } from '../shared/types'
 
 /**
@@ -19,6 +20,8 @@ const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 /** Patterns of what may be someone's, known to the profile or not, with what replaces them. */
 const PERSONAL: [RegExp, string][] = [
   [/[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+/gu, '<email>'],
+  // A card number written in groups with dashes, before a phone number finds one in it (in spaces, it is a long number's, below).
+  [/(?<![\d-])\d{4}(?:-\d{4}){2,3}(?:-\d{1,3})?(?![\d-])/g, '<card>'],
   // A French phone number, national or international.
   [/(?<![\d+])(?:(?:\+|00)33[\s.-]?(?:\(0\)[\s.-]?)?|0)[1-9](?:[\s.-]?\d{2}){4}(?!\d)/g, '<phone>'],
   [/\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){3,7}(?:[ ]?[A-Z0-9]{1,3})?\b/g, '<iban>'],
@@ -30,13 +33,14 @@ const PERSONAL: [RegExp, string][] = [
 
 /**
  * `text` without what could identify someone: the profile's identifiers as [[tokens]] (they say
- * which kind was there, never its value), the home folder as ~, the account's name, then emails,
- * phone numbers, IBANs, plates, long numbers, and addresses past their site (a path may hold a
- * case number). Run on everything a report holds, the engine's answer included.
+ * which kind was there, never its value), the stored card numbers (`cards`, digits only), the home
+ * folder as ~, the account's name, then emails, phone numbers, IBANs, card numbers, plates, long
+ * numbers, and addresses past their site (a path may hold a case number). Run on everything a
+ * report holds, the engine's answer included.
  */
-export function scrub(text: string, tokens: TokenDef[], machine: Machine): string {
+export function scrub(text: string, tokens: TokenDef[], machine: Machine, cards: string[] = []): string {
   if (!text) return text
-  let out = redact(text, tokens)
+  let out = maskCardNumbers(redact(text, tokens), cards, () => '<card>')
   const home = machine.home.replace(/[\\/]+$/, '')
   if (home.length > 3) {
     // As Node, a file URL or JSON writes it: \, / or \\ between its parts.

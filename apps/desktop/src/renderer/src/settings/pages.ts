@@ -5,7 +5,8 @@ export const SETTINGS_GROUPS: Array<{ label: string; pages: Array<{ id: string; 
     pages: [
       { id: 'identity', label: 'Identité' },
       { id: 'household', label: 'Foyer & entités' },
-      { id: 'documents', label: 'Documents' }
+      { id: 'documents', label: 'Documents' },
+      { id: 'payment', label: 'Paiement' }
     ]
   },
   {

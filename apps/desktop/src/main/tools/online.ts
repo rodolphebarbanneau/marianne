@@ -41,6 +41,34 @@ export class Consents {
   }
 }
 
+/** How long the yes to a payment by card covers the pay click that follows it. */
+export const PAY_GRANT_MS = 5 * 60_000
+
+/**
+ * The one pay click a payment the user approved covers (pay_by_card): on the folder's page as it
+ * was when the card was filled (its address and its version, browser.pageVersion), for a few minutes,
+ * once. In memory, forgotten when the session locks. The next click that commits takes it, used or
+ * not: leaving the page, a second step that commits, or the time out end it.
+ */
+export class PayGrants {
+  private grants = new Map<string, { url: string; page: number; until: number }>()
+
+  give(folderId: string, url: string, page: number, now = Date.now()): void {
+    this.grants.set(folderId, { url, page, until: now + PAY_GRANT_MS })
+  }
+
+  /** Whether a click that commits is the pay click the payment covers: on that page still, in time, and one that pays. Taken either way. */
+  take(folderId: string, url: string, page: number, label: string, now = Date.now()): boolean {
+    const grant = this.grants.get(folderId)
+    this.grants.delete(folderId)
+    return !!grant && grant.url === url && grant.page === page && now <= grant.until && paying(label)
+  }
+
+  clear(): void {
+    this.grants.clear()
+  }
+}
+
 /** Words that commit the user, folded (no accents, lower case): French stems and words, then English. */
 const COMMITS = [
   /\b(valid|envo[iy]|pay(er|ez)|paiement|sign(er|ez|ature)|confirm|transm|suppr|soumet|termin(er|ez)|finali|enregistr|accept|souscri|command(er|ez)|achet(er|ez)|resili|depos(er|ez)|reserv(er|ez)|certifi(er|e)|attest(er|e)|honneur)/,
@@ -79,6 +107,16 @@ export interface Clickable {
 export function reading(element: Clickable, purpose = ''): boolean {
   const label = plain(element.label)
   return !commits(purpose) && (DECLINES.test(label) || (!commits(label) && READS.test(label)))
+}
+
+/** A button that pays (or confirms the payment) and does nothing else of the floor: no sending, signing, deleting, cancelling. */
+const PAYS = /\b(pa(y|yer|yez|iement)|payment|regl(er|ez)|valid(er|ez)?|confirm(er|ez)?|checkout|purchase|buy|achet(er|ez))(?![a-z])/
+const NOT_PAYING = /\b(envo[iy]|send|sign|suppr|delete|remove|annul|cancel|resili|declar|certifi|attest|retour|back)/
+
+/** Whether an element's label reads as the pay button: what the yes to a payment by card covers once (PayGrants). */
+export function paying(label: string): boolean {
+  const words = plain(label)
+  return PAYS.test(words) && !NOT_PAYING.test(words)
 }
 
 /**

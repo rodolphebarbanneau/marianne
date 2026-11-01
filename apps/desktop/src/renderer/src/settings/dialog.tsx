@@ -5,6 +5,7 @@ import { AccountsPane, SecurityPane, SpacePane } from './archive'
 import { ApprovalsPane, BrowserPane, DataPane, EnginesPane, PrivacyPane, SitesPane } from './connections'
 import { AboutPane, DisplayPane, ShortcutsPane, SkillsPane } from './application'
 import { DocumentsPane, HouseholdPane, IdentityPane } from './me'
+import { PaymentPane } from './payment'
 import { ServicesPane } from './pages-panes'
 import { SETTINGS_GROUPS, SETTINGS_PAGES } from './pages'
 
@@ -12,6 +13,7 @@ const PANES: Record<string, () => React.ReactNode> = {
   identity: () => <IdentityPane />,
   household: () => <HouseholdPane />,
   documents: () => <DocumentsPane />,
+  payment: () => <PaymentPane />,
   space: () => <SpacePane />,
   security: () => <SecurityPane />,
   accounts: () => <AccountsPane />,

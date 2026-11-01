@@ -58,7 +58,7 @@ Services, Démarches and a domain's page open with the same head (`KioskHead`), 
 
 ### Settings, keys and the rest
 
-- **Settings**: a dialog over the app, in five groups: MOI (identity, household, documents), ARCHIVE (space, security, accounts), CONNEXIONS (sites, engines, browser, approvals, privacy, public data), PAGES (services), APPLICATION (display, shortcuts, skills, about).
+- **Settings**: a dialog over the app, in five groups: MOI (identity, household, documents, payment), ARCHIVE (space, security, accounts), CONNEXIONS (sites, engines, browser, approvals, privacy, public data), PAGES (services), APPLICATION (display, shortcuts, skills, about).
 - **Keyboard** (`shared/shortcuts.ts`): every shortcut can be changed.
 
   | keys           | what                                                       |
@@ -109,6 +109,7 @@ One file per account, `<8-hex-id>.marianne`, in a folder the user chooses; other
 - **PIN**: after the full password once on a computer, the user may set a PIN (6 to 12 digits, no repetition or sequence).
   - A device secret kept by the OS credential store (Keychain, DPAPI, libsecret) and the PIN wrap the data key; 5 wrong PINs erase it.
   - No PIN where the store is a plain file (Linux without a keyring).
+- **Secrets**: the keychain's logins and API keys, and the payment cards (Réglages › Paiement: a label, the holder, the number, the expiry, and the security code only when the user ticks « enregistrer le cryptogramme » for that card), are records like the others. Only the main process reads them, to sign in or to pay after the user's yes: a card's number and code never go back to the window once saved, nor to an engine, an export or the log.
 - **Capacity**: 1 GiB; a warning at 80 %, new pièces refused at 100 %.
 - **Locking**: by hand, after inactivity, or when the computer sleeps or locks its screen. Locking drops the key, cancels running turns, wipes the engines' scratch folders and the opened copies, and clears the built-in browser's cookies. Those temporary copies are the only personal data ever written in clear.
 
@@ -128,7 +129,7 @@ Claude Code (CL), Codex (CX) and Mistral Vibe (MI) are the user's own CLIs, each
 - **A turn lists its tools as it starts.** Each turn is a new process of the CLI, which lists Marianne's tools once, as it connects; the MCP server is stateless (no stream back to the engine), so it can't tell it of a change. A service added during a turn lends its tools only from the next one, and the system prompt that names it is built for the next one too. So when the user adds a service from Marianne's card ([below](#tools-cards-and-the-browser)), the chat runner starts one more turn as that turn ends, in the folder's session, opened by a line (« 3615 PEAGE ajouté · Marianne reprend »): its message to the engine says the service is on and to carry on with the user's request. Once per addition, only after a turn that ended well, never from a planned task's run.
 - **Bug reports.** « signaler un bug » has the user's engine write up a bug for GitHub (`main/bug-report.ts`, `main/bug-reporter.ts`, `renderer/src/app/bug-report.tsx`):
   - it reads the user's words and the app's diagnostics: version, system, engine, screen, the window's last errors (kept in memory only), the open folder's course without its words, the log's end;
-  - all of it is scrubbed before, and its answer after: the profile's tokens, the home folder, the account's name, emails, phones, IBANs, plates, long numbers, addresses past their site;
+  - all of it is scrubbed before, and its answer after: the profile's tokens, the stored card numbers, the home folder, the account's name, emails, phones, IBANs, card numbers, plates, long numbers, addresses past their site;
   - it works in a session of its own, with no web and no tool (its MCP address serves none: `tools=none`), and writes in English;
   - the user reads and edits it all, then opens GitHub's bug form, filled from its address (`shared/bug-report.ts`). GitHub fills only text fields that way, so the form's system and engine are inputs. The app sends nothing.
 
@@ -141,9 +142,9 @@ Marianne's MCP tools:
 - know the services (`services`), and propose one of Marianne's own that isn't on (`service_propose`);
 - plan a task (`task_propose`), the user's yes on a card;
 - search Service-Public, compute deadlines, estimate benefits, query public data;
-- drive the built-in browser.
+- drive the built-in browser, and pay by card there (`pay_by_card`), the user's yes on a card each time.
 
-The MCP server resolves `[[tokens]]` in a tool's arguments and scrubs its result before it goes back to the engine.
+The MCP server resolves `[[tokens]]` in a tool's arguments and scrubs its result before it goes back to the engine, of the stored card numbers too.
 
 One place decides whether an action waits for the user's yes on a card: the approval policy (`shared/approvals.ts`, pure), from the account's level, its standing permissions and the floor; `main/approvals.ts` then shows the card, or the line of what was allowed ahead. Each tool says what it asks to do:
 
@@ -153,7 +154,7 @@ One place decides whether an action waits for the user's yes on a card: the appr
 | form    | `fill_form` on a site                      | yes: « toujours pour les formulaires de sanef.com »                 |
 | profile | `propose`                                  | adding or updating a deadline only: « toujours pour les échéances » |
 | task    | `task_propose`                             | no                                                                  |
-| commit  | a consequential click                      | never, at any level: the floor                                      |
+| commit  | a consequential click; a payment by card   | never, at any level: the floor                                      |
 | service | a call to a community service not reviewed | no                                                                  |
 | add     | `service_propose`: a service to add        | no: the user adds it, in « avant d’ajouter »                        |
 
@@ -177,6 +178,17 @@ The built-in browser belongs to a folder: shown in the right column, or kept out
 - The user can take control (« prendre la main ») at any time. In a conversation, Marianne hands over for CAPTCHAs, codes and FranceConnect.
 - Its cookies live in memory only.
 - **Marianne asks for the user's attention; she never takes the screen from them** (`renderer/src/browser/reveal.ts`). When she hands over, or opens a site to show it (Réglages › Navigateur › « afficher le navigateur »: when she offers, always, never), the window opens the folder's browser. If the user is on another screen, the window stays where it is: a toast says which folder asks, and its browser opens when the user goes there. A hand-over waits ten minutes.
+
+**Paying by card** (`pay_by_card` in `tools/browser.ts`; `main/browser/payment.ts`, `main/cards.ts`). In a conversation only: it stays out of a run's tools, and refuses one all the same. Everything fails closed: a frame, a field or a way there that can't be told apart gets nothing, and the user types their card (`hand_over`).
+
+- **Where.** On a site Marianne knows (the content's public sites and the sites her services that are on declare, by registrable domain), or on a payment provider's page such a site's own page sent the browser to (`paymentRoute`). For each page, the browser keeps the origin of the frame that started the navigation, its redirects and a few pages before: the provider's page counts when the page before it is on the site and started the navigation itself (its form, its link; never an advert's frame in it, an address opened or typed, back or reload), every redirect on the way on the site or the provider, directly or through the provider's own pages. Its card then says « via Axepta BNP Paribas pour aliae.com ».
+- **Which frames.** The page and its frames on its own site or on a payment provider's hosts (`PROVIDERS`: Payline, Axepta, Paybox, PayZen and Systempay, Stripe, Adyen, Checkout.com, Worldline, Monetico), every frame above them too, https only. A bank's 3-D Secure frame is none of these.
+- **Which fields.** A page script tells card fields apart by their `cc-*` autocomplete, then by the words that name them (numéro de carte, date d’expiration, cryptogramme, titulaire; card number, expiry, security code, name on card), never another card's (vitale, grise, d’identité, cadeau…). One number field, one expiry or a month and a year, at most one code and one holder; where several could do, those in the number's own frame. A provider's frame around one unnamed field is read by its name and title.
+- **The card**, of kind payment, holds the floor: the site, and the provider whose page or frame takes the number; the page; the card (« Visa •••• 4242 · perso · 09/28 »); the amount the engine read on the page, labelled so; the fields it fills. When the security code isn't stored and the page asks for it, the card has a « cryptogramme » field: what the user types goes with the yes (`respondApproval`'s third argument) to the tool waiting on it, is used once, and is never in the card, the conversation, the log or what an engine reads.
+- **The fill.** After the yes, on the page the user saw (its address and its version: any navigation changes it, a fragment's or a script's included), the number and the code are put in at the last moment, frame by frame. A frame that changed, or a field that didn't keep its value, empties what was filled.
+- **The pay click.** The same yes covers the one pay click that follows on that page (`PayGrants`): a click that commits and whose label pays, within five minutes, once; leaving the page or another click that commits ends it. When the pay button is inside the provider's frame, where `click` can't reach, `pay_by_card` presses it itself, and its card says so beforehand. A bank's confirmation (3-D Secure) is the user's: `hand_over`.
+- **Masked.** The stored numbers, with or without spaces, are masked out of `read_page`, `read_form`, a page given to the conversation, the messages and the notes sent to the engine, every tool result, and the bug report. `read_form` leaves a bank card's fields out and masks the value of one that may be another card's; `read_page` marks them (`type_text` refuses them) and never labels a field that may be a card's by its value.
+- **What engines know** of a card: its label, brand, last four digits and expiry, as `pay_by_card` lists them; never in the profile's context view. Without a card, the engine proposes adding one (`request_setup`, target `payment`) or lets the user type it.
 
 ## Planned tasks
 

@@ -12,7 +12,7 @@ import { tasks } from './tasks'
  * "Tout exporter": the account as ordinary files, in clear, for the user to keep or move
  * elsewhere: the profile, the planned tasks, every pièce in its domain, every folder's conversation
  * in Markdown.
- * The keychain stays out: its passwords never leave the archive in clear.
+ * The keychain and the payment cards stay out: their passwords and numbers never leave the archive in clear.
  */
 
 const safeName = (name: string) =>

@@ -498,6 +498,14 @@ export function PrivacyPane() {
           <span />
         </div>
         <div className="row">
+          <span>vos cartes de paiement</span>
+          <span>
+            le moteur n’en connaît que le nom, la marque, les 4 derniers chiffres et l’expiration. Le numéro et le cryptogramme ne lui parviennent jamais, ni
+            sur une page qu’il lit.
+          </span>
+          <span />
+        </div>
+        <div className="row">
           <span>les pièces</span>
           <span>Marianne les lit et les masque avant de les donner au moteur. Un scan sans texte n’est envoyé qu’avec votre accord.</span>
           <span />

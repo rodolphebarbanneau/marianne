@@ -19,6 +19,7 @@ const SETTINGS_PAGES: Record<string, string> = {
   identity: 'votre identité',
   household: 'votre foyer et vos entités',
   documents: 'vos documents',
+  payment: 'vos cartes de paiement',
   space: 'l’emplacement de votre archive',
   security: 'votre phrase de passe',
   accounts: 'vos comptes',
@@ -79,7 +80,7 @@ export const profileTools = [
     name: 'request_setup',
     title: 'Setup request',
     description:
-      'When the answer needs something the user has not set up (an account’s number, the address, a business…), shows a card that takes them to the settings page where they fill it in. Targets: those the profile tool lists as not set up (address, id_documents, companies, employers, vehicles, properties, notes, account:<site id> such as account:impots); legifrance (access to the law texts); or a settings page: identity, household, documents, space, security, accounts, sites, engines, browser, approvals, privacy, data, services, sources, display, shortcuts, skills, about. Never ask for an identifier in the conversation: use this tool.',
+      'When the answer needs something the user has not set up (an account’s number, the address, a business…), shows a card that takes them to the settings page where they fill it in. Targets: those the profile tool lists as not set up (address, id_documents, companies, employers, vehicles, properties, notes, account:<site id> such as account:impots); legifrance (access to the law texts); or a settings page: identity, household, documents, payment (the user’s saved cards, for pay_by_card), space, security, accounts, sites, engines, browser, approvals, privacy, data, services, sources, display, shortcuts, skills, about. Never ask for an identifier in the conversation: use this tool.',
     input: {
       target: z.string().describe('e.g. "account:impots", "address", "sites"'),
       reason: z.string().describe('Why it is needed, in one sentence to the user (in French)')

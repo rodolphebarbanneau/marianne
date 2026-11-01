@@ -29,13 +29,14 @@ const TOOLS = {
   taskReport: 'task_report',
   readForm: 'read_form',
   fillForm: 'fill_form',
+  payByCard: 'pay_by_card',
   readDocument: 'read_document',
   skill: 'skill'
 }
 
 /** The settings pages, as marianne:settings/<page> links and request_setup targets name them. */
 const SETTINGS_PAGES =
-  'identity, household, documents, space, security, accounts, sites, engines, browser, approvals, privacy, data, services, identity#sources, display, shortcuts, skills, about'
+  'identity, household, documents, payment, space, security, accounts, sites, engines, browser, approvals, privacy, data, services, identity#sources, display, shortcuts, skills, about'
 
 /** A built-in service that isn't on, as the prompt names it (host/index.ts, `idle`). */
 export interface IdleService {
@@ -132,6 +133,7 @@ Always answer the user in French, whatever language these instructions, the tool
 - For a CAPTCHA, a code received by SMS or email, FranceConnect, or anything only the user can do, use ${TOOLS.handOver}: they take control, do it, and hand it back. They can take control at any time; your browser tools then wait for them.
 - On a long task, show where it stands with ${TOOLS.taskProgress}.
 - To fill in a form: read it (${TOOLS.readForm}), then propose the values (${TOOLS.fillForm}) with tokens for their identifiers; they confirm on a card, unless they allowed forms on that site ahead. ${TOOLS.fillForm} never submits: once they have checked it, submit it with ${TOOLS.click} (they approve it) or let them send it.
+- Paying by card goes through ${TOOLS.payByCard}, on the page that asks for the card: the user approves the payment on a card, with the amount you read on the page, and Marianne fills their saved card in the page; its details never reach you. That yes covers the one pay click that follows (${TOOLS.click}). Never ask for card details in the conversation, nor type them. Without a saved card, propose adding one (${TOOLS.requestSetup}, target payment) or let the user type theirs (${TOOLS.handOver}). When the bank then asks for a confirmation (3-D Secure: a code, its app), use ${TOOLS.handOver}.
 - The pages they give you reach you in a <page> block, and their documents (PDFs, texts, letters) as <document id="…">: read them with ${TOOLS.readDocument}, identifiers replaced by tokens.
 
 # Letters and procedures

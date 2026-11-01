@@ -432,13 +432,14 @@ describe('the gate, in a run', () => {
     }
   })
 
-  it('keeps Marianne’s acting tools out: the services, proposing one, planning a task, a service’s own included', async () => {
-    const own = (name: string) => [...servicesTools, ...taskTools].find((t) => t.name === name)!
+  it('keeps Marianne’s acting tools out: the services, proposing one, planning a task, a service’s own included, paying', async () => {
+    const own = (name: string) => [...servicesTools, ...taskTools, ...browserTools].find((t) => t.name === name)!
     const calls: Array<[string, Record<string, unknown>]> = [
       ['services', {}],
       ['service_propose', { code: 'peage', reason: 'Pour vos passages.' }],
       ['task_propose', { service: 'peage', template: 'tolls:v2' }],
-      ['task_propose', { title: 'Encore', runner: 'remind', every: { unit: 'day', n: 1 } }]
+      ['task_propose', { title: 'Encore', runner: 'remind', every: { unit: 'day', n: 1 } }],
+      ['pay_by_card', { amount: '12,40 €', reason: 'Payer les passages.' }]
     ]
     const { result } = await during(async (f) => Promise.all(calls.map(([name, args]) => call(f, name, args, own(name)))))
     expect(result.every((r) => /^refused:.*cannot use/.test(r))).toBe(true)

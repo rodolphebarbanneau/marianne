@@ -250,15 +250,20 @@ export interface DocumentPart {
 
 /**
  * Something that needs the user's yes: a change to the profile, a form to fill, a consequential
- * step online (sign, pay, send), a built-in service to add. The turn waits for the answer. Or, with
- * `given`, the line of such an action the user allowed ahead, which went without a card.
+ * step online (sign, pay, send), a payment by card, a built-in service to add. The turn waits for
+ * the answer. Or, with `given`, the line of such an action the user allowed ahead, which went without a card.
  */
 export interface ApprovalPart {
   type: 'approval'
   id: string
-  kind: 'proposal' | 'form' | 'online' | 'service' | 'add'
+  kind: 'proposal' | 'form' | 'online' | 'service' | 'add' | 'payment'
   /** kind add: the built-in service it proposes, and whether it was off (switching it back on) rather than not added. */
   service?: { code: string; off: boolean }
+  /**
+   * kind payment: the card asks for the security code, which the user types in it. The code goes to
+   * the main process with the answer (respondApproval), never into this part.
+   */
+  askCvv?: boolean
   /** The kind of action, as the approval policy knows it; absent on cards older than it. */
   action?: ApprovalAction
   title: string
@@ -471,6 +476,40 @@ export interface KeychainInput {
   username: string
   /** Omitted: keep the stored one. */
   password?: string
+}
+
+// ---------------------------------------------------------------- payment cards (in the archive)
+
+export type CardBrand = 'visa' | 'mastercard' | 'amex' | 'maestro' | 'discover' | 'diners' | 'jcb' | 'unionpay' | 'other'
+
+/** A payment card as the window and the engines know it: never its number nor its security code. */
+export interface PaymentCard {
+  id: string
+  /** The user's name for it (« perso »). */
+  label: string
+  holder: string
+  brand: CardBrand
+  /** The number's last four digits. */
+  last4: string
+  /** MM/AA. */
+  expiry: string
+  /** The user chose to keep its security code (off by default): otherwise they type it at each payment. */
+  cvvStored: boolean
+  updatedAt: string
+}
+
+export interface PaymentCardInput {
+  id?: string
+  label: string
+  holder: string
+  /** Omitted when editing: the stored number stays (changing it means typing it again). */
+  number?: string
+  /** MM/AA. */
+  expiry: string
+  /** Keep the security code; false drops a stored one. */
+  storeCvv: boolean
+  /** With storeCvv: the code; omitted, the stored one stays. */
+  cvv?: string
 }
 
 // ---------------------------------------------------------------- built-in browser

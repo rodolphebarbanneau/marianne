@@ -17,6 +17,7 @@ import type {
 import { ENGINE_LABELS } from '../shared/config'
 import { followUpLine } from '../shared/tasks'
 import { approvals } from './approvals'
+import { maskCards } from './cards'
 import { browser } from './browser'
 import { configStore } from './config'
 import { content } from './content'
@@ -481,13 +482,13 @@ class Chat extends EventEmitter {
       const screen = { route: w.folder.procedure ? `procedure/${w.folder.procedure}` : 'folder', title: w.folder.title }
       await runTurn(engine, {
         folderId: folder.id,
-        // The user may type an identifier, a page may show one: the engine only ever sees tokens.
-        message: redact(userMessage(text, attachments, history, new Date(), screen, resume), tokens),
+        // The user may type an identifier, a page may show one: the engine only ever sees tokens, and no card number.
+        message: maskCards(redact(userMessage(text, attachments, history, new Date(), screen, resume), tokens)),
         system: systemPrompt({
           skills: listSkills(),
           services: services.instructions(),
           idle: services.idle(),
-          notes: redact(profile.get().notes, tokens),
+          notes: maskCards(redact(profile.get().notes, tokens)),
           web,
           legifrance: legifranceReady()
         }),

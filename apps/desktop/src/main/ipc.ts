@@ -17,6 +17,7 @@ import type {
   DomainId,
   EngineId,
   KeychainInput,
+  PaymentCardInput,
   PublicSourceId,
   SendRequest
 } from '../shared/types'
@@ -24,6 +25,7 @@ import { accounts } from './account'
 import { approvals } from './approvals'
 import { browser } from './browser'
 import { cancelBugReport, prepareBugReport } from './bug-reporter'
+import { cards } from './cards'
 import { chat } from './chat'
 import { catalogue, communityPackages, SERVICE_FILE_EXT } from './community'
 import { configStore } from './config'
@@ -218,7 +220,8 @@ export function registerIpc(): void {
   handle('regenerate', (id: string) => chat.regenerate(id))
   handle('followUp', (folderId: string, lineId: string) => chat.followUp(folderId, lineId))
   on('cancel', (id: string) => chat.cancel(id))
-  on('respondApproval', (id: string, answer: ApprovalAnswer) => approvals.respond(id, answer))
+  // A payment card's security code comes with its answer, and goes only to the tool that waits on it (approvals.ts).
+  on('respondApproval', (id: string, answer: ApprovalAnswer, cvv?: unknown) => approvals.respond(id, answer, typeof cvv === 'string' ? cvv : undefined))
   handle('attachFiles', async (folderId?: string): Promise<DocumentPart[]> => {
     const folder = folderId ? folders.get(folderId) : null
     const added = await addFiles('Joindre des pièces', folder?.domain || 'identity', folderId)
@@ -299,6 +302,11 @@ export function registerIpc(): void {
   handle('saveKeychain', (input: KeychainInput) => keychain.save(input))
   handle('deleteKeychain', (id: string) => keychain.remove(id))
   handle('revealKeychain', (id: string) => keychain.secret(id)?.password ?? '')
+
+  // ---------- payment cards: the number and the code go in, never back out ----------
+  handle('listCards', () => cards.list())
+  handle('saveCard', (input: PaymentCardInput) => cards.save(input))
+  handle('deleteCard', (id: string) => cards.remove(id))
 
   // ---------- built-in browser ----------
   handle('browserState', () => browser.state())
@@ -420,6 +428,7 @@ export function registerIpc(): void {
   profile.on('change', (p) => broadcast('profile', p))
   documents.on('change', () => broadcast('documents', documents.list()))
   keychain.on('change', () => broadcast('keychain'))
+  cards.on('change', () => broadcast('cards'))
   browser.on('state', (s: BrowserState) => broadcast('browserState', s))
   browser.on('reveal', (folderId: string) => broadcast('browserReveal', folderId))
   updater.on('change', (s) => broadcast('update', s))

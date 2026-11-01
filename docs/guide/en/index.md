@@ -10,7 +10,7 @@ The app itself is in French: this guide quotes its labels as they appear on scre
 
 - **Folders (dossiers).** Each subject has its folder: a conversation with Marianne that keeps the question, the documents and the steps.
 - **Guided formalities (démarches guidées).** Declaring your income, renewing your ID card, appealing a decision… Marianne walks you through them step by step.
-- **Planned tasks (tâches planifiées).** A folder that comes back on its day: a reminder, or a check Marianne makes for you, like unpaid tolls. Marianne never pays.
+- **Planned tasks (tâches planifiées).** A folder that comes back on its day: a reminder, or a check Marianne makes for you, like unpaid tolls. A check never pays.
 - **Services.** Small public-information tools, with their 3615 codes: the weather, free-flow motorway tolls, the map of France, Parliament (the National Assembly and the Senate), the directory of public services.
 - **The news (Les infos).** 3615 INFOS gathers the headlines of your news sources, grouped into subjects: who covers it, and how each one headlines it. The article opens at the newspaper.
 - **Your papers.** Your documents and your profile stay in the archive, and help prepare your formalities.
@@ -19,7 +19,7 @@ The app itself is in French: this guide quotes its labels as they appear on scre
 
 - [Installing Marianne](install.md): the command-line AI engine, the download, connecting the engine, updates.
 - [Getting started](getting-started.md): creating your archive, the passphrase, the recovery key, the PIN.
-- [Using Marianne](using.md): folders, what Marianne does for you, your approval, the browser, pages, the news, the Parliament's videos, planned tasks, the keys.
+- [Using Marianne](using.md): folders, what Marianne does for you, your approval, the browser, paying by card, pages, the news, the Parliament's videos, planned tasks, the keys.
 - [Your data](privacy.md): what stays on your computer, what the engine sees, backups.
 - [Help](help.md): when something goes wrong, writing to us, testing the alpha.
 - [About](about.md): the app, its author, contributing, the license and credits.

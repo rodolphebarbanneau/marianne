@@ -2,10 +2,12 @@ import { EventEmitter } from 'node:events'
 import { session as electronSession, shell, WebContentsView, type BrowserWindow } from 'electron'
 import { addressUrl } from '../../shared/address'
 import type { BrowserState, PagePart } from '../../shared/types'
-import { siteOf } from '../../shared/hosts'
+import { hostOf, siteOf } from '../../shared/hosts'
+import { maskCards } from '../cards'
 import { keychain, loginFits } from '../keychain'
 import { log } from '../log'
 import { session } from '../session'
+import { ARRIVALS_KEPT, CARD_CLEAR_SCRIPT, CARD_FILL_SCRIPT, CARD_SCAN_SCRIPT, PAY_PRESS_SCRIPT, type Arrival, type CardFrame } from './payment'
 import { holdToRun, mayOpen, type RunGuard } from './run-guard'
 import {
   CLICK_SCRIPT,
@@ -42,12 +44,27 @@ function addressOf(wc: Electron.WebContents | undefined): string {
   return url === 'about:blank' ? '' : url
 }
 
+/** The origins from the page down to a frame; null for a frame gone. */
+function originsOf(frame: Electron.WebFrameMain): string[] | null {
+  const origins: string[] = []
+  for (let f: Electron.WebFrameMain | null = frame; f; f = f.parent) {
+    if (f.isDestroyed() || f.detached) return null
+    origins.unshift(f.origin)
+  }
+  return origins
+}
+
+/** An arrival with at most `n` pages in its chain, itself included. */
+const kept = (a: Arrival | null, n: number): Arrival | null => (a && n > 0 ? { ...a, previous: kept(a.previous, n - 1) } : null)
+
 export interface PageElement {
   id: string
   role: string
   label: string
   type: string
   secret: boolean
+  /** A bank card's field: pay_by_card fills it, nothing else. */
+  card: boolean
 }
 
 export interface PageView {
@@ -78,6 +95,10 @@ class Browser extends EventEmitter {
   /** The user's page and folder, set aside while a run has its own view. */
   private aside: { view: WebContentsView | null; folderId: string; usedAt: number } | null = null
   private prepared = new Set<string>()
+  /** How each view's page came to be there, and the navigation under way (follow). */
+  private trails = new WeakMap<Electron.WebContents, { arrival: Arrival | null; going: { hops: string[]; initiator: string } | null }>()
+  /** Counts every change of page, in any view: what the user approved on a page holds while it stays the same. */
+  private changes = 0
 
   /**
    * A planned task's run starts: it gets a view of its own, in its own empty session, held to its
@@ -181,6 +202,7 @@ class Browser extends EventEmitter {
       return { action: 'deny' }
     })
     if (run) holdToRun(wc, () => this.runGuard)
+    this.follow(wc)
     for (const event of ['did-navigate', 'did-navigate-in-page', 'page-title-updated', 'did-start-loading', 'did-stop-loading'] as const) {
       wc.on(event as 'did-navigate', () => this.changed())
     }
@@ -191,6 +213,49 @@ class Browser extends EventEmitter {
     this.view = view
     this.layout()
     return view
+  }
+
+  /**
+   * Keep how the view's page came to be there (payment.ts, paymentRoute): the frame that sent it, by
+   * its origin ('' when no page did: an address opened, back, reload), the addresses on the way, the
+   * pages before; and count each change of page, a fragment's or a script's included.
+   */
+  private follow(wc: Electron.WebContents): void {
+    const trail: { arrival: Arrival | null; going: { hops: string[]; initiator: string } | null } = { arrival: null, going: null }
+    this.trails.set(wc, trail)
+    wc.on('did-start-navigation', (details) => {
+      if (!details.isMainFrame || details.isSameDocument) return
+      let initiator = ''
+      try {
+        initiator = details.initiator?.origin ?? ''
+      } catch {
+        // The frame that started it is gone: nobody can be said to have sent it.
+      }
+      trail.going = { hops: [details.url], initiator }
+    })
+    wc.on('did-redirect-navigation', (details) => {
+      if (details.isMainFrame && !details.isSameDocument) trail.going?.hops.push(details.url)
+    })
+    wc.on('did-navigate', (_e, url) => {
+      const going = trail.going
+      trail.going = null
+      trail.arrival = { url, initiator: going?.initiator ?? '', hops: [...(going?.hops ?? []), url], previous: kept(trail.arrival, ARRIVALS_KEPT - 1) }
+      this.changes++
+    })
+    wc.on('did-navigate-in-page', (_e, _url, isMainFrame) => {
+      if (isMainFrame) this.changes++
+    })
+  }
+
+  /** How the page open came to be there; null with none. */
+  arrival(): Arrival | null {
+    const wc = this.view?.webContents
+    return (wc && this.trails.get(wc)?.arrival) || null
+  }
+
+  /** A number that changes whenever a page does: a card approved on a page, and the pay click it covers, hold while it is the same. */
+  pageVersion(): number {
+    return this.changes
   }
 
   /** The panel's rectangle, from the screens; null when it is closed (the page keeps running). */
@@ -314,13 +379,14 @@ class Browser extends EventEmitter {
     }
   }
 
-  /** The page as Marianne sees it: text and the elements she can act on. Stored passwords are masked. */
+  /** The page as Marianne sees it: text and the elements she can act on. Stored passwords and card numbers are masked. */
   async readPage(): Promise<PageView> {
     const wc = this.agentPage()
     await this.settled()
     const page = (await wc.executeJavaScript(PAGE_READ_SCRIPT)) as PageView
     const secrets = this.storedPasswords(page.url)
-    for (const secret of secrets) page.text = page.text.split(secret).join('(masqué)')
+    page.text = this.masked(page.text, secrets)
+    for (const e of page.elements) e.label = this.masked(e.label, secrets)
     return page
   }
 
@@ -347,7 +413,7 @@ class Browser extends EventEmitter {
     // Pages built by scripts may show their form a moment after loading.
     for (let attempt = 1; ; attempt++) {
       const fields = (await wc.executeJavaScript(FORM_READ_SCRIPT)) as FormField[]
-      for (const f of fields) if (secrets.has(f.value)) f.value = '(masqué)'
+      for (const f of fields) f.value = secrets.has(f.value) ? '(masqué)' : maskCards(f.value)
       if (fields.length || attempt === 3) return fields
       await new Promise((r) => setTimeout(r, 1000))
     }
@@ -380,12 +446,12 @@ class Browser extends EventEmitter {
     return []
   }
 
-  /** The visible text of the page, to give to the conversation. */
+  /** The visible text of the page, to give to the conversation: stored passwords and card numbers masked, as Marianne reads it. */
   async capture(): Promise<PagePart | null> {
     const wc = this.view?.webContents
     if (!wc || !addressOf(wc)) return null
     const page = (await wc.executeJavaScript(READ_SCRIPT)) as { title: string; url: string; text: string }
-    const text = page.text
+    const text = this.masked(page.text, this.storedPasswords(page.url))
       .replace(/[ \t]+\n/g, '\n')
       .replace(/\n{3,}/g, '\n\n')
       .trim()
@@ -394,6 +460,74 @@ class Browser extends EventEmitter {
 
   currentUrl(): string {
     return addressOf(this.view?.webContents)
+  }
+
+  /**
+   * The card fields of the page, in each of its frames that `may` receive a card (payment.ts,
+   * frameMayReceive, from the origins of the frame and of those above it), tagged there for
+   * fillCard. A frame that can't be read is left out.
+   */
+  async cardFields(may: (origins: string[]) => boolean): Promise<CardFrame[]> {
+    const wc = this.agentPage()
+    await this.settled()
+    const found: CardFrame[] = []
+    for (const frame of wc.mainFrame.framesInSubtree) {
+      const origins = originsOf(frame)
+      if (!origins || !may(origins)) continue
+      try {
+        const read = (await frame.executeJavaScript(CARD_SCAN_SCRIPT(frame.parent ? frame.name : null))) as Pick<CardFrame, 'fields' | 'pay'>
+        if (read.fields.length) found.push({ node: frame.frameTreeNodeId, origins, fields: read.fields, pay: read.pay })
+      } catch {
+        // The host only: never what the frame holds.
+        log.warn('Card fields: could not read a frame on', hostOf(frame.origin))
+      }
+    }
+    return found
+  }
+
+  /**
+   * Fill a card in the fields cardFields tagged, frame by frame: each frame still the one read (the
+   * same node, the same origins down to it) and each field taking its value, or nothing stays filled.
+   * True once the whole card is in. Nothing of it is logged.
+   */
+  async fillCard(fills: Array<{ node: number; origins: string[]; values: Record<string, string> }>): Promise<boolean> {
+    const wc = this.agentPage()
+    const frames = new Map(wc.mainFrame.framesInSubtree.map((f) => [f.frameTreeNodeId, f]))
+    const touched: Array<{ frame: Electron.WebFrameMain; ids: string[] }> = []
+    let whole = true
+    for (const fill of fills) {
+      const frame = frames.get(fill.node)
+      const ids = Object.keys(fill.values)
+      if (!frame || originsOf(frame)?.join(' ') !== fill.origins.join(' ')) {
+        whole = false
+        break
+      }
+      touched.push({ frame, ids })
+      const filled = (await frame.executeJavaScript(CARD_FILL_SCRIPT(fill.values)).catch(() => [])) as string[]
+      if (filled.length !== ids.length) {
+        whole = false
+        break
+      }
+    }
+    if (!whole) for (const { frame, ids } of touched) await frame.executeJavaScript(CARD_CLEAR_SCRIPT(ids)).catch(() => undefined)
+    return whole
+  }
+
+  /** Press the pay button cardFields tagged in one of the page's frames, still the one read; true once pressed. */
+  async pressPay(pay: { node: number; origins: string[]; id: string }): Promise<boolean> {
+    const wc = this.agentPage()
+    const frame = wc.mainFrame.framesInSubtree.find((f) => f.frameTreeNodeId === pay.node)
+    if (!frame || originsOf(frame)?.join(' ') !== pay.origins.join(' ')) return false
+    const pressed = (await frame.executeJavaScript(PAY_PRESS_SCRIPT(pay.id), true).catch(() => false)) as boolean
+    if (pressed) await this.settled()
+    return pressed
+  }
+
+  /** `text` without the stored passwords given (storedPasswords) nor any stored card number. */
+  private masked(text: string, passwords: Set<string>): string {
+    let out = text
+    for (const password of passwords) out = out.split(password).join('(masqué)')
+    return maskCards(out)
   }
 
   /** The passwords to mask on a page: those of its whole site, wider than where they fill. */
@@ -416,6 +550,9 @@ class Browser extends EventEmitter {
     this.waiting = ''
     this.controller = 'agent'
     this.usedAt = 0
+    // Nothing the next opening pays on came from a page of this one.
+    const trail = this.view && this.trails.get(this.view.webContents)
+    if (trail) Object.assign(trail, { arrival: null, going: null })
     if (this.view) void this.view.webContents.loadURL('about:blank')
     await electronSession.fromPartition(PARTITION).clearStorageData()
     this.changed()
