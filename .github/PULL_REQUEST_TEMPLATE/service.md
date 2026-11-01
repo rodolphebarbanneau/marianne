@@ -32,6 +32,7 @@ Required. Invented names, addresses and numbers only; hide anything personal.
 Pages: every page and tab the pull request creates or changes, one entry each, at 1440 pixels wide.
 Say what each one lets the user do (a search, a filter, a dialog, a key), and show those features: one screenshot more when the page alone doesn't show one.
 For a change: before and after. For a new service: its main page at 800 and 520 pixels wide too.
+Drop them here, or write each as ![what it shows](shot:file.png) and run npm run pr:shots -- <number> --from <folder>.
 -->
 
 ### Pages

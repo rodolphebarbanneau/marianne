@@ -17,6 +17,7 @@
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "pr:shots": "node scripts/pr-shots.mjs",
     "check": "npm run format:check && node scripts/check-gitkeep.mjs && node scripts/check-markdown.mjs && node scripts/check-boundaries.mjs && npm run typecheck && npm test",
     "icons": "npm run icons -w marianne",
     "content:bundle": "npm run bundle -w @marianne/content",
