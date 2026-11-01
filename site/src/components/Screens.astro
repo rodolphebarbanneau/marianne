@@ -19,36 +19,36 @@ import { words, type Lang } from '../i18n'
 // once through while it shows, and the caption follows the screen. Any screen opens full size
 // (AGRANDIR, or a click on it).
 //
-// A phone can't show 1200 pixels of interface in 350 and have them read. There, the window is square
-// and from edge to edge, the screens at full height: it shows the part of each that matters, `focus`
-// saying where that part sits across the screen, from 0 (its left) to 100 (its right). Enlarged, the
-// screen comes close to its real size, and the finger moves around it.
+// A phone can't show 1200 pixels of interface in 350 and have them read, and a part of a screen cut
+// out of it reads as a broken one. There, each screen is shown whole, side by side with the others
+// in a reel the finger moves, and nothing turns on its own: the visitor goes at their pace. Enlarged,
+// a screen opens whole too, and a touch brings the place touched close to its real size.
 interface Props {
   lang: Lang
 }
 const { lang } = Astro.props
 const t = words(lang)
 type Caption = keyof typeof t.screens.captions
-type Frame = { image: ImageMetadata; film?: string; caption: Caption; focus: number }
+type Frame = { image: ImageMetadata; film?: string; caption: Caption }
 const shots: Array<{ id: keyof typeof t.screens.tabs; frames: Frame[] }> = [
-  { id: 'dossier', frames: [{ image: dossier, caption: 'dossier', focus: 77 }] },
-  { id: 'accord', frames: [{ image: accord, caption: 'accord', focus: 78 }] },
+  { id: 'dossier', frames: [{ image: dossier, caption: 'dossier' }] },
+  { id: 'accord', frames: [{ image: accord, caption: 'accord' }] },
   {
     id: 'demarches',
     frames: [
-      { image: demarches, caption: 'demarches', focus: 64 },
-      { image: taches, caption: 'demarches', focus: 0 },
-      { image: navigateur, caption: 'navigateur', focus: 100 }
+      { image: demarches, caption: 'demarches' },
+      { image: taches, caption: 'demarches' },
+      { image: navigateur, caption: 'navigateur' }
     ]
   },
   {
     id: 'services',
     frames: [
-      { image: infos, film: infosFilm, caption: 'infos', focus: 64 },
-      { image: parlement, caption: 'parlement', focus: 64 },
-      { image: meteo, caption: 'services', focus: 64 },
-      { image: carte, caption: 'services', focus: 65 },
-      { image: annuaire, caption: 'services', focus: 64 }
+      { image: infos, film: infosFilm, caption: 'infos' },
+      { image: parlement, caption: 'parlement' },
+      { image: meteo, caption: 'services' },
+      { image: carte, caption: 'services' },
+      { image: annuaire, caption: 'services' }
     ]
   }
 ]
@@ -91,41 +91,41 @@ const posters = new Map(
         <span class="sample">{t.screens.sample}</span>
       </div>
       <div class="window">
-        {shots.map((s, i) => (
-          <figure id={`shot-${s.id}`} role="tabpanel" aria-labelledby={`tab-${s.id}`} class:list={{ on: i === 0 }}>
-            {s.frames.map((f, n) =>
-              f.film ? (
-                <video
-                  class:list={['screen', { on: n === 0 }]}
-                  data-full={f.film}
-                  data-says={f.caption}
-                  style={`--focus: ${f.focus}%`}
-                  poster={posters.get(f.image)}
-                  aria-label={label(s.frames, n) || undefined}
-                  muted
-                  loop
-                  playsinline
-                  preload="none"
-                >
-                  <source src={f.film} type="video/mp4" />
-                </video>
-              ) : (
-                <Image
-                  class:list={['screen', { on: n === 0 }]}
-                  data-full={full.get(f.image)}
-                  data-says={f.caption}
-                  style={`--focus: ${f.focus}%`}
-                  src={f.image}
-                  alt={label(s.frames, n)}
-                  widths={[720, 1200, 1800, 2400]}
-                  sizes="(max-width: 640px) 160vw, (min-width: 1280px) 1200px, 94vw"
-                  loading={i === 0 ? 'eager' : 'lazy'}
-                  fetchpriority={i === 0 ? 'high' : 'auto'}
-                />
-              )
-            )}
-          </figure>
-        ))}
+        <div class="reel">
+          {shots.map((s, i) => (
+            <figure id={`shot-${s.id}`} role="tabpanel" aria-labelledby={`tab-${s.id}`} class:list={{ on: i === 0 }}>
+              {s.frames.map((f, n) =>
+                f.film ? (
+                  <video
+                    class:list={['screen', { on: n === 0 }]}
+                    data-full={f.film}
+                    data-says={f.caption}
+                    poster={posters.get(f.image)}
+                    aria-label={label(s.frames, n) || undefined}
+                    muted
+                    loop
+                    playsinline
+                    preload="none"
+                  >
+                    <source src={f.film} type="video/mp4" />
+                  </video>
+                ) : (
+                  <Image
+                    class:list={['screen', { on: n === 0 }]}
+                    data-full={full.get(f.image)}
+                    data-says={f.caption}
+                    src={f.image}
+                    alt={label(s.frames, n)}
+                    widths={[720, 1200, 1800, 2400]}
+                    sizes="(max-width: 640px) 100vw, (min-width: 1280px) 1200px, 94vw"
+                    loading={i === 0 ? 'eager' : 'lazy'}
+                    fetchpriority={i === 0 ? 'high' : 'auto'}
+                  />
+                )
+              )}
+            </figure>
+          ))}
+        </div>
         <button type="button" class="zoom" aria-label={t.screens.zoomLabel} aria-haspopup="dialog">
           <span class="key">{t.screens.zoom}</span>
         </button>
@@ -141,6 +141,16 @@ const posters = new Map(
             </span>
           ))}
         </p>
+        {/* On a phone, where the screen shown is among them all: a block for each, by tab. */}
+        <span class="dots" aria-hidden="true">
+          {shots.map((s) => (
+            <span>
+              {s.frames.map(() => (
+                <i />
+              ))}
+            </span>
+          ))}
+        </span>
         <button type="button" class="nav" data-step="1" aria-label={t.screens.next}>
           <span class="key">SUITE</span>
         </button>
@@ -149,9 +159,9 @@ const posters = new Map(
   </div>
   <dialog class="enlarged" aria-label={t.screens.zoomLabel}>
     <div class="frame"></div>
-    <p class="pan">{t.screens.pan}</p>
     <div class="caption">
-      <p></p>
+      <p class="pan" data-near={t.screens.pan} data-whole={t.screens.tap}></p>
+      <p class="says"></p>
       <button type="button" class="nav" data-close aria-label={t.screens.close}>
         <span class="key">RETOUR</span>
       </button>
@@ -162,22 +172,27 @@ const posters = new Map(
 <script>
   const viewer = document.querySelector<HTMLElement>('.viewer')!
   const stage = viewer.querySelector<HTMLElement>('.window')!
+  const reel = stage.querySelector<HTMLElement>('.reel')!
   const tabs = [...viewer.querySelectorAll<HTMLButtonElement>('[role=tab]')]
   const panels = [...viewer.querySelectorAll<HTMLElement>('[role=tabpanel]')]
   const captions = [...viewer.querySelectorAll<HTMLElement>('[data-caption]')]
+  const dots = [...viewer.querySelectorAll<HTMLElement>('.dots i')]
   const zoom = viewer.querySelector<HTMLButtonElement>('.zoom')!
   const dialog = document.querySelector<HTMLDialogElement>('dialog.enlarged')!
   // A screen alone in its tab stays DWELL; among others, FRAME; a film, once through. Longer where
-  // there is no pointer to rest on it, as on a phone, whose captions run to several lines.
+  // there is no pointer to rest on it, as on a tablet.
   const touch = matchMedia('(hover: none)').matches
   const DWELL = touch ? 9000 : 6500
   const FRAME = touch ? 5000 : 3200
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches
+  // On a phone the screens lie side by side, whole, in a reel the finger moves (see the styles), and
+  // nothing turns on its own.
+  const phone = matchMedia('(max-width: 640px)')
   let index = 0
   // The screen shown in the tab, and for how long it has been.
   let frame = 0
   let shown = 0
-  let playing = !still
+  let playing = !still && !phone.matches
   // A screen reached by a step stays on show until the next one.
   let held = false
   let hovered = false
@@ -185,6 +200,7 @@ const posters = new Map(
   let enlarged = false
   let last = performance.now()
 
+  const screens = [...reel.querySelectorAll<HTMLElement>('.screen')]
   const frames = (i: number) => [...panels[i].querySelectorAll<HTMLElement>('.screen')]
   const films = () => [...viewer.querySelectorAll<HTMLVideoElement>('video.screen')]
   const current = () => frames(index)[frame]
@@ -207,35 +223,50 @@ const posters = new Map(
     shown = 0
     frames(index).forEach((f, k) => f.classList.toggle('on', k === n))
     captions.forEach((c) => (c.hidden = c.dataset.caption !== caption()))
+    const at = screens.indexOf(current())
+    dots.forEach((d, k) => d.classList.toggle('on', k === at))
+    // In the reel, the screens on either side are the next a finger brings: they load now.
+    if (phone.matches) for (const s of [screens[at - 1], screens[at + 1]]) if (s instanceof HTMLImageElement) s.loading = 'eager'
     // A film starts from its beginning each time it comes on.
     const on = current()
     if (on instanceof HTMLVideoElement && on.currentTime) on.currentTime = 0
     sync()
   }
-  const show = (i: number, focus = false) => {
-    index = (i + tabs.length) % tabs.length
+  // A screen's tab and its place in it.
+  const select = (screen: HTMLElement) => {
+    index = panels.findIndex((p) => p.contains(screen))
     tabs.forEach((t, n) => {
       t.setAttribute('aria-selected', String(n === index))
       t.tabIndex = n === index ? 0 : -1
       t.style.setProperty('--p', '0')
     })
     panels.forEach((p, n) => p.classList.toggle('on', n === index))
-    showFrame(0)
-    if (focus) tabs[index].focus()
+    showFrame(frames(index).indexOf(screen))
   }
-  // Picked by hand, it stays: the film stops (a tab's own screens still take turns).
-  const pick = (i: number, focus = false) => {
+  const show = (i: number) => select(frames((i + tabs.length) % tabs.length)[0])
+  // The screen a step or a tab leads to, in the reel: its left edge at the reel's. Until it is there,
+  // the screens it goes past don't change the tab.
+  let aim: HTMLElement | undefined
+  const roll = (screen: HTMLElement) => {
+    if (Math.abs(reel.scrollLeft - screen.offsetLeft) < 2) return
+    aim = screen
+    reel.scrollTo({ left: screen.offsetLeft, behavior: still ? 'instant' : 'smooth' })
+  }
+  // Picked by hand, it stays: the film stops (a tab's own screens still take turns, but on a phone).
+  const go = (screen: HTMLElement, focus = false) => {
     playing = false
-    held = false
     viewer.classList.add('stopped')
-    show(i, focus)
+    select(screen)
+    if (focus) tabs[index].focus()
+    if (phone.matches) roll(screen)
+  }
+  const pick = (i: number, focus = false) => {
+    held = false
+    go(frames((i + tabs.length) % tabs.length)[0], focus)
   }
   // RETOUR, SUITE and a swipe go through every screen, a tab's own and then the next tab's.
   const step = (by: number) => {
-    const next = frame + by
-    const inside = next >= 0 && next < frames(index).length
-    pick(inside ? index : index + by)
-    showFrame(inside ? next : by < 0 ? frames(index).length - 1 : 0)
+    go(screens[(screens.indexOf(current()) + by + screens.length) % screens.length])
     held = true
   }
   tabs.forEach((t, n) => t.addEventListener('click', () => pick(n)))
@@ -247,8 +278,41 @@ const posters = new Map(
       pick(index + (k === 'ArrowRight' ? 1 : -1), true)
     }
   })
-  // A swipe across the screen is a step. The window leaves the browser only the vertical one
-  // (touch-action), which scrolls the page.
+  // The reel says which screen is shown once it has moved: the one nearest its left edge.
+  const settle = () => {
+    if (!phone.matches) return
+    const x = reel.scrollLeft
+    const nearest = screens.reduce((a, b) => (Math.abs(b.offsetLeft - x) < Math.abs(a.offsetLeft - x) ? b : a))
+    if (aim && nearest !== aim) return
+    aim = undefined
+    if (nearest !== current()) select(nearest)
+  }
+  let settling = 0
+  reel.addEventListener(
+    'scroll',
+    () => {
+      cancelAnimationFrame(settling)
+      settling = requestAnimationFrame(settle)
+    },
+    { passive: true }
+  )
+  // A finger or a wheel on the reel takes it over from a step still under way, and wherever the reel
+  // comes to rest is the screen shown.
+  const free = () => (aim = undefined)
+  reel.addEventListener('touchstart', free, { passive: true })
+  reel.addEventListener('wheel', free, { passive: true })
+  reel.addEventListener('scrollend', () => {
+    free()
+    settle()
+  })
+  phone.addEventListener('change', () => {
+    if (!phone.matches) return
+    playing = false
+    viewer.classList.add('stopped')
+    reel.scrollTo({ left: current().offsetLeft, behavior: 'instant' })
+  })
+  // Elsewhere, a swipe across the screen is a step. The window leaves the browser only the vertical
+  // one (touch-action), which scrolls the page.
   let start = { x: 0, y: 0 }
   stage.addEventListener(
     'touchstart',
@@ -260,6 +324,7 @@ const posters = new Map(
   stage.addEventListener(
     'touchend',
     (e) => {
+      if (phone.matches) return
       const x = e.changedTouches[0].clientX - start.x
       const y = e.changedTouches[0].clientY - start.y
       if (Math.abs(x) > 48 && Math.abs(x) > 2 * Math.abs(y)) step(x < 0 ? 1 : -1)
@@ -278,10 +343,44 @@ const posters = new Map(
   document.addEventListener('visibilitychange', sync)
 
   // The screen shown, full size: its largest image, or its film with its controls, over the page.
+  const sheet = dialog.querySelector<HTMLElement>('.frame')!
+  const hint = dialog.querySelector<HTMLElement>('.pan')!
+  // Where the screen is smaller than its real size by far (a phone, upright or sideways), it opens
+  // whole; a touch brings the place touched close, at the view's full height (or width, sideways),
+  // to move around with a finger, and another shows it whole again. A film keeps its controls' touches.
+  const small = matchMedia('(max-width: 640px), (max-height: 500px)')
+  let near = false
+  const fit = (at?: { x: number; y: number }) => {
+    const media = sheet.firstElementChild as HTMLElement | null
+    if (!media) return
+    const film = media instanceof HTMLVideoElement
+    sheet.classList.toggle('near', near)
+    sheet.classList.toggle('film', film)
+    if (!small.matches) {
+      media.style.width = ''
+      return
+    }
+    hint.textContent = film ? '' : near ? hint.dataset.near! : hint.dataset.whole!
+    const before = media.getBoundingClientRect()
+    const width = near ? Math.max(sheet.clientWidth, sheet.clientHeight * 1.6) : Math.min(sheet.clientWidth, sheet.clientHeight * 1.6)
+    media.style.width = `${Math.floor(width)}px`
+    if (!at) return
+    // The place touched stays under the finger.
+    const box = sheet.getBoundingClientRect()
+    sheet.scrollLeft = ((at.x - before.left) / before.width) * width - (at.x - box.left)
+    sheet.scrollTop = ((at.y - before.top) / before.height) * (width / 1.6) - (at.y - box.top)
+  }
+  sheet.addEventListener('click', (e) => {
+    if (!small.matches || sheet.firstElementChild instanceof HTMLVideoElement) return
+    near = !near
+    fit({ x: e.clientX, y: e.clientY })
+  })
+  addEventListener('resize', () => {
+    if (dialog.open) fit()
+  })
   const enlarge = () => {
     const screen = current()
     const text = captions.find((c) => c.dataset.caption === caption())!.textContent!.trim()
-    const frame = dialog.querySelector('.frame')!
     if (screen instanceof HTMLVideoElement) {
       const film = document.createElement('video')
       film.src = screen.dataset.full!
@@ -292,31 +391,36 @@ const posters = new Map(
       film.controls = true
       film.autoplay = !still
       film.addEventListener('loadedmetadata', () => (film.currentTime = screen.currentTime), { once: true })
-      frame.replaceChildren(film)
+      sheet.replaceChildren(film)
     } else {
       const img = document.createElement('img')
       img.src = screen.dataset.full!
       img.alt = (screen as HTMLImageElement).alt || text
-      frame.replaceChildren(img)
+      sheet.replaceChildren(img)
     }
-    dialog.querySelector('.caption p')!.textContent = text
+    dialog.querySelector('.says')!.textContent = text
     enlarged = true
     sync()
     dialog.showModal()
-    // On a phone the screen is wider than the view: it opens where the gallery's crop starts, at the
-    // left of what it was showing, where its lines begin. Elsewhere nothing is cropped, and this is 0.
-    const cropped = 1 - stage.clientWidth / (stage.clientHeight * 1.6)
-    frame.scrollLeft = (frame.scrollWidth * cropped * parseFloat(getComputedStyle(screen).objectPosition)) / 100
+    near = false
+    fit()
   }
   zoom.addEventListener('click', enlarge)
-  panels.forEach((p) => p.addEventListener('click', enlarge))
+  // In the reel, the screen touched is the one to enlarge, even if the reel has yet to settle on it.
+  panels.forEach((p) =>
+    p.addEventListener('click', (e) => {
+      const screen = (e.target as Element).closest<HTMLElement>('.screen')
+      if (screen && screen !== current()) select(screen)
+      enlarge()
+    })
+  )
   dialog.querySelector('[data-close]')!.addEventListener('click', () => dialog.close())
   // A click beside the screen closes it, as échap does.
   dialog.addEventListener('click', (e) => {
     if (e.target === dialog) dialog.close()
   })
   dialog.addEventListener('close', () => {
-    dialog.querySelector('.frame')!.replaceChildren()
+    sheet.replaceChildren()
     enlarged = false
     sync()
     zoom.focus()
@@ -329,7 +433,7 @@ const posters = new Map(
     const screen = list[frame]
     // A film counts only while it plays: one still loading isn't cut short.
     const running = !(screen instanceof HTMLVideoElement) || (!screen.paused && screen.readyState >= 3)
-    if (visible && !hovered && !enlarged && !document.hidden && !still && running) {
+    if (visible && !hovered && !enlarged && !document.hidden && !still && !phone.matches && running) {
       shown += dt
       const lengths = list.map((f) => length(f, list.length === 1))
       if (playing) {
@@ -349,6 +453,7 @@ const posters = new Map(
   }
   requestAnimationFrame(tick)
   if (!playing) viewer.classList.add('stopped')
+  showFrame(0)
 </script>
 
 <style>
@@ -414,8 +519,12 @@ const posters = new Map(
       0 0 0 6px color-mix(in srgb, var(--bg-raised) 70%, transparent);
     overflow: hidden;
   }
+  .reel {
+    position: absolute;
+    inset: 0;
+  }
   /* The screens lie one on the other. Those not shown are hidden once they have faded, not just
-     transparent: ten images this size, painted for nothing, are a lot for a phone. */
+     transparent: ten images this size, painted for nothing, are a lot for a tablet. */
   figure {
     position: absolute;
     inset: 0;
@@ -522,6 +631,9 @@ const posters = new Map(
   .nav:hover .key {
     background: var(--accent);
   }
+  .dots {
+    display: none;
+  }
   /* The screen full size: over the whole page, as large as the window allows, its caption under it. */
   dialog.enlarged {
     width: 100vw;
@@ -564,12 +676,9 @@ const posters = new Map(
     height: 100%;
     object-fit: contain;
   }
-  /* Said where the screen is wider than the view: on a phone held upright. */
+  /* Said where the screen can be brought close: on a phone. */
   .pan {
     display: none;
-    color: var(--dim);
-    font-size: 0.8rem;
-    text-align: center;
   }
   @media (max-width: 640px) {
     .caption {
@@ -577,109 +686,186 @@ const posters = new Map(
       justify-content: space-between;
       gap: 6px 16px;
     }
-    /* The keys right under the screen they turn, always in the same place; the caption after them. */
+    /* The keys right under the screen they turn, always in the same place; the caption after them,
+       from the left, as text is read here. */
     .caption p {
       order: 1;
       flex-basis: 100%;
     }
-    /* The four tabs in sight, none of them to scroll to. */
+    .viewer .caption p {
+      text-align: left;
+      text-wrap: pretty;
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+    /* A block for each screen between the keys, the one shown longer and in yellow, a little room
+       between the tabs' groups. */
+    .dots {
+      display: flex;
+      flex: 1;
+      justify-content: center;
+      align-items: center;
+      gap: 9px;
+    }
+    .dots span {
+      display: flex;
+      gap: 3px;
+    }
+    .dots i {
+      width: 6px;
+      height: 6px;
+      background: var(--muted);
+      transition: width 0.2s steps(3);
+    }
+    .dots i.on {
+      width: 16px;
+      background: var(--accent);
+    }
+    /* The four tabs in sight, none of them to scroll to, each framed as a key to touch. */
     .tabs {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      margin-bottom: 10px;
+      gap: 6px;
+      margin-bottom: 12px;
     }
     .tabs button {
       min-height: 40px;
       padding: 4px 6px;
+      border: 1px solid var(--rule);
     }
-    .progress {
-      bottom: -3px;
+    .tabs button[aria-selected='true'] {
+      border-color: var(--accent);
     }
     .sample {
       grid-column: 1 / -1;
       margin-left: 0;
       text-align: right;
     }
+    /* The reel: from edge to edge, each screen whole and as wide as the phone, the next one a swipe
+       away. It stops at every screen, so a swipe never skips one. */
     .window {
-      aspect-ratio: 1;
+      aspect-ratio: auto;
       margin-inline: calc(-1 * var(--gutter));
       border-inline: 0;
+      touch-action: auto;
+    }
+    .reel {
+      position: relative;
+      inset: auto;
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      container-type: inline-size;
+    }
+    .reel::-webkit-scrollbar {
+      display: none;
+    }
+    figure {
+      position: static;
+      display: flex;
+      flex: none;
+      gap: 12px;
+      opacity: 1;
+      visibility: visible;
+      transition: none;
     }
     figure :global(.screen) {
-      object-position: var(--focus, 50%) 50%;
-    }
-    /* Enlarged, the screen at the full height of the phone, close to its real size: the view moves
-       across it, and fingers can still zoom. */
-    dialog.enlarged {
-      padding: 0 0 6px;
-    }
-    dialog.enlarged[open] {
-      justify-content: flex-start;
-    }
-    dialog.enlarged .frame {
-      flex: 1;
-      min-height: 0;
-      width: 100%;
-      aspect-ratio: auto;
-      overflow: auto;
-      border-inline: 0;
-      border-top: 0;
-      box-shadow: none;
-    }
-    dialog.enlarged .frame > :global(*) {
-      width: auto;
-      max-width: none;
+      position: relative;
+      inset: auto;
+      flex: none;
+      width: 100vw;
+      width: 100cqw;
+      height: auto;
       aspect-ratio: 1440 / 900;
+      opacity: 1;
+      visibility: visible;
+      transition: none;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
     }
-    dialog.enlarged .pan {
-      display: block;
+    .zoom {
+      top: 0;
+      right: 0;
+      padding: 6px;
     }
-    dialog.enlarged .caption {
-      width: 100%;
-      margin-top: 0;
-      min-height: 0;
-      padding: 0 var(--gutter);
+    .zoom .key {
+      font-size: 0.95rem;
     }
-    dialog.enlarged .caption p {
+    dialog.enlarged .caption .says {
       order: -1;
       font-size: 0.86rem;
       line-height: 1.45;
     }
+    dialog.enlarged .caption .pan {
+      order: -2;
+      flex-basis: 100%;
+      text-align: center;
+    }
   }
-  /* A phone held sideways: the screen fills the width, as tall as it needs to, and scrolls over the
-     key that closes it; a caption would leave it no room. */
-  @media (max-height: 500px) {
+  /* Enlarged on a phone, upright or sideways: the screen whole, then, at a touch, the place touched at
+     the view's full height (or width), close to its real size, to move around with a finger. */
+  @media (max-width: 640px), (max-height: 500px) {
     dialog.enlarged {
-      padding: 0;
+      padding: 0 0 8px;
     }
     dialog.enlarged[open] {
       justify-content: flex-start;
-      gap: 0;
+      gap: 8px;
     }
     dialog.enlarged .frame {
       flex: 1;
       min-height: 0;
       width: 100%;
       aspect-ratio: auto;
+      display: flex;
       overflow: auto;
+      overscroll-behavior: contain;
       border: 0;
+      background: none;
       box-shadow: none;
+      cursor: zoom-in;
     }
+    dialog.enlarged .frame.near {
+      cursor: zoom-out;
+    }
+    dialog.enlarged .frame.film {
+      cursor: auto;
+    }
+    /* Centred while it is smaller than the view, from its corner once it is larger: auto margins
+       never push it out of reach. */
     dialog.enlarged .frame > :global(*) {
+      flex: none;
+      margin: auto;
       width: 100%;
       height: auto;
       max-width: none;
       aspect-ratio: 1440 / 900;
-    }
-    dialog.enlarged .pan,
-    dialog.enlarged .caption p {
-      display: none;
+      border-block: 1px solid var(--rule);
+      background: var(--bg-sunken);
     }
     dialog.enlarged .caption {
       width: 100%;
       margin-top: 0;
       min-height: 0;
       padding: 0 var(--gutter);
+    }
+    dialog.enlarged .caption .pan {
+      display: block;
+      color: var(--dim);
+      font-size: 0.8rem;
+    }
+  }
+  /* Sideways, one line under the screen: what a touch does, and the key that closes it; a caption
+     would leave the screen no room. */
+  @media (max-height: 500px) {
+    dialog.enlarged .caption .says {
+      display: none;
+    }
+    dialog.enlarged .caption .pan {
+      text-align: left;
     }
   }
 </style>
