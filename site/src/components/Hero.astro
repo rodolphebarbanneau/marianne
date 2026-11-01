@@ -103,36 +103,93 @@ const questions = [
 
   // Liberty's mosaic in the screen's own pixels, as the app draws its logo: a block of 8 CSS pixels and
   // a gap of 1, each rounded to whole screen pixels, so every gap is as wide as the others; drawn again
-  // when the page is zoomed, and placed on a whole screen pixel. A phone's blocks are half that size:
-  // full size, its width would show a quarter of the painting, a few blocks with nothing to recognise.
+  // when the page is zoomed or the hero changes size. A phone's blocks are half that size: full size,
+  // its width would show a quarter of the painting, a few blocks with nothing to recognise.
+  //
+  // The mosaic covers the whole hero, however wide the window: the painting in the middle, and around
+  // it the same grid of blocks in its darkest level, the screen it is shown on. The painting fades into
+  // that grid block by block, each block one colour, so it has no edge of its own; only the grid fades
+  // into the page, at the hero's foot (its mask). The painting alone, as wide as it is, would show its
+  // sides and its foot as straight bands on any window wider than it.
   const source = document.querySelector<HTMLImageElement>('img.liberty')!
   const canvas = document.querySelector<HTMLCanvasElement>('canvas.liberty')!
+  const hero = canvas.parentElement!
+  // A ramp eased at both ends, so a fade has no line where it starts or where it ends.
+  const ease = (gradient: CanvasGradient, from: number, to: number, rising: boolean) => {
+    for (let i = 0; i <= 8; i++) {
+      const t = i / 8
+      const v = t * t * (3 - 2 * t)
+      gradient.addColorStop(from + (to - from) * t, `rgba(0, 0, 0, ${rising ? v : 1 - v})`)
+    }
+  }
+  // The painting at one pixel a block, its sides and its foot fading out, and its darkest level.
+  let painting: { art: HTMLCanvasElement; dark: string } | undefined
+  const paint = () => {
+    const { naturalWidth: cols, naturalHeight: rows } = source
+    const art = document.createElement('canvas')
+    art.width = cols
+    art.height = rows
+    const ctx = art.getContext('2d')!
+    ctx.drawImage(source, 0, 0)
+    const data = ctx.getImageData(0, 0, cols, rows).data
+    const level = (i: number) => data[i] + data[i + 1] + data[i + 2]
+    let darkest = 0
+    for (let i = 4; i < data.length; i += 4) if (level(i) < level(darkest)) darkest = i
+    const dark = `rgb(${data[darkest]}, ${data[darkest + 1]}, ${data[darkest + 2]})`
+    // Over 15 % of its width at each side and its lower half, as the image alone fades.
+    const side = 0.15
+    const across = ctx.createLinearGradient(0, 0, cols, 0)
+    ease(across, 0, side, true)
+    ease(across, 1 - side, 1, false)
+    const down = ctx.createLinearGradient(0, 0, 0, rows)
+    ease(down, 0.5, 1, false)
+    ctx.globalCompositeOperation = 'destination-in'
+    ctx.fillStyle = across
+    ctx.fillRect(0, 0, cols, rows)
+    ctx.fillStyle = down
+    ctx.fillRect(0, 0, cols, rows)
+    return { art, dark }
+  }
   const drawLiberty = () => {
+    painting ??= paint()
     const dpr = window.devicePixelRatio || 1
     const size = matchMedia('(max-width: 640px)').matches ? 0.5 : 1
     const block = Math.max(2, Math.round(8 * size * dpr))
     const gap = Math.max(1, Math.round(size * dpr))
     const step = block + gap
-    const { naturalWidth: cols, naturalHeight: rows } = source
-    canvas.width = cols * step
-    canvas.height = rows * step
-    canvas.style.width = `${canvas.width / dpr}px`
-    canvas.style.height = `${canvas.height / dpr}px`
-    canvas.style.left = `${Math.round((canvas.parentElement!.clientWidth * dpr - canvas.width) / 2) / dpr}px`
+    const width = Math.round(hero.clientWidth * dpr)
+    const height = Math.round(hero.clientHeight * dpr)
+    // The painting centred on a whole screen pixel, and the grid's columns in step with its own: the
+    // first is the one at the hero's left edge, left of the painting's first on a wide window.
+    const left = Math.round((width - painting.art.width * step) / 2)
+    const first = Math.floor(-left / step)
+    const cols = Math.ceil((width - left) / step) - first
+    const rows = Math.ceil(height / step)
+    const grid = document.createElement('canvas')
+    grid.width = cols
+    grid.height = rows
+    const small = grid.getContext('2d')!
+    small.fillStyle = painting.dark
+    small.fillRect(0, 0, cols, rows)
+    small.drawImage(painting.art, -first, 0)
+    canvas.width = width
+    canvas.height = height
+    canvas.style.width = `${width / dpr}px`
+    canvas.style.height = `${height / dpr}px`
     const ctx = canvas.getContext('2d')!
     ctx.imageSmoothingEnabled = false
-    ctx.drawImage(source, 0, 0, canvas.width, canvas.height)
+    ctx.drawImage(grid, left + first * step, 0, cols * step, rows * step)
     ctx.fillStyle = '#05071a'
-    for (let x = 0; x < cols; x++) ctx.fillRect(x * step + block, 0, gap, canvas.height)
-    for (let y = 0; y < rows; y++) ctx.fillRect(0, y * step + block, canvas.width, gap)
+    for (let x = 0; x < cols; x++) ctx.fillRect(left + (first + x) * step + block, 0, gap, height)
+    for (let y = 0; y < rows; y++) ctx.fillRect(0, y * step + block, width, gap)
     canvas.hidden = false
     source.hidden = true
   }
+  const loaded = () => source.complete && source.naturalWidth > 0
   const watchZoom = () =>
-    matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener('change', () => (drawLiberty(), watchZoom()), { once: true })
-  if (source.complete && source.naturalWidth) drawLiberty()
-  else source.addEventListener('load', drawLiberty)
-  addEventListener('resize', () => !canvas.hidden && drawLiberty())
+    matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener('change', () => (loaded() && drawLiberty(), watchZoom()), { once: true })
+  if (!loaded()) source.addEventListener('load', drawLiberty, { once: true })
+  new ResizeObserver(() => loaded() && drawLiberty()).observe(hero)
   watchZoom()
   import { megabytes } from '../lib/release'
 
@@ -208,21 +265,19 @@ const questions = [
     pointer-events: none;
   }
   /* La Liberté guidant le peuple (Delacroix, 1830), in mosaic blocks of the site's blues (made from the
-     Louvre's painting, public domain): behind the whole hero, dim, fading into the page at its edges,
-     Liberty and her flag behind the mark and the title. Its blocks are opaque, dimmed in their colours,
-     so the page's dot matrix stays behind them. The image holds one pixel per block; the script draws
-     the mosaic on a canvas in the screen's own pixels, blocks and gaps whole pixels at any scale (an
-     image scaled to 125 % would draw its 1px gaps 1 or 2 pixels wide, a thicker line every 4 blocks).
-     Without the script, the image alone, without its gaps. */
+     Louvre's painting, public domain): behind the whole hero, dim, Liberty and her flag behind the mark
+     and the title. Its blocks are opaque, dimmed in their colours, so the page's dot matrix stays behind
+     them. The image holds one pixel per block; the script draws the mosaic on a canvas in the screen's
+     own pixels, blocks and gaps whole pixels at any scale (an image scaled to 125 % would draw its 1px
+     gaps 1 or 2 pixels wide, a thicker line every 4 blocks), across the whole hero, the painting fading
+     into a grid of its darkest blocks; the canvas fades into the page at the hero's foot, eased, over
+     the composer's height and more. Without the script, the image alone, without its gaps, fading at
+     its own edges. */
   .liberty {
     position: absolute;
     top: 0;
     max-width: none;
     pointer-events: none;
-    -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 100%), linear-gradient(to right, transparent, #000 15%, #000 85%, transparent);
-    -webkit-mask-composite: source-in;
-    mask-image: linear-gradient(to bottom, #000 50%, transparent 100%), linear-gradient(to right, transparent, #000 15%, #000 85%, transparent);
-    mask-composite: intersect;
   }
   img.liberty {
     left: 50%;
@@ -230,6 +285,23 @@ const questions = [
     height: auto;
     translate: -50% 0;
     image-rendering: pixelated;
+    -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 100%), linear-gradient(to right, transparent, #000 15%, #000 85%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to bottom, #000 50%, transparent 100%), linear-gradient(to right, transparent, #000 15%, #000 85%, transparent);
+    mask-composite: intersect;
+  }
+  canvas.liberty {
+    left: 0;
+    --fade: linear-gradient(
+      to bottom,
+      #000 calc(100% - 320px),
+      rgba(0, 0, 0, 0.84) calc(100% - 240px),
+      rgba(0, 0, 0, 0.5) calc(100% - 160px),
+      rgba(0, 0, 0, 0.16) calc(100% - 80px),
+      transparent
+    );
+    -webkit-mask-image: var(--fade);
+    mask-image: var(--fade);
   }
   :global(html[data-theme='monochrome']) .liberty {
     filter: grayscale(1);
