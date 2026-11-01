@@ -7,9 +7,11 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 /**
  * What holds a planned task's run, where nobody watches and pages anyone can write are read: its
  * sites only (redirects, clicks and popups included, and a call that outlives its run), clicks on
- * what plainly searches or moves, typing the one identifier of its sheet, never a card. The run is
- * a real one (tasks.ts), the calls go through the engine's gate (mcp.ts), the browser is faked.
- * And beside it, what a conversation may reach without a card: what the user allowed ahead, no more.
+ * what plainly searches or moves (on the sites its own service declares, anything short of what
+ * binds the user), typing the one identifier of its sheet, never a card. The run is a real one
+ * (tasks.ts), the calls go through the engine's gate (mcp.ts), the browser is faked. And beside it,
+ * what a conversation may do without a card: go where the user allowed ahead, no more, and click
+ * the steps on the way on the sites Marianne's own services declare.
  */
 
 // ~/.marianne points at a temporary folder, before paths.ts reads it.
@@ -50,6 +52,7 @@ vi.mock('../src/main/browser', () => {
       canGoForward: false
     }),
     currentUrl: () => page.url,
+    pageVersion: () => 1,
     inRun: vi.fn(() => true),
     open: vi.fn((url: string, folderId: string) => {
       page.url = page.redirects[url] ?? url
@@ -368,6 +371,124 @@ describe('click in a run', () => {
     expect(reading(b('Continuer sans accepter →'))).toBe(true)
     expect(reading(b('Tout refuser et payer'))).toBe(false)
     expect(reading(b('Continuer sans accepter et valider'))).toBe(false)
+  })
+})
+
+/** The operators' pay-by-plate pages, as 3615 PEAGE declares them, and the buttons of their searches and of the way to the card. */
+const SANEF_PAGE = 'https://www.sanef.com/client/index.html?lang=fr#basket'
+const ALIAE_PAGE = 'https://paiement.aliae.com/fr/form/payment'
+const TOLL_STEPS: Array<[string, string]> = [
+  [SANEF_PAGE, 'Vérifier mes péages à payer'],
+  [ALIAE_PAGE, 'PLAQUE D’IMMATRICULATION'],
+  [ALIAE_PAGE, 'VALIDER'],
+  [ALIAE_PAGE, 'CONTINUER'],
+  [ALIAE_PAGE, 'Payer mes trajets'],
+  [ALIAE_PAGE, 'Poursuivre vers le paiement']
+]
+/** What binds the user beyond paying, and still asks there. */
+const BINDING = ['Signer', 'Envoyer', 'Supprimer', 'Je certifie sur l’honneur']
+/** The sites the built-in services that are on declare: 3615 PEAGE's, and none of another service's. */
+const declare = () =>
+  vi.spyOn(services, 'declaredSites').mockImplementation((code?: string) => (!code || code === 'peage' ? ['www.sanef.com', 'paiement.aliae.com'] : []))
+const submit = (label: string) => ({ id: 'e1', role: 'button', label, type: 'submit', secret: false })
+
+describe('click in a run, on the sites its own service declares', () => {
+  /** On a page of its sites, read, then a click. */
+  const clickAt = (url: string, label: string, more: Partial<NewTask> = {}, args: Record<string, unknown> = CLICK, before?: () => void) =>
+    during(async (f) => {
+      page.elements = [submit(label)]
+      await call(f, 'open_site', { url, ...OPEN })
+      await call(f, 'read_page')
+      before?.()
+      return call(f, 'click', { element: 'e1', ...args })
+    }, more)
+
+  it('clicks through the search and the way to the card, asking nobody', async () => {
+    declare()
+    for (const [url, label] of TOLL_STEPS) expect((await clickAt(url, label)).result, label).toMatch(/^Clicked/)
+    expect(browser.click).toHaveBeenCalledTimes(TOLL_STEPS.length)
+    expect(request).not.toHaveBeenCalled()
+  })
+
+  it('refuses what binds the user, what the engine flags, and what it says binds them', async () => {
+    declare()
+    const results: string[] = []
+    for (const label of BINDING) results.push((await clickAt(SANEF_PAGE, label)).result)
+    results.push((await clickAt(ALIAE_PAGE, 'Payer mes trajets', {}, { purpose: 'payer', consequential: true })).result)
+    results.push((await clickAt(ALIAE_PAGE, 'VALIDER', {}, { purpose: 'envoyer le dossier', consequential: false })).result)
+    expect(results.every((r) => r.startsWith('refused:'))).toBe(true)
+    expect(browser.click).not.toHaveBeenCalled()
+    expect(request).not.toHaveBeenCalled()
+  })
+
+  it('keeps to what plainly reads for a task Marianne proposed, another service’s task, a site its service doesn’t declare, or its service off', async () => {
+    const declared = declare()
+    const results = [
+      (await clickAt(SANEF_PAGE, 'Vérifier mes péages à payer', { origin: { kind: 'agent' } })).result,
+      (await clickAt(SANEF_PAGE, 'Vérifier mes péages à payer', { origin: { kind: 'service', service: 'vignette', template: 'zfe:v1' } })).result,
+      (await clickAt('https://www.metropole.example/zfe', 'Valider', { sites: ['www.sanef.com', 'www.metropole.example'] })).result
+    ]
+    declared.mockReturnValue([])
+    results.push((await clickAt(SANEF_PAGE, 'Vérifier mes péages à payer')).result)
+    expect(results.every((r) => r.startsWith('refused:'))).toBe(true)
+    expect(browser.click).not.toHaveBeenCalled()
+    // What plainly reads, as before.
+    expect((await clickAt(SANEF_PAGE, 'Rechercher', { origin: { kind: 'agent' } })).result).toMatch(/^Clicked/)
+  })
+
+  it('goes back from a click that led off its sites: the bank’s page, the payment provider’s', async () => {
+    declare()
+    const { result } = await clickAt(ALIAE_PAGE, 'Poursuivre vers le paiement', {}, CLICK, () => (page.targets.e1 = 'https://paymentpage.axepta.bnpparibas/'))
+    expect(result).toMatch(/^refused:/)
+    expect(browser.back).toHaveBeenCalledOnce()
+  })
+})
+
+describe('click in a conversation, on the sites Marianne’s own services declare', () => {
+  const conversation = () => folders.create({ title: 'Péages', engine: 'claude' }).id
+  /** The cards a click asked, not going online's. */
+  const commits = (): ApprovalPart[] => (request.mock.calls as unknown[][]).map((args) => args[1] as ApprovalPart).filter((card) => card.action === 'commit')
+  const clickAt = async (url: string, label: string, args: Record<string, unknown> = CLICK) => {
+    const f = conversation()
+    page.elements = [submit(label)]
+    await call(f, 'open_site', { url, ...OPEN })
+    await call(f, 'read_page')
+    return call(f, 'click', { element: 'e1', ...args })
+  }
+
+  it('clicks the toll pages’ steps without a card: paying there takes the payment card', async () => {
+    declare()
+    for (const [url, label] of TOLL_STEPS) expect(await clickAt(url, label), label).toMatch(/^Clicked/)
+    expect(commits()).toEqual([])
+  })
+
+  it('still asks to sign, send, delete or certify, and for a click the engine flags or says binds the user', async () => {
+    declare()
+    for (const label of BINDING) await clickAt(SANEF_PAGE, label)
+    await clickAt(ALIAE_PAGE, 'Payer mes trajets', { purpose: 'payer avec la carte enregistrée sur le compte', consequential: true })
+    await clickAt(ALIAE_PAGE, 'VALIDER', { purpose: 'envoyer le dossier', consequential: false })
+    expect(commits().map((card) => card.title)).toEqual([
+      ...BINDING.map((label) => `Cliquer sur « ${label} »`),
+      'Cliquer sur « Payer mes trajets »',
+      'Cliquer sur « VALIDER »'
+    ])
+  })
+
+  it('asks for the same steps off those sites: a neighbour of a declared host, a look-alike, another site', async () => {
+    declare()
+    const elsewhere = ['https://www.aliae.com/fr/', 'https://aliae.com/', 'https://evil-aliae.com/', 'https://autoroutes.sanef.com/', 'https://shop.example/']
+    for (const url of elsewhere) {
+      await clickAt(url, 'Payer mes trajets')
+      await clickAt(url, 'VALIDER')
+    }
+    expect(commits()).toHaveLength(elsewhere.length * 2)
+  })
+
+  it('frees nothing when no service that is on declares the site: a service switched off, a community service', async () => {
+    declare().mockReturnValue([])
+    for (const [url, label] of TOLL_STEPS) await clickAt(url, label)
+    // Each one asks, as a button that submits a form does; « CONTINUER » plainly moves on, there as anywhere.
+    expect(commits().map((card) => card.title)).toEqual(TOLL_STEPS.filter(([, label]) => label !== 'CONTINUER').map(([, label]) => `Cliquer sur « ${label} »`))
   })
 })
 

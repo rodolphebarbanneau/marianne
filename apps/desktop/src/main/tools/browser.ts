@@ -17,7 +17,7 @@ import { profile } from '../profile/store'
 import { session } from '../session'
 import { siteAllowed, tasks } from '../tasks'
 import { callingFolder } from './folder'
-import { consequential, Consents, knownSites, PAY_GRANT_MS, PayGrants, reading } from './online'
+import { binding, consequential, Consents, knownSites, PAY_GRANT_MS, PayGrants, reading } from './online'
 import { clip, DOMAIN_IDS, fold, plural, tool, TOKEN, ToolError, type ToolContext } from './tool'
 
 /**
@@ -85,6 +85,13 @@ const refusal = (decision: Decision, nothing: string) =>
  * her go there and fill forms without asking.
  */
 export const known = (): Set<string> => knownSites([...content.get().sites.map((s) => s.url), ...services.declaredSites()])
+
+/**
+ * Whether an address is on a site the built-in services that are on declare, or among `sites`: on a
+ * declared host or under it, as a task's sites are matched (« www.x » standing for x), never the
+ * whole registrable domain. There, Marianne clicks the steps on the way without a card (click).
+ */
+const declared = (url: string, sites = services.declaredSites()): boolean => siteAllowed({ sites }, url)
 
 /**
  * Consent to go to the site of `url` from this folder, as the approval policy decides: the user's yes
@@ -304,26 +311,35 @@ export const browserTools = [
     name: 'click',
     title: 'Click',
     description:
-      'Clicks an element of the page read (read_page). A click that commits the user (sign, pay, send, submit, confirm, declare, delete, certify…) waits for their yes on a card: Marianne judges from the element, and you must set consequential when you know it commits them whatever its label (a box « je certifie sur l’honneur »…). If they refuse, do not retry: ask them.',
+      'Clicks an element of the page read (read_page). A click that commits the user (sign, pay, send, submit, confirm, declare, delete, certify…) waits for their yes on a card: Marianne judges from the element, and you must set consequential when you know it commits them whatever its label (a box « je certifie sur l’honneur »…). On a site Marianne’s services act on, the steps on the way (search, validate, continue, go on to pay) need no card, since paying there goes through pay_by_card’s, while signing, sending, declaring, deleting and the like still ask: set consequential on any click there that would pay without pay_by_card (a card saved in the site’s account, a one-click payment). If they refuse, do not retry: ask them.',
     input: {
       element: ELEMENT,
       purpose: z.string().describe('What the click does, in one sentence for the user (in French): shown when it needs their yes'),
-      consequential: z.boolean().default(false).describe('True when the click commits the user')
+      consequential: z.boolean().default(false).describe('True when the click commits the user, or would pay without pay_by_card')
     },
     run: async ({ element: id, purpose, consequential: flagged }, ctx) => {
       const { folderId, url, title } = await current(ctx)
       const read = element(folderId, url, id)
       const label = (await act(() => browser.elementLabel(id))) || read.label
+      const clicked = { ...read, label }
+      // Judged where the click happens: the page as it is now.
+      const here = browser.currentUrl()
       const run = runOf(ctx)
       let paid = false
       if (run) {
-        if (flagged || !reading({ ...read, label }, purpose)) throw beyondRun(`click « ${label || id} »`)
-      } else if (flagged || consequential({ ...read, label }, purpose)) {
+        // On a site its own service declares (and its task lists), a run clicks through a search short of what binds
+        // the user: it has no sign-in, no card and no other site to pay with. Elsewhere, only what plainly reads.
+        const own = run.origin.kind === 'service' && siteAllowed(run, here) && declared(here, services.declaredSites(run.origin.service))
+        if (flagged || (own ? binding(clicked, purpose) : !reading(clicked, purpose))) throw beyondRun(`click « ${label || id} »`)
+      } else if (flagged || consequential(clicked, purpose)) {
         // The pay click that follows a payment the user approved on this very page (pay_by_card) goes on that yes, once.
         paid = payGrants.take(folderId, url, browser.pageVersion(), label)
+        // On a site Marianne's own services declare, the steps on the way (searching, validating, going on to pay) need
+        // no card: paying there takes pay_by_card's. What binds the user beyond paying, or what the engine flags, asks.
+        const free = paid || (!flagged && declared(here) && !binding(clicked, purpose))
         const shown = label || 'cet élément'
         // The floor: a card for this one click, at every level, whatever the user allowed ahead.
-        const { decision } = paid
+        const { decision } = free
           ? { decision: 'accepted' as const }
           : await approvals.ask(
               folderId,

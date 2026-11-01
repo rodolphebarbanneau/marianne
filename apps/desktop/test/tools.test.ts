@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { siteOf } from '../src/shared/hosts'
 import { computeDeadline, weekday } from '../src/main/tools/calendar'
 import { articleNumber, findCode } from '../src/main/tools/legifrance'
-import { consequential, Consents, knownSites, reading } from '../src/main/tools/online'
+import { binding, consequential, Consents, knownSites, reading } from '../src/main/tools/online'
 import { setupCard } from '../src/main/tools/profile'
 import { normalizeValues, opId, plan } from '../src/main/tools/proposals'
 import { ToolError } from '../src/main/tools/tool'
@@ -160,6 +160,80 @@ describe('consequential clicks', () => {
     expect(consequential({ role: 'field', type: 'checkbox', label: 'on' })).toBe(false)
     expect(consequential({ role: 'field', type: 'checkbox', label: 'on' }, 'Certifier l’exactitude des informations')).toBe(true)
     expect(consequential(button('Suivant'), 'Envoyer la déclaration')).toBe(true)
+  })
+})
+
+describe('what binds the user beyond paying: what still asks on a site Marianne’s own services declare', () => {
+  const button = (label: string, type = 'submit') => ({ role: 'button', type, label })
+
+  it('signing, sending, declaring, deleting, certifying, subscribing, cancelling a contract, waiving, a direct debit', () => {
+    for (const label of [
+      'Signer',
+      'Signer ma déclaration',
+      'Envoyer',
+      'Transmettre le dossier',
+      'Soumettre',
+      'Déposer ma demande',
+      'Je déclare',
+      'Supprimer',
+      'Supprimer le compte',
+      'Je certifie sur l’honneur',
+      'J’atteste',
+      'Je m’engage à payer',
+      'Souscrire',
+      'M’abonner',
+      'Résilier mon contrat',
+      'Annuler mon abonnement',
+      'Clôturer mon compte',
+      'Renoncer au droit de rétractation',
+      'Autoriser le prélèvement',
+      'Mandat SEPA',
+      'Send',
+      'Submit',
+      'Delete',
+      'Remove',
+      'Sign',
+      'I certify',
+      'Subscribe',
+      'Unsubscribe',
+      'Cancel my subscription',
+      'Terminate',
+      'Waive'
+    ])
+      expect(binding(button(label)), label).toBe(true)
+  })
+
+  it('not the steps on the way to paying: the toll pages’ searches and buttons, validating, confirming, accepting, saving, paying', () => {
+    for (const label of [
+      'Vérifier mes péages à payer',
+      'PLAQUE D’IMMATRICULATION',
+      'VALIDER',
+      'CONTINUER',
+      'ANNULER',
+      'Payer mes trajets',
+      'Carte bancaire',
+      'Poursuivre vers le paiement',
+      'Payer 12,40 €',
+      'Confirmer',
+      'J’accepte les conditions générales',
+      'Enregistrer',
+      'OK',
+      '',
+      'Se connecter',
+      'Sign in',
+      'Signaler un problème',
+      'Télécharger l’attestation',
+      'Voir le certificat',
+      'Mon abonnement',
+      'Accéder à ma déclaration',
+      'Sans engagement'
+    ])
+      expect(binding(button(label)), label).toBe(false)
+  })
+
+  it('reads what the click is for, too', () => {
+    expect(binding(button('Valider'), 'Envoyer la déclaration')).toBe(true)
+    expect(binding(button('Valider'), 'Chercher les passages à payer')).toBe(false)
   })
 })
 

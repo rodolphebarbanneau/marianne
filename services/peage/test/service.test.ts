@@ -54,11 +54,19 @@ describe('the runtime', () => {
   it('has Marianne pay with the user’s saved card, on their yes, and mark the trips paid once the site confirms', () => {
     const { runtime } = setup()
     expect(runtime.instructions).toContain('then pay with pay_by_card')
+    expect(runtime.instructions).toContain(
+      'The buttons on the way there need no card of their own; set consequential on a click that would pay without pay_by_card'
+    )
     expect(runtime.instructions).toContain('hand_over when the bank asks for a confirmation (3-D Secure)')
     expect(runtime.instructions).toContain('propose adding one (request_setup, target payment)')
     expect(runtime.instructions).toContain('Once the site confirms the payment, mark the trips paid with peage_mark_paid')
     expect(runtime.instructions).toContain('forward the SMS to 33700')
     expect(runtime.skills?.[0]).toContain('Paie avec `pay_by_card`')
+    expect(runtime.skills?.[0]).toContain('« Poursuivre vers le paiement ») se cliquent sans carte')
+    expect(runtime.skills?.[0]).toContain(
+      'Un clic qui paierait sans `pay_by_card` (une carte enregistrée dans un compte, un paiement en un clic) : mets `consequential`.'
+    )
+    expect(runtime.skills?.[0]).not.toContain('demande son oui sur une carte')
     expect(runtime.skills?.[0]).toContain('marque les trajets payés avec `peage_mark_paid`')
     // The 72 hours: to pay, and how far back Sanef's search by period reaches, each with where it is said.
     expect(runtime.skills?.[0]).toContain('dans les 72 heures qui suivent le passage')

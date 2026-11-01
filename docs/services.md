@@ -99,8 +99,10 @@ The manifest is the `marianne` field of the service's `package.json`. `readManif
   - At most `MAX_SITES` (8), each one site: never a whole hosting service or a public suffix (github.io, gouv.fr). The SDK checks the names; Marianne refuses the others by the Public Suffix List (`readManifest`'s `sharedHost`), and leaves the service out.
   - « Avant d’ajouter », the Services page's table (« Marianne agit sur »), Marianne's card when she proposes the service, the `services` tool and the engines' instructions (« acts on ») show them.
   - While the service is on, they count among the sites Marianne knows: at « autonomie », she goes there and fills forms without asking, as on the content's public sites. Paying, signing and sending still take the user's yes on a card.
+  - She clicks freely there: the steps on the way (searching, validating, continuing, going on to pay) need no card, since paying there takes the payment card. The floor still applies: signing, sending, declaring, deleting and the like ask each time, and so does a click the engine flags. A click that would pay without the payment card (a card saved in the site's account) is caught only if the engine flags it: say so in your instructions and guides for your sites. Each host counts as it is written, and the hosts under it: declare the pages where the user pays, not the whole domain ([design.md](design.md#tools-cards-and-the-browser)).
+  - A run of your own task may click there too, short of what binds the user, on the pages that are also among its `sites` ([below](#planned-tasks)).
   - They are where Marianne pays by card with the user's saved card (`pay_by_card`), and the payment providers' pages they send the browser to ([design.md](design.md#tools-cards-and-the-browser)): declare the operator's own pages, never the provider's.
-  - Built-in services only: a community service that declares them is refused when it is added.
+  - Built-in services only: declaring a site lifts Marianne's click guard there, so it is reviewed with the service. A community service that declares them is refused when it is added.
 
 **What it reads of the user**
 
@@ -339,7 +341,7 @@ A `ServiceTaskTemplate` says:
 - `instruction`: English; what Marianne is asked at each run. Ask it to look, and leave paying, signing and sending to the user: a run looks and reports, and the tools hold it to that. A run:
   - shows no card;
   - opens only `sites`;
-  - clicks only what searches or moves through a page;
+  - clicks only what searches or moves through a page; on a page among the task's `sites` that your manifest's `sites` declares too, anything short of what binds the user (signing, sending, declaring, deleting…), so that it can search a page whose buttons say « payer » or « valider ». Tell it where to stop: it can't pay all the same (no card, no sign-in, no other site), but it should leave the way to the payment alone;
   - types only the entity's identifier;
   - has only your service's tools besides the app's reading ones.
 
@@ -699,7 +701,7 @@ Its pages load everything through Marianne's own `marianne-service:` scheme (`ap
 
 - **No sync job**: it would run with Node, out of any sandbox. A file with a `sync.js` is refused; `ctx.dataDir` is `''` and `ctx.sync` does nothing.
 - **No planned tasks**: the host doesn't read its `tasks()` ([why](#planned-tasks)), so no follow-up either.
-- **No sites to act on**: Marianne acts for the user only where her own services say (`sites`), sites reviewed with them. A file whose manifest declares any is refused, by `marianne-pack` too.
+- **No sites to act on**: Marianne acts for the user, and clicks without a card, only where her own services say (`sites`), sites reviewed with them. A file whose manifest declares any is refused, by `marianne-pack` too.
 - **A screen of its own**: it lays out by its view's width, as a built-in screen does by its column's, but it can't reach the window.
   - `ServiceTools` are drawn at the top of its screen, rather than at the end of the tab bar.
   - A `Modal` covers its screen, not the whole window.

@@ -303,11 +303,20 @@ describe('the payment, on its card', () => {
 
 describe('the pay click that follows', () => {
   const PAY_BUTTON = { id: 'e1', role: 'button', label: 'Payer 12,40 €', type: 'submit', secret: false, card: false }
-  const click = (f: string) => call(f, 'click', { element: 'e1', purpose: 'payer les passages', consequential: false })
+  const click = (f: string, consequential = false) => call(f, 'click', { element: 'e1', purpose: 'payer les passages', consequential })
+  /** Axepta's page, where ALIAE's own page sent the browser: a provider's page no service declares, where every click that pays asks. */
+  function onAxepta(): string {
+    const f = on(`${AXEPTA}/paymentPage.aspx`, [
+      { node: 1, origins: [AXEPTA], fields: [field('c1', 'number'), field('c2', 'expiry'), field('c3', 'holder'), field('c4', 'cvv')], pay: [] }
+    ])
+    const journeys: Arrival = { url: `${ALIAE}/fr/journeys`, initiator: ALIAE, hops: [`${ALIAE}/fr/journeys`], previous: null }
+    page.arrival = { url: `${AXEPTA}/paymentPage.aspx`, initiator: ALIAE, hops: [`${AXEPTA}/paymentPage.aspx`], previous: journeys }
+    return f
+  }
 
   it('goes on the payment’s yes, once; the next one asks again', async () => {
     reply = { answer: 'approve', cvv: CVV }
-    const f = on(`${SANEF}/client/index.html#basket`)
+    const f = onAxepta()
     await call(f, 'pay_by_card', PAY)
     page.elements = [PAY_BUTTON]
     await call(f, 'read_page')
@@ -321,7 +330,7 @@ describe('the pay click that follows', () => {
 
   it('ends with leaving the page', async () => {
     reply = { answer: 'approve', cvv: CVV }
-    const f = on(`${SANEF}/client/index.html#basket`)
+    const f = onAxepta()
     await call(f, 'pay_by_card', PAY)
     page.version++
     page.elements = [PAY_BUTTON]
@@ -341,12 +350,27 @@ describe('the pay click that follows', () => {
     expect(result).toMatch(/and pressed « Payer » in the payment form, as the user approved/)
     expect(page.pressed).toEqual(['p1'])
     expect(payments()[0].fields).toContainEqual({ label: 'puis', value: 'appuie sur « Payer » dans le formulaire de paiement' })
-    // No pay click left to cover.
+    // No pay click left to cover: one the engine says would pay asks.
     page.elements = [PAY_BUTTON]
     await call(f, 'read_page')
     const asked = parts.length
-    await click(f)
+    await click(f, true)
     expect(parts).toHaveLength(asked + 1)
+  })
+
+  it('on a site Marianne’s own services declare, needs no card of its own, and still ends the grant: one the engine flags then asks', async () => {
+    reply = { answer: 'approve', cvv: CVV }
+    const f = on(`${SANEF}/client/index.html#basket`)
+    await call(f, 'pay_by_card', PAY)
+    page.elements = [PAY_BUTTON]
+    await call(f, 'read_page')
+    const asked = parts.length
+    expect(await click(f)).toMatch(/^Clicked « Payer 12,40 € », as part of the payment the user approved/)
+    expect(await click(f)).toMatch(/^Clicked « Payer 12,40 € »\. Now on/)
+    expect(parts).toHaveLength(asked)
+    await click(f, true)
+    expect(parts).toHaveLength(asked + 1)
+    expect(parts.at(-1)).toMatchObject({ action: 'commit', title: 'Cliquer sur « Payer 12,40 € »' })
   })
 })
 

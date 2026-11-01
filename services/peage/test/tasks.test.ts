@@ -52,6 +52,13 @@ describe('the tasks 3615 PEAGE proposes', () => {
     expect(task.allows.at(-1)).toContain('dont le site donne la date et l’heure')
   })
 
+  it('has the run click through the search on the operators’ pages, and stop at what is due', () => {
+    const [task] = tollTasks([KANGOO])
+    expect(task.instruction).toContain('click through the search as the page asks')
+    expect(task.instruction).toContain('« Vérifier mes péages à payer », « Valider »')
+    expect(task.instruction).toContain('never go on to a payment step (« Payer mes trajets », a means of payment)')
+  })
+
   it('has the run type the plate the task gives, as its token: a run can’t read the profile', () => {
     const [task] = tollTasks([KANGOO])
     expect(task.instruction).toContain('Type the plate this task is about with type_text, its token exactly as the task gives it')
@@ -86,12 +93,19 @@ describe('its follow-up, « payer maintenant »', () => {
     const { instruction } = tollTasks([KANGOO])[0].followUp!
     expect(instruction).toContain('Show the user what is due as the page shows it')
     expect(instruction).toContain('with read_form and fill_form, tokens for identifiers')
-    expect(instruction).toContain('Pay with pay_by_card, giving the amount read on the page')
+    expect(instruction).toContain("Pay with pay_by_card, giving the amount read on the page: its card is the user's one confirmation.")
     expect(instruction).toContain('If the bank asks for a confirmation (3-D Secure), hand_over.')
     expect(instruction).toContain('propose adding one (request_setup, target payment) or hand_over so the user types theirs')
     expect(instruction).toContain('Once the site confirms the payment, mark the matching trips paid with peage_mark_paid')
     expect(instruction).toContain("If the site doesn't confirm it, mark nothing")
     // The service knows no amount: it never states one.
     expect(instruction).not.toMatch(/\d+[,.]\d{2} ?€|\d+ ?€/)
+  })
+
+  it('goes on to the card without a confirmation of its own, and flags a click that would pay without the payment card', () => {
+    const { instruction } = tollTasks([KANGOO])[0].followUp!
+    expect(instruction).toContain('The buttons on the way (« Payer mes trajets », « Poursuivre vers le paiement ») need no card of their own.')
+    expect(instruction).toContain('Set consequential on a click that would pay without pay_by_card (a card saved in an account).')
+    expect(instruction).not.toMatch(/its own card/)
   })
 })

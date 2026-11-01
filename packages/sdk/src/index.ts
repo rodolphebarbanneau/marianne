@@ -173,6 +173,7 @@ export interface ServiceDeclaration {
   /**
    * The sites where Marianne acts for the user in her browser for this service (its payment or account
    * pages), as host names: not what the service itself reaches, which `hosts` says. At most MAX_SITES.
+   * She clicks the steps on the way there without a card, short of what binds the user beyond paying.
    * Built-in services only: a community service that declares them is refused when it is added.
    */
   sites?: string[]

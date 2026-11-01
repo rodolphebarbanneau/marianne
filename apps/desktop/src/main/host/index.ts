@@ -678,12 +678,14 @@ class ServiceHost extends EventEmitter {
   }
 
   /**
-   * The sites the built-in services that are on declare (their manifests' `sites`): where Marianne
-   * acts for the user for them, as she does on the content's public sites. Never a community
-   * service's, which may declare none. The « autonomie » level counts them among the sites she knows.
+   * The sites the built-in services that are on declare (their manifests' `sites`), or one of them
+   * (`service`, its code): where Marianne acts for the user for them, as she does on the content's
+   * public sites, and clicks the steps on the way without a card (tools/browser.ts). Never a
+   * community service's, which may declare none. The « autonomie » level counts them among the
+   * sites she knows.
    */
-  declaredSites(): string[] {
-    return [...new Set(this.active().flatMap(({ manifest, builtIn }) => (builtIn ? manifest.sites : [])))]
+  declaredSites(service?: string): string[] {
+    return [...new Set(this.active().flatMap(({ manifest, builtIn }) => (builtIn && (!service || manifest.id === service) ? manifest.sites : [])))]
   }
 
   /**
