@@ -71,6 +71,8 @@ export interface NewTask {
   allows?: string[]
   never?: string
   why?: string
+  /** A service's task: what Marianne offers once a run found something, from its template. */
+  followUp?: PlannedTask['followUp']
   notify?: PlannedTask['notify']
   /** Its first day; by default the next time Marianne opens for a check, and one period away for a reminder. */
   first?: string
@@ -91,8 +93,8 @@ export function offeredTemplate(templates: TaskTemplate[], planned: PlannedTask[
 
 /**
  * A service's template as a task, at one of its rhythms (an index): its instruction, sites, entity,
- * what it allows and what it never does come from the service, never from the window or the engine.
- * Null for a rhythm it doesn't offer.
+ * what it allows and what it never does, and its follow-up, come from the service, never from the
+ * window or the engine. Null for a rhythm it doesn't offer.
  */
 export function templateTask(template: TaskTemplate, rhythm: number): NewTask | null {
   // An index only: the window's request is data, and an array has more keys than its rhythms.
@@ -110,7 +112,8 @@ export function templateTask(template: TaskTemplate, rhythm: number): NewTask | 
     sites: template.sites,
     allows: template.allows,
     never: template.never,
-    why: chosen.note
+    why: chosen.note,
+    ...(template.followUp ? { followUp: { label: template.followUp.label, instruction: template.followUp.instruction } } : {})
   }
 }
 
@@ -193,6 +196,7 @@ class Tasks extends EventEmitter {
       allows: input.allows,
       never: input.never,
       why: input.why,
+      ...(input.followUp ? { followUp: input.followUp } : {}),
       notify: input.notify ?? 'found',
       next,
       anchor: next,

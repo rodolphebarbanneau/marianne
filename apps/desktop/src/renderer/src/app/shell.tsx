@@ -56,7 +56,7 @@ export function Shell() {
         <main className="main">
           <Boundary key={view.kind === 'page' ? view.page : `${view.kind}:${view.id}`} label="cet écran">
             {view.kind === 'folder' ? (
-              <FolderScreen id={view.id} />
+              <FolderScreen id={view.id} at={view.at} />
             ) : view.kind === 'domain' ? (
               <DomainPage id={view.id} tab={view.tab} />
             ) : view.kind === 'service' ? (

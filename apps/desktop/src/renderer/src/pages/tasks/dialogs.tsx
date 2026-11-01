@@ -302,6 +302,14 @@ export function TaskSheet({ template, onClose }: { template: TaskTemplate; onClo
         <Line name="jamais">
           <div className="never">{template.never}</div>
         </Line>
+        {template.followUp && (
+          <Line name="si elle trouve quelque chose">
+            <span className="stack">
+              <span className="hi">{template.followUp.label}</span>
+              <span className="small dim">un bouton dans son dossier : Marianne s’en charge avec vous, et ce qui vous engage attend votre oui</span>
+            </span>
+          </Line>
+        )}
         <NotifyLine notify={notify} onChange={setNotify} />
         <Line name="ce qu’il faut">
           <span className="small dim">

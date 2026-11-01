@@ -117,7 +117,7 @@ export const LEVELS: Array<{ id: ApprovalLevel; label: string; text: string }> =
   {
     id: 'autonomous',
     label: 'autonomie',
-    text: 'Marianne va sans demander sur les sites qu’elle connaît (les sites publics de sa liste), y remplit les formulaires et enregistre vos échéances. Les autres sites vous sont demandés une fois par dossier.'
+    text: 'Marianne va sans demander sur les sites qu’elle connaît (les sites publics de sa liste, et ceux où agissent ses services officiels que vous avez activés), y remplit les formulaires et enregistre vos échéances. Les autres sites vous sont demandés une fois par dossier.'
   }
 ]
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { foldLabel, foldRuns, nextLabel, runLabel, type ConversationRow, type QuietRun } from '../../src/renderer/src/folder/runs'
-import type { ChatMessage, TaskOutcome } from '../../src/shared/types'
+import { followUpOffer, foldLabel, foldRuns, nextLabel, runLabel, type ConversationRow, type QuietRun } from '../../src/renderer/src/folder/runs'
+import type { ChatMessage, PlannedTask, TaskOutcome } from '../../src/shared/types'
 
 const at = (day: number, hour = 9) => new Date(2026, 9, day, hour).toISOString()
 
@@ -104,5 +104,51 @@ describe('nextLabel', () => {
   it('says today on the day, and past it: it runs as soon as it can', () => {
     expect(nextLabel('2026-10-30', NOW)).toBe('aujourd’hui')
     expect(nextLabel('2026-10-26', NOW)).toBe('aujourd’hui')
+  })
+})
+
+describe('a task’s follow-up, on the line of the run that found something', () => {
+  const task = (more: Partial<PlannedTask> = {}): PlannedTask => ({
+    id: 't',
+    folderId: 'f',
+    domain: 'mobility',
+    title: 'Péages en flux libre',
+    runner: 'marianne',
+    origin: { kind: 'service', service: 'peage', template: 'tolls:v1' },
+    every: { unit: 'day', n: 2 },
+    everyLabel: 'tous les 2 jours',
+    sites: [],
+    followUp: { label: 'payer maintenant', instruction: 'Pay what the run found.' },
+    notify: 'found',
+    next: '2026-11-01',
+    on: true,
+    runs: [],
+    ...more
+  })
+  const on = [{ manifest: { id: 'peage' }, on: true }] as Parameters<typeof followUpOffer>[1]
+  const followed = (id: string): ChatMessage => ({ ...user(id), parts: [{ type: 'text', text: 'payer maintenant' }], followUp: 't' })
+
+  it('is offered on the last run’s line when it found something', () => {
+    expect(followUpOffer(task(), on, [user('u'), ...run('r1', 20, 'found')])).toEqual({ lineId: 'r1', label: 'payer maintenant' })
+    // Once a later run has found nothing, the older finding isn't offered any more.
+    expect(followUpOffer(task(), on, [...run('r1', 20, 'found'), ...run('r2', 22, 'nothing')])).toBeNull()
+    expect(followUpOffer(task(), on, [...run('r1', 20, 'waiting')])).toBeNull()
+  })
+
+  it('goes once the user started it from that line, and comes back with the next finding', () => {
+    const started = [...run('r1', 20, 'found'), followed('u1'), answer('a1', 20)]
+    expect(followUpOffer(task(), on, started)).toBeNull()
+    // A question of their own isn't the follow-up.
+    expect(followUpOffer(task(), on, [...run('r1', 20, 'found'), user('u2')])).toEqual({ lineId: 'r1', label: 'payer maintenant' })
+    expect(followUpOffer(task(), on, [...started, ...run('r2', 22, 'found')])).toEqual({ lineId: 'r2', label: 'payer maintenant' })
+  })
+
+  it('is not offered for a task without one, paused, or whose service is off', () => {
+    const messages = run('r1', 20, 'found')
+    expect(followUpOffer(task({ followUp: undefined }), on, messages)).toBeNull()
+    expect(followUpOffer(task({ on: false }), on, messages)).toBeNull()
+    expect(followUpOffer(task(), [{ ...on[0], on: false }], messages)).toBeNull()
+    expect(followUpOffer(task({ origin: { kind: 'agent' } }), on, messages)).toBeNull()
+    expect(followUpOffer(undefined, on, messages)).toBeNull()
   })
 })

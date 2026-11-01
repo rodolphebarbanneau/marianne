@@ -11,8 +11,9 @@ import type { SandboxInvoke } from '../src/shared/community'
  * Marianne acting with her services: what the engines learn of the services that aren't on (her own
  * only), the services tool, proposing one on a card that leads to « avant d’ajouter » (added, refused,
  * unanswered; never a community service, never twice in a folder), and planning a service's own task
- * from the conversation as the Démarches sheet plans it. The host is the app's, with two built-in
- * services of the test's and a community one, whose sandbox is a fake.
+ * from the conversation as the Démarches sheet plans it; the sites a service declares, and a task's
+ * follow-up. The host is the app's, with built-in services of the test's (one left out: its site is a
+ * public suffix) and community ones (one left out: it declares sites), whose sandbox is a fake.
  */
 
 // ~/.marianne points at a temporary folder, before paths.ts reads it.
@@ -27,7 +28,8 @@ afterAll(() => rmSync(root, { recursive: true, force: true }))
 const PLATE = 'GH-482-KX'
 
 vi.mock('electron', () => ({ app: { getVersion: () => '0', isPackaged: false }, clipboard: { writeText: () => undefined } }))
-// Two built-in services, neither among a new account's: 3615 VIGNETTE, which reads the profile and proposes a task, and 3615 CIEL.
+// Built-in services, none among a new account's: 3615 VIGNETTE, which reads the profile, acts on a site and proposes a task, 3615
+// CIEL, and 3615 PARTAGE, whose site is shared by many.
 vi.mock('../src/main/host/registry', () => {
   const service = (code: string, name: string, description: string, more: object, runtime: object) => ({
     pkg: { name: `@marianne/service-${code}`, version: '1.0.0', marianne: { code, name, description, category: 'daily', hosts: [], domains: [], ...more } },
@@ -57,8 +59,11 @@ vi.mock('../src/main/host/registry', () => {
     allows: ['lire les arrêtés de la métropole'],
     never: 'payer, signer ou envoyer',
     instruction: 'Look for new low-emission rules.',
-    sites: ['www.metropole.example']
+    sites: ['www.metropole.example'],
+    followUp: { label: 'voir où rouler', instruction: 'Show the user where the new rules apply, on the metropole’s site.', more: 'dropped' }
   }
+  // Its follow-up's label starts with a capital: left out.
+  const wrong = { ...template, id: 'zfe:v2', followUp: { label: 'Voir où rouler', instruction: 'Show the user.' } }
   return {
     BUILTIN_SERVICES: [
       service(
@@ -69,11 +74,13 @@ vi.mock('../src/main/host/registry', () => {
           hosts: ['api.zfe.example'],
           domains: ['mobility'],
           permissions: { profile: ['vehicles.critair'], purpose: 'vous dire où vous pouvez rouler' },
-          tools: [{ name: 'zones', label: 'zones à faibles émissions' }]
+          tools: [{ name: 'zones', label: 'zones à faibles émissions' }],
+          sites: ['paiement.vignette.example']
         },
-        { tools: [zones], tasks: () => [template], instructions: 'Use vignette_zones.' }
+        { tools: [zones], tasks: () => [template, wrong], instructions: 'Use vignette_zones.' }
       ),
-      service('ciel', 'Ciel', 'le temps qu’il fait', {}, {})
+      service('ciel', 'Ciel', 'le temps qu’il fait', {}, {}),
+      service('partage', 'Partage', 'des pages de tous', { sites: ['github.io'] }, {})
     ],
     RENAMED_SERVICES: {}
   }
@@ -123,19 +130,19 @@ function memoryArchive(): Archive {
   } as unknown as Archive
 }
 
-/** 3615 BONJOUR, a community service added on this computer and validated: its folder, its package.json the only file to check. */
-function installed() {
-  const dir = join(root, 'packages', 'bonjour')
+/** A community service added on this computer and validated (3615 BONJOUR): its folder, its package.json the only file to check. */
+function installed(code = 'bonjour', more: object = {}) {
+  const dir = join(root, 'packages', code)
   mkdirSync(dir, { recursive: true })
   const json = JSON.stringify({
-    name: '@marianne/service-bonjour',
+    name: `@marianne/service-${code}`,
     version: '1.0.0',
     author: 'Collectif Bonjour',
-    marianne: { code: 'bonjour', name: 'Bonjour', description: 'un salut', category: 'culture', hosts: [], domains: ['family'] }
+    marianne: { code, name: 'Bonjour', description: 'un salut', category: 'culture', hosts: [], domains: ['family'], ...more }
   })
   writeFileSync(join(dir, 'package.json'), json)
   return {
-    code: 'bonjour',
+    code,
     version: '1.0.0',
     dir,
     sha256: 'b'.repeat(64),
@@ -168,6 +175,9 @@ function addVignette(): void {
 }
 
 const pkg = installed()
+/** 3615 ATELIER, a community service whose manifest declares sites to act on: the host leaves it out. */
+const atelier = installed('atelier', { sites: ['paiement.atelier.example'] })
+const FOLLOW_UP = { label: 'voir où rouler', instruction: 'Show the user where the new rules apply, on the metropole’s site.' }
 
 beforeAll(() => {
   const catalogue = {
@@ -177,7 +187,7 @@ beforeAll(() => {
   }
   services.start({
     catalogue: { state: () => catalogue as unknown as CatalogueState, on: () => undefined } as never,
-    packages: { installed: () => [pkg], remove: async () => undefined, on: () => undefined } as never,
+    packages: { installed: () => [pkg, atelier], remove: async () => undefined, on: () => undefined } as never,
     appToolNames: () => [],
     protectedHosts: () => new Set()
   })
@@ -220,9 +230,11 @@ describe('what the engines know of the services that aren’t on', () => {
     services.switch('ciel', false)
     const text = await call(folder(), 'services')
     expect(text).toContain('## On\n\n- **vignette** · 3615 VIGNETTE · Vignette: la vignette de vos véhicules et les zones à faibles émissions')
-    expect(text).toContain('domains: mobility · tools: vignette_zones (zones à faibles émissions) · reaches api.zfe.example · reads of the profile')
+    expect(text).toContain(
+      'domains: mobility · tools: vignette_zones (zones à faibles émissions) · reaches api.zfe.example · acts on: paiement.vignette.example · reads of the profile'
+    )
     expect(text).toContain('- template "zfe:v1": Zones à faibles émissions · checks les nouvelles restrictions de circulation')
-    expect(text).toContain('rhythms: 0 chaque semaine, 1 chaque mois (usual)')
+    expect(text).toContain('rhythms: 0 chaque semaine, 1 chaque mois (usual) · when a run finds something, the user gets a button: « voir où rouler »')
     // What a task is about reaches the engine as a token, as any identifier.
     expect(text).toContain('for [[vehicle.1.plate]]')
     expect(text).not.toContain(PLATE)
@@ -249,6 +261,7 @@ describe('proposing a service', () => {
       { label: 'service', value: '3615 VIGNETTE · Vignette' },
       { label: 'ce qu’il fait', value: 'la vignette de vos véhicules et les zones à faibles émissions' },
       { label: 'se connecte à', value: 'api.zfe.example' },
+      { label: 'Marianne pourra agir pour vous sur', value: 'paiement.vignette.example' },
       { label: 'lira de votre profil', value: 'la vignette Crit’Air de vos véhicules, pour vous dire où vous pouvez rouler, si vous l’acceptez' },
       { label: 'outils pour Marianne', value: 'zones à faibles émissions' }
     ])
@@ -348,6 +361,7 @@ describe('planning a service’s own task from the conversation', () => {
       { label: 'Marianne pourra', value: 'lire les arrêtés de la métropole' },
       { label: 'sites sans redemander', value: 'www.metropole.example' },
       { label: 'jamais', value: 'payer, signer ou envoyer' },
+      { label: 'si elle trouve quelque chose', value: 'voir où rouler' },
       { label: 'vous prévenir', value: 'seulement si elle trouve' },
       { label: 'dossier', value: 'celui-ci' }
     ])
@@ -360,7 +374,8 @@ describe('planning a service’s own task from the conversation', () => {
       sites: ['www.metropole.example'],
       entity: { id: 'v1', label: PLATE },
       every: { unit: 'month', n: 1 },
-      why: 'les arrêtés changent rarement'
+      why: 'les arrêtés changent rarement',
+      followUp: FOLLOW_UP
     })
     // Taken, it is no longer proposed.
     expect(await plan(folder())).toMatch(/^refused: 3615 VIGNETTE doesn’t propose the task "zfe:v1" now/)
@@ -424,10 +439,32 @@ describe('the path the Démarches sheet and task_propose share', () => {
       runner: 'marianne',
       every: { unit: 'week', n: 1 },
       everyLabel: 'chaque semaine',
-      instruction: template.instruction
+      instruction: template.instruction,
+      followUp: FOLLOW_UP
     })
     for (const rhythm of [2, -1, 0.5, '__proto__']) expect(templateTask(template, rhythm as number)).toBeNull()
     const planned = tasks.create(templateTask(template, 1)!)
     expect(offeredTemplate([template], [planned], 'vignette', 'zfe:v1')).toBeNull()
+  })
+})
+
+describe('the sites a service declares, and a task’s follow-up', () => {
+  it('leaves out a built-in service whose site is shared by many, and a community service that declares any', () => {
+    accounts.updateSettings({ services: { added: ['bonjour', 'atelier', 'partage'] } })
+    expect(services.states().map((s) => s.manifest.id)).toEqual(['vignette', 'ciel', 'bonjour'])
+  })
+
+  it('counts the sites of the built-in services that are on, where Marianne acts, and tells the engines', () => {
+    expect(services.declaredSites()).toEqual([])
+    addVignette()
+    expect(services.declaredSites()).toEqual(['paiement.vignette.example'])
+    expect(services.instructions()).toContain('Use vignette_zones.\n\nActs on: paiement.vignette.example (where you act for the user for it, in the browser).')
+    services.switch('vignette', false)
+    expect(services.declaredSites()).toEqual([])
+  })
+
+  it('leaves out a template whose follow-up isn’t right, and keeps the others’ as plain data', () => {
+    addVignette()
+    expect(services.taskTemplates().map((t) => [t.id, t.followUp])).toEqual([['zfe:v1', FOLLOW_UP]])
   })
 })

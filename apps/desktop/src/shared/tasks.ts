@@ -1,9 +1,11 @@
 import type { TaskEvery } from '@marianne/sdk'
+import type { ChatMessage } from './types'
 
 /**
  * The calendar of planned tasks. A task has a day and no time of day: the archive locks after a
  * few minutes without use and a task only runs unlocked, so it runs at the first opening of its
- * day, or the first after it. Days are local "YYYY-MM-DD" strings, compared as text.
+ * day, or the first after it. Days are local "YYYY-MM-DD" strings, compared as text. And the line
+ * of a run where a task's follow-up is offered, the same for the window and the main process.
  */
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -43,4 +45,17 @@ const UNITS = { day: ['jour', 'jours'], week: ['semaine', 'semaines'], month: ['
 export function everyLabel({ unit, n }: TaskEvery): string {
   if (n === 1) return unit === 'year' ? 'chaque année' : `chaque ${UNITS[unit][0]}`
   return `${unit === 'week' ? 'toutes' : 'tous'} les ${n} ${UNITS[unit][1]}`
+}
+
+/**
+ * The line of a run whose follow-up a task's folder offers (« payer maintenant »): the last run's
+ * line, when that run found something and no follow-up was started after it. Null otherwise. The
+ * window puts the button there, and the main process takes a click for that line only: an older
+ * finding may have been dealt with since.
+ */
+export function followUpLine(messages: ChatMessage[]): ChatMessage | null {
+  const at = messages.findLastIndex((m) => m.note === 'task')
+  const line = messages[at]
+  if (!line || line.outcome !== 'found') return null
+  return messages.slice(at + 1).some((m) => m.followUp) ? null : line
 }

@@ -10,7 +10,7 @@ Ongoing folders are in the left column, with « chercher » (search) at the top 
 
 Ask it for something precise (a sum owed, a form to fill in, a document to obtain, a formality with a deadline): Marianne gets to work. It looks for the service and the guided formality that cover it, asks you to fill in what is missing, goes online and prepares everything up to your decision; when it comes back regularly, it offers a planned task. For a broader situation (a life event, a general question), it first shows you the formalities and services that help, and creates nothing until you have chosen. What needs your approval, it asks on a card, without asking it again in the conversation.
 
-When one of Marianne's official services would help and isn't among your services (or you switched it off), it offers it on a card: what it does, the sites it connects to, what it would read of your profile, the tools it lends Marianne. « voir avant d’ajouter » (see before adding) opens the same window as the Services page, and you are the one who adds it; if it needs part of your profile, it asks you right away. Marianne then carries on by itself, and the conversation says so on a line (« 3615 PEAGE ajouté · Marianne reprend », 3615 PEAGE added · Marianne carries on). « pas maintenant » (not now): it carries on without, and doesn't offer it again in that folder. It never offers a community service: those, you find yourself on the Services page.
+When one of Marianne's official services would help and isn't among your services (or you switched it off), it offers it on a card: what it does, the sites it connects to, those where Marianne would act for you with it (a payment page, for instance), what it would read of your profile, the tools it lends Marianne. « voir avant d’ajouter » (see before adding) opens the same window as the Services page, and you are the one who adds it; if it needs part of your profile, it asks you right away. Marianne then carries on by itself, and the conversation says so on a line (« 3615 PEAGE ajouté · Marianne reprend », 3615 PEAGE added · Marianne carries on). « pas maintenant » (not now): it carries on without, and doesn't offer it again in that folder. It never offers a community service: those, you find yourself on the Services page.
 
 ## Your approval
 
@@ -20,7 +20,7 @@ In Réglages › Autorisations (Settings › Permissions), you choose what it ma
 
 - **« tout demander »** (ask everything): each new site of each folder, each form and each save to your profile is asked.
 - **« équilibré »** (balanced, to begin with): going online is asked once per folder, and each form and each save too.
-- **« autonomie »** (autonomy): Marianne goes without asking to the sites it knows (the public sites of its list), fills in forms there and saves your deadlines; other sites are asked once per folder.
+- **« autonomie »** (autonomy): Marianne goes without asking to the sites it knows (the public sites of its list, and the sites its official services act on, once you have switched them on), fills in forms there and saves your deadlines; other sites are asked once per folder.
 
 On a card, between « approuver » (approve) and « refuser » (refuse), « toujours pour sanef.com » (always for sanef.com), « toujours pour les formulaires de sanef.com » (always for sanef.com's forms) or « toujours pour les échéances » (always for deadlines) spares you the same question the next times, in all your folders. These permissions are in Réglages › Autorisations, with the day you gave them, and « retirer » (remove) to take them back. What Marianne does this way stays written in the conversation, on an « autorisé d’office » (allowed ahead) line, with the values of the form or the deadline.
 
@@ -33,7 +33,7 @@ Marianne opens the sites it needs in the folder's browser, on the right (the « 
 ## The pages
 
 - **Démarches** (formalities): the areas of your administrative life (taxes, health, housing, family…), each with its own page and its guided formalities, step by step.
-- **Services**: the 3615 codes, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. 3615 METEO gives your commune's weather: now, the rain of the next two hours, 48 hours, 7 and 15 days, with air quality, UV and pollen. Type a code or words in the 3615 bar to find one. The star pins a service as a tile, at the top of « mes services » (my services, F2), with what's new for you: today's weather, a toll to pay. « découvrir » (discover, F3) offers the official services you haven't added yet, then the community's. Before you add a service, Marianne shows you what it will be able to do, and a link of Marianne's to an official service you haven't added opens that window. A service that needs part of your profile, like your license plate for the tolls, asks you first.
+- **Services**: the 3615 codes, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. 3615 METEO gives your commune's weather: now, the rain of the next two hours, 48 hours, 7 and 15 days, with air quality, UV and pollen. Type a code or words in the 3615 bar to find one. The star pins a service as a tile, at the top of « mes services » (my services, F2), with what's new for you: today's weather, a toll to pay. « découvrir » (discover, F3) offers the official services you haven't added yet, then the community's. Before you add a service, Marianne shows you what it will be able to do, and the sites where Marianne will act for you with that service; a link of Marianne's to an official service you haven't added opens that window. A service that needs part of your profile, like your license plate for the tolls, asks you first.
 
 ## The news
 
@@ -84,6 +84,8 @@ A task starts from « + nouvelle tâche » (new task), from what your services p
 - **Marianne never pays.** A check can only look and report: it doesn't pay, sign or send, and nothing it reads on a page can make it. It reaches the sites you gave it, for that check only, and no other. If a site wants a code, or anything else needs you, it stops and tells you.
 
 When a check finds nothing, the folder goes back to sleep, and its conversation folds these checks into one line: click it to read them. When it finds something or needs you, the folder comes back and a notification tells you, without saying which task: a locked screen may show it. What waits for you also shows in « à faire ».
+
+A service's task may offer a next step, which its sheet announces (« si elle trouve quelque chose : payer maintenant », if it finds something: pay now). When a check finds something, the folder offers it as a button, on that check's line, and « à faire » opens the folder there. One click, and Marianne sees to it with you, in the conversation, as if you had asked: what commits you waits for your approval, on a card. The button goes while the task is paused or its service is switched off, and once the next step has started.
 
 In a task's folder, « modifier la tâche » (edit the task) changes its rhythm or removes it, and « mettre en pause » (pause) stops it until you choose « reprendre » (resume). While it's paused, its folder is under « Classés » (filed).
 

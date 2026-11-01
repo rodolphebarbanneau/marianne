@@ -51,7 +51,8 @@ export function whenOf(date: string, now = new Date()): { text: string; tone: To
 }
 
 export type TodoTarget =
-  | { kind: 'folder'; id: string }
+  /** `at: 'run'`: at the line of the run that found something, where its follow-up waits. */
+  | { kind: 'folder'; id: string; at?: 'run' }
   | { kind: 'service'; id: string; params?: Record<string, string | number> }
   | { kind: 'procedure'; id: string }
   | { kind: 'url'; url: string }
@@ -81,6 +82,12 @@ const SOURCES: Record<Deadline['source'], string> = { rule: 'règle', calendar: 
 
 const lastRun = (task: PlannedTask): TaskRun | undefined => task.runs[task.runs.length - 1]
 
+/** Whether a task offers its follow-up: it has one, it is on, and its service is on. */
+export function followUpOffered(task: PlannedTask, services: Array<Pick<ServiceState, 'manifest' | 'on'>>): boolean {
+  const { origin } = task
+  return !!task.followUp && task.on && origin.kind === 'service' && services.some((s) => s.manifest.id === origin.service && s.on)
+}
+
 /** Whether a task found something today, in the service a deadline comes from. */
 const foundToday = (tasks: PlannedTask[], service: string, now: Date) =>
   tasks.some((t) => {
@@ -100,14 +107,16 @@ export interface TodoSources {
   deadlines: Deadline[]
   documents: DocumentMeta[]
   tasks: PlannedTask[]
+  /** The user's services: a task's follow-up waits for the user only while its service is on. */
+  services: Array<Pick<ServiceState, 'manifest' | 'on'>>
 }
 
 /**
  * What needs the user, ranked: late, then what waits for them, then what falls within 3 days, then
- * by date. Folders that wait, tasks that need them or failed, deadlines within 45 days, letters to
- * process. `domain`: one domain's.
+ * by date. Folders that wait, tasks that need them, failed, or found something they offer to follow
+ * up, deadlines within 45 days, letters to process. `domain`: one domain's.
  */
-export function todoItems({ folders, deadlines, documents, tasks }: TodoSources, domain?: DomainId, now = new Date()): TodoItem[] {
+export function todoItems({ folders, deadlines, documents, tasks, services }: TodoSources, domain?: DomainId, now = new Date()): TodoItem[] {
   const items: TodoItem[] = []
   for (const f of folders) {
     if (f.settledAt || (f.status !== 'approval' && f.status !== 'question')) continue
@@ -129,10 +138,12 @@ export function todoItems({ folders, deadlines, documents, tasks }: TodoSources,
   }
   for (const t of tasks) {
     const run = lastRun(t)
-    if (!t.on || !run || (run.outcome !== 'waiting' && run.outcome !== 'failed')) continue
+    // What it found waits for the user when it offers to follow it up (« payer maintenant »), in its folder.
+    const found = run?.outcome === 'found' && followUpOffered(t, services)
+    if (!t.on || !run || (run.outcome !== 'waiting' && run.outcome !== 'failed' && !found)) continue
     // Once the user has opened its folder, it has been seen to.
     if (folders.some((f) => f.id === t.folderId && !f.unread)) continue
-    const wait = run.outcome === 'waiting' ? 'une tâche vous attend' : 'tâche sans suite'
+    const wait = found ? 'une tâche a trouvé' : run.outcome === 'waiting' ? 'une tâche vous attend' : 'tâche sans suite'
     items.push({
       key: `task:${t.id}`,
       rank: 1,
@@ -141,9 +152,9 @@ export function todoItems({ folders, deadlines, documents, tasks }: TodoSources,
       domain: t.domain,
       title: t.title,
       chip: 'tâche planifiée',
-      detail: run.text ?? '',
+      detail: found ? [run.text, `« ${t.followUp!.label} » dans son dossier`].filter(Boolean).join(' · ') : (run.text ?? ''),
       act: 'ouvrir',
-      target: { kind: 'folder', id: t.folderId },
+      target: found ? { kind: 'folder', id: t.folderId, at: 'run' } : { kind: 'folder', id: t.folderId },
       wait
     })
   }

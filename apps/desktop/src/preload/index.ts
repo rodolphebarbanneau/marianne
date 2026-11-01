@@ -79,6 +79,7 @@ const INVOKE = [
   'setFolderStep',
   'send',
   'regenerate',
+  'followUp',
   'attachFiles',
   'engineStatus',
   'engineLights',

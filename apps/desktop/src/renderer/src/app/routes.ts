@@ -10,7 +10,8 @@ export const PAGE_LABELS: Record<PageId, string> = { home: 'Marianne', procedure
 export type View =
   | { kind: 'page'; page: PageId }
   | { kind: 'domain'; id: DomainId; tab?: DomainTab }
-  | { kind: 'folder'; id: string }
+  /** `at: 'run'`: opened at the line of the run that found something, where its follow-up waits, rather than at its end. */
+  | { kind: 'folder'; id: string; at?: 'run' }
   /**
    * A service's screen. `opened` counts the openings (app/context.tsx): the same service opened again,
    * from its row, its tile, the palette or a link, starts afresh on its first tab, as F2 shows it.

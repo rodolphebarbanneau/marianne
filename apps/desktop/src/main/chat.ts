@@ -15,11 +15,23 @@ import type {
   ToolPart
 } from '../shared/types'
 import { ENGINE_LABELS } from '../shared/config'
+import { followUpLine } from '../shared/tasks'
 import { approvals } from './approvals'
 import { browser } from './browser'
 import { configStore } from './config'
 import { content } from './content'
-import { carryOnMessage, forgetTranscripts, listSkills, runsSince, runTurn, systemPrompt, taskMessage, userMessage, type EngineEvent } from './engines'
+import {
+  carryOnMessage,
+  followUpMessage,
+  forgetTranscripts,
+  listSkills,
+  runsSince,
+  runTurn,
+  systemPrompt,
+  taskMessage,
+  userMessage,
+  type EngineEvent
+} from './engines'
 import { folders, redoFrom, titleFrom } from './folders'
 import { log } from './log'
 import { profile } from './profile/store'
@@ -215,6 +227,52 @@ class Chat extends EventEmitter {
     folders.saveMessages(folder.id, messages, { touched: true })
     void this.turn(folders.get(folder.id)!, messages, user)
     return folder.id
+  }
+
+  /**
+   * The user clicked a planned task's follow-up on the line of a run that found something: a turn of
+   * the conversation, theirs, in the task's folder, where standing permissions and the floor apply as
+   * in any. Their message shows the label; the engine reads the instruction the task keeps, from its
+   * service's template, never anything a run wrote. Only for the line that offers it (followUpLine).
+   */
+  async followUp(folderId: string, lineId: string): Promise<void> {
+    const offered = () => !!this.followable(folderId) && followUpLine(folders.messages(folderId))?.id === lineId
+    if (!folders.get(folderId)) throw new Error('Dossier introuvable.')
+    if (!offered()) throw new Error('Cette suite n’est plus proposée.')
+    await this.interruptRun()
+    // Read again: a run may have ended meanwhile, with a line of its own.
+    const task = this.followable(folderId)
+    const folder = folders.get(folderId)
+    if (!task || !folder || !offered()) throw new Error('Cette suite n’est plus proposée.')
+    if (this.active.has(folder.id)) throw new Error('Marianne répond déjà dans ce dossier.')
+    const messages = folders.messages(folder.id)
+    const user: ChatMessage = {
+      id: randomUUID(),
+      role: 'user',
+      at: new Date().toISOString(),
+      parts: [{ type: 'text', text: task.followUp!.label }],
+      followUp: task.id
+    }
+    messages.push(user)
+    folders.saveMessages(folder.id, messages, { touched: true })
+    void this.turn(folders.get(folder.id)!, messages, user)
+  }
+
+  /** The folder's task, when it offers its follow-up: on, with one, and what it relies on still there (its service on, its plate granted). */
+  private followable(folderId: string): PlannedTask | null {
+    const task = tasks.byFolder(folderId)
+    return task?.followUp && task.on && tasks.isOffered(task) ? task : null
+  }
+
+  /**
+   * What the engine reads of a user's message: their words; for a follow-up's, the instruction its
+   * task keeps, framed as their request. Asked again (« répétition ») once the task no longer offers
+   * it (paused, its service off), the label goes alone, as the user's own words.
+   */
+  private words(user: ChatMessage, folderId: string): string {
+    const text = user.parts.map((p) => (p.type === 'text' ? p.text : '')).join('\n')
+    const task = user.followUp ? this.followable(folderId) : null
+    return task && task.id === user.followUp ? followUpMessage(task) : text
   }
 
   /** Answer the last user message again, dropping the answer that followed it. */
@@ -416,7 +474,7 @@ class Chat extends EventEmitter {
       // documents aren't a run's business. A resumed session of the user's hears what runs reported since.
       const history = run ? [] : resume ? runsSince(earlier) : earlier
       const attachments = user.parts.filter((p) => p.type === 'page' || p.type === 'document')
-      const text = run?.text ?? resumed ?? user.parts.map((p) => (p.type === 'text' ? p.text : '')).join('\n')
+      const text = run?.text ?? resumed ?? this.words(user, folder.id)
       const tokens = profile.tokens()
       // Claude names its session up front; the others give theirs in their first event.
       const sessionId = resume ? w.folder.sessions[engine] : engine === 'claude' ? randomUUID() : undefined

@@ -5,8 +5,9 @@
  *   node packages/sdk/scripts/pack.mjs <service folder> [--out <folder>]
  *
  * It checks the manifest as Marianne will (readManifest; `marianne.tools` listing every tool, by
- * name and label, which it checks by activating the main side with a fake context), refuses a
- * sync job (a community service has none in this version), builds `main.js` and `view.js` as ES
+ * name and label, which it checks by activating the main side with a fake context; none of what
+ * only her own services declare: sites, news), refuses a sync job (a community service has none in
+ * this version), builds `main.js` and `view.js` as ES
  * modules, each one file, their imports of Marianne's own modules left for her to resolve (see
  * MAIN_IMPORTS and VIEW_IMPORTS), extracts the view's styles to `view.css`, adds `help.md` and
  * `README.md`, and zips them into `<code>.3615` (dist/ by default). The same sources give the
@@ -46,6 +47,18 @@ const STAMP = new Date('2026-01-01T00:00:00Z')
 /** What keeps a folder from being packed: the reason, for its author. */
 export class PackError extends Error {
   name = 'PackError'
+}
+
+/**
+ * What a manifest may declare only for Marianne's own services, as she reads a .3615
+ * (apps/desktop/src/main/community/package.ts): the sites she acts on for it, the headlines she
+ * reads, the user's news sources. The first one found, or null.
+ */
+function builtInOnly(manifest) {
+  if (manifest.sites.length) return '"marianne.sites" (the sites Marianne acts on for a service) is for her own services only'
+  if (manifest.news) return '"marianne.news" (the headlines Marianne reads) is for her own services only'
+  if (manifest.permissions.profile.includes('opinions.sources')) return '"opinions.sources" (the user\'s news sources) is for her own services only'
+  return null
 }
 
 /** Packages a bundle may never hold: Node, Electron, the rest of Marianne, other copies of React or zod. */
@@ -144,6 +157,8 @@ export async function pack(dir, { out } = {}) {
   const pkg = JSON.parse(readFileSync(file, 'utf8'))
   const { module: sdk } = await runnerImport(join(SDK, 'src/index.ts'))
   const manifest = sdk.readManifest(pkg)
+  const reserved = builtInOnly(manifest)
+  if (reserved) throw new PackError(`${reserved}: Marianne refuses it in a community service`)
   if (!Array.isArray(pkg.marianne?.tools)) throw new PackError('"marianne.tools" must list every tool the main side lends, by name and label ([] for none)')
   if (pkg.exports?.['./sync'] || ['src/sync.ts', 'src/sync.js'].some((f) => existsSync(join(root, f))))
     throw new PackError('a community service has no sync job in this version: Marianne would run it with Node, out of its sandbox')

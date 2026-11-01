@@ -1,6 +1,8 @@
 import { today } from '@marianne/profile'
-import type { ChatMessage } from '@shared/types'
-import { dayLabel, shortDate, weekdayOf } from '../lib/demarches'
+import type { ServiceState } from '@marianne/sdk'
+import { followUpLine } from '@shared/tasks'
+import type { ChatMessage, PlannedTask } from '@shared/types'
+import { dayLabel, followUpOffered, shortDate, weekdayOf } from '../lib/demarches'
 
 /**
  * What a conversation shows of a planned task's runs. A task that finds nothing comes back again
@@ -58,3 +60,18 @@ export function runLabel(run: QuietRun): string {
 
 /** A task's next day: "dimanche 1er nov."; on the day or past it, it runs as soon as it can. */
 export const nextLabel = (next: string, now = new Date()) => (next <= today(now) ? 'aujourd’hui' : dayLabel(next, now))
+
+/**
+ * The follow-up a task's folder offers (« payer maintenant »): its label, and the line of the run
+ * that found something, where its button goes. Null when the task has none, is paused, or its
+ * service is off; the main process checks again at the click.
+ */
+export function followUpOffer(
+  task: PlannedTask | undefined,
+  services: Array<Pick<ServiceState, 'manifest' | 'on'>>,
+  messages: ChatMessage[]
+): { lineId: string; label: string } | null {
+  if (!task?.followUp || !followUpOffered(task, services)) return null
+  const line = followUpLine(messages)
+  return line ? { lineId: line.id, label: task.followUp.label } : null
+}

@@ -172,6 +172,8 @@ interface Facts {
   verdict: ServiceTrust | 'official' | 'refused'
   byline: string
   hosts: string[]
+  /** Where Marianne acts for the user for it, in her browser (a built-in service's `sites`). */
+  sites: string[]
   /** The pages it opens in the user's browser itself (a community service's links). */
   links: string[]
   sync: boolean
@@ -191,6 +193,7 @@ const fromManifest = (m: ServiceManifest) => ({
   version: m.version,
   icon: m.icon,
   hosts: m.hosts,
+  sites: m.sites,
   reads: m.permissions.profile.map((f) => PROFILE_FIELDS[f])
 })
 
@@ -220,6 +223,7 @@ function factsOf(subject: ReviewSubject): Facts {
       verdict: e.status,
       byline: `par ${e.author} · version ${e.version} · ${bytes(e.file.size)}`,
       hosts: e.hosts,
+      sites: [],
       links: e.links,
       sync: e.sync,
       tools: e.tools,
@@ -232,7 +236,9 @@ function factsOf(subject: ReviewSubject): Facts {
   const r = subject.review
   const m = r.manifest
   return {
-    ...(m ? fromManifest(m) : { code: r.fileName.replace(/\.3615$/i, ''), name: r.fileName, description: '', version: '', icon: null, hosts: [], reads: [] }),
+    ...(m
+      ? fromManifest(m)
+      : { code: r.fileName.replace(/\.3615$/i, ''), name: r.fileName, description: '', version: '', icon: null, hosts: [], sites: [], reads: [] }),
     official: false,
     verdict: r.verdict,
     byline: [m ? `par ${m.author || 'un auteur inconnu'}` : '', m ? `version ${m.version}` : '', bytes(r.size), r.fileName].filter(Boolean).join(' · '),
@@ -434,6 +440,16 @@ export function ReviewDialog({ subject, onAdded, onClose }: { subject: ReviewSub
                     <span className="dim">aucun site</span>
                   )}
                 </Can>
+                {facts.sites.length > 0 && (
+                  <Can mark={MARKS.net} what="Marianne pourra agir pour vous sur">
+                    {facts.sites.map((h) => (
+                      <span key={h} className="host-chip">
+                        {h}
+                      </span>
+                    ))}{' '}
+                    <span className="small dim">: dans son navigateur, pour ce service ; ce qui vous engage attend votre oui</span>
+                  </Can>
+                )}
                 {/* Every service knows the commune of the user's address (never the address itself): always said. */}
                 <Can mark={MARKS.place} what="connaître">
                   la commune de votre adresse <span className="small dim">(pas votre adresse elle-même)</span>

@@ -494,7 +494,7 @@ function Overview({
 }) {
   const app = useApp()
   const { d, deadlines, documents, folders, tasks, open, ask, showTab, newTask } = data
-  const items = todoItems({ folders, deadlines, documents, tasks }, d.id)
+  const items = todoItems({ folders, deadlines, documents, tasks, services }, d.id)
   const held = profile ? d.entities.map((kind) => ({ kind, list: entitiesOf(profile, kind, deadlines) })) : []
   const entities = held.flatMap((x) => x.list)
   const running = folderGroups(folders).open

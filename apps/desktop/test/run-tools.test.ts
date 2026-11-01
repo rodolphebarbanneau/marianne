@@ -79,6 +79,7 @@ import { accounts } from '../src/main/account'
 import { approvals } from '../src/main/approvals'
 import { browser } from '../src/main/browser'
 import { holdToRun, mayOpen } from '../src/main/browser/run-guard'
+import { services } from '../src/main/host'
 import { callTool } from '../src/main/mcp'
 import { profile } from '../src/main/profile/store'
 import { session } from '../src/main/session'
@@ -532,6 +533,18 @@ describe('going online from a conversation, as the user allowed ahead', () => {
     expect(lines).toMatchObject([{ action: 'online', given: 'toujours pour sanef.com' }])
     // Allowed ahead for that site only: another one is asked, though the folder asks once at « équilibré ».
     await call(f, 'open_site', { url: 'https://evil.example/', ...OPEN })
+    expect(request).toHaveBeenCalledOnce()
+  })
+
+  it('at « autonomie », goes without a card to a site a built-in service that is on declares, as to a public site', async () => {
+    vi.spyOn(accounts, 'settings').mockReturnValue({ approvals: { level: 'autonomous', rules: [] }, browser: { show: 'always' } } as never)
+    const declared = vi.spyOn(services, 'declaredSites').mockReturnValue(['paiement.aliae.com'])
+    expect(await call(conversation(), 'open_site', { url: 'https://paiement.aliae.com/payer', ...OPEN })).toMatch(/^Opened/)
+    expect(request).not.toHaveBeenCalled()
+    expect(lines).toMatchObject([{ action: 'online', given: 'autonomie', title: 'Aller sur aliae.com' }])
+    // Its service switched off, it is a site like any other: asked.
+    declared.mockReturnValue([])
+    await call(conversation(), 'open_site', { url: 'https://paiement.aliae.com/payer', ...OPEN })
     expect(request).toHaveBeenCalledOnce()
   })
 

@@ -17,6 +17,8 @@ export interface Listing {
   version: string
   icon: PixelArt | null
   hosts: string[]
+  /** Where Marianne acts for the user for it (a built-in service's `sites`). */
+  sites: string[]
   /** What it reads of the profile. */
   reads: ProfileField[]
   /** Shipped with Marianne. */
@@ -48,6 +50,7 @@ export function listings(services: ServiceState[], catalogue: CatalogueEntry[]):
     version: s.manifest.version,
     icon: s.manifest.icon,
     hosts: s.manifest.hosts,
+    sites: s.manifest.sites,
     reads: s.manifest.permissions.profile,
     official: s.builtIn,
     ...(s.trust ? { trust: s.trust } : {}),
@@ -70,6 +73,8 @@ export function listings(services: ServiceState[], catalogue: CatalogueEntry[]):
       version: e.version,
       icon: e.icon,
       hosts: e.hosts,
+      // A community service declares none: Marianne refuses it otherwise.
+      sites: [],
       reads: e.reads,
       official: false,
       trust: e.status,

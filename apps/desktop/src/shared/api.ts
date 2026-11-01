@@ -173,6 +173,13 @@ export interface MarianneApi {
   /** Starts a turn; resolves with the folder id once the user message is saved. */
   send(request: SendRequest): Promise<string>
   regenerate(folderId: string): Promise<void>
+  /**
+   * A planned task's follow-up (« payer maintenant »), from the line of the run that found something
+   * (`lineId`): a turn of the conversation, the user's message reading as the label. Refused once that
+   * line no longer offers it (a later run, the task paused, its service off). Resolves once the
+   * message is saved.
+   */
+  followUp(folderId: string, lineId: string): Promise<void>
   cancel(folderId: string): void
   /** « toujours… » keeps the standing permission the card offered, and only that one. */
   respondApproval(id: string, answer: ApprovalAnswer): void
