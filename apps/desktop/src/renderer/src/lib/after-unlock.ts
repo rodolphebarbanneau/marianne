@@ -38,6 +38,18 @@ export const afterUnlock = {
 /** What the lock screen opens on: the list of accounts ("changer de compte"), or one account (an archive opened from the system). */
 export const lockIntent: { list: boolean; account: string | null } = { list: false, account: null }
 
+/**
+ * Where an opening stands: the archive being deciphered, then the assistants being checked, all at
+ * once (`checked` of `of` done). They are not named: which one answers last says nothing useful.
+ */
+export type OpeningStep = { phase: 'archive' } | { phase: 'engines'; checked: number; of: number }
+
+/** The opening bar: how full it is and what it says. The archive is one share and each assistant another, so the bar ends full. */
+export function openingBar(step: OpeningStep): { share: number; text: string } {
+  if (step.phase === 'archive') return { share: 0, text: 'déchiffrement de l’archive' }
+  return { share: (1 + step.checked) / (1 + step.of), text: step.of > 1 ? 'vérification des assistants' : 'vérification de l’assistant' }
+}
+
 let isOpening = false
 const openingListeners = new Set<() => void>()
 

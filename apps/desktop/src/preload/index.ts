@@ -33,7 +33,8 @@ const SEND = [
   'browserReload',
   'browserExternal',
   'browserControl',
-  'openSkillsDir'
+  'openSkillsDir',
+  'warmEngines'
 ] as const
 
 const INVOKE = [

@@ -31,7 +31,7 @@ import { catalogue, communityPackages, SERVICE_FILE_EXT } from './community'
 import { configStore } from './config'
 import { deadlines } from './deadlines'
 import { content } from './content'
-import { engineEvents, engineLights, engineStatus, listModels, listSkills, openLogin } from './engines'
+import { engineEvents, engineLights, engineStatus, listModels, listSkills, openLogin, warmEngines } from './engines'
 import { exportAll } from './export'
 import { folders } from './folders'
 import { everyLabel } from '../shared/tasks'
@@ -234,6 +234,7 @@ export function registerIpc(): void {
 
   // ---------- engines ----------
   handle('engineStatus', (id: EngineId, refresh?: boolean) => engineStatus(id, !!refresh))
+  on('warmEngines', () => warmEngines())
   handle('engineLights', () => engineLights())
   handle('engineModels', (id: EngineId) => listModels(id))
   handle('engineLogin', (id: EngineId) => openLogin(id))

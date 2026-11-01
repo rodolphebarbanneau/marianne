@@ -194,6 +194,8 @@ export interface MarianneApi {
 
   // ---------- engines ----------
   engineStatus(id: EngineId, refresh?: boolean): Promise<EngineStatus>
+  /** Checks the enabled assistants ahead, saying nothing back: the lock screen asks while the user types, so the unlock finds them checked. */
+  warmEngines(): void
   engineLights(): Promise<EngineLight[]>
   onEngineLights(cb: (lights: EngineLight[]) => void): () => void
   engineModels(id: EngineId): Promise<EngineModel[]>
