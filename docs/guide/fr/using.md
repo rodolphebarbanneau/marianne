@@ -67,7 +67,7 @@ La barre du haut demande « QUELLE DÉMARCHE ? ». Chaque domaine est un guichet
 
 Sous la barre, trois onglets, sur F2 à F4 :
 
-- **mes domaines** : ce qui presse, puis une ligne par domaine, avec ce qui vous attend ou sa prochaine échéance, et les huit semaines à venir. Chaque échéance est un carré, rouge si elle est en retard ou à moins de 3 jours.
+- **mes domaines** : ce qui presse, puis les domaines rangés en quatre familles (moi et ma famille, argent et travail, chez moi et déplacements, droits et entreprise). Sous le nom de chaque domaine, ce qui vous attend ou sa prochaine échéance, ou, s’il ne se passe rien, ce qu’il couvre ; à côté, les huit semaines à venir. Chaque échéance est un carré, rouge si elle est en retard ou à moins de 3 jours.
 - **à faire** : tout, dans l’ordre : ce qui est en retard, ce qui vous attend, ce qui tombe dans les 3 jours, puis les 45 jours à venir.
 - **tâches planifiées** : toutes vos tâches planifiées, chacune avec son interrupteur.
 
