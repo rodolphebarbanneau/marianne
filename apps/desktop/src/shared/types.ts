@@ -179,7 +179,7 @@ export interface AccountSettings {
 export type ApprovalLevel = 'ask' | 'balanced' | 'autonomous'
 
 /** The kinds of action that may need the user's yes (shared/approvals.ts). */
-export type ApprovalAction = 'online' | 'form' | 'profile' | 'task' | 'commit' | 'service'
+export type ApprovalAction = 'online' | 'form' | 'profile' | 'task' | 'commit' | 'service' | 'add'
 
 /** The only kinds a standing permission can cover: going to a site, filling forms on a site, saving deadlines. */
 export type StandingAction = Extract<ApprovalAction, 'online' | 'form' | 'profile'>
@@ -250,13 +250,15 @@ export interface DocumentPart {
 
 /**
  * Something that needs the user's yes: a change to the profile, a form to fill, a consequential
- * step online (sign, pay, send). The turn waits for the answer. Or, with `given`, the line of such
- * an action the user allowed ahead, which went without a card.
+ * step online (sign, pay, send), a built-in service to add. The turn waits for the answer. Or, with
+ * `given`, the line of such an action the user allowed ahead, which went without a card.
  */
 export interface ApprovalPart {
   type: 'approval'
   id: string
-  kind: 'proposal' | 'form' | 'online' | 'service'
+  kind: 'proposal' | 'form' | 'online' | 'service' | 'add'
+  /** kind add: the built-in service it proposes, and whether it was off (switching it back on) rather than not added. */
+  service?: { code: string; off: boolean }
   /** The kind of action, as the approval policy knows it; absent on cards older than it. */
   action?: ApprovalAction
   title: string
@@ -302,8 +304,11 @@ export interface ChatMessage {
   engine?: EngineId
   model?: string
   ms?: number
-  /** System messages: "conversation résumée le…", or the line that opens a planned task's run. */
-  note?: 'compacted' | 'task'
+  /**
+   * System messages: "conversation résumée le…", the line that opens a planned task's run, or the one
+   * that opens the turn Marianne starts herself once the user added a service from her card.
+   */
+  note?: 'compacted' | 'task' | 'resume'
   /** note 'task': how the run ended, once it has. */
   outcome?: TaskOutcome
 }

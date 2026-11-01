@@ -6,6 +6,12 @@ Un dossier, c’est une conversation avec Marianne sur un sujet : une démarche,
 
 Les dossiers en cours sont dans la colonne de gauche, avec « chercher » en haut pour en retrouver un. Ceux que vous mettez en veille reviennent à la date choisie, et ceux que vous classez restent à portée, dans « Classés ». Un dossier se classe aussi de lui-même quand sa démarche guidée est finie, ou après 7 jours sans activité s’il n’en suit aucune ; un dossier épinglé ou qui porte une tâche planifiée, jamais. Un nouveau message le ressort.
 
+## Ce que Marianne fait pour vous
+
+Demandez-lui quelque chose de précis (une somme due, un formulaire à remplir, un document à obtenir, une démarche avec une date limite) : Marianne s’y met. Elle cherche le service et la démarche guidée qui s’en occupent, vous demande de renseigner ce qui manque, va en ligne et prépare tout jusqu’à votre décision ; quand cela revient, elle propose une tâche planifiée. Pour une situation plus large (un événement de la vie, une question générale), elle vous montre d’abord les démarches et les services utiles, et ne crée rien avant que vous ayez choisi. Ce qui demande votre accord, elle vous le demande sur une carte, sans vous le redemander dans la conversation.
+
+Quand un service officiel de Marianne vous serait utile et n’est pas parmi vos services (ou que vous l’avez désactivé), elle vous le propose sur une carte : ce qu’il fait, les sites auxquels il se connecte, ce qu’il lirait de votre profil, les outils qu’il lui prête. « voir avant d’ajouter » ouvre la même fenêtre que la page Services, et c’est vous qui l’ajoutez ; s’il a besoin d’une partie de votre profil, il vous la demande aussitôt. Marianne reprend alors d’elle-même, et la conversation le dit sur une ligne (« 3615 PEAGE ajouté · Marianne reprend »). « pas maintenant » : elle continue sans, et ne vous le propose plus dans ce dossier. Elle ne propose jamais un service de la communauté : ceux-là, vous les trouvez vous-même sur la page Services.
+
 ## Votre accord
 
 Tout ce qui change votre profil, remplit un formulaire, signe, paie ou envoie passe d’abord par vous : Marianne vous le montre sur une carte, et attend votre accord.
@@ -27,7 +33,7 @@ Marianne ouvre les sites dont elle a besoin dans le navigateur du dossier, à dr
 ## Les pages
 
 - **Démarches** : les domaines de votre vie administrative (impôts, santé, logement, famille…), chacun avec sa page et ses démarches guidées, étape par étape.
-- **Services** : les codes 3615, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. 3615 METEO donne le temps de votre commune : maintenant, la pluie des deux prochaines heures, 48 heures, 7 et 15 jours, avec l’air, l’UV et les pollens. Tapez un code ou des mots dans la barre 3615 pour en trouver un. L’étoile épingle un service en tuile, en haut de « mes services » (F2), avec ce qu’il a de neuf pour vous : la météo du jour, un péage à payer. « découvrir » (F3) propose les services officiels que vous n’avez pas encore ajoutés, puis ceux de la communauté. Avant d’ajouter un service, Marianne vous montre ce qu’il pourra faire. Un service qui a besoin d’une partie de votre profil, comme votre plaque d’immatriculation pour le péage, vous le demande d’abord.
+- **Services** : les codes 3615, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. 3615 METEO donne le temps de votre commune : maintenant, la pluie des deux prochaines heures, 48 heures, 7 et 15 jours, avec l’air, l’UV et les pollens. Tapez un code ou des mots dans la barre 3615 pour en trouver un. L’étoile épingle un service en tuile, en haut de « mes services » (F2), avec ce qu’il a de neuf pour vous : la météo du jour, un péage à payer. « découvrir » (F3) propose les services officiels que vous n’avez pas encore ajoutés, puis ceux de la communauté. Avant d’ajouter un service, Marianne vous montre ce qu’il pourra faire, et un lien de Marianne vers un service officiel que vous n’avez pas ajouté ouvre cette fenêtre. Un service qui a besoin d’une partie de votre profil, comme votre plaque d’immatriculation pour le péage, vous le demande d’abord.
 
 ## Les infos
 
@@ -70,7 +76,7 @@ La page d’un domaine a la même tête, avec le numéro de son guichet : Mobili
 
 Une tâche planifiée, c’est un dossier qui revient. Marianne peut vérifier quelque chose pour vous à un rythme régulier, comme les péages à payer tous les 2 jours, ou simplement ramener un rappel à son jour. Entre deux fois, le dossier dort dans « En veille » ; à son jour, il revient.
 
-Une tâche commence avec « + nouvelle tâche », depuis ce que vos services proposent sur la page d’un domaine, ou dans une conversation, quand Marianne vous la propose. Elle ne commence jamais sans votre accord, sur une fiche ou une carte qui dit ce qu’elle fait, à quel rythme, et quels sites elle peut joindre.
+Une tâche commence avec « + nouvelle tâche », depuis ce que vos services proposent sur la page d’un domaine, ou dans une conversation, quand Marianne vous la propose. Elle ne commence jamais sans votre accord, sur une fiche ou une carte qui dit ce qu’elle fait, à quel rythme, et quels sites elle peut joindre. Quand l’un de vos services propose cette tâche, la carte de Marianne montre ce que montrerait sa fiche, et la tâche prend tout du service, jamais de Marianne ; elle revient dans le dossier de la conversation, ou dans un nouveau dossier si celui-ci a déjà sa tâche.
 
 - **Un jour, pas une heure.** Une vérification se fait à la première ouverture de son jour, ou à la première qui suit. Elle ne se fait que Marianne ouverte et votre archive déverrouillée, elle attend que Marianne ait fini ce qu’elle fait pour vous, et elle s’efface dès que vous demandez quelque chose.
 - **Elle ne peut pas vous protéger si vous n’ouvrez pas Marianne.** Un péage se paie dans les 72 heures : quelques jours sans ouvrir Marianne, et un passage peut dépasser son délai.

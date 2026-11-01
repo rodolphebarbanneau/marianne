@@ -4,6 +4,7 @@ import type { Archive } from '@marianne/archive'
 import type { TokenDef } from '@marianne/profile'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Turn } from '../src/main/engines'
+import type { ApprovalPart } from '../src/shared/types'
 
 /**
  * The chat runner, between the user's turns and a planned task's runs in the same folder: the user
@@ -30,7 +31,9 @@ const fake = vi.hoisted(() => ({
   /** The user's engine turn: by default, a short answer. */
   user: null as null | ((turn: Turn) => Promise<void>),
   /** While set, the run's browser isn't ready until it resolves. */
-  beginRun: null as null | Promise<void>
+  beginRun: null as null | Promise<void>,
+  /** The services, as the host tells them. */
+  services: [] as Array<{ manifest: { id: string; name: string }; on: boolean; builtIn: boolean }>
 }))
 
 vi.mock('electron', () => ({ app: { getVersion: () => '0', on: () => undefined, isPackaged: false } }))
@@ -53,12 +56,13 @@ vi.mock('../src/main/browser', async () => {
   })
   return { browser }
 })
-vi.mock('../src/main/host', () => ({ services: { instructions: () => '', taskTemplates: () => [] } }))
+vi.mock('../src/main/host', () => ({ services: { instructions: () => '', idle: () => [], states: () => fake.services, taskTemplates: () => [] } }))
 vi.mock('../src/main/tools', () => ({ legifranceReady: () => false }))
 vi.mock('../src/main/profile/store', () => ({
   profile: { tokens: (): TokenDef[] => [{ token: 'vehicle.1.plate', label: 'plaque', value: PLATE, kind: 'id' }], get: () => ({ notes: '' }) }
 }))
 
+import { approvals } from '../src/main/approvals'
 import { browser } from '../src/main/browser'
 import { chat } from '../src/main/chat'
 import { runTurn } from '../src/main/engines'
@@ -115,6 +119,7 @@ beforeEach(() => {
   fake.run = untilStopped('run')
   fake.user = answers('Voici vos passages.')
   fake.beginRun = null
+  fake.services = [{ manifest: { id: 'vignette', name: 'Vignette' }, on: true, builtIn: true }]
   vi.mocked(runTurn).mockClear()
   vi.mocked(browser.endRun).mockClear()
 })
@@ -225,5 +230,85 @@ describe('the user reaching for the browser', () => {
     await ticking
     expect(roles(task.folderId)).toEqual([])
     expect(tasks.get(task.id)?.runs).toEqual([])
+  })
+})
+
+describe('a service the user added from Marianne’s card', () => {
+  /** The card of service_propose, as the turn shows it once the user added the service from it. */
+  const added = (folderId: string, code = 'vignette', status: 'accepted' | 'refused' = 'accepted') =>
+    approvals.emit('part', folderId, {
+      type: 'approval',
+      id: `card-${code}`,
+      kind: 'add',
+      action: 'add',
+      service: { code, off: false },
+      title: `Ajouter 3615 ${code.toUpperCase()}`,
+      fields: [],
+      status
+    } satisfies ApprovalPart)
+  /** An engine turn that adds the service on its first call, then answers. */
+  const adding = (code?: string, status?: 'accepted' | 'refused') => {
+    let calls = 0
+    return async (turn: Turn) => {
+      if (calls++ === 0) {
+        turn.onEvent({ type: 'session', id: 'session-1' })
+        added(turn.folderId, code, status)
+      }
+      turn.onEvent({ type: 'text', key: 'a', text: calls === 1 ? 'Je l’ajoute.' : 'Voici.' })
+      turn.onEvent({ type: 'done' })
+    }
+  }
+  const settled = async (folderId: string, turns: number) => {
+    await vi.waitFor(() => expect(runTurn).toHaveBeenCalledTimes(turns))
+    await vi.waitFor(() => expect(chat.running(folderId)).toBe(false))
+    // Nothing more comes.
+    await new Promise((r) => setTimeout(r, 20))
+    expect(runTurn).toHaveBeenCalledTimes(turns)
+  }
+  beforeEach(() => (approvals.canShow = () => true))
+  afterEach(() => (approvals.canShow = () => false))
+
+  it('has Marianne carry on once, in a turn of her own: a line, then the engine told the service is on', async () => {
+    fake.user = adding()
+    const folderId = await chat.send({ text: 'Puis-je rouler dans le centre ?', attachments: [] })
+    await settled(folderId, 2)
+    expect(roles(folderId)).toEqual(['user', 'assistant', 'system:resume', 'assistant'])
+    expect(folders.messages(folderId)[2].parts).toEqual([{ type: 'text', text: '3615 VIGNETTE ajouté · Marianne reprend' }])
+    const [, turn] = vi.mocked(runTurn).mock.calls[1]
+    expect(turn.message).toContain('The user just added 3615 VIGNETTE (Vignette) from your card')
+    // A turn of the conversation, in its session: not a run's.
+    expect(turn).toMatchObject({ unattended: false, resume: true, sessionId: 'session-1' })
+  })
+
+  it('not for a card refused, a service off again, or a turn the user stopped', async () => {
+    fake.user = adding('vignette', 'refused')
+    const refused = await chat.send({ text: 'Puis-je rouler dans le centre ?', attachments: [] })
+    await settled(refused, 1)
+
+    vi.mocked(runTurn).mockClear()
+    fake.services = [{ manifest: { id: 'vignette', name: 'Vignette' }, on: false, builtIn: true }]
+    fake.user = adding()
+    const off = await chat.send({ text: 'Puis-je rouler dans le centre ?', attachments: [] })
+    await settled(off, 1)
+
+    vi.mocked(runTurn).mockClear()
+    fake.services = [{ manifest: { id: 'vignette', name: 'Vignette' }, on: true, builtIn: true }]
+    fake.user = async (turn) => {
+      added(turn.folderId)
+      await untilStopped('turn')(turn)
+    }
+    const stopped = await chat.send({ text: 'Puis-je rouler dans le centre ?', attachments: [] })
+    await vi.waitFor(() => expect(runTurn).toHaveBeenCalledTimes(1))
+    chat.cancel(stopped)
+    await settled(stopped, 1)
+    expect(roles(stopped)).toEqual(['user', 'assistant'])
+  })
+
+  it('never from a planned task’s run', async () => {
+    fake.run = adding()
+    const task = tasks.create(TOLLS)
+    await tasks.tick()
+    await settled(task.folderId, 1)
+    expect(roles(task.folderId)).toEqual(['system:task', 'assistant'])
   })
 })

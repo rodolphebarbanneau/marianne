@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import type { TaskEvery } from '@marianne/sdk'
 import { addEvery, dayOf, dayStart, nextDay } from '../shared/tasks'
-import type { DomainId, EngineId, PlannedTask, TaskOrigin, TaskOutcome, TaskRun, TaskRunner } from '../shared/types'
+import type { DomainId, EngineId, PlannedTask, TaskOrigin, TaskOutcome, TaskRun, TaskRunner, TaskTemplate } from '../shared/types'
 import { configStore } from './config'
 import { folders } from './folders'
 import { log } from './log'
@@ -77,6 +77,41 @@ export interface NewTask {
   /** The folder it comes back in: a conversation that planned it. None: a new one. */
   folderId?: string
   engine?: EngineId
+}
+
+/**
+ * A service's task the user may still plan: among what the built-in services that are on propose
+ * (`templates`), and not planned yet: what the user has taken is no longer proposed. The Démarches
+ * sheet and task_propose both start here.
+ */
+export function offeredTemplate(templates: TaskTemplate[], planned: PlannedTask[], service: string, id: string): TaskTemplate | null {
+  const taken = planned.some((t) => t.origin.kind === 'service' && t.origin.service === service && t.origin.template === id)
+  return taken ? null : (templates.find((t) => t.service === service && t.id === id) ?? null)
+}
+
+/**
+ * A service's template as a task, at one of its rhythms (an index): its instruction, sites, entity,
+ * what it allows and what it never does come from the service, never from the window or the engine.
+ * Null for a rhythm it doesn't offer.
+ */
+export function templateTask(template: TaskTemplate, rhythm: number): NewTask | null {
+  // An index only: the window's request is data, and an array has more keys than its rhythms.
+  const chosen = Number.isInteger(rhythm) ? template.rhythms[rhythm] : undefined
+  if (!chosen) return null
+  return {
+    title: template.title,
+    domain: template.domain,
+    runner: 'marianne',
+    origin: { kind: 'service', service: template.service, template: template.id },
+    every: chosen.every,
+    everyLabel: chosen.label,
+    entity: template.entity,
+    instruction: template.instruction,
+    sites: template.sites,
+    allows: template.allows,
+    never: template.never,
+    why: chosen.note
+  }
 }
 
 /**

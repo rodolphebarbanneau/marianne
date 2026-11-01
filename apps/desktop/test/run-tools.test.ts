@@ -85,6 +85,7 @@ import { session } from '../src/main/session'
 import { siteAllowed, tasks, type NewTask } from '../src/main/tasks'
 import { ALL_TOOLS } from '../src/main/tools'
 import { browserTools } from '../src/main/tools/browser'
+import { servicesTools } from '../src/main/tools/services'
 import { taskTools } from '../src/main/tools/tasks'
 import { folders } from '../src/main/folders'
 import { reading } from '../src/main/tools/online'
@@ -428,6 +429,20 @@ describe('the gate, in a run', () => {
     } finally {
       ALL_TOOLS.splice(ALL_TOOLS.indexOf(lookup), 1)
     }
+  })
+
+  it('keeps Marianne’s acting tools out: the services, proposing one, planning a task, a service’s own included', async () => {
+    const own = (name: string) => [...servicesTools, ...taskTools].find((t) => t.name === name)!
+    const calls: Array<[string, Record<string, unknown>]> = [
+      ['services', {}],
+      ['service_propose', { code: 'peage', reason: 'Pour vos passages.' }],
+      ['task_propose', { service: 'peage', template: 'tolls:v2' }],
+      ['task_propose', { title: 'Encore', runner: 'remind', every: { unit: 'day', n: 1 } }]
+    ]
+    const { result } = await during(async (f) => Promise.all(calls.map(([name, args]) => call(f, name, args, own(name)))))
+    expect(result.every((r) => /^refused:.*cannot use/.test(r))).toBe(true)
+    expect(request).not.toHaveBeenCalled()
+    expect(tasks.list()).toHaveLength(1)
   })
 
   it('refuses a tool that only bears the name of one of Marianne’s', async () => {

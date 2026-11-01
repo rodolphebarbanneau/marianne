@@ -12,6 +12,7 @@ import { legifranceTools } from './legifrance'
 import { openfiscaTools } from './openfisca'
 import { profileTools } from './profile'
 import { servicePublicTools } from './service-public'
+import { servicesTools } from './services'
 import { taskTools } from './tasks'
 import type { Tool } from './tool'
 
@@ -20,6 +21,7 @@ export const ALL_TOOLS: Tool[] = [
   ...profileTools,
   ...folderTools,
   ...taskTools,
+  ...servicesTools,
   ...browserTools,
   ...servicePublicTools,
   ...labourTools,

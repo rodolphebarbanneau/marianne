@@ -17,7 +17,7 @@ Marianne est un projet indépendant, sans lien avec l’État ni avec aucune adm
 
 - [Installer Marianne](install.md) : le moteur d’IA en ligne de commande, le téléchargement, la connexion du moteur, les mises à jour.
 - [Premiers pas](getting-started.md) : créer votre archive, la phrase de passe, la clé de secours, le code.
-- [Utiliser Marianne](using.md) : les dossiers, votre accord, le navigateur, les pages, les infos, les vidéos du Parlement, les tâches planifiées, les touches.
+- [Utiliser Marianne](using.md) : les dossiers, ce que Marianne fait pour vous, votre accord, le navigateur, les pages, les infos, les vidéos du Parlement, les tâches planifiées, les touches.
 - [Vos données](privacy.md) : ce qui reste sur votre ordinateur, ce que voit le moteur, les sauvegardes.
 - [Aide](help.md) : en cas de problème, nous écrire, tester la version alpha.
 - [À propos](about.md) : l’application, son auteur, contribuer, la licence et les crédits.

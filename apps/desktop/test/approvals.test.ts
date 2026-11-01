@@ -47,9 +47,9 @@ describe('the floor', () => {
     expect(offerFor({ action: 'commit' })).toBeNull()
   })
 
-  it('planning a task and a community service’s call too', () => {
+  it('planning a task, a community service’s call and adding a service too', () => {
     for (const level of LEVEL_IDS)
-      for (const action of ['task', 'service'] as const) {
+      for (const action of ['task', 'service', 'add'] as const) {
         expect(by({ action }, level, EVERY_RULE)).toBe('card')
         expect(offerFor({ action })).toBeNull()
       }
@@ -238,6 +238,25 @@ describe('the cards and the lines, in the main process', () => {
     })
     expect(await approvals.ask('f1', online(), CARD)).toEqual({ decision: 'expired', ahead: false })
     expect(parts).toEqual([])
+  })
+
+  it('a card settled by what the user does elsewhere (the service it proposes, added): once, whichever comes first', async () => {
+    let added!: (d: 'accepted') => void
+    const until = new Promise<'accepted'>((resolve) => (added = resolve))
+    const asked = approvals.ask('f1', { action: 'add' }, { kind: 'add', title: 'Ajouter 3615 VIGNETTE', fields: [] }, { until })
+    expect(parts).toMatchObject([{ status: 'pending', action: 'add' }])
+    expect(parts[0].always).toBeUndefined()
+    added('accepted')
+    expect(await asked).toEqual({ decision: 'accepted', ahead: false })
+    expect(parts[0].status).toBe('accepted')
+
+    // Answered first, the card stays answered.
+    parts = []
+    const later = approvals.ask('f1', { action: 'add' }, { kind: 'add', title: 'Ajouter 3615 VIGNETTE', fields: [] }, { until: Promise.resolve('accepted') })
+    approvals.respond(parts[0].id, 'refuse')
+    expect((await later).decision).toBe('refused')
+    await Promise.resolve()
+    expect(parts[0].status).toBe('refused')
   })
 
   it('a run gets neither', async () => {

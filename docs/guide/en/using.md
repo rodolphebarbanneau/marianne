@@ -6,6 +6,12 @@ A folder is a conversation with Marianne about one subject: a formality, a quest
 
 Ongoing folders are in the left column, with « chercher » (search) at the top to find one. Those you put on hold come back on the date you chose, and those you file stay within reach, under « Classés » (filed). A folder is also filed by itself when its guided formality is done, or after 7 days without activity when it follows none; a pinned folder, or one holding a planned task, never is. A new message brings it back.
 
+## What Marianne does for you
+
+Ask it for something precise (a sum owed, a form to fill in, a document to obtain, a formality with a deadline): Marianne gets to work. It looks for the service and the guided formality that cover it, asks you to fill in what is missing, goes online and prepares everything up to your decision; when it comes back regularly, it offers a planned task. For a broader situation (a life event, a general question), it first shows you the formalities and services that help, and creates nothing until you have chosen. What needs your approval, it asks on a card, without asking it again in the conversation.
+
+When one of Marianne's official services would help and isn't among your services (or you switched it off), it offers it on a card: what it does, the sites it connects to, what it would read of your profile, the tools it lends Marianne. « voir avant d’ajouter » (see before adding) opens the same window as the Services page, and you are the one who adds it; if it needs part of your profile, it asks you right away. Marianne then carries on by itself, and the conversation says so on a line (« 3615 PEAGE ajouté · Marianne reprend », 3615 PEAGE added · Marianne carries on). « pas maintenant » (not now): it carries on without, and doesn't offer it again in that folder. It never offers a community service: those, you find yourself on the Services page.
+
 ## Your approval
 
 Anything that changes your profile, fills in a form, signs, pays or sends goes through you first: Marianne shows it to you on a card, and waits for your approval.
@@ -27,7 +33,7 @@ Marianne opens the sites it needs in the folder's browser, on the right (the « 
 ## The pages
 
 - **Démarches** (formalities): the areas of your administrative life (taxes, health, housing, family…), each with its own page and its guided formalities, step by step.
-- **Services**: the 3615 codes, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. 3615 METEO gives your commune's weather: now, the rain of the next two hours, 48 hours, 7 and 15 days, with air quality, UV and pollen. Type a code or words in the 3615 bar to find one. The star pins a service as a tile, at the top of « mes services » (my services, F2), with what's new for you: today's weather, a toll to pay. « découvrir » (discover, F3) offers the official services you haven't added yet, then the community's. Before you add a service, Marianne shows you what it will be able to do. A service that needs part of your profile, like your license plate for the tolls, asks you first.
+- **Services**: the 3615 codes, INFOS, METEO, PEAGE, CARTE, PARLEMENT, ANNUAIRE. 3615 METEO gives your commune's weather: now, the rain of the next two hours, 48 hours, 7 and 15 days, with air quality, UV and pollen. Type a code or words in the 3615 bar to find one. The star pins a service as a tile, at the top of « mes services » (my services, F2), with what's new for you: today's weather, a toll to pay. « découvrir » (discover, F3) offers the official services you haven't added yet, then the community's. Before you add a service, Marianne shows you what it will be able to do, and a link of Marianne's to an official service you haven't added opens that window. A service that needs part of your profile, like your license plate for the tolls, asks you first.
 
 ## The news
 
@@ -70,7 +76,7 @@ An area's page has the same head, with its counter's number: Mobilité is GUICHE
 
 A planned task is a folder that comes back. Marianne can check something for you on a regular rhythm, like unpaid tolls every 2 days, or simply bring a reminder back on its day. Between two times the folder sleeps under « En veille » (on hold); on its day, it comes back.
 
-A task starts from « + nouvelle tâche » (new task), from what your services propose on an area's page, or from a conversation, when Marianne offers one. It never starts without your yes, on a sheet or a card that says what it does, how often, and which sites it may reach.
+A task starts from « + nouvelle tâche » (new task), from what your services propose on an area's page, or from a conversation, when Marianne offers one. It never starts without your yes, on a sheet or a card that says what it does, how often, and which sites it may reach. When one of your services proposes that task, Marianne's card shows what its sheet would show, and the task takes everything from the service, never from Marianne; it comes back in the conversation's folder, or in a new folder if that one already has its task.
 
 - **A day, not a time.** A check runs at the first opening of its day, or the first one after it. It only runs while Marianne is open and your archive unlocked, it waits for Marianne to finish what it's doing for you, and it gives way as soon as you ask something.
 - **It can't protect you if you don't open Marianne.** A toll must be paid within 72 hours: a few days without opening Marianne, and a passage can go past its deadline.

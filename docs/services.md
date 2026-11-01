@@ -157,6 +157,13 @@ The domains are Marianne's: the fixed themes of the user's file (identity, healt
 - A guided démarche can send the user to a service in one of its steps (`> service: peage | Ouvrir 3615 PEAGE`). When that service is off, the step says so.
 - A domain's dashboard suggests its services, and never turns one on by itself.
 
+## What Marianne does with the services
+
+- **She knows them.** The engines read the instructions of the services that are on, and a line of each built-in service that isn't (not added, or switched off): its code, name, description and domains. That line is all Marianne's prompt says of a service: what it is for, and how to use it, are its instructions' and guides' to say ([below](#what-activate-returns)). The `services` tool tells more: the tools, what each reaches and reads, and the planned tasks those that are on propose.
+- **She proposes a built-in service** that covers a request and isn't on (`service_propose`), on a card in the conversation: what it does, the hosts it reaches, the profile fields it would read and why, its tools. The card leads to « avant d’ajouter », where adding stays the user's act; the profile fields it asks for are asked right after, so that it works without the user opening its screen. Refused or unanswered, she doesn't propose it again in that folder.
+- **Never a community service.** Marianne neither lists to the engines nor proposes one that isn't on: the user finds them on the Services page.
+- **A link** of hers to a built-in service the user hasn't added (`marianne:service/<code>`) opens its « avant d’ajouter ».
+
 ## Main side
 
 `src/main.ts` exports `service`, made with `defineService`. Marianne calls `activate(ctx)` once, at start; it returns what the service gives Marianne.
@@ -225,7 +232,7 @@ const days = cached((id: string, all: boolean) => daysBefore(ctx, id, all), {
   - Throw `ToolError` for a failure the model should read (nothing found, a missing argument).
   - `run(args, call)` gets, in `call.folderId`, the folder whose conversation called it.
 - `skills`: guides the engines read when a request calls for them: Markdown with a front matter (`name`, `title`, `description`), imported as text (`import guide from './skills/x.md?raw'`).
-- `instructions`: a few lines (English) added to the engines' instructions while the service is on.
+- `instructions`: a few lines (English) added to the engines' instructions while the service is on. With its `skills`, they are where what the service is for, and how a request it covers is carried out, is said: Marianne's own prompt is generic, and names no service.
 - `summary(domain)`: its line on the dashboard of one of its domains (`ServiceSummary`: a French sentence, an urgency, the `params` to open it with), or null. It is data: Marianne lays out every service's line the same way.
 - `deadlines()`: the deadlines it knows of (`ServiceDeadline`), from what it keeps in `ctx.storage`. They join the user's deadlines and reminders; a community service's only once the catalogue validates it (the engines read them as the user's). Called often: no network.
 - `tasks()`: the planned tasks it proposes (`ServiceTaskTemplate`, [below](#planned-tasks)), from what it keeps. Read when the Démarches pages show: no network. Built-in services only for now.
@@ -298,7 +305,7 @@ Without `tile()`, or while it returns null, the tile shows the service's descrip
 
 ### Planned tasks
 
-A service may propose a **planned task**: something Marianne checks for the user on a rhythm, in a folder that comes back ([design.md](design.md#planned-tasks)). `tasks()` returns its proposals as **data**, as `summary()` and `deadlines()` do: a service proposes and never schedules. Marianne lays each one out on the sheet the user reads, and nothing runs without their yes.
+A service may propose a **planned task**: something Marianne checks for the user on a rhythm, in a folder that comes back ([design.md](design.md#planned-tasks)). `tasks()` returns its proposals as **data**, as `summary()` and `deadlines()` do: a service proposes and never schedules. Marianne lays each one out on the sheet the user reads, and nothing runs without their yes. In a conversation, Marianne may also propose one of them on a card (`task_propose` with the service, the template's `id` and one of its `rhythms`): the card shows what the sheet shows, and everything else comes from the template, never from the engine.
 
 ```ts
 export const service = defineService<PeageMethods>({
@@ -522,7 +529,7 @@ The build bundles it, and takes from it its sync job and the hosts the window ma
 **`starter`**, in the main registry, says whether it is among a new account's services. Each account is offered each built-in service once (`services.offered` in its settings):
 
 - a starter joins its services (`services.added`);
-- another waits in « découvrir » until the user adds it. A newer Marianne's new service thus shows in « découvrir » for everyone, never added behind the user's back.
+- another waits in « découvrir » until the user adds it. A newer Marianne's new service thus shows in « découvrir » for everyone, never added behind the user's back. Marianne may propose it in a conversation, when it covers a request ([above](#what-marianne-does-with-the-services)): the user still adds it in « avant d’ajouter ».
 
 A service the user removes (Réglages › Services) goes back to « découvrir », unpinned, its access to the profile taken back; what it stored for the user stays.
 

@@ -8,8 +8,9 @@ import type { ApprovalLevel, ApprovalRule, ApprovalSettings } from './types'
  *
  * The floor holds at every level: what commits the user (paying, signing, sending, submitting,
  * declaring, certifying, deleting) takes a card for each single action, and nothing is allowed ahead
- * for it. Nor for planning a task, a community service's call, or any change to the profile but a
- * deadline. And nothing is allowed ahead in a planned task's run, where nobody would answer a card.
+ * for it. Nor for planning a task, a community service's call, adding a service, or any change to the
+ * profile but a deadline. And nothing is allowed ahead in a planned task's run, where nobody would
+ * answer a card.
  */
 
 /** What a tool asks to do. */
@@ -23,8 +24,11 @@ export type ApprovalRequest =
   | { action: 'form'; site: string; known: boolean }
   /** A change to the profile; `deadline`: adding or updating a deadline, the only one that can be allowed ahead. */
   | { action: 'profile'; deadline: boolean }
-  /** Planning a task, a step that commits the user (the floor), a call to a community service nobody reviewed. */
-  | { action: 'task' | 'commit' | 'service' }
+  /**
+   * Planning a task, a step that commits the user (the floor), a call to a community service nobody
+   * reviewed, adding a built-in service Marianne proposes (the user adds it in « avant d’ajouter »).
+   */
+  | { action: 'task' | 'commit' | 'service' | 'add' }
 
 /** What a standing permission covers: its kind, and the site of one that goes online or fills forms. */
 export type Offer = Pick<ApprovalRule, 'action' | 'site'>

@@ -1261,6 +1261,13 @@ button.card:hover {
   flex-direction: column;
   gap: 8px;
 }
+/* The same request in a dialog, right after a service was added from Marianne's card: the dialog is its frame. */
+.modal .consent {
+  border: 0;
+  background: none;
+  padding: 0;
+  max-width: none;
+}
 
 .star {
   color: var(--muted);

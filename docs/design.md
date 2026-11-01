@@ -122,6 +122,10 @@ Claude Code (CL), Codex (CX) and Mistral Vibe (MI) are the user's own CLIs, each
 - **Driving them.** Claude Code goes through Anthropic's Agent SDK (`@anthropic-ai/claude-agent-sdk`), pointed at the user's own `claude` (`pathToClaudeCodeExecutable`) and started the way Marianne starts every CLI (`spawnClaudeCodeProcess`: hidden, its process tree stopped with it). The SDK owns the command line and sends the system prompt and the message over the pipe, so a change in how Claude Code is driven (`--bare` is to become the default of `claude -p`, and reads no subscription) comes with an SDK update. The MCP server's address and token stay in a file. The SDK's own Claude Code binaries and Anthropic's API SDK are left out of the package (`electron-builder.yml`): Marianne ships no engine. Codex runs `codex exec --json`, as OpenAI's Codex SDK does itself; Vibe, `vibe -p`.
 - **API keys in the environment.** Each CLI would silently take a key the environment sets ahead of its own sign-in, billed per use: `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` (with `ANTHROPIC_BASE_URL`, the key's endpoint), `CODEX_API_KEY` and `CODEX_ACCESS_TOKEN` (`codex login status` doesn't see the first), `MISTRAL_API_KEY` (ahead of the key Vibe's sign-in stored). Each engine's `keyVars` name them. Its sign-in is read without them; when it has one, Marianne's runs leave the key out, unless the user ticks « utiliser la clé… » in Réglages › Moteurs (`useEnvKey`); with nothing else, the key is used, and said so there and on the bottom bar's light. Never `forced_login_method` for Codex: with a key in the environment, `codex exec` then logs the user out.
 - **Language.** The system prompt and every message are in English; the engine answers in French.
+- **The prompt** (`engines/prompt.ts`) is generic: Marianne's method, how she acts, the user's profile and its tokens, the browser, letters, planned tasks, the skills' index. No scenario of a domain or a service: what a service is for is in its own instructions and guides ([services.md](services.md#what-activate-returns)).
+  - **Acting.** The user decides; Marianne carries out what they decided, and every step that commits them waits for their yes. A concrete thing to do (something owed, a form to file, a document to obtain, a step with a deadline), she goes to the work: the service and the guided procedure that cover it, a service of hers to propose when it isn't on, what is missing to set up, the site to go to and everything to prepare up to the user's decision, and a planned task when it recurs. A situation to navigate (a life event, a broad question), she maps out, explains and proposes, and creates nothing until the user picks. What needs the user's yes, the app asks on a card: she never asks it again in the conversation, nor works around a refusal.
+  - **The services.** Those that are on, each with its instructions; then Marianne's own that aren't (not added, switched off), one line each: code, name, description, domains. Never a community service that isn't on.
+- **A turn lists its tools as it starts.** Each turn is a new process of the CLI, which lists Marianne's tools once, as it connects; the MCP server is stateless (no stream back to the engine), so it can't tell it of a change. A service added during a turn lends its tools only from the next one, and the system prompt that names it is built for the next one too. So when the user adds a service from Marianne's card ([below](#tools-cards-and-the-browser)), the chat runner starts one more turn as that turn ends, in the folder's session, opened by a line (« 3615 PEAGE ajouté · Marianne reprend »): its message to the engine says the service is on and to carry on with the user's request. Once per addition, only after a turn that ended well, never from a planned task's run.
 - **Bug reports.** « signaler un bug » has the user's engine write up a bug for GitHub (`main/bug-report.ts`, `main/bug-reporter.ts`, `renderer/src/app/bug-report.tsx`):
   - it reads the user's words and the app's diagnostics: version, system, engine, screen, the window's last errors (kept in memory only), the open folder's course without its words, the log's end;
   - all of it is scrubbed before, and its answer after: the profile's tokens, the home folder, the account's name, emails, phones, IBANs, plates, long numbers, addresses past their site;
@@ -134,6 +138,8 @@ Marianne's MCP tools:
 
 - read the profile, and propose changes to it (an approval card);
 - follow procedures and read pièces (masked);
+- know the services (`services`), and propose one of Marianne's own that isn't on (`service_propose`);
+- plan a task (`task_propose`), the user's yes on a card;
 - search Service-Public, compute deadlines, estimate benefits, query public data;
 - drive the built-in browser.
 
@@ -149,12 +155,20 @@ One place decides whether an action waits for the user's yes on a card: the appr
 | task    | `task_propose`                             | no                                                                  |
 | commit  | a consequential click                      | never, at any level: the floor                                      |
 | service | a call to a community service not reviewed | no                                                                  |
+| add     | `service_propose`: a service to add        | no: the user adds it, in « avant d’ajouter »                        |
 
 - **The level** (Réglages › Autorisations): « tout demander » asks going online for each new site of each folder; « équilibré », the default, once per folder; at both, every form and every save to the profile asks. « autonomie » goes without asking to the sites Marianne knows (the content's public sites), fills forms and saves deadlines there, and asks other sites once per folder.
 - **Standing permissions**: a card of a kind that can be allowed ahead offers « toujours… » between « approuver » and « refuser ». The permission is kept in the account's settings, for every folder, and listed in Réglages › Autorisations with when it was given and « retirer ». The main process keeps the one the card offered, never one the window names, and the window can only take one back.
-- **The floor**: what commits the user (signing, paying, sending, submitting, declaring, certifying, deleting) takes a card for each single action, at every level, and its card says so; nothing allowed ahead covers it. Nor any other change to the profile (identity, numbers, address, accounts, ID documents, entities, household, any deletion), nor planning a task.
+- **The floor**: what commits the user (signing, paying, sending, submitting, declaring, certifying, deleting) takes a card for each single action, at every level, and its card says so; nothing allowed ahead covers it. Nor any other change to the profile (identity, numbers, address, accounts, ID documents, entities, household, any deletion), nor planning a task, nor adding a service.
 - **Seen all the same**: an action allowed ahead shows in the conversation as a line, « autorisé d’office · toujours pour sanef.com » or « · autonomie », with the values of a form or a deadline, and a link to Réglages › Autorisations; going online, once per site and folder. A line or a card that can't be shown is a no.
 - **Never in a run**: a planned task's run gets no card and nothing allowed ahead ([below](#what-a-run-may-do-look-and-report)).
+
+**Proposing a service** (`tools/services.ts`). Marianne proposes only her own services, never a community one: those are the user's to find on the Services page.
+
+- `services` lists the services that are on (their tools, and the planned tasks they propose, by template and rhythms), then Marianne's own that are off or not added. A community service only while it is on.
+- `service_propose` shows a card: what the service does, the sites it reaches, what it would read of the profile and why, the tools it lends. Its button opens « avant d’ajouter » over the conversation (or, for a service the user switched off, « réactiver », as its screen does): adding stays the user's own act there, never the card's answer. What it asks to read of the profile is asked right after, as its screen would the first time, so that it works at once.
+- The tool waits for that, its card's wait not counted in the turn's time, and the main process settles the card when the service is on and its access answered. Then Marianne carries on in a turn of her own ([above](#engines)). Refused (« pas maintenant ») or left unanswered, she carries on without it, and doesn't propose it again in that folder: in the session, and from the cards its conversation kept.
+- A link to one of Marianne's services the user hasn't added (`marianne:service/<code>`) opens its « avant d’ajouter » at once.
 
 The built-in browser belongs to a folder: shown in the right column, or kept out of sight.
 
@@ -198,7 +212,7 @@ Nobody watches a run, and it reads pages anyone can write. So the rule is enforc
   - of the app's: `open_site`, `click`, `type_text`, `task_progress`, `task_report`;
   - reading tools: its page, and what stays on this computer without the user's data (skills, démarches, public sites, a deadline's date). Never their profile, deadlines or documents, nor a tool that asks a service elsewhere, whose query would leave by a host the task doesn't list;
   - of the services': its own service's only.
-- **No commitment.** It can't fill a form, sign in or plan a task. It clicks only what plainly searches or moves through a page, never what could commit (`reading` in `tools/online.ts`).
+- **No commitment.** It can't fill a form, sign in, plan a task or propose a service. It clicks only what plainly searches or moves through a page, never what could commit (`reading` in `tools/online.ts`).
 - **One identifier at most.** It types only the identifier of the entity the user agreed to, exactly, and nothing at all for a task without one. No other tool carries an identifier out of a run.
 - **No web of its own.** The engine's own web tools are off.
 - **It reports.** It ends with `task_report`: nothing, found, waiting or failed. A run that doesn't report is shown to the user, to read again.
@@ -227,8 +241,9 @@ Nothing runs without the user's yes, given:
 - on a sheet built from what a service proposes (`tasks()`, built-in services only: see [services.md](services.md));
 - for a reminder of their own;
 - or on a card, when Marianne proposes one in a conversation (`task_propose`). The card shows the instruction word for word, and the task keeps showing it, so the user can always read what comes back.
+  - When a service that is on proposes that task, Marianne names it (the service, the template's id, a rhythm among its own) and nothing else: the task is the one the sheet would plan (`offeredTemplate`, `templateTask` in `main/tasks.ts`, the sheet's path too), and its card shows what the sheet shows. It comes back in the calling folder, or in a new one when that folder already has its task. A template already planned, or of a service that isn't on, is not offered.
 
-A task's sites and instruction come from the service or from that card, never from the window.
+A task's sites and instruction come from the service or from that card, never from the window, nor from the engine for a service's task.
 
 ## Public information
 
