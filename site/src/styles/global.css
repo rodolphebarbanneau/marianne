@@ -70,7 +70,9 @@ html[data-theme='monochrome'] {
   --fg: #cfd5d1;
   --dot: rgba(210, 235, 220, 0.17);
 }
-html[data-theme='monochrome'] img.screen {
+/* The app's screens in the same greys, wherever they show: in the gallery and enlarged, images and
+   films alike (a film's poster and controls with it). */
+html[data-theme='monochrome'] .screen {
   filter: grayscale(1) sepia(0.12) hue-rotate(70deg) saturate(0.6);
 }
 
