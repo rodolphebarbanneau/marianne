@@ -23,14 +23,15 @@ afterAll(() => rmSync(root, { recursive: true, force: true }))
 
 /**
  * The page: where it is, how the browser came there, its version, its card fields, what was filled or
- * pressed, and where the next click or press leads (`next`: the address, and the origin of the frame
- * that sends the browser there).
+ * pressed, where the next click or press leads (`next`: the address, and the origin of the frame
+ * that sends the browser there), and whose hands it is in.
  */
 const page = vi.hoisted(() => {
   const state = {
     url: '',
     title: '',
     folderId: '',
+    controller: 'agent' as 'agent' | 'human',
     version: 1,
     arrival: null as Arrival | null,
     frames: [] as CardFrame[],
@@ -48,7 +49,14 @@ const page = vi.hoisted(() => {
     state.version++
     state.next = null
   }
-  return Object.assign(state, { go })
+  /** Who listens to the browser's state: the tools, and a hand-over waiting for the page back. */
+  const listeners = new Set<(state: unknown) => void>()
+  /** The user takes the page (« prendre la main »), or gives it back: the browser tells its listeners. */
+  const hands = (controller: 'agent' | 'human') => {
+    state.controller = controller
+    for (const listener of [...listeners]) listener({ url: state.url, folderId: state.folderId, controller })
+  }
+  return Object.assign(state, { go, listeners, hands })
 })
 
 vi.mock('electron', () => ({ app: { getVersion: () => '0' } }))
@@ -59,7 +67,7 @@ vi.mock('../src/main/browser', () => {
       url: page.url,
       title: page.title,
       folderId: page.folderId,
-      controller: 'agent',
+      controller: page.controller,
       visible: true,
       loading: false,
       canGoBack: true,
@@ -79,12 +87,13 @@ vi.mock('../src/main/browser', () => {
     readPage: vi.fn(async () => ({ url: page.url, title: page.title, text: 'Montant à payer : 12,40 €', elements: page.elements })),
     elementLabel: vi.fn(async (id: string) => page.elements.find((e) => e.id === id)?.label ?? ''),
     click: vi.fn(async () => page.go()),
+    fillLogin: vi.fn(async () => ['identifiant', 'mot de passe']),
     setWaiting: vi.fn(),
     settled: vi.fn(async () => undefined),
     reveal: vi.fn(),
     back: vi.fn(),
-    on: vi.fn(),
-    off: vi.fn()
+    on: vi.fn((event: string, listener: (state: unknown) => void) => void (event === 'state' && page.listeners.add(listener))),
+    off: vi.fn((event: string, listener: (state: unknown) => void) => void (event === 'state' && page.listeners.delete(listener)))
   }
   return { browser, HumanControlError }
 })
@@ -95,6 +104,7 @@ import { browser } from '../src/main/browser'
 import { cards } from '../src/main/cards'
 import { folders } from '../src/main/folders'
 import { services } from '../src/main/host'
+import { keychain } from '../src/main/keychain'
 import { callTool } from '../src/main/mcp'
 import { profile } from '../src/main/profile/store'
 import { session } from '../src/main/session'
@@ -175,6 +185,7 @@ beforeEach(() => {
     url: '',
     title: '',
     folderId: '',
+    controller: 'agent',
     version: 1,
     arrival: null,
     frames: [],
@@ -228,6 +239,20 @@ describe('where Marianne pays', () => {
       title: 'Payer par carte pour aliae.com',
       fields: expect.arrayContaining([{ label: 'site', value: 'via Axepta BNP Paribas pour aliae.com · paymentpage.axepta.bnpparibas' }])
     })
+  })
+
+  it('never a provider’s page a page of a known site that no service declares sent the browser to', async () => {
+    // aliae.com is a site Marianne knows (3615 PEAGE declares paiement.aliae.com), but www.aliae.com isn't declared.
+    const f = on(`${AXEPTA}/paymentPage.aspx`, [])
+    const journeys: Arrival = {
+      url: 'https://www.aliae.com/fr/payer',
+      initiator: 'https://www.aliae.com',
+      hops: ['https://www.aliae.com/fr/payer'],
+      previous: null
+    }
+    page.arrival = { url: `${AXEPTA}/paymentPage.aspx`, initiator: 'https://www.aliae.com', hops: [`${AXEPTA}/paymentPage.aspx`], previous: journeys }
+    expect(await call(f, 'pay_by_card', PAY)).toMatch(/^refused: axepta\.bnpparibas is not a site/)
+    expect(payments()).toEqual([])
   })
 
   it('never the same page opened by an address: no site sent it there', async () => {
@@ -289,9 +314,11 @@ describe('the payment, on its card', () => {
       { node: 1, values: { c1: '09/38', c2: 'Camille Martin' } },
       { node: 3, values: { c1: CVV } }
     ])
-    // Neither the code nor the number in the card the conversation keeps, nor in what the engine reads.
-    expect(JSON.stringify(parts)).not.toContain(CVV)
-    expect(JSON.stringify(parts)).not.toContain(NUMBER)
+    // Neither the code nor the number in the card the conversation keeps, nor in what the engine reads. Without the
+    // cards' ids: random, their hexadecimal digits may hold the code by chance.
+    const kept = JSON.stringify(parts, (key, value) => (key === 'id' ? undefined : value))
+    expect(kept).not.toContain(CVV)
+    expect(kept).not.toContain(NUMBER)
     expect(result).not.toContain(CVV)
     expect(result).not.toContain(NUMBER)
     expect(result).toMatch(/Nothing is paid yet.*click.*one click, on this page, for 5 minutes.*3-D Secure.*hand_over/)
@@ -311,6 +338,15 @@ describe('the payment, on its card', () => {
     reply = { answer: 'approve' }
     expect(await call(on(`${SANEF}/client/`), 'pay_by_card', PAY)).toMatch(/^refused: No valid security code/)
     expect(browser.fillCard).not.toHaveBeenCalled()
+  })
+
+  it('a page that changed while its fields were looked for (it settles first) is the page the card shows', async () => {
+    reply = { answer: 'approve', cvv: CVV }
+    vi.mocked(browser.cardFields).mockImplementationOnce(async (may) => {
+      page.version++
+      return page.frames.filter((f) => may(f.origins))
+    })
+    expect(await call(on(`${SANEF}/client/`), 'pay_by_card', PAY)).toMatch(/^Filled/)
   })
 
   it('the page changed while the card waited: nothing filled', async () => {
@@ -402,7 +438,8 @@ describe('the pay click that follows', () => {
     await click(f)
     expect(parts).toHaveLength(asked + 1)
     expect(parts.at(-1)).toMatchObject({ action: 'commit', title: 'Cliquer sur « Payer 12,40 € »' })
-    // A step that doesn't pay goes as on any declared page; once the page changed, a pay button does too.
+    // A step that doesn't pay goes as on any declared page. Once the page changed, a pay button still asks while the
+    // card's fields are on it (the card filled may pay again), and goes as a step on the way once they are gone.
     page.elements = [{ ...PAY_BUTTON, label: 'Accepter les conditions' }]
     await call(f, 'read_page')
     expect(await click(f)).toMatch(/^Clicked « Accepter les conditions »/)
@@ -410,7 +447,40 @@ describe('the pay click that follows', () => {
     page.elements = [PAY_BUTTON]
     await call(f, 'read_page')
     expect(await click(f)).toMatch(/^Clicked « Payer 12,40 € »\. Now on/)
+    expect(parts).toHaveLength(asked + 2)
+    expect(parts.at(-1)).toMatchObject({ action: 'commit', title: 'Cliquer sur « Payer 12,40 € »' })
+    page.version++
+    page.frames = []
+    await call(f, 'read_page')
+    expect(await click(f)).toMatch(/^Clicked « Payer 12,40 € »\. Now on/)
+    expect(parts).toHaveLength(asked + 2)
+  })
+
+  it('ends with the turn it was given in, and with a hand-over', async () => {
+    reply = { answer: 'approve', cvv: CVV }
+    const f = onAxepta()
+    await call(f, 'pay_by_card', PAY)
+    page.elements = [PAY_BUTTON]
+    await call(f, 'read_page')
+    // The turn is over: the user's next message asks again before paying.
+    approvals.expire(f)
+    const asked = parts.length
+    expect(await click(f)).not.toMatch(/as part of the payment/)
     expect(parts).toHaveLength(asked + 1)
+    // Handed to the user, the page isn't the one they approved the payment on any more.
+    const g = onAxepta()
+    await call(g, 'pay_by_card', PAY)
+    page.elements = [PAY_BUTTON]
+    await call(g, 'read_page')
+    const handing = call(g, 'hand_over', { reason: 'Vérifiez le montant, puis rendez-moi la main.' })
+    await vi.waitFor(() => expect(browser.setWaiting).toHaveBeenCalledWith('Vérifiez le montant, puis rendez-moi la main.'))
+    page.hands('human')
+    page.hands('agent')
+    expect(await handing).toMatch(/^The user handed control back/)
+    const handed = parts.length
+    expect(await click(g)).not.toMatch(/as part of the payment/)
+    expect(parts).toHaveLength(handed + 1)
+    expect(parts.at(-1)).toMatchObject({ action: 'commit', title: 'Cliquer sur « Payer 12,40 € »' })
   })
 
   it('never one that also binds the user: « Payer et souscrire » asks, on a declared site too', async () => {
@@ -433,6 +503,62 @@ describe('the pay click that follows', () => {
     const asked = parts.length
     await call(f, 'click', { element: 'e1', purpose: 'payer et souscrire l’abonnement annuel', consequential: false })
     expect(parts).toHaveLength(asked + 1)
+  })
+})
+
+describe('a pay button on a declared site, without a payment’s yes', () => {
+  const PAY_BUTTON = { id: 'e1', role: 'button', label: 'Payer 12,40 €', type: 'submit', secret: false, card: false }
+  const click = (f: string) => call(f, 'click', { element: 'e1', purpose: 'payer les passages', consequential: false })
+  /** On Sanef's page with `frames`, its pay button read: a click there, and whether it asked. */
+  async function payOn(f: string, frames: CardFrame[] = []): Promise<{ result: string; asked: boolean }> {
+    Object.assign(page, { url: `${SANEF}/client/index.html#basket`, title: 'Paiement', folderId: f, frames, elements: [PAY_BUTTON] })
+    await call(f, 'read_page')
+    const before = parts.length
+    const result = await click(f)
+    return { result, asked: parts.length > before && parts.at(-1)!.title === 'Cliquer sur « Payer 12,40 € »' }
+  }
+  const folder = () => folders.create({ title: 'Péages', engine: 'claude' }).id
+
+  it('goes as a step on the way while nothing but the payment card could pay', async () => {
+    expect(await payOn(folder())).toEqual({ result: expect.stringMatching(/^Clicked « Payer 12,40 € »/), asked: false })
+  })
+
+  it('asks while a frame of the page holds a card’s fields: the user may have typed theirs', async () => {
+    expect((await payOn(folder(), SANEF_FRAMES)).asked).toBe(true)
+    // Not a step that doesn't read as paying.
+    const f = folder()
+    Object.assign(page, { folderId: f, frames: SANEF_FRAMES, elements: [{ ...PAY_BUTTON, label: 'Accepter les conditions' }] })
+    await call(f, 'read_page')
+    expect(await click(f)).toMatch(/^Clicked « Accepter les conditions »/)
+  })
+
+  it('asks once Marianne signed in on the site, in any folder, until the lock', async () => {
+    vi.spyOn(keychain, 'forUrl').mockReturnValue([{ id: 'k1', label: 'perso' }] as never)
+    const f = on(`${SANEF}/connexion`)
+    expect(await call(f, 'sign_in')).toMatch(/^Filled the username and password/)
+    expect((await payOn(f)).asked).toBe(true)
+    // The browser's sign-in is every folder's.
+    expect((await payOn(folder())).asked).toBe(true)
+    session.lock()
+    session.open(memoryArchive())
+    expect((await payOn(folder())).asked).toBe(false)
+  })
+
+  it('asks once the user had the page in hand there: handed over, or taken', async () => {
+    const f = on(`${SANEF}/client/index.html#basket`, [])
+    const handing = call(f, 'hand_over', { reason: 'Saisissez votre carte, puis rendez-moi la main.' })
+    await vi.waitFor(() => expect(browser.setWaiting).toHaveBeenCalledWith('Saisissez votre carte, puis rendez-moi la main.'))
+    page.hands('human')
+    page.hands('agent')
+    expect(await handing).toMatch(/^The user handed control back/)
+    expect((await payOn(f)).asked).toBe(true)
+    // « prendre la main », with no hand-over asked.
+    session.lock()
+    session.open(memoryArchive())
+    const g = on(`${SANEF}/client/index.html#basket`, [])
+    page.hands('human')
+    page.hands('agent')
+    expect((await payOn(g)).asked).toBe(true)
   })
 })
 
@@ -482,6 +608,15 @@ describe('what the payment leads to: the bank’s 3-D Secure', () => {
     expect(await call(f, 'pay_by_card', PAY)).toMatch(/pressed « Payer »/)
     expect(await call(f, 'read_page')).toMatch(/^# Paiement\nhttps:\/\/acs\.banque\.example/)
     expect(goingOnline()).toEqual([])
+  })
+
+  it('not once the turn it was approved in is over', async () => {
+    const f = await paying()
+    page.next = { url: ACS, initiator: AXEPTA }
+    await click(f)
+    approvals.expire(f)
+    await call(f, 'read_page')
+    expect(goingOnline()).toEqual(['Aller sur banque.example'])
   })
 
   it('not after another click, nor for a page no page of the payment sent the browser to, nor once its few minutes are over', async () => {

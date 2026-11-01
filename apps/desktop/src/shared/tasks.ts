@@ -49,13 +49,22 @@ export function everyLabel({ unit, n }: TaskEvery): string {
 
 /**
  * The line of a run whose follow-up a task's folder offers (« payer maintenant »): the last run's
- * line, when that run found something and no follow-up was started after it. Null otherwise. The
- * window puts the button there, and the main process takes a click for that line only: an older
- * finding may have been dealt with since.
+ * line, when that run said itself it found something (not a run that didn't conclude), and no
+ * follow-up was started after it, or none that went on: one whose answer failed or was stopped (an
+ * error, the user, the lock that lost it) offers it again. `running`: a turn is under way in the
+ * folder, whose answer isn't in `messages` yet. Null otherwise. The window puts the button there,
+ * and the main process takes a click for that line only: an older finding may have been dealt with since.
  */
-export function followUpLine(messages: ChatMessage[]): ChatMessage | null {
+export function followUpLine(messages: ChatMessage[], running = false): ChatMessage | null {
   const at = messages.findLastIndex((m) => m.note === 'task')
   const line = messages[at]
-  if (!line || line.outcome !== 'found') return null
-  return messages.slice(at + 1).some((m) => m.followUp) ? null : line
+  if (!line || line.outcome !== 'found' || !line.reported) return null
+  const after = messages.slice(at + 1)
+  const followed = after.some((m, i) => {
+    if (!m.followUp) return false
+    const answer = after[i + 1]
+    if (!answer) return running
+    return answer.role === 'assistant' && answer.status !== 'error' && answer.status !== 'cancelled'
+  })
+  return followed ? null : line
 }

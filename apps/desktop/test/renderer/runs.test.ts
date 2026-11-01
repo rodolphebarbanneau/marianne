@@ -6,17 +6,19 @@ const at = (day: number, hour = 9) => new Date(2026, 9, day, hour).toISOString()
 
 const user = (id: string): ChatMessage => ({ id, role: 'user', at: at(1), parts: [{ type: 'text', text: 'Vérifie mes péages.' }] })
 const answer = (id: string, day: number): ChatMessage => ({ id, role: 'assistant', at: at(day), parts: [{ type: 'text', text: 'Rien.' }], status: 'done' })
-const line = (id: string, day: number, outcome?: TaskOutcome): ChatMessage => ({
+/** A run's line; `reported`: its run said how it went itself (task_report), as runs usually do. */
+const line = (id: string, day: number, outcome?: TaskOutcome, reported = true): ChatMessage => ({
   id,
   role: 'system',
   at: at(day),
   parts: [{ type: 'text', text: 'tâche planifiée' }],
   note: 'task',
-  outcome
+  outcome,
+  ...(outcome && reported ? { reported: true } : {})
 })
 
 /** A run: its line, then its answer. */
-const run = (id: string, day: number, outcome?: TaskOutcome) => [line(id, day, outcome), answer(`${id}-a`, day)]
+const run = (id: string, day: number, outcome?: TaskOutcome, reported = true) => [line(id, day, outcome, reported), answer(`${id}-a`, day)]
 
 /** Each row by its ids: a message's, or the quiet runs' lines. */
 const shape = (rows: ConversationRow[]) => rows.map((r) => (r.kind === 'message' ? r.message.id : r.runs.map((x) => x.line.id)))
@@ -133,6 +135,18 @@ describe('a task’s follow-up, on the line of the run that found something', ()
     // Once a later run has found nothing, the older finding isn't offered any more.
     expect(followUpOffer(task(), on, [...run('r1', 20, 'found'), ...run('r2', 22, 'nothing')])).toBeNull()
     expect(followUpOffer(task(), on, [...run('r1', 20, 'waiting')])).toBeNull()
+    // A run that ended without saying what it found counts as found, to read again: it offers nothing to do.
+    expect(followUpOffer(task(), on, [...run('r1', 20, 'found', false)])).toBeNull()
+  })
+
+  it('comes back when the follow-up started from its line failed, was stopped, or lost its answer to the lock', () => {
+    const after = (status?: ChatMessage['status']) => [...run('r1', 20, 'found'), followed('u1'), ...(status ? [{ ...answer('a1', 20), status }] : [])]
+    expect(followUpOffer(task(), on, after('error'))).toEqual({ lineId: 'r1', label: 'payer maintenant' })
+    expect(followUpOffer(task(), on, after('cancelled'))).toEqual({ lineId: 'r1', label: 'payer maintenant' })
+    expect(followUpOffer(task(), on, after())).toEqual({ lineId: 'r1', label: 'payer maintenant' })
+    // Still going: its answer under way, or not in the messages yet.
+    expect(followUpOffer(task(), on, after('running'))).toBeNull()
+    expect(followUpOffer(task(), on, after(), true)).toBeNull()
   })
 
   it('goes once the user started it from that line, and comes back with the next finding', () => {
@@ -150,5 +164,8 @@ describe('a task’s follow-up, on the line of the run that found something', ()
     expect(followUpOffer(task(), [{ ...on[0], on: false }], messages)).toBeNull()
     expect(followUpOffer(task({ origin: { kind: 'agent' } }), on, messages)).toBeNull()
     expect(followUpOffer(undefined, on, messages)).toBeNull()
+    // Nor once the main process says it no longer is (its template no longer proposed, its plate taken back), its service on all the same.
+    expect(followUpOffer(task({ offered: false }), on, messages)).toBeNull()
+    expect(followUpOffer(task({ offered: true }), on, messages)).toEqual({ lineId: 'r1', label: 'payer maintenant' })
   })
 })

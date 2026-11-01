@@ -133,10 +133,14 @@ class Approvals extends EventEmitter {
     this.settle(id, yes ? 'accepted' : 'refused', kept)
   }
 
-  /** A turn ended or was cancelled: its open cards expire. */
+  /**
+   * A turn ended or was cancelled: its open cards expire, and what a yes given in it still covered
+   * ends with it ('ended': the pay click a payment's card covers, tools/browser.ts).
+   */
   expire(folderId: string): void {
     for (const [id, p] of this.pending) if (p.folderId === folderId) this.settle(id, 'expired')
     this.waited.delete(folderId)
+    this.emit('ended', folderId)
   }
 
   /** How long the folder's turn has waited for the user (it doesn't count in its time limit). */

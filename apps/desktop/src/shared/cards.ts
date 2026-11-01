@@ -102,17 +102,23 @@ export function cvvProblem(typed: string, brand: CardBrand): string | null {
 export const cardTitle = (card: Pick<PaymentCard, 'brand' | 'last4' | 'label' | 'expiry'>) =>
   [`${BRAND_LABELS[card.brand]} •••• ${card.last4}`, card.label, card.expiry].filter(Boolean).join(' · ')
 
+/** Characters that show nothing, which a page may slip between digits (zero-width spaces and joiners, the word joiner, the byte order mark). */
+const ZERO_WIDTH = /[​-‍⁠﻿]/g
+
 /**
  * `text` with each of `numbers` (digits only) masked wherever it appears, its digits run together or
- * apart (spaces, dots, dashes), never inside a longer number. The mark keeps the last four digits,
- * all an engine knows of a card.
+ * apart (up to three spaces, no-break spaces, line breaks, dots, dashes or slashes between two), never
+ * inside a longer number. Characters that show nothing are taken out first, where a number is masked.
+ * The mark keeps the last four digits, all an engine knows of a card.
  */
 export function maskCardNumbers(text: string, numbers: string[], mark = (last4: string) => `•••• ${last4}`): string {
-  let out = text
+  const visible = text.replace(ZERO_WIDTH, '')
+  let out = visible
   for (const digits of numbers) {
     if (!/^\d{12,19}$/.test(digits) || !out) continue
-    const spaced = digits.split('').join('[\\s.\\-]?')
+    const spaced = digits.split('').join('[\\s.\\-/]{0,3}')
     out = out.replace(new RegExp(`(?<!\\d)${spaced}(?!\\d)`, 'g'), mark(digits.slice(-4)))
   }
-  return out
+  // A text with no number in it stays as it was, invisible characters included.
+  return out === visible ? text : out
 }

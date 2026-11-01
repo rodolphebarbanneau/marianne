@@ -63,15 +63,17 @@ export const nextLabel = (next: string, now = new Date()) => (next <= today(now)
 
 /**
  * The follow-up a task's folder offers (« payer maintenant »): its label, and the line of the run
- * that found something, where its button goes. Null when the task has none, is paused, or its
- * service is off; the main process checks again at the click.
+ * that found something, where its button goes. Null when the task has none, is paused, its service
+ * is off or it is no longer offered; the main process checks again at the click. `running`: a turn
+ * is under way in the folder.
  */
 export function followUpOffer(
   task: PlannedTask | undefined,
   services: Array<Pick<ServiceState, 'manifest' | 'on'>>,
-  messages: ChatMessage[]
+  messages: ChatMessage[],
+  running = false
 ): { lineId: string; label: string } | null {
   if (!task?.followUp || !followUpOffered(task, services)) return null
-  const line = followUpLine(messages)
+  const line = followUpLine(messages, running)
   return line ? { lineId: line.id, label: task.followUp.label } : null
 }

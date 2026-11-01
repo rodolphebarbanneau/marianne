@@ -36,6 +36,14 @@ const payGrants = new PayGrants()
 const pages = new Map<string, { url: string; elements: Map<string, PageElement> }>()
 /** The form each folder read last: fills apply to that page only. */
 const forms = new Map<string, { url: string; fields: FormField[] }>()
+/**
+ * The sites where something of the user's own may be in play this session: an account Marianne signed
+ * in to (sign_in), a page the user had in hand (hand_over, « prendre la main »), where they may have
+ * signed in or typed their card. There, a click that reads as paying may pay with what the site keeps,
+ * without the payment card (click). By site, not by folder: the browser's sign-ins are the session's,
+ * every folder's, until the lock empties them.
+ */
+const personal = new Set<string>()
 
 // What the user allowed and what Marianne read go away with the session.
 session.on('locked', () => {
@@ -43,6 +51,13 @@ session.on('locked', () => {
   payGrants.clear()
   pages.clear()
   forms.clear()
+  personal.clear()
+})
+// A payment's yes covers its pay click within its turn only.
+approvals.on('ended', (folderId: string) => payGrants.end(folderId))
+// Wherever the user goes while the page is in their hands.
+browser.on('state', (state: BrowserState) => {
+  if (state.controller === 'human' && state.url && session.unlocked) personal.add(siteOf(state.url))
 })
 
 const HUMAN = 'The user has taken control of the browser: do not act on the page until they hand it back, then read it again (read_page).'
@@ -183,6 +198,16 @@ function element(folderId: string, url: string, id: string): PageElement {
   const found = read.elements.get(id)
   if (!found) throw new ToolError(`No element ${id} on the page read: read it again.`)
   return found
+}
+
+/**
+ * Whether a frame of the page, any of them, holds a card's number or security code, filled or not
+ * (pay_by_card's scan): a card may be typed there. A holder's name or an expiry alone may be an
+ * account's or an identity card's.
+ */
+async function holdsCard(): Promise<boolean> {
+  const frames = await act(() => browser.cardFields(() => true))
+  return frames.some((frame) => frame.fields.some((field) => field.kind === 'number' || field.kind === 'cvv'))
 }
 
 /** Keep the elements of a page read, for click and type_text, and describe it for the engine. */
@@ -382,7 +407,11 @@ export const browserTools = [
         const again = !paid && paying(label) && payGrants.pressedOn(folderId, url, version)
         // On a site Marianne's own services declare, the steps on the way (searching, validating, going on to pay) need
         // no card: paying there takes pay_by_card's. What binds the user beyond paying, or what the engine flags, asks.
-        const free = paid || (!flagged && !again && declared(here) && !binding(clicked, purpose))
+        // So does a click that reads as paying where something else could pay: a card in the page (the user's, typed
+        // in a hand-over), or an account of theirs open on the site, which may keep a card of its own.
+        const free =
+          paid ||
+          (!flagged && !again && declared(here) && !binding(clicked, purpose) && (!paying(label) || (!personal.has(siteOf(here)) && !(await holdsCard()))))
         const shown = label || 'cet élément'
         // The floor: a card for this one click, at every level, whatever the user allowed ahead.
         const { decision } = free
@@ -450,6 +479,25 @@ export const browserTools = [
       // else is typed (no other identifier, no text of the engine's), and nothing at all without one.
       const run = runOf(ctx)
       if (run && (!run.entity || value !== run.entity.label)) throw beyondRun('type this')
+      // On a site Marianne's services declare, the submit that follows goes without a card (click): an identifier
+      // typed there asks as a form filled there does (fill_form), unless the user allowed it ahead. Elsewhere,
+      // nothing is sent before a submit that asks.
+      if (!run && ctx.resolved && declared(url)) {
+        const site = siteOf(url)
+        const title = `Remplir ${plural(1, 'champ')} sur ${site}`
+        const go = goAhead(ctx)
+        const followUp = go && declared(url, services.declaredSites(go.service)) ? { followUp: go.label } : {}
+        const { decision } = await approvals.ask(
+          folderId,
+          { action: 'form', site, known: known().has(site), ...followUp },
+          { kind: 'form', title, fields: [{ label: read.label || id, value }] },
+          { onCard: () => browser.setWaiting(title.toLowerCase()) }
+        )
+        browser.setWaiting('')
+        if (decision !== 'accepted') throw refusal(decision, 'nothing was typed')
+        // The page may have changed while the card waited: type only into the one the user saw.
+        if (browser.currentUrl() !== url) throw new ToolError('The page changed while the user was deciding: nothing was typed. Read it again.')
+      }
       await act(() => browser.type(id, value))
       return `Typed into « ${read.label || id} ». Nothing is sent until the form is submitted.`
     }
@@ -478,6 +526,8 @@ export const browserTools = [
       if (!entry) throw new ToolError(`${login ? `No saved login « ${login} »` : 'Several saved logins'} for ${site}: ${labels}. Give the label to use.`)
       const filled = await act(() => browser.fillLogin(entry.id))
       if (!filled.length) throw new ToolError('No sign-in form on this page: go to the site’s sign-in page first (read_page to find it).')
+      // Their account, and whatever card it keeps, may now be open on this site: its pay buttons ask (click).
+      personal.add(site)
       const what = filled.length > 1 ? 'username and password' : filled[0] === 'mot de passe' ? 'password' : 'username'
       return `Filled the ${what} of « ${entry.label} ». Now click the sign-in button (read_page to find it).`
     }
@@ -495,18 +545,21 @@ export const browserTools = [
       const folderId = callingFolder(ctx.folderId).id
       const state = browser.state()
       if (!state.url || state.folderId !== folderId) throw new ToolError('No page of this folder is open in the browser: open one with open_site.')
-      // The user takes it from here: where they go, they hand back (below), not as a payment's.
-      payGrants.land(folderId)
+      // The user takes it from here: where they go, they hand back (below), not as a payment's, and a pay click
+      // approved before is no longer the page they approved it on. What they do there (sign in, type their card) is theirs.
+      payGrants.end(folderId)
+      personal.add(siteOf(state.url))
       browser.setWaiting(reason)
       browser.reveal()
       const outcome = await approvals.hold(folderId, handedBack(HAND_OVER_MS))
       browser.setWaiting('')
       if (outcome === 'locked') throw new ToolError('The session locked while waiting for the user.')
+      const now = browser.state()
+      if (now.url) personal.add(siteOf(now.url))
       if (outcome === 'timeout')
         throw new ToolError(
           'The user has not handed control back after 10 minutes: in your answer, ask them to click « rendre la main » once done, then carry on.'
         )
-      const now = browser.state()
       if (now.folderId !== folderId || !now.url) throw new ToolError('The page is no longer this folder’s: open it again with open_site.')
       // The user took the page where it is now: Marianne may carry on there.
       consents.add(folderId, siteOf(now.url))
@@ -604,15 +657,18 @@ export const browserTools = [
       // Nobody watches a run, and a run never pays: the gate keeps this tool from runs (tasks.ts); this holds if it didn't.
       if (ctx.run) throw beyondRun('pay')
       const { folderId, url, title } = await current(ctx)
-      const route = paymentRoute(url, browser.arrival(), (site) => known().has(site))
+      // The page itself on a site Marianne knows; or a provider's page that a declared page sent the browser to, as
+      // going online reads it (online), never one any page of a known site's domain sent it to.
+      const route = paymentRoute(url, browser.arrival(), (site, page) => (page === url ? known().has(site) : declared(page)))
       if (!route)
         throw new ToolError(
           `${siteOf(url)} is not a site where Marianne pays by card: only the sites she knows (the public sites, the sites her services that are on act on), or a payment provider’s page one of them sent the browser to. Let the user pay themselves: hand_over.`
         )
       const card = pickCard(wanted)
       const expiry = parseExpiry(card.expiry)!
-      const version = browser.pageVersion()
       const frames = await act(() => browser.cardFields((origins) => frameMayReceive(origins, url)))
+      // Once the page has settled (cardFields waits for it): the version of the page whose fields the card shows.
+      const version = browser.pageVersion()
       const plan = planCard(frames, { ...expiry, holder: card.holder, digits: cards.secret(card.id)?.number.length ?? 0 })
       if (typeof plan === 'string')
         throw new ToolError(

@@ -31,7 +31,7 @@ export function FolderScreen({ id, at }: { id: string; at?: 'run' }) {
   const [view, setView] = useState<FolderView | null>(null)
   const task = useTasks().find((t) => t.id === view?.folder.task)
   const services = useServices()
-  const offer = view ? followUpOffer(task, services, view.messages) : null
+  const offer = view ? followUpOffer(task, services, view.messages, view.running) : null
   /** Opened at a run's line: placed there once, then the user's to scroll. */
   const placed = useRef(false)
   const [procedure, setProcedure] = useState<Procedure | null>(null)

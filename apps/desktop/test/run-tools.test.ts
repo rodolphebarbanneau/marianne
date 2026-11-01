@@ -82,6 +82,8 @@ vi.mock('../src/main/browser', () => {
     }),
     type: vi.fn(async () => undefined),
     readForm: vi.fn(async () => page.form),
+    // No card field on these pages.
+    cardFields: vi.fn(async () => []),
     fillForm: vi.fn(async (values: Record<string, string>) => ({ filled: Object.keys(values), missing: [] })),
     back: vi.fn(),
     setWaiting: vi.fn(),
@@ -539,6 +541,77 @@ describe('type_text in a run', () => {
     await call(task.folderId, 'open_site', { url: 'https://www.sanef.com/passages', ...OPEN })
     await call(task.folderId, 'read_page')
     expect(await call(task.folderId, 'type_text', { element: 'e1', value: 'Jean Dupont 75011' })).toMatch(/^Typed into/)
+  })
+})
+
+describe('type_text in a conversation, on the sites Marianne’s own services declare', () => {
+  const field = { id: 'e1', role: 'textbox', label: 'Plaque', type: 'text', secret: false }
+  const conversation = () => folders.create({ title: 'Péages', engine: 'claude' }).id
+  /** On a page, read, the cards asked so far forgotten. */
+  const at = async (f: string, url: string) => {
+    page.elements = [field]
+    await call(f, 'open_site', { url, ...OPEN })
+    await call(f, 'read_page')
+    request.mockClear()
+  }
+  const type = (f: string, value: string) => call(f, 'type_text', { element: 'e1', value })
+  let lines: ApprovalPart[] = []
+  const onPart = (_folderId: string, part: ApprovalPart) => void (part.given && lines.push(part))
+  beforeEach(() => {
+    lines = []
+    declare()
+    approvals.on('part', onPart)
+    approvals.canShow = () => true
+  })
+  afterEach(() => {
+    approvals.off('part', onPart)
+    approvals.canShow = () => false
+    tasks.followingUp = () => null
+  })
+
+  it('asks for an identifier as a form there does, its field and its value on the card; refused, types nothing', async () => {
+    const f = conversation()
+    await at(f, SANEF_PAGE)
+    expect(await type(f, '[[vehicle.1.plate]]')).toMatch(/^Typed into/)
+    expect(request).toHaveBeenCalledOnce()
+    expect(request.mock.calls[0][1]).toMatchObject({
+      kind: 'form',
+      action: 'form',
+      title: 'Remplir 1 champ sur sanef.com',
+      fields: [{ label: 'Plaque', value: PLATE }]
+    })
+    expect(browser.type).toHaveBeenCalledWith('e1', PLATE)
+    vi.mocked(browser.type).mockClear()
+    request.mockResolvedValueOnce('refused')
+    expect(await type(f, '[[vehicle.1.plate]]')).toMatch(/^refused: The user refused: nothing was typed/)
+    expect(browser.type).not.toHaveBeenCalled()
+  })
+
+  it('goes as the user allowed forms there ahead: « autonomie », or the follow-up they started, said on a line', async () => {
+    allowing('autonomous')
+    const f = conversation()
+    await at(f, ALIAE_PAGE)
+    expect(await type(f, '[[vehicle.1.plate]]')).toMatch(/^Typed into/)
+    allowing('balanced')
+    const following = tasks.create({ ...TOLLS, followUp: { label: 'payer maintenant', instruction: 'Pay the passages the check found.' } })
+    tasks.followingUp = (id) => (id === following.folderId ? following : null)
+    await at(following.folderId, SANEF_PAGE)
+    expect(await type(following.folderId, '[[vehicle.1.plate]]')).toMatch(/^Typed into/)
+    expect(request).not.toHaveBeenCalled()
+    expect(lines.filter((l) => l.action === 'form')).toMatchObject([
+      { given: 'autonomie', title: 'Remplir 1 champ sur aliae.com', fields: [{ label: 'Plaque', value: PLATE }] },
+      { given: 'payer maintenant', title: 'Remplir 1 champ sur sanef.com', fields: [{ label: 'Plaque', value: PLATE }] }
+    ])
+  })
+
+  it('asks nothing for words of the engine’s, nor off those sites, where the submit that follows asks', async () => {
+    const f = conversation()
+    await at(f, SANEF_PAGE)
+    expect(await type(f, 'Camille Martin')).toMatch(/^Typed into/)
+    const g = conversation()
+    await at(g, 'https://www.aliae.com/fr/')
+    expect(await type(g, '[[vehicle.1.plate]]')).toMatch(/^Typed into/)
+    expect(request).not.toHaveBeenCalled()
   })
 })
 

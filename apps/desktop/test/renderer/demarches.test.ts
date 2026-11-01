@@ -172,7 +172,7 @@ describe('à faire', () => {
   })
 
   it('brings back a task that found something it offers to follow up, opening its folder at that run, while its service is on', () => {
-    const run = { at: '2026-10-30T07:00:00Z', outcome: 'found' as const, text: '1 passage sur l’A13 le 29/10' }
+    const run = { at: '2026-10-30T07:00:00Z', outcome: 'found' as const, text: '1 passage sur l’A13 le 29/10', reported: true }
     const followUp = { label: 'payer maintenant', instruction: 'Pay what the run found.' }
     const peage = (on: boolean) => [{ manifest: { id: 'peage' }, on }] as TodoSources['services']
     const items = todoItems({ ...none, tasks: [task({ runs: [run], followUp })], services: peage(true) }, undefined, NOW)
@@ -192,6 +192,10 @@ describe('à faire', () => {
     expect(todoItems({ ...none, tasks: [task({ runs: [run], followUp })], services: peage(false) }, undefined, NOW)).toEqual([])
     const read = [folder({ id: 'tf', unread: false })]
     expect(todoItems({ ...none, tasks: [task({ runs: [run], followUp })], services: peage(true), folders: read }, undefined, NOW)).toEqual([])
+    // A run that didn't say itself what it found, or a task the main process says is no longer offered (its plate taken back): nothing either.
+    const unreported = { ...run, reported: undefined }
+    expect(todoItems({ ...none, tasks: [task({ runs: [unreported], followUp })], services: peage(true) }, undefined, NOW)).toEqual([])
+    expect(todoItems({ ...none, tasks: [task({ runs: [run], followUp, offered: false })], services: peage(true) }, undefined, NOW)).toEqual([])
   })
 
   it('lets go of a task that waited once the user has opened its folder', () => {
