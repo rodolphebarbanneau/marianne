@@ -67,7 +67,7 @@ The bar at the top asks « QUELLE DÉMARCHE ? » (which formality?). Each area i
 
 Under the bar, three tabs, on F2 to F4:
 
-- **mes domaines** (my areas): what presses, then one line per area, with what waits for you or its next deadline, and the eight weeks to come. Each deadline is a square, red when it's late or within 3 days.
+- **mes domaines** (my areas): what presses, then the areas in four families (me and my family, money and work, home and travel, rights and business). Under each area's name, what waits for you or its next deadline, or, when nothing is going on, what the area covers; beside it, the eight weeks to come. Each deadline is a square, red when it's late or within 3 days.
 - **à faire** (to do): everything, in order: what's late, what waits for you, what falls within 3 days, then the next 45 days.
 - **tâches planifiées** (planned tasks): all your planned tasks, each with its switch.
 

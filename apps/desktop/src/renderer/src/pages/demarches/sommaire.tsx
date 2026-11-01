@@ -6,9 +6,13 @@ import type { DomainId } from '@shared/types'
 import { domainLine, domainServices, weekLabels, weekMarks, type TodoSources } from '../../lib/demarches'
 
 /**
- * The sommaire: the ten domains by category, one line each. Its state, its eight weeks of échéances
- * (a square, red when late or within 3 days), its dossiers, tâches and services. `typed`: the number
- * in the bar, whose line lights up.
+ * The sommaire: the ten domains under their four categories, a row each. Its name and, under it, its
+ * state (or, with nothing going on, what it covers), its eight weeks of échéances (a square, red when
+ * late or within 3 days), its dossiers, tâches and services. `typed`: the number in the bar, whose
+ * row lights up.
+ *
+ * Each category is a group of its own (a tbody under its heading row): hovering any of its rows
+ * lights its heading, where a cell spanning the group's rows belonged to its first row alone.
  */
 export function Sommaire({
   sources,
@@ -27,20 +31,15 @@ export function Sommaire({
 
   const now = new Date()
   const count = (n: number) => (n ? <b>{n}</b> : '—')
+  const weekHeads = weekLabels(now)
   return (
     <div className="table-wrap">
       <table ref={table} className="stable dm-som">
         <thead>
           <tr>
-            <th>
-              <span className="sr-only">catégorie</span>
-            </th>
             <th>domaine</th>
-            <th>
-              <span className="sr-only">état</span>
-            </th>
             {/* By index: a month of four weeks repeats its days (« 9 févr., 16, 23, 2 mars, 9, 16, 23 »). */}
-            {weekLabels(now).map((label, i) => (
+            {weekHeads.map((label, i) => (
               <th key={i} className={`wk${i === 0 ? ' now' : ''}`}>
                 {label}
               </th>
@@ -50,17 +49,24 @@ export function Sommaire({
             <th>services</th>
           </tr>
         </thead>
-        <tbody>
-          {DOMAIN_CATEGORIES.flatMap((category) => {
-            const list = DOMAINS.filter((d) => d.category === category.id)
-            return list.map((d, i) => {
+        {DOMAIN_CATEGORIES.map((category) => (
+          <tbody key={category.id} className="dm-grp">
+            <tr className="grp-h">
+              {/* The week columns go on under the heading, so the current one reads as one band down the table. */}
+              <th scope="rowgroup">{category.label}</th>
+              {weekHeads.map((_, i) => (
+                <td key={i} className={`wk${i === 0 ? ' now' : ''}`} />
+              ))}
+              <td colSpan={3} />
+            </tr>
+            {DOMAINS.filter((d) => d.category === category.id).map((d) => {
               const line = domainLine(d.id, sources, now)
               const weeks = weekMarks(
                 sources.deadlines.filter((x) => x.domain === d.id),
                 now
               )
               const state = [line.wait, line.next].filter(Boolean).join(' · ')
-              const classes = [line.idle && 'idle', i === list.length - 1 && 'end', typed === d.num && 'sel'].filter(Boolean).join(' ')
+              const classes = [line.idle && 'idle', typed === d.num && 'sel'].filter(Boolean).join(' ')
               return (
                 <tr
                   key={d.id}
@@ -70,19 +76,20 @@ export function Sommaire({
                   onClick={() => onOpen(d.id)}
                   onKeyDown={(e) => e.target === e.currentTarget && e.key === 'Enter' && onOpen(d.id)}
                 >
-                  {i === 0 && (
-                    <td className="cat" rowSpan={list.length}>
-                      {category.label}
-                    </td>
-                  )}
                   <td className="dom">
-                    <span className="dm-num">{d.num}</span> <span className="dm-badge">{d.badge}</span>
-                    <span className="dn">{d.label}</span>
-                  </td>
-                  <td className="st" title={state || undefined}>
-                    {line.wait && <b>{line.wait}</b>}
-                    {line.wait && line.next && ' · '}
-                    {state ? line.next : line.idle ? 'rien en cours' : 'à jour'}
+                    <div className="dm-cell">
+                      <span className="dm-num">{d.num}</span>
+                      <span className="dm-badge">{d.badge}</span>
+                      <span className="stack">
+                        <span className="dn ell">{d.label}</span>
+                        {/* What is going on, else what the domain covers: the sommaire reads as a table of contents. */}
+                        <span className="st ell" title={state || d.description}>
+                          {line.wait && <b>{line.wait}</b>}
+                          {line.wait && line.next && ' · '}
+                          {state ? line.next : line.idle ? d.description : 'à jour'}
+                        </span>
+                      </span>
+                    </div>
                   </td>
                   {weeks.map((marks, w) => (
                     <td key={w} className={`wk${w === 0 ? ' now' : ''}`}>
@@ -110,9 +117,9 @@ export function Sommaire({
                   </td>
                 </tr>
               )
-            })
-          })}
-        </tbody>
+            })}
+          </tbody>
+        ))}
       </table>
     </div>
   )
