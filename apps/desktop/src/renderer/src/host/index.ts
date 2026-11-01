@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { ServiceState } from '@marianne/sdk'
 import type { CatalogueState } from '@shared/catalogue'
 import type { TileState } from '@shared/types'
 import { api, useLive } from '../lib/api'
+import { LiveStore } from '../lib/live-store'
 import { SERVICE_HELP } from './registry'
 
-/** The services and what the user made of them (added, on, pinned), kept up to date. */
+/** The services and what the user made of them (added, on, pinned), kept up to date: one copy for the window, each account's. */
+const serviceList = new LiveStore(api.listServices, api.onServices, [api.onSession])
+
 /** The services, or null until their list comes: a service not there yet is not a service gone. */
-export const useServiceList = (): ServiceState[] | null => useLive(api.listServices, api.onServices) ?? null
+export const useServiceList = (): ServiceState[] | null => useSyncExternalStore(serviceList.subscribe, serviceList.get)
 export const useServices = (): ServiceState[] => useServiceList() ?? []
 
 /** How often the page looks at its tiles while it shows: the stale ones are asked again, the ages move on. */
