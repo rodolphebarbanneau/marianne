@@ -1,6 +1,6 @@
 {
-  "updated": "2026-10-29",
-  "note": "The political groups of the Assemblée nationale (17th legislature) and of the Sénat, from left to right in each hemicycle, for the leaning a user may declare in Réglages › Identité. Acronyms and colours are the chambers' own, as their open data gives them (3615 PARLEMENT matches them). Non-attached members are not a leaning: they are not listed. An Assemblée group's \"senate\" is the Sénat group of its political family, proposed to the user when they pick it, and theirs to change: RN and UDR senators sit in UNT, LFI has no group at the Sénat (CRCE-K is the closest).",
+  "updated": "2026-11-02",
+  "note": "The political groups of the Assemblée nationale (17th legislature) and of the Sénat, from left to right in each hemicycle, for the leaning a user may declare in Réglages › Sensibilité. Acronyms and colours are the chambers' own, as their open data gives them (3615 PARLEMENT matches them). Non-attached members are not a leaning: they are not listed. An Assemblée group's \"senate\" is the Sénat group of its political family, proposed to the user when they pick it, and theirs to change: RN and UDR senators sit in UNT, LFI has no group at the Sénat (CRCE-K is the closest).",
   "groups": [
     { "chamber": "an", "acronym": "LFI-NFP", "name": "La France insoumise - Nouveau Front Populaire", "color": "#c00d0d", "senate": "CRCE-K" },
     { "chamber": "an", "acronym": "GDR", "name": "Gauche Démocrate et Républicaine", "color": "#830e21", "senate": "CRCE-K" },
