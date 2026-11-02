@@ -77,24 +77,45 @@ async function turn(t: EngineTurn): Promise<void> {
   await runStream('Codex', args, { ...t, env: { ...t.env, MARIANNE_MCP_TOKEN: mcp.token } }, new CodexStream())
 }
 
+/**
+ * The ChatGPT account Codex signed in with, as Claude Code's status says its own: « email · plan ».
+ * `codex login status` only says « Logged in using ChatGPT »; the account is in the sign-in Codex
+ * keeps (auth.json), in the claims of its identity token. They are read for display only: the token is
+ * neither checked nor kept, and nothing else of the file is used. Undefined when it says neither.
+ */
+export function chatgptAccount(authJson: string): string | undefined {
+  try {
+    const token = (JSON.parse(authJson) as { tokens?: { id_token?: unknown } }).tokens?.id_token
+    if (typeof token !== 'string') return undefined
+    const claims = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString('utf8')) as Record<string, unknown>
+    const auth = claims['https://api.openai.com/auth'] as { chatgpt_plan_type?: unknown } | undefined
+    const email = typeof claims.email === 'string' ? claims.email : ''
+    const plan = typeof auth?.chatgpt_plan_type === 'string' ? auth.chatgpt_plan_type : ''
+    return [email, plan].filter(Boolean).join(' · ') || undefined
+  } catch {
+    return undefined
+  }
+}
+
 export const codex: Engine = {
   candidates,
   site: 'learn.chatgpt.com/docs/codex/cli',
-  async account(cli, env) {
-    // e.g. "Logged in using ChatGPT" / "Not logged in"
+  async account(cli, env, home) {
+    // e.g. "Logged in using ChatGPT" / "Logged in using an API key" / "Not logged in"
     const a = await runAside(cli, ['login', 'status'], { env, timeoutMs: 15_000 })
     const line =
       `${a.stdout}\n${a.stderr}`
         .trim()
         .split('\n')
         .find((l) => /logged in/i.test(l)) ?? ''
-    return {
-      loggedIn: a.code === 0 && /^logged in/i.test(line.trim()),
-      account: line
-        .match(/using (.+)$/i)?.[1]
-        ?.trim()
-        .toLowerCase()
-    }
+    const loggedIn = a.code === 0 && /^logged in/i.test(line.trim())
+    const method = line
+      .match(/using (.+)$/i)?.[1]
+      ?.trim()
+      .toLowerCase()
+    // Signed in with ChatGPT: the account itself, else how it signed in.
+    const account = loggedIn && method === 'chatgpt' ? await readFile(join(home, 'auth.json'), 'utf8').then(chatgptAccount, () => undefined) : undefined
+    return { loggedIn, account: account ?? method }
   },
   login: ['login'],
   // `codex exec` takes CODEX_API_KEY ahead of the stored sign-in, though `codex login status` doesn't
