@@ -52,7 +52,6 @@ export function useShortcuts(actions: Actions): void {
   const app = useApp()
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      api.activity()
       // A key the page took already (the video player's space, arrows, letters): not a shortcut too.
       if (e.defaultPrevented) return
       const field = (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')

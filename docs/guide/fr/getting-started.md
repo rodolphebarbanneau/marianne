@@ -23,7 +23,12 @@ Pour changer ou retirer le code : Réglages › Sécurité.
 
 ## Verrouiller
 
-Le cadenas en bas à gauche, ou ctrl+L, verrouille l’archive. Marianne la verrouille aussi d’elle-même après un moment sans activité (15 minutes, au départ), et quand l’ordinateur se met en veille. Vous réglez les deux dans Réglages › Sécurité.
+Le cadenas en bas à gauche, ou ctrl+L, verrouille l’archive. Marianne la verrouille aussi d’elle-même :
+
+- **Quand vous ne vous en servez plus**, après le temps choisi (15 minutes, au départ). Tant que vous vous servez de Marianne, au clavier ou à la souris, ou qu’elle vous répond, l’archive reste ouverte ; Marianne laissée de côté, ou derrière d’autres fenêtres, le temps court.
+- **Avec l’ordinateur**, quand sa session se verrouille ou qu’il se met en veille.
+
+Vous réglez les deux dans Réglages › Sécurité. Pour que l’archive ne se verrouille qu’avec l’ordinateur, choisissez « jamais » et gardez « avec l’ordinateur » ; les deux éteints, elle ne se verrouille plus d’elle-même.
 
 ## Plusieurs comptes
 

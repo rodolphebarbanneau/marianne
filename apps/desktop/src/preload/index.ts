@@ -12,7 +12,6 @@ const SEND = [
   'toggleFullscreen',
   'reloadWindow',
   'dimTitleBar',
-  'activity',
   'checkForUpdates',
   'downloadUpdate',
   'installUpdate',

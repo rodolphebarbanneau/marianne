@@ -149,7 +149,6 @@ export function registerIpc(): void {
     browser.setBounds(null)
     mainWindow?.webContents.reload()
   })
-  on('activity', () => session.touch())
 
   // ---------- updates ----------
   handle('getUpdateState', () => updater.state)

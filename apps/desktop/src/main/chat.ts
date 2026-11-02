@@ -191,6 +191,11 @@ class Chat extends EventEmitter {
     return this.active.has(id)
   }
 
+  /** Whether Marianne is answering in any folder: the automatic lock waits for her (presence.ts). */
+  answering(): boolean {
+    return this.active.size > 0
+  }
+
   /** The folder as the window shows it. */
   view(id: string) {
     const folder = folders.get(id)
