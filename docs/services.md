@@ -117,7 +117,7 @@ The manifest is the `marianne` field of the service's `package.json`. `readManif
   - `switch`: on or off (`"default": true`);
   - `choice`: 2 to 12 `choices`, each `{ "value": "an", "label": "Assemblée" }` (side by side up to three, else a menu);
   - `number`: between `min` and `max`, by `step` (1), with its `unit` (`"jours"`);
-  - `text`: one line, at most `maxLength` characters (80).
+  - `text`: one line, at most `maxLength` characters (80), with a `placeholder` (French) when an example says it better than the label.
 
   ```json
   "options": [
@@ -593,6 +593,7 @@ The 3615 kiosk: its head is the page's one search (the 3615 bar: a code or words
 - See the user's identifiers. It gets the commune of their address, the profile fields they granted it, and what they store in it.
 - Act on a website for the user: payments, signatures and forms go through Marianne, in her built-in browser, with the user's approval: from a request the user sends her (one the view prepared with `host.ask`, say) or a task's follow-up, guided by the service's instructions.
 - Keep personal data outside `ctx.storage` (the encrypted archive): `dataDir` is for public data.
+- Ask for an identifier in its options: they are settings of the service (a chamber, a number of days). What the user types there reaches the service as typed, never as a `[[token]]`, as what they type in its screen does.
 
 ## Tests
 
@@ -715,6 +716,7 @@ While an open account has it among its services and doesn't switch it off. It st
 | a tool                     | 60 s; its arguments 1 KB as JSON, its result 256 KB |
 | a tile                     | 10 s, 64 KB                                         |
 | a summary, a day's lines   | 10 s                                                |
+| its options' listeners     | 5 s                                                 |
 | a piece of video           | 10 MB                                               |
 
 #### Its files: the `marianne-service:` scheme
