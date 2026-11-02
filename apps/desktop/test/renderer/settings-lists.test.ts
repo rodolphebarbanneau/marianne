@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Site } from '../../src/shared/sites'
 import { routeTarget } from '../../src/renderer/src/app/routes'
 import { documentWords, filterDocuments, filterSites, frDate, listing, settableSites, siteState } from '../../src/renderer/src/settings/lists'
-import { SETTINGS_PAGES, settingsTarget } from '../../src/renderer/src/settings/pages'
+import { SETTINGS_PAGES, settingsTarget, tokenPage } from '../../src/renderer/src/settings/pages'
 
 describe('the settings pages', () => {
   it('keep each page once, the application’s and the user’s only', () => {
@@ -20,6 +20,21 @@ describe('the settings pages', () => {
     expect(settingsTarget('privacy')).toEqual({ page: 'access', section: '' })
     expect(settingsTarget('household')).toEqual({ page: 'household', section: '' })
     expect(settingsTarget('nowhere')).toEqual({ page: 'identity', section: '' })
+  })
+
+  it('open the page where a value the profile lacks is set', () => {
+    const siteFields = ['tax_number', 'caf_number']
+    const page = (token: string) => tokenPage(token, siteFields)
+    expect(['last_name', 'first_names', 'birth_date', 'nir', 'id_document.passport.number'].map(page)).toEqual(Array(5).fill('identity'))
+    expect(['phone', 'email', 'address'].map(page)).toEqual(['contact', 'contact', 'contact'])
+    expect(page('iban')).toBe('money')
+    expect(page('household.2.first_name')).toBe('household')
+    expect(page('household.2.id_document.identity_card.number')).toBe('identity')
+    expect(['company.1.siren', 'employer.1.name', 'vehicle.1.plate', 'property.1.address'].map(page)).toEqual(Array(4).fill('assets'))
+    expect(page('tax_number')).toBe('sites')
+    expect(page('something_else')).toBe('identity')
+    // Every page it opens is one of the dialog's.
+    for (const t of ['iban', 'phone', 'household.1.first_name', 'vehicle.1.plate', 'tax_number']) expect(SETTINGS_PAGES.map((p) => p.id)).toContain(page(t))
   })
 
   it('send Réglages › Services, which went, to the Services page', () => {

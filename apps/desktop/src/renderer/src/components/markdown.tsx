@@ -8,6 +8,8 @@ import { serviceForLink, useServices } from '../host'
 import { webHost } from '../lib/address'
 import { useTokens } from '../lib/tokens'
 import { api } from '../lib/api'
+import { useSites } from '../lib/content'
+import { tokenPage } from '../settings/pages'
 import { Modal } from './ui'
 
 interface MdNode {
@@ -72,6 +74,17 @@ function remarkTokens(tokens: TokenValue[]) {
 const text = (children: ReactNode): string =>
   Array.isArray(children) ? children.map(text).join('') : typeof children === 'string' || typeof children === 'number' ? String(children) : ''
 
+/** A value the profile lacks: a click opens the page where it is set. */
+function MissingToken({ token, children }: { token: string; children: ReactNode }) {
+  const app = useApp()
+  const siteFields = useSites().flatMap((s) => (s.fields ?? []).map((f) => f.key))
+  return (
+    <button className="token link" onClick={() => app.openSettings(tokenPage(token, siteFields))} title="information absente de votre profil : la renseigner">
+      {children}
+    </button>
+  )
+}
+
 function Link({ href, children }: { href: string; children: ReactNode }) {
   const app = useApp()
   const tokens = useTokens()
@@ -86,13 +99,7 @@ function Link({ href, children }: { href: string; children: ReactNode }) {
       </span>
     )
   }
-  if (href.startsWith('missing:')) {
-    return (
-      <button className="token link" onClick={() => app.openSettings('identity')} title="information absente de votre profil : la renseigner">
-        {children}
-      </button>
-    )
-  }
+  if (href.startsWith('missing:')) return <MissingToken token={href.slice(8)}>{children}</MissingToken>
   const browse = (external: boolean) => {
     if (!/^https?:\/\//i.test(href)) return
     // In a folder, pages open in its built-in browser; elsewhere in the system's.
