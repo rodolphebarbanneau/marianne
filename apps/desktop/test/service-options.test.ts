@@ -65,11 +65,21 @@ describe('a service’s own options', () => {
   it('keep the user’s choice, checked against the manifest, in the account’s settings, by service', () => {
     state.kept = { meteo: { days: 3 } }
     expect(setOption(manifest, 'chamber', 'an')).toEqual({ chamber: 'an', live: false })
-    expect(state.kept).toEqual({ meteo: { days: 3 }, parlement: { chamber: 'an', live: false } })
+    // Only what the user chose: « live », never set, follows its default if a later version changes it.
+    expect(state.kept).toEqual({ meteo: { days: 3 }, parlement: { chamber: 'an' } })
     expect(() => setOption(manifest, 'chamber', 'eu')).toThrow('cette valeur ne convient pas à « chambre à l’ouverture »')
     expect(() => setOption(manifest, 'live', 'yes')).toThrow('cette valeur ne convient pas')
     expect(() => setOption(manifest, 'theme', 'dark')).toThrow('3615 PARLEMENT n’a pas de réglage « theme »')
-    expect(state.kept.parlement).toEqual({ chamber: 'an', live: false })
+    expect(state.kept.parlement).toEqual({ chamber: 'an' })
+  })
+
+  it('keep the user’s other choices that still fit, and let go of those the manifest no longer takes', () => {
+    state.kept = { parlement: { chamber: 'an', live: 'yes', gone: 3 } }
+    expect(setOption(manifest, 'live', true)).toEqual({ chamber: 'an', live: true })
+    expect(state.kept.parlement).toEqual({ chamber: 'an', live: true })
+    state.kept = { parlement: { chamber: 'eu' } }
+    expect(setOption(manifest, 'live', true)).toEqual({ chamber: 'both', live: true })
+    expect(state.kept.parlement).toEqual({ live: true })
   })
 
   it('tell the service when the user changes one, and when another account opens or none is', () => {

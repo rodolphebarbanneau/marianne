@@ -51,8 +51,13 @@ export function setOption(m: ServiceManifest, key: string, value: unknown): Serv
   const checked = optionValue(option, value)
   if (checked === null) throw new Error(`3615 ${m.id.toUpperCase()} : cette valeur ne convient pas à « ${option.label} ».`)
   const kept = accounts.settings().services.options ?? {}
-  const values = { ...optionValues(m.options, kept[m.id]), [key]: checked }
-  accounts.updateSettings({ services: { options: { ...kept, [m.id]: values } } })
+  // Only what the user chose is kept: an option they never set follows its default, should a later version change it.
+  // A choice the manifest no longer takes (an option gone, a type changed) goes with this write.
+  const stored: Record<string, unknown> = kept[m.id] ?? {}
+  const chosen = m.options.filter((o) => o.key !== key && Object.hasOwn(stored, o.key) && optionValue(o, stored[o.key]) !== null)
+  const choice = { ...Object.fromEntries(chosen.map((o) => [o.key, stored[o.key]])), [key]: checked }
+  accounts.updateSettings({ services: { options: { ...kept, [m.id]: choice } } })
+  const values = optionValues(m.options, choice)
   changes.emit(m.id, values)
   return values
 }
