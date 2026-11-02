@@ -34,8 +34,8 @@ export interface ShortcutDef {
 }
 
 export const SHORTCUTS: ShortcutDef[] = [
-  { id: 'marianne', label: 'Parler à Marianne : nouveau dossier', group: 'Pages', accel: 'CommandOrControl+Enter' },
-  // ctrl+1 was the Actualités page's and is free now: the other pages keep the keys hands already know.
+  // The three pages in their order, as a browser's tabs; ctrl+entrée stays free, the send key of many apps.
+  { id: 'marianne', label: 'Parler à Marianne : nouveau dossier', group: 'Pages', accel: 'CommandOrControl+1' },
   { id: 'procedures', label: 'Démarches', group: 'Pages', accel: 'CommandOrControl+2' },
   { id: 'services', label: 'Services', group: 'Pages', accel: 'CommandOrControl+3' },
   { id: 'next', label: 'Page suivante (SUITE)', group: 'Pages', accel: 'PageDown' },

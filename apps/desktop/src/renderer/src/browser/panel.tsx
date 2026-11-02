@@ -137,7 +137,7 @@ export function BrowserPanel({ folderId }: { folderId: string }) {
           placeholder="adresse ou recherche sur service-public.fr"
           onChange={(e) => setAddress(e.target.value)}
           onKeyDown={(e) => {
-            // Entrée alone: ctrl+entrée stays the app's (a new folder).
+            // Entrée alone: with a modifier, it may be one of the app's shortcuts.
             if (!plainKey(e, 'Enter')) return
             const url = addressUrl(address)
             if (!url) return
