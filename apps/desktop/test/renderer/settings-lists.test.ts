@@ -137,14 +137,20 @@ describe('Réglages › Sites et API', () => {
     expect(siteState(sites[0], p, false).done).toBe(false)
     expect(siteState(sites[1], p, true)).toEqual({ login: true, numbers: [{ label: 'n° de sécurité sociale', given: false }], done: false })
     p.person.nir = '288053306304217'
+    // The number is in Identité, but the site isn't chosen yet: the engine says it isn't set up (siteReady), nor does the list.
+    expect(siteState(sites[1], p, true).done).toBe(false)
+    p.accounts.push({ siteId: 'ameli', fields: {}, since: '2026-01-01' })
     expect(siteState(sites[1], p, true).done).toBe(true)
-    // FranceConnect's: no identifier to keep, only the number it needs.
+    // FranceConnect's: no identifier to keep, only the number it needs, once chosen.
+    expect(siteState(sites[2], p, false)).toEqual({ login: false, numbers: [{ label: 'n° de sécurité sociale', given: true }], done: false })
+    p.accounts.push({ siteId: 'retraite', fields: {}, since: '2026-01-01' })
     expect(siteState(sites[2], p, false)).toEqual({ login: false, numbers: [{ label: 'n° de sécurité sociale', given: true }], done: true })
   })
 
   it('find a site by its name or its address, and keep those set up or those left to set up', () => {
     const p = profile()
     p.person.nir = '288053306304217'
+    p.accounts = [{ siteId: 'retraite', fields: {}, since: '2026-01-01' }]
     const rows = settableSites(sites).map((s) => ({ site: s, state: siteState(s, p, s.id === 'impots') }))
     expect(filterSites(rows, 'ameli.gouv', 'all').map((r) => r.site.id)).toEqual(['ameli'])
     expect(filterSites(rows, '', 'done').map((r) => r.site.id)).toEqual(['retraite'])
