@@ -276,25 +276,26 @@ export async function serviceFetch(
 
 const text = (e: Exchange) => e.body.toString('utf8')
 
-/** A service's own cache of GET answers, keyed by the whole request (no service reads another's), within CACHE_BYTES. */
+/**
+ * A service's own cache of GET answers, keyed by the whole request (no service reads another's), within CACHE_BYTES.
+ * Each answer keeps the time it came, and each read decides by its own lifetime whether it is recent enough: a request
+ * one screen asks every 20 seconds and another every 2 minutes isn't held to the slower one's pace.
+ */
 class ServiceCache {
-  private entries = new Map<string, { at: number; ttl: number; text: string; bytes: number }>()
+  private entries = new Map<string, { at: number; text: string; bytes: number }>()
   private bytes = 0
 
-  get(key: string): string | undefined {
+  get(key: string, ttl: number): string | undefined {
     const hit = this.entries.get(key)
-    if (!hit) return undefined
-    if (Date.now() - hit.at < hit.ttl) return hit.text
-    this.drop(key)
-    return undefined
+    return hit && Date.now() - hit.at < ttl ? hit.text : undefined
   }
 
-  put(key: string, text: string, ttl: number): void {
+  put(key: string, text: string): void {
     const bytes = text.length * 2
     if (bytes > CACHE_BYTES / 4) return
     this.drop(key)
     while (this.bytes + bytes > CACHE_BYTES && this.entries.size) this.drop(this.entries.keys().next().value!)
-    this.entries.set(key, { at: Date.now(), ttl, text, bytes })
+    this.entries.set(key, { at: Date.now(), text, bytes })
     this.bytes += bytes
   }
 
@@ -331,7 +332,7 @@ export function communityHttp(m: Pick<ServiceManifest, 'id' | 'hosts'>, userAgen
     const ttl = method === 'GET' ? (options.cacheMs ?? DEFAULT_CACHE_MS) : 0
     const key = JSON.stringify([method, url, headers])
     const cache = cacheOf(m.id)
-    const hit = ttl ? cache.get(key) : undefined
+    const hit = ttl ? cache.get(key, ttl) : undefined
     if (hit !== undefined) return hit
     const answer = await slotsOf(m.id).run(`3615 ${serviceCode(m)}`, () =>
       serviceFetch(m, url, { method, headers, body, timeoutMs: options.timeoutMs }, transport)
@@ -340,7 +341,7 @@ export function communityHttp(m: Pick<ServiceManifest, 'id' | 'hosts'>, userAgen
     const got = text(answer)
     if (answer.status < 200 || answer.status >= 300)
       throw Object.assign(new Error(`HTTP ${answer.status} de ${host}${got ? ` : ${got.replace(/\s+/g, ' ').slice(0, 300)}` : ''}`), { status: answer.status })
-    if (ttl) cache.put(key, got, ttl)
+    if (ttl) cache.put(key, got)
     return got
   }
   return {

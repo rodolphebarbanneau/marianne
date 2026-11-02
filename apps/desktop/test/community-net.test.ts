@@ -232,6 +232,25 @@ describe('a community service’s requests in flight', () => {
     expect(results.filter((r) => r !== 'ok')[0]).toBe('3615 BONJOUR a trop de requêtes en cours : Marianne en laisse passer moins.')
   })
 
+  it('give each read an answer as recent as it asks, not as the first reader asked', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      const { t, asked } = transport({ 'https://api.example.fr/live': { status: 200, body: Buffer.from('{}') } })
+      const http = communityHttp(manifest, () => 'Marianne/test', t)
+      await http.json('https://api.example.fr/live', { cacheMs: 120_000 })
+      vi.setSystemTime(Date.now() + 30_000)
+      // Kept for 2 minutes by the first read, but 30 seconds old is too old for this one.
+      await http.json('https://api.example.fr/live', { cacheMs: 20_000 })
+      expect(asked).toHaveLength(2)
+      // The answer just come serves both.
+      await http.json('https://api.example.fr/live', { cacheMs: 120_000 })
+      await http.json('https://api.example.fr/live', { cacheMs: 20_000 })
+      expect(asked).toHaveLength(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('keep a cache within its size: the oldest answers go first', async () => {
     const big = 'x'.repeat(1.5 * 1024 * 1024)
     const { t, asked } = transport(
