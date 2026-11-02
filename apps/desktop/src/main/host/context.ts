@@ -51,12 +51,14 @@ function vehicles(m: ServiceManifest): Vehicle[] {
     .filter((f) => f.startsWith('vehicles.'))
     .map((f) => f.slice('vehicles.'.length) as keyof Omit<Vehicle, 'id'>)
   if (!fields.length) return []
-  return profile.get().vehicles.map((v) => ({ id: v.id, ...Object.fromEntries(fields.map((f) => [f, v[f]])) }))
+  const kept = profile.get().vehicles
+  if (kept.length) noteRead(m)
+  return kept.map((v) => ({ id: v.id, ...Object.fromEntries(fields.map((f) => [f, v[f]])) }))
 }
 
 /**
- * The day a service last read the user's opinions (leaning, themes, sources), kept so that Réglages › Accès des services can say it:
- * written once a day at most.
+ * The day a service last read what it was granted of the profile (its vehicles, the user's leaning, themes, sources),
+ * kept so that Réglages › Accès des services can say it: written once a day at most, and only when there was something to read.
  */
 function noteRead(m: ServiceManifest): void {
   const day = parisDay()
