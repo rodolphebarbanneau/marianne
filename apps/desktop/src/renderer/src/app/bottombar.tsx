@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react'
 import { tabKey } from '@marianne/sdk'
 import { ENGINE_BADGES, ENGINE_LABELS } from '@shared/config'
 import { LockIcon } from '../components/icons'
+import { UpdateNotice } from '../components/update-notice'
 import { serviceKeys, type BarKey as Key } from '../host/frame'
 import { api } from '../lib/api'
 import { TABS as DOMAIN_TABS } from '../pages/domain'
@@ -91,6 +92,7 @@ export function BottomBar({ actions }: { actions: Actions }) {
             </span>
           ))}
         </button>
+        <UpdateNotice />
       </div>
       <div className="keys" ref={ref}>
         {keys.map(([key, shortcut, what, command]) => (

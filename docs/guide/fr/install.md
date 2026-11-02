@@ -107,7 +107,7 @@ Vous vous connectez chez l’éditeur, jamais dans Marianne : elle ne voit ni vo
 
 ## Les mises à jour
 
-Sur Windows et Linux, les versions suivantes de Marianne s’installent d’elles-mêmes (Réglages › À propos et mises à jour). Sur macOS, l’application n’étant pas encore signée, la mise à jour automatique ne marche pas : téléchargez la nouvelle version depuis la page des versions.
+Marianne cherche une nouvelle version à son ouverture, puis toutes les quatre heures, compte ouvert ou non. Sur Windows et Linux, elle la télécharge et l’installe à sa fermeture (Réglages › À propos et mises à jour). La barre du bas le dit, sur l’écran de verrouillage aussi : « Marianne 1.3.0 est prête », et « redémarrer » l’installe tout de suite. Sur macOS, l’application n’étant pas encore signée, la mise à jour automatique ne marche pas : « page des versions », dans la même barre, mène à la nouvelle version à télécharger.
 
 ## Ouvrir une archive d’un double clic
 

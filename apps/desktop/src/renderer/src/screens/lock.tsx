@@ -8,6 +8,7 @@ import { Guide } from '../app/guide'
 import { BugIcon, ReloadIcon } from '../components/icons'
 import { Logo } from '../components/logo'
 import { Identicon, Meter, Modal, Spinner } from '../components/ui'
+import { UpdateNotice } from '../components/update-notice'
 import { afterUnlock, lockIntent, opening, openingBar, type OpeningStep } from '../lib/after-unlock'
 import { api, errorText, isMac, useLive } from '../lib/api'
 import { accountLabel, clock, shortDate } from '../lib/format'
@@ -108,6 +109,7 @@ export function LockScreens({
             archive verrouillée
           </span>
           <Version />
+          <UpdateNotice />
         </div>
         <div className="keys">
           <span>
