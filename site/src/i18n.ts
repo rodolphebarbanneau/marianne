@@ -59,72 +59,72 @@ const fr = {
     },
     /** Each screen’s caption: in a tab of several screens, the caption follows the screen shown. */
     captions: {
-      dossier: 'Une question, une réponse claire. Marianne consulte ses services et ses sources, puis vous dit quoi faire, et avant quand.',
+      dossier: 'Une question, une réponse claire. Marianne consulte ses services et ses sources, puis vous dit quoi faire, et d’ici quand.',
       accord:
-        'Marianne propose de vous rappeler la suite le jour venu. Rien n’est enregistré ni rempli sans votre accord, sur une carte comme celle-ci ou d’avance, comme vous l’avez choisi ; rien n’est signé, payé ni envoyé sans votre oui sur une carte.',
+        'Marianne propose de vous rappeler la suite le jour venu, et attend votre réponse. Rien n’est enregistré ni rempli sans votre accord : sur une demande comme celle-ci, ou donné d’avance si vous l’avez choisi. Pour signer, payer ou envoyer, elle vous le demande à chaque fois.',
       demarches:
-        'Chaque domaine a son tableau de bord : vos échéances, vos véhicules, les démarches guidées. Les tâches planifiées reviennent à leur jour : un rappel, ou une vérification que Marianne fait pour vous.',
+        'Chaque domaine (impôts, santé, mobilité…) a son tableau de bord : vos échéances, vos véhicules, les démarches guidées. Les tâches planifiées reviennent le jour prévu : un rappel, ou une vérification que Marianne fait pour vous.',
       navigateur:
-        'Les sites officiels s’ouvrent à côté de la conversation, dans le navigateur de Marianne. Vous pouvez reprendre la main à tout moment, et il oublie tout au verrouillage.',
+        'Les sites officiels s’ouvrent à côté de la conversation, dans le navigateur de Marianne. Vous pouvez prendre la main à tout moment, et quand Marianne se verrouille, elle en efface tout : pages, cookies, connexions.',
       infos:
-        '3615 INFOS rassemble les titres de vos journaux en sujets : qui en parle, et comment chacun titre, chaque source à la couleur de sa ligne éditoriale.',
+        '3615 INFOS regroupe par sujet les titres de vos journaux : qui en parle, comment chacun titre, et la couleur de chaque source dit sa ligne éditoriale.',
       parlement:
         '3615 PARLEMENT : vos élus d’après votre adresse, leurs votes et leurs prises de parole du jour, le prochain grand rendez-vous. Et l’hémicycle, les scrutins, les séances en vidéo, l’agenda.',
-      services: 'Les Services, avec leurs codes 3615 : le temps de votre commune sur 15 jours, la France en données publiques, l’annuaire des services publics…'
+      services: 'La page Services et ses codes 3615 : le temps de votre commune sur 15 jours, la France en données publiques, l’annuaire des services publics…'
     }
   },
   features: {
     title: 'Ce que fait Marianne',
-    lead: 'Une seule fenêtre pour la paperasse : vous posez la question comme elle vient, Marianne s’occupe du reste, avec vous.',
+    lead: 'Une seule fenêtre pour la paperasse : vous posez votre question comme elle vient, Marianne s’occupe du reste, avec vous.',
     items: [
       {
         code: 'DOSSIERS',
         title: 'Un sujet, un dossier',
-        text: 'Chaque question devient un dossier : la conversation, les pièces et les étapes au même endroit. Mis en veille, il revient de lui-même à la date choisie.'
+        text: 'Chaque question devient un dossier : la conversation, les documents et les étapes au même endroit. Mettez-le de côté jusqu’à une date : il revient de lui-même ce jour-là.'
       },
       {
         code: 'DÉMARCHES',
         title: 'Des démarches guidées',
-        text: 'Déclarer vos revenus, renouveler votre carte d’identité, contester une amende… Marianne vous accompagne pas à pas, d’après des fiches relues et sourcées.'
+        text: 'Déclarer vos revenus, renouveler votre carte d’identité, contester une amende… Marianne vous accompagne pas à pas, d’après des fiches relues dont chaque fait renvoie à une source officielle.'
       },
       {
         code: 'ACCORD',
         title: 'C’est vous qui décidez',
-        text: 'Tout ce qui change votre profil, remplit un formulaire, signe, paie ou envoie attend votre accord : sur une carte, ou d’avance, comme vous l’avez choisi. Signer, payer et envoyer, toujours sur une carte.'
+        text: 'Avant de modifier votre profil ou de remplir un formulaire, Marianne vous montre ce qu’elle va faire et attend votre accord, sauf si vous le lui avez donné d’avance. Signer, payer, envoyer : elle vous le demande à chaque fois.'
       },
       {
         code: 'NAVIGATEUR',
         title: 'Les sites officiels, avec elle',
-        text: 'Marianne ouvre les sites des démarches dans son navigateur. Vous pouvez reprendre la main à tout moment, et il oublie tout au verrouillage.'
-      },
-      {
-        code: 'INFOS',
-        title: 'Qui en parle, comment ils titrent',
-        text: '3615 INFOS rassemble les titres de vos journaux en sujets, chaque source à la couleur de sa ligne éditoriale. L’article se lit chez le journal, et le choix de vos sources reste sur votre ordinateur.'
+        text: 'Marianne ouvre les sites des démarches dans son propre navigateur, à côté de la conversation. Vous pouvez prendre la main à tout moment, et quand Marianne se verrouille, elle en efface tout : pages, cookies, connexions.'
       },
       {
         code: 'ÉCHÉANCES',
-        title: 'Vos échéances, des tâches qui reviennent',
-        text: 'Marianne vous rappelle ce qui arrive : un paiement, un contrôle technique, une déclaration. Une tâche planifiée revient à son jour, pour un rappel ou une vérification qu’elle fait pour vous, comme les péages à payer : elle regarde et vous prévient, elle ne paie jamais.'
+        title: 'Les échéances viennent à vous',
+        text: 'Marianne vous rappelle ce qui arrive : un paiement, un contrôle technique, une déclaration. Elle peut aussi vérifier pour vous, régulièrement, qu’aucun péage d’autoroute ne reste à payer : elle regarde et vous prévient, sans jamais payer d’elle-même.'
+      },
+      {
+        code: 'SERVICES',
+        title: 'Des services, code 3615',
+        text: 'La météo de votre commune, vos élus et leurs votes, l’actualité vue par plusieurs journaux, l’annuaire des services publics… Chaque service a son code 3615, comme au temps du Minitel, et Marianne s’en sert pour vous répondre.'
       }
     ]
   },
   privacy: {
-    title: 'Rien ne quitte votre ordinateur.',
+    title: 'Vos données restent chez vous.',
     lead: 'Marianne n’a ni serveur ni compte en ligne. Tout ce que vous lui confiez tient dans une archive chiffrée : un seul fichier, sur votre disque, que vous êtes la seule personne à pouvoir ouvrir.',
     points: [
-      'Une archive chiffrée (AES-256-GCM), ouverte par votre phrase de passe, puis par un simple code sur cet ordinateur.',
-      'Le moteur ne voit jamais vos identifiants : numéro de sécurité sociale, numéro fiscal, nom, adresse, IBAN deviennent des jetons.',
-      'Les jetons ne redeviennent vos vraies valeurs que sur votre écran.',
+      'Une archive chiffrée (AES-256-GCM), que vous ouvrez avec votre phrase de passe, puis, sur votre ordinateur, avec un simple code.',
+      'Votre IA ne voit jamais vos identifiants : numéro de sécurité sociale, numéro fiscal, nom, adresse, IBAN lui arrivent remplacés par des jetons.',
+      'Marianne remet vos vraies valeurs à la place des jetons sur votre écran, et seulement là.',
       'Le code est ouvert, sous licence MIT : chacun peut vérifier ce qu’il fait.'
     ],
     screen: 'sur votre écran',
-    engine: 'ce que reçoit le moteur',
+    engine: 'ce que reçoit votre IA',
     replay: 'rejouer'
   },
   engines: {
     title: 'Votre IA, votre abonnement.',
-    lead: 'Marianne n’a pas d’IA à elle : elle prête ses outils à celle que vous avez déjà, avec votre compte chez son éditeur. Le moteur travaille dans un dossier vide, sans terminal ni accès à vos fichiers : il ne passe que par Marianne.',
+    lead: 'Marianne n’a pas d’IA à elle : elle fait appel à celle que vous avez déjà, avec votre compte chez son éditeur. Nous l’appelons le moteur. Il travaille dans un dossier vide, sans terminal ni accès à vos fichiers, et ne passe que par Marianne.',
     items: [
       {
         code: 'CL',
@@ -158,10 +158,14 @@ const fr = {
   },
   services: {
     title: 'Les Services, code 3615.',
-    lead: 'Des petits outils d’information publique, avec leurs codes, comme au temps du Minitel. Ils ne sont rattachés à aucun dossier, et chacun peut écrire le sien.',
+    lead: 'De petits outils, chacun avec son code, comme au temps du Minitel. Vous les ouvrez depuis la page Services, et Marianne s’en sert pour vous répondre. Chacun peut écrire le sien.',
     items: [
       { code: 'METEO', name: 'Météo', text: 'le temps de votre commune, maintenant, heure par heure et sur 15 jours (Météo-France)' },
-      { code: 'PEAGE', name: 'Péage en flux libre', text: 'les autoroutes sans barrière : vos trajets, l’échéance de 72 heures, le paiement officiel' },
+      {
+        code: 'PEAGE',
+        name: 'Péage en flux libre',
+        text: 'les autoroutes sans barrière : vos passages à payer, le délai de 72 heures, le paiement sur le site officiel'
+      },
       { code: 'INFOS', name: 'Les infos', text: 'l’actualité de vos sources, regroupée en sujets : qui en parle, comment chacun titre' },
       {
         code: 'PARLEMENT',
@@ -209,7 +213,7 @@ const fr = {
     },
     engine: {
       title: 'Avant de commencer : un moteur',
-      text: 'Marianne parle à Claude Code, Codex ou Mistral Vibe, dans leur version en ligne de commande : l’application de bureau ne suffit pas. Installez-en un d’une ligne dans un terminal, puis connectez-le depuis Marianne.',
+      text: 'Marianne parle à Claude Code, Codex ou Mistral Vibe, dans leur version en ligne de commande : leur application de bureau ne suffit pas. Installez-en un d’une ligne dans un terminal, puis connectez-le depuis Marianne.',
       link: 'le guide d’installation'
     }
   },
@@ -248,7 +252,7 @@ const fr = {
       {
         title: 'Comprendre, sans chercher',
         text: [
-          'Chaque citoyen devrait pouvoir accéder à ses données, comprendre ses droits et ses démarches, sans avoir à savoir où aller. Avec Marianne, vous posez la question comme elle vient, avec vos mots. Elle cherche dans les sources officielles, vous explique ce qui s’applique à vous, et vous dit quoi faire, et avant quand.',
+          'Chaque citoyen devrait pouvoir accéder à ses données, comprendre ses droits et ses démarches, sans avoir à savoir où aller. Avec Marianne, vous posez la question comme elle vient, avec vos mots. Elle cherche dans les sources officielles, vous explique ce qui s’applique à vous, et vous dit quoi faire, et d’ici quand.',
           'Les démarches guidées vous mènent pas à pas. Les échéances viennent à vous, au lieu que vous couriez après elles.'
         ]
       },
@@ -267,7 +271,7 @@ const fr = {
       {
         title: 'Vous décidez, toujours',
         text: [
-          'Une IA peut aider. Elle ne décide pas à votre place. Rien ne change votre profil, ne remplit un formulaire, ne signe, ne paie ni n’envoie sans votre accord : sur une carte qui vous montre tout, ou d’avance, pour ce que vous avez choisi. Signer, payer et envoyer passent toujours par une carte.'
+          'Une IA peut aider. Elle ne décide pas à votre place. Rien ne change votre profil, ne remplit un formulaire, ne signe, ne paie ni n’envoie sans votre accord : Marianne vous montre tout et attend votre réponse, sauf pour ce que vous lui avez permis d’avance. Signer, payer et envoyer vous sont demandés à chaque fois.'
         ]
       },
       {
@@ -295,7 +299,7 @@ const fr = {
     guide: 'lire le guide',
     code: 'lire le code'
   },
-  bar: { locked: 'rien ne quitte votre ordinateur', prev: 'précédent', next: 'suivant', top: 'haut de page', help: 'le guide' },
+  bar: { locked: 'vos données restent chez vous', prev: 'précédent', next: 'suivant', top: 'haut de page', help: 'le guide' },
   footer: {
     /** The footer's links, lowercase like its others, where the header's tabs take a capital. */
     guide: 'guide',
@@ -370,16 +374,16 @@ const en: typeof fr = {
     captions: {
       dossier: 'A question, a clear answer. Marianne checks its services and sources, then tells you what to do, and by when.',
       accord:
-        'Marianne offers to remind you of what comes next, on the day. Nothing is saved or filled in without your approval, on a card like this one or ahead, as you chose; nothing is signed, paid or sent without your yes on a card.',
+        'Marianne offers to remind you of what comes next, on the day, and waits for your answer. Nothing is saved or filled in without your approval: on a request like this one, or given ahead if you chose to. To sign, pay or send, it asks you every time.',
       demarches:
-        'Each area of your paperwork has its dashboard: your deadlines, your vehicles, the guided formalities. Planned tasks come back on their day: a reminder, or a check Marianne makes for you.',
+        'Each area of your paperwork (taxes, health, getting around…) has its dashboard: your deadlines, your vehicles, the guided formalities. Planned tasks come back on the day set: a reminder, or a check Marianne makes for you.',
       navigateur:
-        'Official websites open next to the conversation, in Marianne’s browser. You can take over at any time, and it forgets everything when the archive locks.',
+        'Official websites open next to the conversation, in Marianne’s own browser. You can take over at any time, and locking Marianne wipes that browser clean: pages, cookies, sign-ins.',
       infos:
-        '3615 INFOS groups your newspapers’ headlines into subjects: who covers them, and how each one titles them, each source in the colour of its editorial line.',
+        '3615 INFOS groups your newspapers’ headlines by subject: who covers it, how each one headlines it, and each source’s colour shows its editorial line.',
       parlement:
         '3615 PARLEMENT: your representatives from your address, their votes and speeches of the day, the next big sitting. And the chamber, the ballots, the sittings on video, the agenda.',
-      services: 'The Services, with their 3615 codes: the weather of your commune over 15 days, France in public data, the directory of public services…'
+      services: 'The Services page and its 3615 codes: the weather of your commune over 15 days, France in public data, the directory of public services…'
     }
   },
   features: {
@@ -389,51 +393,51 @@ const en: typeof fr = {
       {
         code: 'DOSSIERS',
         title: 'One subject, one folder',
-        text: 'Each question becomes a folder: the conversation, the documents and the steps in one place. Snoozed, it comes back on its own on the day you chose.'
+        text: 'Each question becomes a folder: the conversation, the documents and the steps in one place. Set it aside until a date, and it comes back on its own that day.'
       },
       {
         code: 'DÉMARCHES',
         title: 'Guided formalities',
-        text: 'Declaring your income, renewing your ID card, appealing a fine… Marianne walks you through them step by step, from reviewed, sourced guides.'
+        text: 'Declaring your income, renewing your ID card, appealing a fine… Marianne walks you through them step by step, from reviewed guides where each fact points to an official source.'
       },
       {
         code: 'ACCORD',
         title: 'You decide',
-        text: 'Anything that changes your profile, fills in a form, signs, pays or sends waits for your approval: on a card, or ahead, as you chose. Signing, paying and sending, always on a card.'
+        text: 'Before changing your profile or filling in a form, Marianne shows you what it is about to do and waits for your approval, unless you gave it ahead. Signing, paying, sending: it asks you every time.'
       },
       {
         code: 'NAVIGATEUR',
         title: 'Official sites, together',
-        text: 'Marianne opens the formalities’ websites in its own browser. You can take over at any time, and it forgets everything when the archive locks.'
-      },
-      {
-        code: 'INFOS',
-        title: 'Who covers it, how they headline it',
-        text: '3615 INFOS gathers your newspapers’ headlines into subjects, each source in the colour of its editorial line. The article is read at the newspaper, and your choice of sources stays on your computer.'
+        text: 'Marianne opens the formalities’ websites in its own browser, next to the conversation. You can take over at any time, and locking Marianne wipes that browser clean: pages, cookies, sign-ins.'
       },
       {
         code: 'ÉCHÉANCES',
-        title: 'Your deadlines, tasks that come back',
-        text: 'Marianne reminds you of what’s coming: a payment, a car inspection, a tax return. A planned task comes back on its day, for a reminder or a check it makes for you, like unpaid tolls: it looks and tells you, it never pays.'
+        title: 'Deadlines come to you',
+        text: 'Marianne reminds you of what’s coming: a payment, a car inspection, a tax return. It can also check for you, regularly, that no motorway toll is left unpaid: it looks and tells you, and never pays on its own.'
+      },
+      {
+        code: 'SERVICES',
+        title: 'Services, code 3615',
+        text: 'The weather in your commune, your representatives and their votes, the news as several papers tell it, the directory of public services… Each service has its 3615 code, as in the days of the Minitel, and Marianne uses them to answer you.'
       }
     ]
   },
   privacy: {
-    title: 'Nothing leaves your computer.',
+    title: 'Your data stays with you.',
     lead: 'Marianne has no server and no online account. Everything you give it fits in an encrypted archive: a single file, on your disk, that only you can open.',
     points: [
-      'An encrypted archive (AES-256-GCM), opened with your passphrase, then with a simple PIN on this computer.',
-      'The engine never sees your identifiers: social security number, tax number, name, address, IBAN become tokens.',
-      'Tokens turn back into your real values on your screen only.',
+      'An encrypted archive (AES-256-GCM), which you open with your passphrase, then, on your computer, with a simple PIN.',
+      'Your AI never sees your identifiers: social security number, tax number, name, address, IBAN reach it as tokens.',
+      'Marianne puts your real values back in place of the tokens on your screen, and only there.',
       'The code is open, under the MIT license: anyone can check what it does.'
     ],
     screen: 'on your screen',
-    engine: 'what the engine receives',
+    engine: 'what your AI receives',
     replay: 'replay'
   },
   engines: {
     title: 'Your AI, your subscription.',
-    lead: 'Marianne has no AI of its own: it lends its tools to the one you already have, with your account at its maker. The engine works in an empty folder, with no terminal and no access to your files: it only goes through Marianne.',
+    lead: 'Marianne has no AI of its own: it calls on the one you already have, with your account at its maker. We call it the engine. It works in an empty folder, with no terminal and no access to your files, and only goes through Marianne.',
     items: [
       {
         code: 'CL',
@@ -467,10 +471,10 @@ const en: typeof fr = {
   },
   services: {
     title: 'The Services, code 3615.',
-    lead: 'Small public-information tools, with their codes, as in the days of the Minitel. They aren’t tied to a folder, and anyone can write one.',
+    lead: 'Small tools, each with its code, as in the days of the Minitel. You open them from the Services page, and Marianne uses them to answer you. Anyone can write one.',
     items: [
       { code: 'METEO', name: 'Weather', text: 'the weather of your commune, now, hour by hour and over 15 days (Météo-France)' },
-      { code: 'PEAGE', name: 'Free-flow tolls', text: 'barrier-free motorways: your trips, the 72-hour deadline, the official payment' },
+      { code: 'PEAGE', name: 'Free-flow tolls', text: 'barrier-free motorways: the trips you owe for, the 72-hour deadline, payment on the official site' },
       { code: 'INFOS', name: 'The news', text: 'the news of your sources, grouped into subjects: who covers it, how each one headlines it' },
       {
         code: 'PARLEMENT',
@@ -509,7 +513,7 @@ const en: typeof fr = {
     },
     engine: {
       title: 'Before you start: an engine',
-      text: 'Marianne talks to Claude Code, Codex or Mistral Vibe, in their command-line version: the desktop app isn’t enough. Install one with a line in a terminal, then connect it from Marianne.',
+      text: 'Marianne talks to Claude Code, Codex or Mistral Vibe, in their command-line version: their desktop app isn’t enough. Install one with a line in a terminal, then connect it from Marianne.',
       link: 'the installation guide'
     }
   },
@@ -567,7 +571,7 @@ const en: typeof fr = {
       {
         title: 'You decide, always',
         text: [
-          'An AI can help. It doesn’t decide for you. Nothing changes your profile, fills in a form, signs, pays or sends without your approval: on a card that shows you everything, or ahead, for what you chose. Signing, paying and sending always go through a card.'
+          'An AI can help. It doesn’t decide for you. Nothing changes your profile, fills in a form, signs, pays or sends without your approval: Marianne shows you everything and waits for your answer, except for what you allowed it ahead. Signing, paying and sending are asked of you every time.'
         ]
       },
       {
@@ -595,7 +599,7 @@ const en: typeof fr = {
     guide: 'read the guide',
     code: 'read the code'
   },
-  bar: { locked: 'nothing leaves your computer', prev: 'previous', next: 'next', top: 'top of the page', help: 'the guide' },
+  bar: { locked: 'your data stays with you', prev: 'previous', next: 'next', top: 'top of the page', help: 'the guide' },
   footer: {
     /** The footer's links, lowercase like its others, where the header's tabs take a capital. */
     guide: 'guide',
