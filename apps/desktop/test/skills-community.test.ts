@@ -1,13 +1,17 @@
-import { mkdtempSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { rmSync } from 'node:fs'
+import { afterAll, describe, expect, it, vi } from 'vitest'
 
 /** A community service's guides for the engines: named after it, never in the place of Marianne's, never shown as hers. */
 
 const guide = (name: string, title: string) => `---\nname: ${name}\ntitle: ${title}\ndescription: ${title}\n---\n${title}, step by step.`
 
-vi.mock('../src/main/paths', () => ({ paths: { skills: mkdtempSync(join(tmpdir(), 'marianne-skills-')) } }))
+// The skills' folder, a temporary one, removed after the tests.
+const skills = vi.hoisted(() => {
+  const { mkdtempSync } = require('node:fs') as typeof import('node:fs')
+  return mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'marianne-skills-'))
+})
+afterAll(() => rmSync(skills, { recursive: true, force: true }))
+vi.mock('../src/main/paths', () => ({ paths: { skills } }))
 vi.mock('../src/main/content', () => ({
   content: { get: () => ({ skills: [{ name: 'deadline', title: 'Computing a deadline', description: 'Deadlines', body: 'The content’s guide.' }] }) }
 }))
