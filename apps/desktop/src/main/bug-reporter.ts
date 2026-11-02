@@ -116,7 +116,8 @@ export async function prepareBugReport(req: BugReportRequest): Promise<BugReport
     diagnostics: clean(await diagnostics(req)),
     analyzedBy: null
   }
-  if (!req.analyze) return base
+  // From the lock screen, the archive closed: no engine runs, its scratch folders are being wiped.
+  if (!req.analyze || !session.unlocked) return base
   const status = await engineStatus(id).catch(() => null)
   if (!cfg[id].enabled || !status?.found || status.loggedIn === false)
     return { ...base, problem: `${ENGINE_LABELS[id]} n’est pas prêt (Réglages › Moteurs) : le rapport est fait sans analyse.` }

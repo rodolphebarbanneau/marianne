@@ -9,10 +9,10 @@ import { useApp } from './context'
 import type { View } from './routes'
 
 /**
- * « signaler un bug », from the bug at the top right: the user says what they saw, their engine
- * reads it with the app's diagnostics and writes the report (main/bug-reporter.ts), the user reads
- * it all and opens it on GitHub's bug form, where they read it again before publishing it. Nothing
- * is sent from here.
+ * « signaler un bug », from the bug at the top right, the archive open or not: the user says what
+ * they saw, their engine reads it with the app's diagnostics and writes the report
+ * (main/bug-reporter.ts), the user reads it all and opens it on GitHub's bug form, where they read it
+ * again before publishing it. Nothing is sent from here.
  */
 
 type Step = { kind: 'write' } | { kind: 'working'; analyze: boolean } | { kind: 'review'; report: BugReport } | { kind: 'opened'; shortened: boolean }
@@ -48,18 +48,47 @@ function Elapsed() {
   return <span className="muted">{Math.floor((Date.now() - since) / 1000)} s</span>
 }
 
+/** From the app, the archive open: their engine analyzes the report when it is ready. */
 export function BugReportDialog({ onClose }: { onClose: () => void }) {
   const app = useApp()
   const engineId = app.config.engines.default
   const engine = ENGINE_LABELS[engineId]
   const ready = app.config.engines[engineId].enabled && !!app.lights.find((l) => l.id === engineId)?.ok
+  // Taken when the dialog opens: what was on screen when the user reached for the bug.
+  const [where] = useState(() => ({ screen: screenOf(app.view, app.settingsPage), folderId: app.view.kind === 'folder' ? app.view.id : undefined }))
+  return (
+    <BugReportSteps
+      onClose={onClose}
+      where={where}
+      analyst={ready ? engine : null}
+      unready={`${engine} n’est pas prêt (Réglages › Moteurs) : le rapport se fera sans analyse`}
+    />
+  )
+}
+
+/** From the lock screen: the archive locked, no engine reads the report, which comes without analysis. */
+export function LockedBugReportDialog({ onClose }: { onClose: () => void }) {
+  return <BugReportSteps onClose={onClose} where={{ screen: 'lock screen' }} analyst={null} unready="l’archive verrouillée, le rapport se fera sans analyse" />
+}
+
+interface StepsProps {
+  onClose: () => void
+  /** Where the user was: the screen, and the folder open. */
+  where: { screen: string; folderId?: string }
+  /** The engine that analyzes the report, or null when none can. */
+  analyst: string | null
+  /** Why none can, in the place of the choice. */
+  unready: string
+}
+
+function BugReportSteps({ onClose, where, analyst, unready }: StepsProps) {
+  const ready = analyst !== null
+  const engine = analyst ?? ''
   const [step, setStep] = useState<Step>({ kind: 'write' })
   const [words, setWords] = useState('')
   const [analyze, setAnalyze] = useState(ready)
   const [copied, setCopied] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
-  // Taken when the dialog opens: what was on screen when the user reached for the bug.
-  const [where] = useState(() => ({ screen: screenOf(app.view, app.settingsPage), folderId: app.view.kind === 'folder' ? app.view.id : undefined }))
   const open = useRef(true)
   useEffect(
     () => () => {
@@ -134,7 +163,7 @@ export function BugReportDialog({ onClose }: { onClose: () => void }) {
               <input type="checkbox" checked={analyze && ready} disabled={!ready} onChange={(e) => setAnalyze(e.target.checked)} />
               {ready
                 ? `faire analyser par ${engine}, sans outil ni web : vos mots, l’écran, les dernières erreurs, le déroulé de ce dossier sans vos messages, la fin du journal`
-                : `${engine} n’est pas prêt (Réglages › Moteurs) : le rapport se fera sans analyse`}
+                : unready}
             </label>
             <div className="box-note small">
               Rien ne part d’ici. Le rapport s’ouvre sur GitHub, où vous le relisez avant de le publier. Il sera public : Marianne en retire d’abord ce qu’elle
