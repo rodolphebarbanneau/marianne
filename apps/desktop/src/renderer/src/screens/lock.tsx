@@ -3,8 +3,9 @@ import { ENGINE_LABELS } from '@shared/config'
 import { accelOf, matches, shortcutLabel } from '@shared/shortcuts'
 import type { AccountInfo, AppInfo, DeviceConfig, EngineId, SessionState } from '@shared/types'
 import { ArchivePath } from '../components/archive-path'
+import { LockedBugReportDialog } from '../app/bug-report'
 import { Guide } from '../app/guide'
-import { ReloadIcon } from '../components/icons'
+import { BugIcon, ReloadIcon } from '../components/icons'
 import { Logo } from '../components/logo'
 import { Identicon, Meter, Modal, Spinner } from '../components/ui'
 import { afterUnlock, lockIntent, opening, openingBar, type OpeningStep } from '../lib/after-unlock'
@@ -39,6 +40,7 @@ export function LockScreens({
   })
   const [creating, setCreating] = useState(false)
   const [guide, setGuide] = useState(false)
+  const [reporting, setReporting] = useState(false)
   const last = accounts.find((a) => a.id === (chosen ?? config.lastAccount))
   const account = chosen === '' ? undefined : last
 
@@ -78,6 +80,10 @@ export function LockScreens({
           <button className="icon-btn" title={`recharger la fenêtre (${shortcutLabel(reload, isMac)})`} onClick={() => api.reloadWindow()}>
             <ReloadIcon />
           </button>
+          {/* A bug can stop the user before their archive opens: they can report it from here. */}
+          <button className="icon-btn" title="signaler un bug" onClick={() => setReporting(true)}>
+            <BugIcon />
+          </button>
         </div>
       </header>
       {!listed ? (
@@ -95,6 +101,7 @@ export function LockScreens({
       )}
       {creating && <CreateAccount onClose={() => setCreating(false)} />}
       {guide && <Guide onClose={() => setGuide(false)} />}
+      {reporting && <LockedBugReportDialog onClose={() => setReporting(false)} />}
       <footer className="bottombar">
         <div className="status">
           <span className="dim" style={{ paddingLeft: 8 }}>
