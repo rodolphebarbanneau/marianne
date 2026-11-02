@@ -337,11 +337,14 @@ export const departmentOf = (insee: string) => (/^97/.test(insee) ? insee.slice(
 /** "METEO": what follows 3615. */
 export const serviceCode = (m: Pick<ServiceManifest, 'id'>) => m.id.toUpperCase()
 
-/** Whether a service may reach a URL: https, on one of its declared hosts. */
+/**
+ * Whether a service may reach a URL: https, on one of its declared hosts, on its usual port. A
+ * declared host is its web site, not whatever else listens on its other ports.
+ */
 export function allowedUrl(m: Pick<ServiceManifest, 'hosts'>, url: string): boolean {
   try {
     const u = new URL(url)
-    return u.protocol === 'https:' && m.hosts.includes(u.hostname)
+    return u.protocol === 'https:' && u.port === '' && m.hosts.includes(u.hostname)
   } catch {
     return false
   }

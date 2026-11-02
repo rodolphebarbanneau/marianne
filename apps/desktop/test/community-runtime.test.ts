@@ -1051,6 +1051,7 @@ describe('a community screen’s messages', () => {
     expect(frameMayOpen(m, 'https://www.example.fr/videos/12')).toBe(true)
     expect(frameMayOpen(m, 'https://www.example.fr/other')).toBe(false)
     expect(frameMayOpen(m, 'http://api.example.fr/a')).toBe(false)
+    expect(frameMayOpen(m, 'https://api.example.fr:8080/a')).toBe(false)
     expect(frameMayOpen(m, 'https://evil.example.com/')).toBe(false)
     expect(frameMayOpen(m, 'file:///etc/passwd')).toBe(false)
   })

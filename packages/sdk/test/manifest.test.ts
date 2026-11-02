@@ -235,8 +235,10 @@ describe('departmentOf', () => {
 
 describe('allowedUrl', () => {
   const m = { hosts: ['api.open-meteo.com'] }
-  it('allows https to a declared host only', () => {
+  it('allows https to a declared host only, on its usual port', () => {
     expect(allowedUrl(m, 'https://api.open-meteo.com/v1/forecast?x=1')).toBe(true)
+    expect(allowedUrl(m, 'https://api.open-meteo.com:443/v1')).toBe(true)
+    expect(allowedUrl(m, 'https://api.open-meteo.com:8443/v1')).toBe(false)
     expect(allowedUrl(m, 'http://api.open-meteo.com/v1')).toBe(false)
     expect(allowedUrl(m, 'https://evil.open-meteo.com/')).toBe(false)
     expect(allowedUrl(m, 'https://api.open-meteo.com.evil.fr/')).toBe(false)

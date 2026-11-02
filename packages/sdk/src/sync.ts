@@ -53,8 +53,8 @@ interface ParentPort {
 const REDIRECTS = new Set([301, 302, 303, 307, 308])
 const MAX_REDIRECTS = 5
 
-/** Whether a URL is one the job may download: https, on one of the service's declared hosts. */
-const declared = (u: URL, hosts: string[]) => u.protocol === 'https:' && hosts.includes(u.hostname)
+/** Whether a URL is one the job may download: https, on one of the service's declared hosts, on its usual port. */
+const declared = (u: URL, hosts: string[]) => u.protocol === 'https:' && u.port === '' && hosts.includes(u.hostname)
 
 /**
  * A GET whose redirects are followed by hand, each one checked before it is asked: a download

@@ -231,7 +231,9 @@ export function linkProblems(m: Pick<ServiceManifest, 'id' | 'hosts' | 'links'>,
   for (const link of m.links) {
     let host = ''
     try {
-      host = new URL(link).hostname
+      // On a declared host's usual port: another port of it is not what the service declared.
+      const u = new URL(link)
+      if (!u.port) host = u.hostname
     } catch {
       // refused below
     }
