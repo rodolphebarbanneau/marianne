@@ -60,6 +60,15 @@ export const SHORTCUTS: ShortcutDef[] = [
 
 const BY_ID = Object.fromEntries(SHORTCUTS.map((s) => [s.id, s])) as Record<CommandId, ShortcutDef>
 
+/**
+ * The commands in the order a key is looked for: those whose key the user set first, so that a key they chose stays
+ * theirs when a new version gives it to another command by default (ctrl+1, free until « nouveau dossier » took it).
+ */
+export function matchOrder(custom: Record<string, string> = {}): ShortcutDef[] {
+  const theirs = (def: ShortcutDef) => !!custom[def.id]
+  return [...SHORTCUTS.filter(theirs), ...SHORTCUTS.filter((def) => !theirs(def))]
+}
+
 /** The accelerator of a command, with the user's changes; anything else is taken as an accelerator already. */
 export function accelOf(id: string, mac: boolean, custom: Record<string, string> = {}): string {
   const def = BY_ID[id as CommandId]

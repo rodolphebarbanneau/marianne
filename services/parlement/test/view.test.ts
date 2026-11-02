@@ -35,7 +35,7 @@ describe('a field', () => {
 
   it('is confirmed by Enter alone, and leaves Marianne her shortcuts', () => {
     expect(confirms(key())).toBe(true)
-    // Ctrl+Entrée: a new folder.
+    // With a modifier: Marianne's, for a shortcut the user may give it.
     expect([key({ ctrlKey: true }), key({ metaKey: true }), key({ altKey: true }), key({ shiftKey: true })].map(confirms)).toEqual([false, false, false, false])
     expect(confirms(key({ isComposing: true }))).toBe(false)
     expect(confirms(key({ key: 'a' }))).toBe(false)

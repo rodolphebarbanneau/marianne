@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dialogEnter, plainKey, tabFromKey, type DialogKey } from '../../src/renderer/src/lib/keys'
-import { accelOf, matches, SHORTCUTS, type KeyLike } from '../../src/shared/shortcuts'
+import { accelOf, matches, matchOrder, SHORTCUTS, type KeyLike } from '../../src/shared/shortcuts'
 
 /** A page's own Enter and Space, and the app's shortcuts made of them: each its own. */
 
@@ -49,6 +49,17 @@ describe('the pages’ keys', () => {
   it('are ctrl+1, ctrl+2 and ctrl+3, in the pages’ order, and ctrl+entrée nobody’s', () => {
     expect(['marianne', 'procedures', 'services'].map((id) => accelOf(id, false))).toEqual(['CommandOrControl+1', 'CommandOrControl+2', 'CommandOrControl+3'])
     expect(SHORTCUTS.filter((def) => def.accel === 'CommandOrControl+Enter')).toEqual([])
+  })
+})
+
+describe('a key the user set', () => {
+  it('stays theirs when a command takes it by default: their commands are looked at first', () => {
+    const custom = { settings: 'CommandOrControl+1' }
+    const ctrl1: KeyLike = { key: '1', code: 'Digit1', ctrlKey: true, metaKey: false, shiftKey: false, altKey: false }
+    const first = matchOrder(custom).find((def) => matches(ctrl1, accelOf(def.id, false, custom), false))
+    expect(first?.id).toBe('settings')
+    expect(matchOrder().find((def) => matches(ctrl1, accelOf(def.id, false), false))?.id).toBe('marianne')
+    expect(matchOrder(custom)).toHaveLength(SHORTCUTS.length)
   })
 })
 
