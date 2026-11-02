@@ -445,6 +445,18 @@ describe('a planned task’s follow-up', () => {
     expect(roles(task.folderId)).toEqual(['system:task', 'assistant'])
   })
 
+  it('is redone, but not over a run of its task that came after it: it says so', async () => {
+    const { task, line } = await found()
+    expect(await chat.regenerate(task.folderId)).toBe('nothing')
+    await chat.followUp(task.folderId, line.id)
+    await over(task.folderId)
+    expect(await chat.regenerate(task.folderId)).toBe('redone')
+    await over(task.folderId)
+    await tasks.runNow(task.id)
+    expect(roles(task.folderId).at(-2)).toBe('system:task')
+    expect(await chat.regenerate(task.folderId)).toBe('after-run')
+  })
+
   it('answered again, reads the task’s instruction again; once the task is paused, the label alone, as the user’s words', async () => {
     const { task, line } = await found()
     await chat.followUp(task.folderId, line.id)
