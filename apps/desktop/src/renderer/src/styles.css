@@ -287,12 +287,14 @@ p {
   color: var(--noir);
   padding: 0 0.35em;
 }
+/* The letter spacing also follows the last letter: the right padding gives it back, so the code sits in the middle of
+   its block. */
 .code {
   display: inline-block;
   align-self: flex-start;
   background: var(--accent);
   color: var(--noir);
-  padding: 0 0.4em;
+  padding: 0 0.3em 0 0.4em;
   letter-spacing: 0.1em;
 }
 
@@ -698,13 +700,19 @@ textarea.notes {
 .app.bare .brand {
   padding-left: calc(15px + var(--titlebar-start));
 }
+/* The name, as tall a button as the icons beside it, its box trimmed to its capitals: centred, they stand in the middle
+   of the row, as the icons do. VT323's line box would leave them a pixel high. */
 .mark {
   display: flex;
   align-items: center;
+  height: 28px;
 }
 .wordmark {
   letter-spacing: 0.25em;
   color: var(--hi);
+}
+.mark .wordmark {
+  text-box: trim-both cap alphabetic;
 }
 .mark:hover .wordmark {
   color: var(--accent);
@@ -1467,13 +1475,17 @@ button.card:hover {
   margin-top: 8px;
   max-width: 600px;
 }
+/* The block as tall as the bar, its word in the middle of it: on the line of the field's own words, in the same letters
+   (the right padding gives back the spacing that follows the last letter). */
 .codebar .pre {
+  display: flex;
+  align-items: center;
   font-family: var(--retro);
   font-size: calc(var(--pixel-size) * 1.12);
   line-height: 1;
   background: var(--fg);
   color: var(--noir);
-  padding: 4px 9px 2px;
+  padding: 0 calc(9px - 0.08em) 0 9px;
   letter-spacing: 0.08em;
 }
 .codebar .cfield {
@@ -1536,7 +1548,7 @@ button.card:hover {
   font-size: calc(var(--pixel-size) * 0.95);
   background: var(--blanc);
   color: var(--noir);
-  padding: 0 10px;
+  padding: 0 calc(10px - 0.06em) 0 10px;
   margin-left: 8px;
   display: inline-flex;
   align-items: center;
@@ -2872,6 +2884,11 @@ button.card:hover {
   border: 1px solid var(--rule);
   padding: 3px 8px;
   background: var(--bg-sunken);
+}
+/* Its code in the middle of the field's height, its letters on the line of the words typed beside it (a code stands at
+   the top of a column of its own elsewhere). */
+.palette .phead .code {
+  align-self: center;
 }
 .palette .phead:has(input:focus) {
   border-color: var(--accent);
