@@ -214,7 +214,7 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
   }, [setServiceBar, viewing, searching, tabs.length, code, focused, focusField, keysKey])
   useEffect(() => () => setServiceBar(null), [setServiceBar])
 
-  // Removed while on screen (Réglages › Services), or never added: said, with the way back.
+  // Removed while on screen (its settings, on the Services page), or never added: said, with the way back.
   if (!state)
     return (
       <div className="page service-page">
@@ -423,7 +423,7 @@ export function Consent({ state, onAnswered }: { state: ServiceState; onAnswered
         pour : {m.permissions.purpose} · {reach}
       </span>
       <span className="small dim">
-        Il ne verra rien d’autre de votre profil, ni aucun de vos identifiants.{withoutSources} Vous pourrez changer d’avis dans Réglages › Services.
+        Il ne verra rien d’autre de votre profil, ni aucun de vos identifiants.{withoutSources} Vous pourrez changer d’avis dans Réglages › Accès des services.
       </span>
       <span>
         <button className="btn small primary" disabled={!chosen.length} onClick={() => answer(chosen)}>

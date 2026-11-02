@@ -61,7 +61,7 @@ function Members() {
               {mine.commune.name} ({mine.commune.department}) · d’après votre adresse
             </span>
           )}
-          <button className="parlement-more link" onClick={() => host.openRoute('settings/identity')}>
+          <button className="parlement-more link" onClick={() => host.openRoute('settings/contact')}>
             {mine?.commune ? 'modifier mon adresse' : 'renseigner mon adresse'}
           </button>
         </div>

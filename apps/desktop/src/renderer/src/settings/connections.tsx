@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
+import { DOMAINS } from '@marianne/profile'
 import { LEVELS, ruleLabel } from '@shared/approvals'
 import { ENGINE_BADGES, ENGINE_HOMES, ENGINE_LABELS } from '@shared/config'
 import { siteOf } from '@shared/hosts'
@@ -6,79 +7,173 @@ import type { Site } from '@shared/sites'
 import type { EngineEnvKey, EngineId, EngineModel, EngineStatus, KeychainEntry, PublicSourceId } from '@shared/types'
 import { PUBLIC_SOURCES } from '@shared/public'
 import { useApp } from '../app/context'
-import { Field, Modal, Spinner } from '../components/ui'
+import { Field, SearchField, Spinner } from '../components/ui'
 import { api, errorText, useLive } from '../lib/api'
 import { useSites } from '../lib/content'
 import { shortDate, when } from '../lib/format'
 import { useProfile } from '../lib/profile'
+import { filterSites, settableSites, siteState } from './lists'
+import { Filter, FormDialog, ListHead } from './parts'
 
-/** Public-service websites and APIs: the login kept in the archive, the identifiers each one needs. */
+/**
+ * Réglages › Sites et API: the sites where Marianne keeps something for the user (an identifier and its
+ * password, numbers, the social security number they need), grouped by domain, with a search and a filter;
+ * then the API keys. FranceConnect's sites and those without an account have nothing to set: not listed.
+ */
 export function SitesPane() {
   const profile = useProfile()
   const sites = useSites()
   const [entries, setEntries] = useState<KeychainEntry[]>([])
   const [editing, setEditing] = useState<Site | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [query, setQuery] = useState('')
+  const [which, setWhich] = useState<'all' | 'done' | 'todo'>('all')
   const load = () => void api.listKeychain().then(setEntries)
   useEffect(() => {
     load()
     return api.onKeychain(load)
   }, [])
   const loginOf = (s: Site) => entries.find((e) => e.kind === 'login' && siteOf(e.url) === siteOf(s.url))
-  const api_ = entries.filter((e) => e.kind === 'api')
+  const keys = entries.filter((e) => e.kind === 'api')
+  const rows = settableSites(sites).map((site) => ({ site, state: siteState(site, profile, !!loginOf(site)) }))
+  const done = rows.filter((r) => r.state.done).length
+  const shown = filterSites(rows, query, which)
   return (
     <>
-      <div className="note">
-        Tout est facultatif. Quand un service a une API, Marianne l’interroge directement. Sinon, elle ouvre le site dans son navigateur avec vos identifiants.
-        Vous voyez ce qu’elle fait, vous pouvez prendre la main à tout moment, et rien n’est envoyé, payé ou signé sans votre accord.
+      <ListHead label="vos comptes sur les sites" count={rows.length} />
+      <div className="list-tools">
+        <SearchField className="framed" value={query} onChange={setQuery} placeholder="chercher un site" />
+        <Filter
+          label="lesquels"
+          value={which}
+          onChange={setWhich}
+          options={[
+            ['all', `tous ${rows.length}`],
+            ['done', `renseignés ${done}`],
+            ['todo', `à renseigner ${rows.length - done}`]
+          ]}
+        />
       </div>
-      <div className="rows">
-        {sites.map((s) => {
-          const login = loginOf(s)
-          const fields = profile?.accounts.find((a) => a.siteId === s.id)?.fields ?? {}
-          const filled = (s.fields ?? []).filter((f) => fields[f.key]).length
-          return (
-            <div key={s.id} className="row">
-              <span>
-                <span className="hi">{s.name}</span>
-                <br />
-                <span className="small dim">{s.description}</span>
-              </span>
-              <span className={login ? '' : 'dim'}>
-                {login ? `identifiant enregistré · ${login.username || 'sans nom'}` : s.login === 'franceconnect' ? 'via FranceConnect' : 'non connecté'}
-                {s.fields?.length ? ` · ${filled}/${s.fields.length} numéro${s.fields.length > 1 ? 's' : ''}` : ''}
-              </span>
-              <button className="btn small" onClick={() => setEditing(s)}>
-                {login || filled ? 'modifier' : 'connecter'}
-              </button>
-            </div>
-          )
-        })}
-      </div>
-      <span className="label sub">Clés d’API</span>
-      <div className="rows">
-        {api_.map((e) => (
-          <div key={e.id} className="row">
-            <span>{e.label}</span>
-            <span className="dim small">{e.url}</span>
-            <button
-              className="btn small danger"
-              aria-label={`supprimer la clé d’API ${e.label}`}
-              title="supprimer la clé"
-              onClick={() => confirm(`Supprimer la clé d’API « ${e.label} » de l’archive ?`) && void api.deleteKeychain(e.id)}
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-      </div>
-      <ApiKeyForm />
+      {shown.length ? (
+        <div className="table-wrap">
+          <table className="stable">
+            <thead>
+              <tr>
+                <th>site</th>
+                <th>identifiant</th>
+                <th>vos numéros</th>
+                <th>
+                  <span className="sr-only">actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {DOMAINS.map((d) => {
+                const list = shown.filter((r) => r.site.domain === d.id)
+                if (!list.length) return null
+                return (
+                  <Fragment key={d.id}>
+                    <tr className="grp">
+                      <td colSpan={4}>
+                        <span className="label">{d.label}</span>
+                        <span className="small dim">{list.length}</span>
+                      </td>
+                    </tr>
+                    {list.map(({ site, state }) => (
+                      <tr key={site.id} onClick={() => setEditing(site)}>
+                        <td>
+                          <span className="stack" style={{ gap: 2 }}>
+                            <span className="hi">{site.name}</span>
+                            <span className="small muted">{siteOf(site.url)}</span>
+                          </span>
+                        </td>
+                        <td>
+                          {site.login !== 'account' ? (
+                            <span className="muted">{site.login === 'franceconnect' ? 'FranceConnect' : '—'}</span>
+                          ) : state.login ? (
+                            <>
+                              <span className="ok">✓</span> enregistré
+                            </>
+                          ) : (
+                            <span className="muted">—</span>
+                          )}
+                        </td>
+                        <td>
+                          {state.numbers.length ? (
+                            state.numbers.map((n) => (
+                              <span key={n.label} className="nowrap">
+                                {n.label} {n.given ? <span className="ok">✓</span> : <span className="small accent">à renseigner</span>}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="muted">—</span>
+                          )}
+                        </td>
+                        <td className="r">
+                          <button className="btn small">{state.done ? 'modifier' : 'renseigner'}</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="small dim empty">Aucun site ne correspond.</p>
+      )}
+      <ListHead label="clés d’API" count={keys.length}>
+        <button className="btn small" onClick={() => setAdding(true)}>
+          + ajouter une clé d’API
+        </button>
+      </ListHead>
+      {keys.length ? (
+        <div className="table-wrap">
+          <table className="stable">
+            <thead>
+              <tr>
+                <th>service</th>
+                <th>adresse</th>
+                <th>
+                  <span className="sr-only">actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {keys.map((e) => (
+                <tr key={e.id}>
+                  <td>
+                    <span className="hi">{e.label}</span>
+                  </td>
+                  <td className="dim">{e.url}</td>
+                  <td className="r">
+                    <button
+                      className="btn small danger"
+                      aria-label={`supprimer la clé d’API ${e.label}`}
+                      title="supprimer la clé"
+                      onClick={() => confirm(`Supprimer la clé d’API « ${e.label} » de l’archive ?`) && void api.deleteKeychain(e.id)}
+                    >
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="small dim empty">aucune clé</p>
+      )}
       {editing && <SiteEditor site={editing} entry={loginOf(editing)} onClose={() => setEditing(null)} />}
+      {adding && <ApiKeyDialog onClose={() => setAdding(false)} />}
     </>
   )
 }
 
 function SiteEditor({ site, entry, onClose }: { site: Site; entry?: KeychainEntry; onClose: () => void }) {
   const profile = useProfile()
+  const { openSettings } = useApp()
   const account = profile?.accounts.find((a) => a.siteId === site.id)
   const [username, setUsername] = useState(entry?.username ?? '')
   const [password, setPassword] = useState('')
@@ -88,7 +183,8 @@ function SiteEditor({ site, entry, onClose }: { site: Site; entry?: KeychainEntr
     try {
       if (username || password || entry)
         await api.saveKeychain({ id: entry?.id, kind: 'login', label: site.name, url: site.url, username, ...(password ? { password } : {}) })
-      if (site.fields?.length)
+      // A site that needs the social security number is set up once chosen, even without numbers of its own (siteReady).
+      if (site.fields?.length || site.needsNir)
         await api.updateProfile({ type: 'account', account: { siteId: site.id, fields, since: account?.since ?? new Date().toISOString().slice(0, 10) } })
       onClose()
     } catch (err) {
@@ -96,115 +192,116 @@ function SiteEditor({ site, entry, onClose }: { site: Site; entry?: KeychainEntr
     }
   }
   return (
-    <Modal onClose={onClose}>
-      <div className="in">
-        <span className="label">{site.name}</span>
-        <p className="dim small">{site.description}</p>
-        {site.login !== 'none' && (
-          <>
-            <Field label="identifiant">
-              <input value={username} onChange={(e) => setUsername(e.target.value)} />
-            </Field>
-            <Field
-              label="mot de passe"
-              hint={entry ? 'laissez vide pour garder le mot de passe enregistré' : 'gardé dans votre archive, il n’est jamais envoyé au moteur'}
-            >
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            </Field>
-          </>
-        )}
-        {site.fields?.map((f) => (
-          <Field key={f.key} label={f.label} hint={f.hint}>
-            <input value={fields[f.key] ?? ''} onChange={(e) => setFields({ ...fields, [f.key]: e.target.value.replace(/\s+/g, '') })} />
-          </Field>
-        ))}
-        {error && <p className="bad small">{error}</p>}
-      </div>
-      <div className="foot">
-        <span>
-          {entry && (
-            <button className="btn danger" onClick={() => void api.deleteKeychain(entry.id).then(onClose)}>
-              oublier l’identifiant
-            </button>
-          )}
-        </span>
-        <span style={{ display: 'flex', gap: 8 }}>
+    <FormDialog
+      title={site.name}
+      onClose={onClose}
+      aside={
+        entry && (
+          <button className="btn danger" onClick={() => void api.deleteKeychain(entry.id).then(onClose)}>
+            oublier l’identifiant
+          </button>
+        )
+      }
+      actions={
+        <>
           <button className="btn" onClick={onClose}>
             annuler
           </button>
           <button className="btn primary" onClick={() => void save()}>
             enregistrer
           </button>
-        </span>
-      </div>
-    </Modal>
+        </>
+      }
+    >
+      <p className="dim small">{site.description}</p>
+      {site.login === 'account' && (
+        <div className="form-grid">
+          <Field label="identifiant">
+            <input value={username} onChange={(e) => setUsername(e.target.value)} />
+          </Field>
+          <Field label="mot de passe" hint={entry ? 'laissez vide pour garder celui enregistré' : undefined}>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </Field>
+        </div>
+      )}
+      {!!site.fields?.length && (
+        <div className="form-grid">
+          {site.fields.map((f) => (
+            <Field key={f.key} label={f.label} hint={f.hint}>
+              <input value={fields[f.key] ?? ''} onChange={(e) => setFields({ ...fields, [f.key]: e.target.value.replace(/\s+/g, '') })} />
+            </Field>
+          ))}
+        </div>
+      )}
+      {site.needsNir && (
+        <p className="small">
+          n° de sécurité sociale :{' '}
+          {profile?.person.nir ? (
+            <span className="ok">renseigné</span>
+          ) : (
+            <button className="link" onClick={() => (onClose(), openSettings('identity'))}>
+              à renseigner dans Identité ›
+            </button>
+          )}
+        </p>
+      )}
+      {error && <p className="bad small">{error}</p>}
+    </FormDialog>
   )
 }
 
-const API_KEY_DEFAULTS = { label: 'Légifrance (PISTE)', url: 'https://piste.gouv.fr' }
+const PISTE = { label: 'Légifrance (PISTE)', url: 'https://piste.gouv.fr' }
 
-function ApiKeyForm() {
-  const [open, setOpen] = useState(false)
-  const [label, setLabel] = useState(API_KEY_DEFAULTS.label)
-  const [url, setUrl] = useState(API_KEY_DEFAULTS.url)
+/** An API key added: by default Légifrance's, the only one Marianne uses (PISTE, the State's gateway). */
+function ApiKeyDialog({ onClose }: { onClose: () => void }) {
+  const [label, setLabel] = useState(PISTE.label)
+  const [url, setUrl] = useState(PISTE.url)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  // Saved or given up, the form starts again empty: the secret doesn't stay in it, and opening it again doesn't add the same key twice.
-  const done = () => {
-    setLabel(API_KEY_DEFAULTS.label)
-    setUrl(API_KEY_DEFAULTS.url)
-    setUsername('')
-    setPassword('')
-    setError('')
-    setOpen(false)
-  }
   const save = () => {
     if (busy) return
     setBusy(true)
     setError('')
     api
       .saveKeychain({ kind: 'api', label, url, username, password })
-      .then(done)
+      .then(onClose)
       .catch((err: unknown) => setError(errorText(err)))
       .finally(() => setBusy(false))
   }
-  if (!open)
-    return (
-      <button className="btn small" onClick={() => setOpen(true)}>
-        + ajouter une clé d’API
-      </button>
-    )
   return (
-    <div className="inline-card">
-      <div className="in">
-        <div className="form-grid">
-          <Field label="service">
-            <input value={label} onChange={(e) => setLabel(e.target.value)} />
-          </Field>
-          <Field label="adresse">
-            <input value={url} onChange={(e) => setUrl(e.target.value)} />
-          </Field>
-          <Field label="identifiant client">
-            <input value={username} onChange={(e) => setUsername(e.target.value)} />
-          </Field>
-          <Field label="secret client">
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </Field>
-        </div>
-        {error && <p className="bad small">{error}</p>}
-        <div className="acts">
+    <FormDialog
+      title="ajouter une clé d’API"
+      onClose={onClose}
+      actions={
+        <>
+          <button className="btn" disabled={busy} onClick={onClose}>
+            annuler
+          </button>
           <button className="btn primary" disabled={!username || !password || busy} aria-busy={busy} onClick={save}>
             {busy && <Spinner />}
             enregistrer
           </button>
-          <button className="btn" disabled={busy} onClick={done}>
-            annuler
-          </button>
-        </div>
+        </>
+      }
+    >
+      <div className="form-grid">
+        <Field label="service">
+          <input value={label} onChange={(e) => setLabel(e.target.value)} />
+        </Field>
+        <Field label="adresse">
+          <input value={url} onChange={(e) => setUrl(e.target.value)} />
+        </Field>
+        <Field label="identifiant client">
+          <input value={username} onChange={(e) => setUsername(e.target.value)} />
+        </Field>
+        <Field label="secret client">
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </Field>
       </div>
-    </div>
+      {error && <p className="bad small">{error}</p>}
+    </FormDialog>
   )
 }
 
@@ -262,10 +359,6 @@ export function EnginesPane() {
 
   return (
     <>
-      <div className="note">
-        Quel que soit le moteur, c’est Marianne qui répond, avec les mêmes outils et la même protection de vos données. Si vous en avez plusieurs, vous
-        choisissez lequel utiliser pour chaque dossier, à côté du bouton envoyer.
-      </div>
       {ENGINES.map((id) => {
         const engine = config.engines[id]
         const s = status[id]
@@ -322,8 +415,7 @@ export function EnginesPane() {
               )}
             </span>
             <span className="hint">
-              {ENGINE_HOMES[id].env} · {engine.home ? 'dossier personnalisé' : 'dossier par défaut'} · c’est là que le moteur garde votre connexion et ses
-              réglages
+              {ENGINE_HOMES[id].env} · {engine.home ? 'dossier personnalisé' : 'dossier par défaut'}
               {engine.enabled && s && !s.found ? ' · installez-le, puis réessayez' : ''}
               {s?.error ? ` · ${s.error}` : ''}
             </span>
@@ -362,37 +454,24 @@ export function EnginesPane() {
           </select>
           <span className="dim small">Claude Code</span>
         </div>
-        <div className="row">
-          <span>recherche sur le web</span>
-          <select value={config.web} onChange={(e) => void setConfig({ web: e.target.value as 'off' | 'public' | 'all' })}>
-            <option value="off">jamais</option>
-            <option value="public">sites publics seulement</option>
-            <option value="all">tout le web</option>
-          </select>
-          <span />
-        </div>
       </div>
-      <p className="small dim">
-        Dans la barre du bas : ● prêt, ◐ au travail, ✕ grisé si le moteur est introuvable ou déconnecté. Un moteur désactivé n’y apparaît pas.
-      </p>
     </>
   )
 }
 
-export function BrowserPane() {
-  const { settings, setSettings, openSettings } = useApp()
+/** Réglages › Web et navigateur: where the engine may search, and when the folder's browser shows. */
+export function WebPane() {
+  const { config, setConfig, settings, setSettings } = useApp()
   if (!settings) return null
   return (
     <div className="rows">
       <div className="row">
-        <span>aller en ligne</span>
-        {/* The button in the value column, so that the text starts where its neighbours' do. */}
-        <span>
-          <span className="dim">ce que Marianne fait sans vous demander se règle dans Autorisations</span>{' '}
-          <button className="btn small" onClick={() => openSettings('approvals')}>
-            autorisations →
-          </button>
-        </span>
+        <span>recherche sur le web</span>
+        <select value={config.web} onChange={(e) => void setConfig({ web: e.target.value as 'off' | 'public' | 'all' })}>
+          <option value="off">jamais</option>
+          <option value="public">sites publics seulement</option>
+          <option value="all">tout le web</option>
+        </select>
         <span />
       </div>
       <div className="row">
@@ -404,18 +483,13 @@ export function BrowserPane() {
         </select>
         <span />
       </div>
-      <div className="row">
-        <span>connexions aux sites</span>
-        <span className="dim">gardées le temps de la session, oubliées dès que vous verrouillez</span>
-        <span />
-      </div>
     </div>
   )
 }
 
 /**
- * How much Marianne asks before acting for the user: the level, the floor no level lowers, and the
- * standing permissions given on cards (« toujours… »), each with the way to take it back.
+ * How much Marianne asks before acting for the user: the level, and the standing permissions given on
+ * cards (« toujours… »), each with the way to take it back. What no level lowers is the guide's to say.
  */
 export function ApprovalsPane() {
   const { settings, setSettings } = useApp()
@@ -428,163 +502,109 @@ export function ApprovalsPane() {
   }
   return (
     <>
-      <div className="note">
-        Avant d’agir pour vous, Marianne vous demande votre accord sur une carte. Vous choisissez ici ce qu’elle peut faire sans demander : ce qu’elle fait
-        ainsi reste écrit dans la conversation, « autorisé d’office ».
-      </div>
-      <div className="rows">
-        <div className="row">
-          <span>niveau</span>
-          <span>
-            {LEVELS.map((l) => (
-              <label key={l.id} style={{ display: 'block', marginBottom: 6 }}>
-                <input type="radio" name="approvals-level" checked={level === l.id} onChange={() => void setSettings({ approvals: { level: l.id } })} />{' '}
-                {l.label}
-                {l.id === 'balanced' && <span className="small dim"> (par défaut)</span>}
-                <br />
-                <span className="small dim">{l.text}</span>
-              </label>
-            ))}
-          </span>
-          <span />
-        </div>
-        <div className="row">
-          <span>payer, signer, envoyer</span>
-          <span className="dim">
-            déposer, déclarer, certifier et supprimer aussi : votre oui sur une carte, à chaque fois, à tous les niveaux. Aucune autorisation ne s’y applique.
-          </span>
-          <span />
-        </div>
-        <div className="row">
-          <span>votre profil</span>
-          <span className="dim">
-            seules les échéances peuvent s’enregistrer sans demander. Tout autre changement, et toute suppression, vous est demandé à chaque fois.
-          </span>
-          <span />
-        </div>
-        <div className="row">
-          <span>sites de vos services</span>
-          <span className="dim">
-            sur les sites où agissent vos services officiels, Marianne passe les étapes sans vous demander (chercher, valider, continuer). Payer, signer et
-            envoyer y attendent toujours votre oui ; y aller et y remplir un formulaire suivent le niveau et vos autorisations.
-          </span>
-          <span />
-        </div>
-        <div className="row">
-          <span>suite d’une tâche</span>
-          <span className="dim">
-            le bouton d’une tâche planifiée qui propose une suite (« payer maintenant ») vaut accord pour cette réponse : aller sur les sites de la tâche et
-            remplir les formulaires des sites de son service, sauf en « tout demander ».
-          </span>
-          <span />
-        </div>
-      </div>
-      <span className="label sub">autorisations données</span>
-      <div className="rows">
-        {rules.map((r) => (
-          <div key={r.id} className="row">
-            <span>{ruleLabel(r)}</span>
-            <span className="small dim">donnée le {shortDate(r.at)}, dans tous vos dossiers</span>
-            <button className="link small" onClick={() => remove(r.id)}>
-              retirer
-            </button>
-          </div>
+      <ListHead label="ce que Marianne fait sans vous demander" />
+      <div className="levels">
+        {LEVELS.map((l) => (
+          <label key={l.id}>
+            <input type="radio" name="approvals-level" checked={level === l.id} onChange={() => void setSettings({ approvals: { level: l.id } })} /> {l.label}
+            {l.id === 'balanced' && <span className="small dim"> (par défaut)</span>}
+            <span className="small dim">{l.text}</span>
+          </label>
         ))}
       </div>
-      {!rules.length && (
-        <p className="small dim">
-          Aucune pour l’instant. Une carte vous en propose une avec « toujours… » : aller sur un site, remplir ses formulaires, enregistrer vos échéances.
-        </p>
+      <ListHead label="autorisations données" count={rules.length} />
+      {rules.length ? (
+        <div className="table-wrap">
+          <table className="stable">
+            <thead>
+              <tr>
+                <th>autorisation</th>
+                <th>donnée le</th>
+                <th>
+                  <span className="sr-only">actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rules.map((r) => (
+                <tr key={r.id}>
+                  <td>{ruleLabel(r)}</td>
+                  <td>{shortDate(r.at)}</td>
+                  <td className="r">
+                    <button className="link small" onClick={() => remove(r.id)}>
+                      retirer
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="small dim empty">aucune · une carte vous en propose avec « toujours… »</p>
       )}
       {error && <p className="small bad">{error}</p>}
-      <p className="small dim">
-        Les tâches planifiées ne s’en servent jamais : elles vont seulement sur les sites de leur fiche, pour regarder et vous rendre compte.
-      </p>
     </>
   )
 }
 
-export function PrivacyPane() {
-  return (
-    <>
-      <div className="note">
-        Avant d’envoyer quoi que ce soit au moteur, Marianne remplace vos identifiants par des jetons, comme [[nir]] ou [[iban]]. Elle remet les vrais numéros
-        chez vous, dans les courriers et les formulaires.
-      </div>
-      <div className="rows">
-        <div className="row">
-          <span>toujours masqués</span>
-          <span>sécurité sociale, n° fiscal, IBAN, téléphone, courriel, adresse, n° de pièce d’identité, numéros d’allocataire</span>
-          <span />
-        </div>
-        <div className="row">
-          <span>vos cartes de paiement</span>
-          <span>
-            le moteur n’en connaît que le nom, la marque, les 4 derniers chiffres et l’expiration. Le numéro et le cryptogramme ne lui parviennent jamais, ni
-            sur une page qu’il lit.
-          </span>
-          <span />
-        </div>
-        <div className="row">
-          <span>les pièces</span>
-          <span>Marianne les lit et les masque avant de les donner au moteur. Un scan sans texte n’est envoyé qu’avec votre accord.</span>
-          <span />
-        </div>
-        <div className="row">
-          <span>ce que le moteur voit quand même</span>
-          <span className="dim">le reste du contenu : montants, situation familiale, santé…</span>
-          <span />
-        </div>
-        <div className="row">
-          <span>sur le disque</span>
-          <span className="dim">rien en clair. L’archive est chiffrée, et les copies de travail des moteurs sont effacées dès que vous verrouillez.</span>
-          <span />
-        </div>
-      </div>
-    </>
-  )
-}
-
-/** The public data Marianne keeps on this computer, or queries live. */
+/** The public data Marianne keeps on this computer, or queries live; Légifrance with its PISTE key, on its line. */
 export function DataPane() {
   const { config, setConfig } = useApp()
   const statuses = useLive(api.listPublicSources, api.onPublicSources) ?? []
+  const [entries, setEntries] = useState<KeychainEntry[]>([])
+  const [adding, setAdding] = useState(false)
+  useEffect(() => {
+    const load = () => void api.listKeychain().then(setEntries)
+    load()
+    return api.onKeychain(load)
+  }, [])
+  // As the main process finds it (keychain.hasApi): an API key whose address names PISTE.
+  const piste = entries.some((e) => e.kind === 'api' && /piste/i.test(e.url))
   return (
-    <div className="rows">
-      {PUBLIC_SOURCES.map((s) => {
-        const st = statuses.find((x) => x.id === s.id)
-        const enabled = config.sources[s.id as PublicSourceId]?.enabled
-        return (
-          <div key={s.id} className="row">
-            <span>
-              <label>
-                <input type="checkbox" checked={!!enabled} onChange={(e) => void setConfig({ sources: { [s.id]: { enabled: e.target.checked } } })} />
-                <span className="hi">{s.label}</span>
-              </label>
-              <br />
-              <span className="small dim">{s.description}</span>
-            </span>
-            <span className="small dim">
-              {s.kind === 'offline'
-                ? st?.syncing
-                  ? `${st.syncing.phase === 'download' ? 'téléchargement' : 'indexation'} ${Math.round((st.syncing.done / Math.max(1, st.syncing.total)) * 100)} %`
-                  : st?.syncedAt
-                    ? `sur cet ordinateur · ${when(st.syncedAt)}`
-                    : 'pas encore téléchargé'
-                : 'interrogé en direct'}
-              {st?.error && <span className="bad"> · {st.error}</span>}
-            </span>
-            {s.kind === 'offline' && enabled ? (
-              <button className="btn small" disabled={!!st?.syncing} aria-busy={!!st?.syncing} onClick={() => void api.syncPublicSource(s.id)}>
-                {st?.syncing && <Spinner />}
-                mettre à jour
-              </button>
-            ) : (
-              <span />
-            )}
-          </div>
-        )
-      })}
-    </div>
+    <>
+      <div className="rows">
+        {PUBLIC_SOURCES.map((s) => {
+          const st = statuses.find((x) => x.id === s.id)
+          const enabled = config.sources[s.id as PublicSourceId]?.enabled
+          return (
+            <div key={s.id} className="row">
+              <span>
+                <label>
+                  <input type="checkbox" checked={!!enabled} onChange={(e) => void setConfig({ sources: { [s.id]: { enabled: e.target.checked } } })} />
+                  <span className="hi">{s.label}</span>
+                </label>
+                <br />
+                <span className="small dim">{s.description}</span>
+              </span>
+              <span className="small dim">
+                {s.kind === 'offline'
+                  ? st?.syncing
+                    ? `${st.syncing.phase === 'download' ? 'téléchargement' : 'indexation'} ${Math.round((st.syncing.done / Math.max(1, st.syncing.total)) * 100)} %`
+                    : st?.syncedAt
+                      ? `sur cet ordinateur · ${when(st.syncedAt)}`
+                      : 'pas encore téléchargé'
+                  : 'interrogé en direct'}
+                {s.id === 'legifrance' && (piste ? ' · clé PISTE enregistrée' : <span className="accent"> · clé PISTE à renseigner</span>)}
+                {st?.error && <span className="bad"> · {st.error}</span>}
+              </span>
+              {s.kind === 'offline' && enabled ? (
+                <button className="btn small" disabled={!!st?.syncing} aria-busy={!!st?.syncing} onClick={() => void api.syncPublicSource(s.id)}>
+                  {st?.syncing && <Spinner />}
+                  mettre à jour
+                </button>
+              ) : s.id === 'legifrance' && !piste ? (
+                <button className="btn small" onClick={() => setAdding(true)}>
+                  renseigner la clé
+                </button>
+              ) : (
+                <span />
+              )}
+            </div>
+          )
+        })}
+      </div>
+      {adding && <ApiKeyDialog onClose={() => setAdding(false)} />}
+    </>
   )
 }

@@ -16,7 +16,11 @@ Marianne fetches public information (the newspapers' headlines, the services' da
 
 For 3615 INFOS, Marianne reads the feeds of every newspaper on its list, not only those you accepted: no newspaper can tell which ones you read. It keeps their headlines for 7 days. It reads the start of an article (a few lines) only for the headline shown, when you show it, and never past what a newspaper keeps for its subscribers: the rest is read on its site.
 
-Your news sources are part of your profile, like your leaning: what you read says what you think. The engine never receives them, and no service reads them without your consent, never given in advance (Réglages › Identité › qui peut les lire, who may read them). A service that may not read them gets every newspaper on the list.
+Your news sources are part of your profile, like your leaning: what you read says what you think. The engine never receives them, and no service reads them without your consent, never given in advance (Réglages › Accès des services, Settings › Services' access). A service that may not read them gets every newspaper on the list.
+
+## What your services read
+
+All your services know the commune of your address, to show you what's near you; nothing else of your profile without your consent. A service that wants to read something else (your plate for 3615 PEAGE, your leaning and your themes for 3615 PARLEMENT) asks you the first time you open it. Réglages › Accès des services (Settings › Services' access) shows them all, with what each one reads and when it last did: « accepter » (accept) or « refuser » (refuse), and ⚙ to choose among what it asks for. The same choice is in the service's own settings, on the Services page. The engines never receive your leaning, your themes or your sources.
 
 ## Community services
 
@@ -24,7 +28,7 @@ A community service (a .3615 file, or the community catalogue once it opens) run
 
 ## Backing up
 
-In Réglages › Place et emplacement (Settings › Space and location):
+In Réglages › Place et sauvegarde (Settings › Space and backup):
 
 - **copie de sauvegarde** (backup copy): an encrypted copy of the archive, to keep elsewhere, on a USB key or another disk.
 - **tout exporter** (export everything): your documents, your conversations and your profile, as ordinary, unencrypted files.

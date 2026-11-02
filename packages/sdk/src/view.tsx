@@ -37,9 +37,9 @@ export interface ServiceHost<M extends ServiceMethods = ServiceMethods> {
   /** Hand a question to Marianne: a new folder, the question ready in the composer. */
   ask(text: string, page?: ShownPage): void
   /**
-   * Another screen of the app, as in marianne: links ("settings/identity", "service/carte"), with
+   * Another screen of the app, as in marianne: links ("settings/contact", "service/carte"), with
    * what it opens with: `openRoute('service/infos', { search: 'budget 2027' })` opens 3615 INFOS
-   * with its search field filled; "settings/identity#sources" scrolls Réglages to a section.
+   * with its search field filled; "settings/sources" opens Réglages at that page.
    */
   openRoute(route: string, params?: Record<string, string | number>): void
   /** A page in the system's browser. */

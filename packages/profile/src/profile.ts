@@ -427,14 +427,14 @@ export const SETUP_TARGETS: Record<string, string> = {
 /** Where each setup target is set in the settings; the sites ("account:<site id>") are on "sites". */
 const SETUP_PAGES: Record<string, string> = {
   identity: 'identity',
-  address: 'identity',
-  notes: 'identity',
+  address: 'contact',
+  notes: 'notes',
   household: 'household',
-  id_documents: 'household',
-  companies: 'household',
-  employers: 'household',
-  vehicles: 'household',
-  properties: 'household'
+  id_documents: 'identity',
+  companies: 'assets',
+  employers: 'assets',
+  vehicles: 'assets',
+  properties: 'assets'
 }
 
 /** The settings page of a setup target; null when there is no such target. */

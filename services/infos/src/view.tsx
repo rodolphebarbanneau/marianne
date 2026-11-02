@@ -248,7 +248,7 @@ function Screen({ since }: { since: string | null }) {
           <span className="infos-tools">
             <span className="seg">
               {r.filtered && (
-                <button className={all ? '' : 'on'} onClick={() => setAll(false)} title="les sources que vous acceptez (Réglages › Identité)">
+                <button className={all ? '' : 'on'} onClick={() => setAll(false)} title="les sources que vous acceptez (Réglages › Sources d’information)">
                   vos sources · {r.accepted}
                 </button>
               )}
@@ -261,7 +261,12 @@ function Screen({ since }: { since: string | null }) {
                 toutes · {r.sources.length}
               </button>
             </span>
-            <button className="icon-btn" onClick={infos.openSources} title="vos sources et leurs couleurs (Réglages › Identité)" aria-label="vos sources">
+            <button
+              className="icon-btn"
+              onClick={infos.openSources}
+              title="vos sources et leurs couleurs (Réglages › Sources d’information)"
+              aria-label="vos sources"
+            >
               <GearIcon />
             </button>
           </span>
@@ -289,8 +294,8 @@ function Screen({ since }: { since: string | null }) {
             {!r.filtered && (
               <p className="small dim infos-shared">
                 vos sources ne sont pas partagées avec INFOS ·{' '}
-                <button className="link" onClick={() => host.openRoute('settings/identity')}>
-                  Réglages › Identité
+                <button className="link" onClick={() => host.openRoute('settings/access')}>
+                  Réglages › Accès des services
                 </button>
               </p>
             )}

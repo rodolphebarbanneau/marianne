@@ -33,6 +33,8 @@ export function routeTarget(route: string, params?: Record<string, string | numb
   const [path, section = ''] = route.split('#')
   const [kind, arg = ''] = path.split(/[:/]/)
   if (kind === 'folder' && arg) return { kind: 'view', view: { kind: 'folder', id: arg } }
+  // Réglages › Services went: each service's settings are its own, on the Services page.
+  if (kind === 'settings' && arg === 'services') return { kind: 'view', view: { kind: 'page', page: 'services' } }
   if (kind === 'settings') return { kind: 'settings', page: arg || 'identity', section }
   if (kind === 'service' && arg) return { kind: 'view', view: { kind: 'service', id: arg, ...(params && Object.keys(params).length ? { params } : {}) } }
   if (kind === 'domain' && (DOMAIN_IDS as readonly string[]).includes(arg)) return { kind: 'view', view: { kind: 'domain', id: arg as DomainId } }

@@ -7,7 +7,7 @@
 - **Marianne doesn't answer.** Check that your engine is installed and signed in: the lights at the bottom left, and Réglages › Moteurs (Settings › Engines), where « se connecter » (sign in) opens its sign-in. When the engine isn't signed in, the answer says so, with a button « ouvrir Réglages › Moteurs » (open Settings › Engines). To install one, see [Installing Marianne](install.md).
 - **A planned task didn't run.** It only runs while Marianne is open and your archive unlocked, at the first opening of its day or after it, and never while Marianne is answering you. Check that it isn't paused, in Démarches › « tâches planifiées » (planned tasks).
 - **The screen isn't up to date.** Reload the window, with ctrl+shift+R (cmd+shift+R on macOS) or the button at the top right. The archive stays open.
-- **The archive is full.** Make some room in Réglages › Place et emplacement (Settings › Space and location).
+- **The archive is full.** Make some room in Réglages › Place et sauvegarde (Settings › Space and backup).
 
 In the app, F1 opens the guide, with links to the project.
 

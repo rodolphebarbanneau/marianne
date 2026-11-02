@@ -430,8 +430,8 @@ function StepAction({
       return (
         <span className="small dim">
           {button(null)} {why} ·{' '}
-          <button className="link" onClick={() => app.openSettings('services')}>
-            réglages des services
+          <button className="link" onClick={() => app.goPage('services')}>
+            voir mes services
           </button>
         </span>
       )

@@ -1,32 +1,39 @@
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { Boundary, SearchField } from '../components/ui'
+import { api } from '../lib/api'
 import { AccountsPane, SecurityPane, SpacePane } from './archive'
-import { ApprovalsPane, BrowserPane, DataPane, EnginesPane, PrivacyPane, SitesPane } from './connections'
+import { ApprovalsPane, DataPane, EnginesPane, SitesPane, WebPane } from './connections'
 import { AboutPane, DisplayPane, ShortcutsPane, SkillsPane } from './application'
-import { DocumentsPane, HouseholdPane, IdentityPane } from './me'
-import { PaymentPane } from './payment'
-import { ServicesPane } from './pages-panes'
-import { SETTINGS_GROUPS, SETTINGS_PAGES } from './pages'
+import { AssetsPane, ContactPane, DocumentsPane, HouseholdPane, IdentityPane, NotesPane } from './me'
+import { AccessPane, LeaningPane, ThemesPane } from './opinions'
+import { MoneyPane } from './payment'
+import { SourcesPane } from './sources'
+import { guideUrl, SETTINGS_GROUPS, SETTINGS_PAGES, settingsTarget } from './pages'
 
 const PANES: Record<string, () => React.ReactNode> = {
   identity: () => <IdentityPane />,
+  contact: () => <ContactPane />,
   household: () => <HouseholdPane />,
+  assets: () => <AssetsPane />,
+  money: () => <MoneyPane />,
   documents: () => <DocumentsPane />,
-  payment: () => <PaymentPane />,
+  leaning: () => <LeaningPane />,
+  themes: () => <ThemesPane />,
+  sources: () => <SourcesPane />,
+  engines: () => <EnginesPane />,
+  notes: () => <NotesPane />,
+  skills: () => <SkillsPane />,
+  web: () => <WebPane />,
+  approvals: () => <ApprovalsPane />,
+  access: () => <AccessPane />,
+  sites: () => <SitesPane />,
+  data: () => <DataPane />,
   space: () => <SpacePane />,
   security: () => <SecurityPane />,
   accounts: () => <AccountsPane />,
-  sites: () => <SitesPane />,
-  engines: () => <EnginesPane />,
-  browser: () => <BrowserPane />,
-  approvals: () => <ApprovalsPane />,
-  privacy: () => <PrivacyPane />,
-  data: () => <DataPane />,
-  services: () => <ServicesPane />,
   display: () => <DisplayPane />,
   shortcuts: () => <ShortcutsPane />,
-  skills: () => <SkillsPane />,
   about: () => <AboutPane />
 }
 
@@ -36,13 +43,10 @@ const norm = (s: string) =>
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
 
-/** Pages that went, and where what they had is now: an old link (an engine's answer kept in a folder) still lands there. */
-const MOVED: Record<string, string> = { sources: 'identity#sources' }
-
 /** Settings, a dialog over the application: the sections on the left, the page on the right; « page#section » opens a page at a section. */
 export function SettingsDialog() {
   const app = useApp()
-  const [page, section] = (MOVED[app.settingsPage ?? ''] ?? app.settingsPage ?? 'identity').split('#')
+  const { page, section } = settingsTarget(app.settingsPage ?? 'identity')
   const [query, setQuery] = useState('')
   const pageRef = useRef<HTMLDivElement>(null)
   const box = useRef<HTMLDivElement>(null)
@@ -94,7 +98,8 @@ export function SettingsDialog() {
   })
 
   const q = norm(query.trim())
-  const title = SETTINGS_PAGES.find((p) => p.id === page)?.label ?? ''
+  const current = SETTINGS_PAGES.find((p) => p.id === page)
+  const title = current?.label ?? ''
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && close()}>
       <div ref={box} className="settings" role="dialog" aria-modal="true" aria-label="réglages" tabIndex={-1}>
@@ -120,7 +125,19 @@ export function SettingsDialog() {
           <button className="btn small close" onClick={close}>
             fermer ✕
           </button>
-          <span className="ptitle">{title}</span>
+          <span className="ptitle">
+            {title}
+            {/* What explains the page is in the guide, not on it. */}
+            {current?.guide && (
+              <button
+                className="link guide-link"
+                title="les explications de cette page, dans le guide"
+                onClick={() => api.openExternal(guideUrl(current.guide!))}
+              >
+                guide ↗
+              </button>
+            )}
+          </span>
           <Boundary key={page} label={title}>
             {PANES[page]?.() ?? null}
           </Boundary>

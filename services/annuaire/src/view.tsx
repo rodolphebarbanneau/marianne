@@ -76,7 +76,7 @@ export function View() {
     <div className="annuaire">
       <div className="annuaire-body">
         {!home && (
-          <Notice action={{ label: 'renseigner mon adresse', onClick: () => host.openRoute('settings/identity') }}>
+          <Notice action={{ label: 'renseigner mon adresse', onClick: () => host.openRoute('settings/contact') }}>
             Renseignez votre adresse pour voir les services publics près de chez vous.
           </Notice>
         )}

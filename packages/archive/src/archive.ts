@@ -45,7 +45,7 @@ export class WrongSecretError extends Error {
 
 export class ArchiveFullError extends Error {
   constructor() {
-    super('L’archive est pleine (1 Go). Libérez de la place dans Réglages › Place et emplacement.')
+    super('L’archive est pleine (1 Go). Libérez de la place dans Réglages › Place et sauvegarde.')
   }
 }
 

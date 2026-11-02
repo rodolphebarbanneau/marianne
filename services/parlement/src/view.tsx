@@ -192,7 +192,7 @@ function Screen() {
                   <button
                     className={prefs.lens ? 'on' : ''}
                     onClick={() => setPrefs({ lens: !prefs.lens })}
-                    title={`comparer avec la sensibilité indiquée dans Réglages › Identité (${lensName})`}
+                    title={`comparer avec la sensibilité indiquée dans Réglages › Sensibilité (${lensName})`}
                   >
                     <LensIcon /> mes idées
                   </button>

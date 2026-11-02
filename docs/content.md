@@ -183,7 +183,7 @@ The folder that follows a démarche shows its steps and the actions of the step 
 `news-sources.json` is the press Marianne reads for 3615 INFOS:
 
 - the same list for everyone: no feed is added by hand;
-- the user accepts or sets aside sources in Réglages › Identité, but Marianne reads every source whatever they chose;
+- the user accepts or sets aside sources in Réglages › Sources d'information, but Marianne reads every source whatever they chose;
 - it shows what a feed shows (title, time, link, summary) and, for the one title a subject shows, the start of its article: never the whole article, never past a paywall.
 
 ```json
@@ -221,7 +221,7 @@ The folder that follows a démarche shows its steps and the actions of the step 
 
 - `centre` is a source with no clear lean, drawn in a neutral colour. The fact-checkers, which take no side, are `centre`.
 - It is Marianne's classification: shown as the source's colour and its place from left to right, never used to rank the news or pick a source.
-- The user may give any source another position in Réglages › Identité › sources d'information.
+- The user may give any source another position in Réglages › Sources d'information.
 
 **Dates.** Le Parisien's feeds carry no dates, for instance. Give such a source its news sitemap (sitemaps.org with Google News' `publication_date`, as its `robots.txt` lists it): an undated title then takes its time, and its picture, from the sitemap. Without it, an undated title is dated when Marianne first sees it, and the whole feed would land in the hour of a first reading.
 
@@ -229,7 +229,7 @@ The folder that follows a démarche shows its steps and the actions of the step 
 
 ## Parliamentary groups
 
-`parliament.json` lists the groups of the Assemblée nationale and of the Sénat, from left to right in each hemicycle. A user may say which one they lean to, in Réglages › Identité.
+`parliament.json` lists the groups of the Assemblée nationale and of the Sénat, from left to right in each hemicycle. A user may say which one they lean to, in Réglages › Sensibilité.
 
 ```json
 { "chamber": "an", "acronym": "EcoS", "name": "Écologiste et Social", "color": "#77aa79", "senate": "GEST" }

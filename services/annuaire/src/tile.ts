@@ -20,7 +20,7 @@ const WEEK = 7
 /** The tile while the profile has no address: where to give it. */
 export const NO_HOME_TILE: ServiceTile = {
   title: 'votre commune ?',
-  lines: [{ text: 'renseignez votre adresse dans Réglages › Identité', tone: 'dim' }]
+  lines: [{ text: 'renseignez votre adresse dans Réglages › Coordonnées', tone: 'dim' }]
 }
 
 /** "17 h 30", "16 h": a time of the directory ("17:30"). */

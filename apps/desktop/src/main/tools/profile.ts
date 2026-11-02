@@ -14,38 +14,45 @@ import { clip, DOMAIN_IDS, plural, tool, TOKEN, ToolError } from './tool'
 
 /** The engine's access to the user's profile: its context, the cards to change or set it up, deadlines and documents. */
 
-/** The settings pages, by id, as the setup card names them ("renseigner …"). */
+/** The settings pages, by id, as the setup card names them (« renseigner … »): renderer/src/settings/pages.ts. */
 const SETTINGS_PAGES: Record<string, string> = {
   identity: 'votre identité',
-  household: 'votre foyer et vos entités',
+  contact: 'vos coordonnées',
+  household: 'votre foyer',
+  assets: 'vos activités et vos biens',
+  money: 'votre compte et vos cartes de paiement',
   documents: 'vos documents',
-  payment: 'vos cartes de paiement',
-  space: 'l’emplacement de votre archive',
+  leaning: 'votre sensibilité',
+  themes: 'vos thèmes',
+  sources: 'vos sources d’information',
+  engines: 'vos moteurs',
+  notes: 'vos notes pour Marianne',
+  skills: 'les compétences',
+  web: 'le web et le navigateur',
+  approvals: 'vos autorisations',
+  access: 'l’accès de vos services',
+  sites: 'vos sites et accès',
+  data: 'les données publiques',
+  space: 'la place et la sauvegarde',
   security: 'votre phrase de passe',
   accounts: 'vos comptes',
-  sites: 'vos sites et accès',
-  engines: 'vos moteurs',
-  browser: 'le navigateur',
-  approvals: 'vos autorisations',
-  privacy: 'la confidentialité',
-  data: 'les données publiques',
-  services: 'les services',
   display: 'l’affichage',
   shortcuts: 'les raccourcis clavier',
-  skills: 'les compétences',
   about: 'les mises à jour'
 }
 
+/** Former pages, still asked for by an engine that knew them: where they are now. */
+const MOVED: Record<string, string> = { payment: 'money', browser: 'web', privacy: 'access' }
+
 /** The settings page and the card's label for a setup target; null when there is no such target. */
 export function setupCard(target: string): { page: string; label: string } | null {
-  // The source must be on (public data), then its PISTE key stored (sites and API).
-  if (target === 'legifrance') return { page: isEnabled('legifrance') ? 'sites' : 'data', label: 'votre accès Légifrance' }
-  // The news sources are a section of Réglages › Identité.
-  if (target === 'sources') return { page: 'identity#sources', label: 'vos sources d’information' }
+  // The source must be on (public data), then its PISTE key stored (on its line, in the same page).
+  if (target === 'legifrance') return { page: 'data', label: 'votre accès Légifrance' }
   const label = setupLabel(target, content.get().sites)
   const page = setupPage(target)
   if (label && page) return { page, label }
-  return SETTINGS_PAGES[target] ? { page: target, label: SETTINGS_PAGES[target] } : null
+  const moved = MOVED[target] ?? target
+  return SETTINGS_PAGES[moved] ? { page: moved, label: SETTINGS_PAGES[moved] } : null
 }
 
 /** Where the address was found, for its INSEE code and coordinates; none when the source is off or unreachable. */

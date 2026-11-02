@@ -3,7 +3,7 @@ import type { NewsChoice } from '@marianne/profile'
 import { keptSections, leanOf, refusedSources, regionOf, type NewsSource } from './news'
 
 /**
- * What Réglages › Identité › sources d'information makes of the user's choice (opinions.sources):
+ * What Réglages › Sources d'information makes of the user's choice (opinions.sources):
  * the defaults made a choice of their own at the first change, the edits (accepted or set aside,
  * the sections, the colour) and the kiosk's summary. Reading a choice is news.ts's, shared with the
  * main process, so both agree on what the defaults are.

@@ -347,9 +347,9 @@ describe('prompt', () => {
     const p = systemPrompt({ ...base, legifrance: true })
     expect(p).toContain('Paying by card goes through pay_by_card')
     expect(p).toContain('Never ask for card details in the conversation, nor type them')
-    expect(p).toContain('(request_setup, target payment)')
+    expect(p).toContain('(request_setup, target money)')
     expect(p).toMatch(/3-D Secure[^\n]*hand_over/)
-    expect(p).toContain('documents, payment, space')
+    expect(p).toContain('assets, money, documents')
   })
 
   it('stays generic: no service, no domain’s scenario; the services say theirs', () => {

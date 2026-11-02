@@ -274,13 +274,18 @@ describe('the sites Marianne knows', () => {
 
 describe('setup cards', () => {
   it('sends each target to its settings page', () => {
-    expect(setupCard('address')).toEqual({ page: 'identity', label: 'votre adresse' })
-    expect(setupCard('vehicles')).toEqual({ page: 'household', label: 'vos véhicules' })
+    expect(setupCard('address')).toEqual({ page: 'contact', label: 'votre adresse' })
+    expect(setupCard('id_documents')).toEqual({ page: 'identity', label: 'vos pièces d’identité' })
+    expect(setupCard('vehicles')).toEqual({ page: 'assets', label: 'vos véhicules' })
+    expect(setupCard('notes')?.page).toBe('notes')
     expect(setupCard('account:impots')?.page).toBe('sites')
-    expect(setupCard('browser')).toEqual({ page: 'browser', label: 'le navigateur' })
+    expect(setupCard('sources')).toEqual({ page: 'sources', label: 'vos sources d’information' })
     expect(setupCard('approvals')).toEqual({ page: 'approvals', label: 'vos autorisations' })
-    expect(setupCard('payment')).toEqual({ page: 'payment', label: 'vos cartes de paiement' })
-    // Légifrance is off by default: turn the source on first.
+    // Pages that went, as an engine that knew them may still ask: where they are now.
+    expect(setupCard('browser')).toEqual({ page: 'web', label: 'le web et le navigateur' })
+    expect(setupCard('payment')).toEqual({ page: 'money', label: 'votre compte et vos cartes de paiement' })
+    expect(setupCard('privacy')?.page).toBe('access')
+    // Légifrance: the source on, and its PISTE key on its line, in the same page.
     expect(setupCard('legifrance')?.page).toBe('data')
     expect(setupCard('account:nowhere')).toBeNull()
     expect(setupCard('elsewhere')).toBeNull()

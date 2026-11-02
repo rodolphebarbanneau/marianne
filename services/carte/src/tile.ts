@@ -51,7 +51,7 @@ export function franceTile(departments: DepartmentFigures[]): ServiceTile | null
     value: { text: shortPopulation(population), unit: 'habitants · France' },
     lines: [
       { text: plain(`densité ${perSquareKm(population / area)} · ${formatNumber(communes)} communes`) },
-      { text: 'votre commune ? votre adresse dans Réglages › Identité', tone: 'dim' }
+      { text: 'votre commune ? votre adresse dans Réglages › Coordonnées', tone: 'dim' }
     ]
   }
 }

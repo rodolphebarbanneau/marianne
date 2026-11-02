@@ -28,7 +28,7 @@ const HEAT = 35
 /** The tile while the profile has no address: where to give it. */
 export const NO_HOME_TILE: ServiceTile = {
   title: 'votre commune ?',
-  lines: [{ text: 'renseignez votre adresse dans Réglages › Identité', tone: 'dim' }]
+  lines: [{ text: 'renseignez votre adresse dans Réglages › Coordonnées', tone: 'dim' }]
 }
 
 /** "auj." for today, then "sam", "dim": the bars' labels. */

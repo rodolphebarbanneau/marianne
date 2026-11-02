@@ -52,7 +52,7 @@ export function View() {
         </button>
       </ServiceTools>
       {!host.home && (
-        <Notice action={{ label: 'renseigner mon adresse', onClick: () => host.openRoute('settings/identity') }}>
+        <Notice action={{ label: 'renseigner mon adresse', onClick: () => host.openRoute('settings/contact') }}>
           Votre commune n’est pas renseignée : 3615 BONJOUR vous saluera sans savoir d’où.
         </Notice>
       )}

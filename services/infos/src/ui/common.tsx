@@ -36,7 +36,7 @@ export interface Infos {
   setAll(all: boolean): void
   /** Another tab of the screen (« tout le fil › »). */
   openTab(id: string): void
-  /** Réglages › Identité, at « sources d’information ». */
+  /** Réglages › Sources d’information. */
   openSources(): void
   /** The search typed in the frame's field. */
   query: string
@@ -62,7 +62,7 @@ export function infosOf(
     lean: (id) => byId.get(id)?.lean ?? 'centre',
     openArticle: (h) => host.openUrl(h.url),
     ask: (question, items) => host.ask(askText(question, items, names)),
-    openSources: () => host.openRoute('settings/identity#sources')
+    openSources: () => host.openRoute('settings/sources')
   }
 }
 

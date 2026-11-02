@@ -46,11 +46,11 @@ export function View() {
     <div className="peage">
       <div className="peage-body">
         {vehicles.data && !vehicles.data.granted ? (
-          <Notice action={{ label: 'autoriser dans les réglages', onClick: () => host.openRoute('settings/services') }}>
+          <Notice action={{ label: 'autoriser dans les réglages', onClick: () => host.openRoute('settings/access') }}>
             3615 PEAGE n’a pas accès aux plaques de vos véhicules : il en a besoin pour noter vos trajets et vous rappeler les péages à payer.
           </Notice>
         ) : vehicles.data && !list.length ? (
-          <Notice action={{ label: 'ajouter un véhicule', onClick: () => host.openRoute('settings/household') }}>
+          <Notice action={{ label: 'ajouter un véhicule', onClick: () => host.openRoute('settings/assets') }}>
             Aucun véhicule dans votre profil : ajoutez celui avec lequel vous empruntez l’autoroute.
           </Notice>
         ) : null}

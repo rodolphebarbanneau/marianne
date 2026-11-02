@@ -344,11 +344,11 @@ export interface MarianneApi {
   // ---------- content (sites, news sources, procedures: updated by signed bundles) ----------
   /** The catalog of public-service websites. */
   listSites(): Promise<Site[]>
-  /** The news sources Marianne reads (3615 INFOS, Réglages › Identité › sources d'information). */
+  /** The news sources Marianne reads (3615 INFOS, Réglages › Sources d'information). */
   newsSources(): Promise<NewsSource[]>
-  /** What the 7-day history says of each source, for Réglages › Identité › sources d'information. */
+  /** What the 7-day history says of each source, for Réglages › Sources d'information. */
   newsStats(): Promise<NewsStats>
-  /** The parliamentary groups of both chambers (the content's parliament.json), for the leaning of Réglages › Identité. */
+  /** The parliamentary groups of both chambers (the content's parliament.json), for Réglages › Sensibilité. */
   parliamentGroups(): Promise<ParliamentGroup[]>
   /** Newer content was taken: the sites, news sources and procedures are worth asking again. */
   onContent(cb: () => void): () => void

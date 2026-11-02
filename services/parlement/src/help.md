@@ -3,5 +3,5 @@ L’**Assemblée nationale** et le **Sénat** : vos élus et leurs votes, les sc
 - Votre député et vos sénateurs viennent de votre adresse ; ☆ suivez-en d’autres.
 - Les données ouvertes des deux chambres sont gardées sur cet ordinateur et mises à jour chaque jour (une centaine de Mo la première fois).
 - « chambre » choisit l’Assemblée, le Sénat ou les deux, pour tous les onglets.
-- ◐ mes idées compare les votes avec la sensibilité indiquée dans Réglages › Identité, si vous l’avez permis : pour comparer, jamais pour trier.
+- ◐ mes idées compare les votes avec la sensibilité indiquée dans Réglages › Sensibilité, si vous l’avez permis : pour comparer, jamais pour trier.
 - Les vidéos : l’ordre du jour suit la lecture ; un direct remonte au début de la séance (DIRECT y revient) ; options : extrait (X), lien, heure de l’hémicycle ; P pour le mini-lecteur.

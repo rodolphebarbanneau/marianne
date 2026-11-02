@@ -11,8 +11,8 @@ import type { Trip, TollNetwork } from './types'
 const NO_AMOUNTS = "3615 PEAGE doesn't know the amounts due: the operator's official payment page shows them from the plate. Never state or guess an amount."
 const SCAMS =
   'Operators send no payment link by SMS: a text or email claiming an unpaid toll is a scam; pay only on the official page, typed in, never from a link received.'
-const SETTINGS_SERVICES = 'marianne:settings/services'
-const SETTINGS_HOUSEHOLD = 'marianne:settings/household'
+const SETTINGS_ACCESS = 'marianne:settings/access'
+const SETTINGS_ASSETS = 'marianne:settings/assets'
 
 /** A vehicle for the model: its plate when granted (the app turns it into a token), its model when known, its id. */
 function vehicleName(vehicles: Vehicle[], id: string): string {
@@ -40,8 +40,8 @@ function problemText(problem: TripProblem, args: { vehicle: string; network: str
   switch (problem) {
     case 'vehicle':
       if (!granted)
-        return `3615 PEAGE can't see the user's vehicles: they haven't let it read their plates. They can allow it in Réglages › Services (${SETTINGS_SERVICES}).`
-      if (!vehicles.length) return `The user has no vehicle in their profile: they add one in Réglages › Foyer & entités (${SETTINGS_HOUSEHOLD}).`
+        return `3615 PEAGE can't see the user's vehicles: they haven't let it read their plates. They can allow it in Réglages › Accès des services (${SETTINGS_ACCESS}).`
+      if (!vehicles.length) return `The user has no vehicle in their profile: they add one in Réglages › Activités et biens (${SETTINGS_ASSETS}).`
       return `No vehicle of the user has the id "${args.vehicle}". Their vehicles: ${vehicles.map((v) => vehicleName(vehicles, v.id)).join('; ')}.`
     case 'network':
       return `No free-flow network has the id "${args.network}". Networks: ${NETWORKS.map((n) => `${n.id} (${n.name})`).join(', ')}.`
@@ -122,10 +122,10 @@ export function createTools(ctx: Pick<ServiceContext, 'profile'>, store: TripSto
         parts.push(
           '',
           !plates()
-            ? `Vehicles: the user hasn't let 3615 PEAGE read their plates (Réglages › Services, ${SETTINGS_SERVICES}); vehicles show by id only.`
+            ? `Vehicles: the user hasn't let 3615 PEAGE read their plates (Réglages › Accès des services, ${SETTINGS_ACCESS}); vehicles show by id only.`
             : vehicles.length
               ? `Vehicles: ${vehicles.map((v) => vehicleName(vehicles, v.id)).join('; ')}.`
-              : `Vehicles: none in the profile (Réglages › Foyer & entités, ${SETTINGS_HOUSEHOLD}).`
+              : `Vehicles: none in the profile (Réglages › Activités et biens, ${SETTINGS_ASSETS}).`
         )
         return parts.join('\n')
       }

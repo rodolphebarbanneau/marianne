@@ -55,7 +55,7 @@ function vehicles(m: ServiceManifest): Vehicle[] {
 }
 
 /**
- * The day a service last read the user's opinions (leaning, themes, sources), kept so that Réglages › Identité can say it:
+ * The day a service last read the user's opinions (leaning, themes, sources), kept so that Réglages › Accès des services can say it:
  * written once a day at most.
  */
 function noteRead(m: ServiceManifest): void {

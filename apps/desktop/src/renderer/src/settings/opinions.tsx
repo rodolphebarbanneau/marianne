@@ -3,19 +3,19 @@ import { THEMES, type ProfileField, type ServiceState } from '@marianne/sdk'
 import type { Opinions } from '@marianne/profile'
 import type { ParliamentGroup } from '@shared/api'
 import { useApp } from '../app/context'
-import { GearIcon, SearchIcon } from '../components/icons'
+import { GearIcon } from '../components/icons'
+import { SearchField } from '../components/ui'
 import { useServices } from '../host'
 import { api, errorText } from '../lib/api'
 import { useParliamentGroups } from '../lib/content'
 import { useProfile } from '../lib/profile'
-import { ASK_LABELS, OPINION_FIELDS, opinionReaders, readSummary } from './readers'
-import { SourcesSection } from './sources'
+import { ListHead, ReadBy } from './parts'
+import { accessReaders, ASK_LABELS, readSummary } from './readers'
 
 /**
- * What the user may say of their opinions, and who may read it: an optional leaning (real groups
- * of both chambers, never inferred), themes, the news sources they read, and for each service that
- * asks, accepter or refuser (the gear to choose among what it asked for). Engines never receive
- * any of them.
+ * MES IDÉES and who may read them: an optional leaning (real groups of both chambers, never inferred),
+ * themes, and, for each service that asks to read part of the profile, accepter or refuser (the gear to
+ * choose among what it asked for). Engines never receive the opinions.
  */
 
 /** A group: its colour as a block, its acronym. */
@@ -28,20 +28,26 @@ function GroupMark({ group }: { group: ParliamentGroup }) {
   )
 }
 
-export function OpinionsSection() {
-  const profile = useProfile()
-  const groups = useParliamentGroups()
+/** Only what changed: the rest stays as Marianne has it, even if this page hasn't seen it yet. */
+function useOpinions() {
   const [error, setError] = useState('')
-  const [choosing, setChoosing] = useState(false)
-  const [senateOpen, setSenateOpen] = useState(false)
-  if (!profile) return null
-  const { leaning, themes } = profile.opinions
   const save = (change: Partial<Opinions>) =>
     void api
-      // Only what changed: the rest stays as Marianne has it, even if this page hasn't seen it yet.
       .updateProfile({ type: 'opinions', opinions: change })
       .then(() => setError(''))
       .catch((err) => setError(errorText(err)))
+  return { save, error }
+}
+
+/** Réglages › Sensibilité: the groups of the Assemblée the user feels close to, and their Sénat counterparts. */
+export function LeaningPane() {
+  const profile = useProfile()
+  const groups = useParliamentGroups()
+  const { save, error } = useOpinions()
+  const [choosing, setChoosing] = useState(false)
+  const [senateOpen, setSenateOpen] = useState(false)
+  if (!profile) return null
+  const { leaning } = profile.opinions
   const an = groups.filter((g) => g.chamber === 'an')
   const se = groups.filter((g) => g.chamber === 'se')
   const declared = leaning.assembly.length > 0 || leaning.senate.length > 0
@@ -59,16 +65,10 @@ export function OpinionsSection() {
   }
   const toggleSenate = (acronym: string) =>
     save({ leaning: { ...leaning, senate: leaning.senate.includes(acronym) ? leaning.senate.filter((s) => s !== acronym) : [...leaning.senate, acronym] } })
-  const toggleTheme = (id: string) => save({ themes: themes.includes(id) ? themes.filter((t) => t !== id) : [...themes, id] })
 
   return (
     <>
-      <span className="label sub">sensibilité politique · facultatif</span>
       <div className="space opinions">
-        <span>
-          Si vous le souhaitez, indiquez les groupes dont vous vous sentez proche. Marianne s’en sert seulement pour <span className="hi">comparer</span> («
-          votre députée a voté comme vos idées ») : elle ne trie, ne cache et ne recommande rien.
-        </span>
         <label>
           <input
             type="radio"
@@ -95,7 +95,7 @@ export function OpinionsSection() {
               ))}
             </div>
             <span className="small dim lean-indent">
-              les groupes de l’Assemblée, sous leur vrai nom · plusieurs choix possibles · au Sénat, l’équivalent est proposé :{' '}
+              au Sénat :{' '}
               {leaning.senate.length ? (
                 leaning.senate.map((s) => {
                   const g = se.find((x) => x.acronym === s)
@@ -119,24 +119,33 @@ export function OpinionsSection() {
             )}
           </>
         )}
-        <span className="small muted">
-          Donnée sensible (RGPD, article 9) : chiffrée dans votre archive, jamais déduite de vos dossiers ou de vos lectures, effaçable à tout moment.
-        </span>
       </div>
-      <span className="label sub">thèmes qui comptent pour vous · facultatif</span>
+      {error && <p className="bad small">{error}</p>}
+      <ReadBy field="opinions.leaning" what={{ some: 'lue par', none: 'aucun service ne la lit' }} />
+    </>
+  )
+}
+
+/** Réglages › Thèmes: what matters to the user, without saying anything of an opinion. */
+export function ThemesPane() {
+  const profile = useProfile()
+  const { save, error } = useOpinions()
+  if (!profile) return null
+  const { themes } = profile.opinions
+  const toggle = (id: string) => save({ themes: themes.includes(id) ? themes.filter((t) => t !== id) : [...themes, id] })
+  return (
+    <>
       <div className="space opinions">
         <div className="chips left">
           {THEMES.map((t) => (
-            <button key={t.id} className={`chip${themes.includes(t.id) ? ' on' : ''}`} onClick={() => toggleTheme(t.id)}>
+            <button key={t.id} className={`chip${themes.includes(t.id) ? ' on' : ''}`} onClick={() => toggle(t.id)}>
               {t.label}
             </button>
           ))}
         </div>
-        <span className="small dim">sans rien dire d’une opinion : font remonter les scrutins, vidéos et actualités de ces thèmes</span>
       </div>
-      <SourcesSection stored={profile.opinions.sources} address={profile.address} onChange={(sources) => save({ sources })} />
-      <Readers declared={declared} />
       {error && <p className="bad small">{error}</p>}
+      <ReadBy field="opinions.themes" what={{ some: 'lus par', none: 'aucun service ne les lit' }} />
     </>
   )
 }
@@ -154,133 +163,120 @@ function readText(day: string | undefined): string {
   return `lu le ${new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`))}`
 }
 
-/** "qui peut les lire": the services that ask for the opinions, accepted or refused, one by one. */
-function Readers({ declared }: { declared: boolean }) {
+/**
+ * Réglages › Accès des services: each of the user's services that asks to read part of the profile, what
+ * it reads, accepter or refuser, the gear to choose among what it asked for. The same choice as in the
+ * service's own settings (its « réglages du service », on the Services page).
+ */
+export function AccessPane() {
   const services = useServices()
   const { openRoute } = useApp()
   const [open, setOpen] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const { asking, others } = opinionReaders(services)
+  const { asking, others } = accessReaders(services)
   const q = query.trim().toLowerCase()
   const shown = asking.filter((s) => !q || `${s.manifest.id} ${s.manifest.name} ${s.manifest.description}`.toLowerCase().includes(q))
-  const grant = (s: ServiceState, fields: ProfileField[]) => {
-    const kept = (s.access.granted ?? []).filter((f) => !OPINION_FIELDS.includes(f))
-    void api.setServiceAccess(s.manifest.id, [...kept, ...fields])
-  }
+  const grant = (s: ServiceState, fields: ProfileField[]) => void api.setServiceAccess(s.manifest.id, fields)
   return (
     <>
-      <span className="label sub">qui peut les lire</span>
-      <div className="note">Les moteurs ne reçoivent jamais votre sensibilité, vos thèmes ni vos sources.</div>
-      <div className="perm-bar">
-        {asking.length > 6 && (
-          <label className="search-field framed">
-            <SearchIcon />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="chercher un service" />
-          </label>
-        )}
-        <span className="small dim">
-          {asking.length} service{asking.length > 1 ? 's' : ''} · accepter donne ce que chacun a demandé ; ⚙ pour choisir
-        </span>
-      </div>
-      <div className="perms">
-        <div className="perm-row perm-head">
-          <span>service</span>
-          <span>il lit</span>
-          <span />
-        </div>
-        {shown.map((s) => {
-          const asked = s.access.asked.filter((f) => OPINION_FIELDS.includes(f))
-          const granted = s.access.granted
-          const sum = readSummary(asked, granted)
-          const tunable = asked.length > 1
-          // Never opened, and asking for other fields too: those are its own consent's, at its first opening.
-          const pending = granted === null && s.access.asked.some((f) => !OPINION_FIELDS.includes(f))
-          const code = s.manifest.id.toUpperCase()
-          const purpose = s.manifest.permissions.purpose
-          return (
-            <div key={s.manifest.id}>
-              <div className={`perm-row${sum.on ? '' : ' off'}`}>
-                <span className="perm-stack">
-                  <span className="perm-name">
-                    <span className="hi">{code}</span>
-                    <span
-                      className={`origin${s.builtIn ? '' : ' community'}`}
-                      title={s.builtIn ? 'livré avec Marianne' : 'publié par la communauté, pas par Marianne'}
-                    >
-                      {s.builtIn ? 'intégré' : 'communauté'}
+      <ListHead label="services qui lisent votre profil" count={asking.length}>
+        {asking.length > 6 && <SearchField className="framed" value={query} onChange={setQuery} placeholder="chercher un service" />}
+      </ListHead>
+      {asking.length > 0 && (
+        <div className="perms">
+          <div className="perm-row perm-head">
+            <span>service</span>
+            <span>il lit</span>
+            <span />
+          </div>
+          {shown.map((s) => {
+            const asked = s.access.asked
+            const granted = s.access.granted
+            const sum = readSummary(asked, granted)
+            const code = s.manifest.id.toUpperCase()
+            const purpose = s.manifest.permissions.purpose
+            return (
+              <div key={s.manifest.id}>
+                <div className={`perm-row${sum.on ? '' : ' off'}`}>
+                  <span className="perm-stack">
+                    <span className="perm-name">
+                      <span className="hi">{code}</span>
+                      <span
+                        className={`origin${s.builtIn ? '' : ' community'}`}
+                        title={s.builtIn ? 'livré avec Marianne' : 'publié par la communauté, pas par Marianne'}
+                      >
+                        {s.builtIn ? 'intégré' : 'communauté'}
+                      </span>
+                    </span>
+                    <span className="small dim perm-ell" title={purpose}>
+                      {s.manifest.name}
+                      {purpose ? ` · ${purpose}` : ''}
                     </span>
                   </span>
-                  <span className="small dim perm-ell" title={purpose}>
-                    {s.manifest.name}
-                    {purpose ? ` · ${purpose}` : ''}
+                  <span className="perm-stack small">
+                    <span className={sum.on ? '' : 'muted'}>{sum.text}</span>
+                    <span className="muted">{sum.on ? readText(s.access.readAt) : ''}</span>
                   </span>
-                </span>
-                <span className="perm-stack small">
-                  <span className={sum.on ? '' : 'muted'}>{sum.text}</span>
-                  <span className="muted">{sum.on ? readText(s.access.readAt) : ''}</span>
-                </span>
-                {pending ? (
-                  <span className="perm-acts small dim">
-                    à sa première ouverture ·{' '}
-                    <button className="link" onClick={() => openRoute(`service:${s.manifest.id}`)}>
-                      l’ouvrir
-                    </button>
-                  </span>
-                ) : (
-                  <span className="perm-acts">
-                    <span className="perm-seg">
-                      <button className={sum.on ? 'on' : ''} onClick={() => grant(s, asked)}>
-                        accepter
-                      </button>
-                      <button className={granted !== null && !sum.on ? 'on' : ''} onClick={() => grant(s, [])}>
-                        refuser
+                  {granted === null ? (
+                    // Never opened: what it asks is its own consent's, at its first opening.
+                    <span className="perm-acts small dim">
+                      à sa première ouverture ·{' '}
+                      <button className="link" onClick={() => openRoute(`service:${s.manifest.id}`)}>
+                        l’ouvrir
                       </button>
                     </span>
-                    <button
-                      className={`icon-btn${open === s.manifest.id ? ' accent' : ''}`}
-                      disabled={!tunable}
-                      onClick={() => setOpen(open === s.manifest.id ? null : s.manifest.id)}
-                      title={tunable ? 'choisir ce qu’il peut lire' : `il ne demande que ${ASK_LABELS[asked[0]] ?? asked[0]}`}
-                    >
-                      <GearIcon />
-                    </button>
-                  </span>
+                  ) : (
+                    <span className="perm-acts">
+                      <span className="perm-seg">
+                        <button className={sum.on ? 'on' : ''} onClick={() => grant(s, asked)}>
+                          accepter
+                        </button>
+                        <button className={!sum.on ? 'on' : ''} onClick={() => grant(s, [])}>
+                          refuser
+                        </button>
+                      </span>
+                      <button
+                        className={`icon-btn${open === s.manifest.id ? ' accent' : ''}`}
+                        disabled={asked.length < 2}
+                        onClick={() => setOpen(open === s.manifest.id ? null : s.manifest.id)}
+                        title={asked.length > 1 ? 'choisir ce qu’il peut lire' : `il ne demande que ${ASK_LABELS[asked[0]]}`}
+                      >
+                        <GearIcon />
+                      </button>
+                    </span>
+                  )}
+                </div>
+                {open === s.manifest.id && (
+                  <div className="perm-cfg">
+                    <span className="small dim">{code} peut lire :</span>
+                    {asked.map((f) => {
+                      const on = !!granted?.includes(f)
+                      return (
+                        <label key={f}>
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            onChange={() =>
+                              grant(s, on ? asked.filter((x) => x !== f && granted?.includes(x)) : [...asked.filter((x) => granted?.includes(x)), f])
+                            }
+                          />{' '}
+                          {ASK_LABELS[f]}
+                        </label>
+                      )
+                    })}
+                  </div>
                 )}
               </div>
-              {open === s.manifest.id && (
-                <div className="perm-cfg">
-                  <span className="small dim">{code} peut lire :</span>
-                  {asked.map((f) => {
-                    const on = !!granted?.includes(f)
-                    return (
-                      <label key={f}>
-                        <input
-                          type="checkbox"
-                          checked={on}
-                          onChange={() =>
-                            grant(s, on ? asked.filter((x) => x !== f && granted?.includes(x)) : [...asked.filter((x) => granted?.includes(x)), f])
-                          }
-                        />{' '}
-                        {ASK_LABELS[f] ?? f}
-                      </label>
-                    )
-                  })}
-                  <span className="small muted">tout décocher revient à refuser</span>
-                </div>
-              )}
-            </div>
-          )
-        })}
-        {!shown.length && (
-          <p className="small dim perm-empty">
-            {asking.length ? 'Aucun service ne correspond.' : 'Aucun service ne demande votre sensibilité, vos thèmes ni vos sources.'}
-          </p>
-        )}
-      </div>
+            )
+          })}
+          {!shown.length && <p className="small dim perm-empty">Aucun service ne correspond.</p>}
+        </div>
+      )}
+      {!asking.length && <p className="small dim empty">aucun de vos services ne demande à lire votre profil</p>}
       {others.length > 0 && (
-        <p className="small dim">
-          + {others.length} autre{others.length > 1 ? 's' : ''} service{others.length > 1 ? 's' : ''} ne demande{others.length > 1 ? 'nt' : ''} ni sensibilité,
-          ni thèmes, ni sources (
+        <p className="small dim list-foot">
+          + {others.length} autre{others.length > 1 ? 's' : ''} service{others.length > 1 ? 's' : ''} ne li{others.length > 1 ? 'sent' : 't'} que la commune de
+          votre adresse (
           {others
             .slice(0, 4)
             .map((s) => s.manifest.name)
@@ -288,7 +284,6 @@ function Readers({ declared }: { declared: boolean }) {
           {others.length > 4 ? '…' : ''})
         </p>
       )}
-      {!declared && <p className="small muted">Aucune sensibilité indiquée : les services n’ont rien à en lire, quoi qu’autorise le tableau.</p>}
     </>
   )
 }

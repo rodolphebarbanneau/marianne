@@ -10,6 +10,7 @@ import { ServicesHead } from './kiosk'
 import { byOrigin, MineTable, ORIGIN_FILTERS, type OriginFilter } from './mine'
 import { listings, nextSort, search, searchTerms, type CatalogueKey, type Listing, type MineKey, type Sort } from './model'
 import { onFileReview, takeFileReview } from './pending'
+import { ServiceSettingsDialog } from './settings-dialog'
 import { flatten, SearchHead, SearchView } from './search-view'
 import { Tiles } from './tiles'
 
@@ -30,14 +31,15 @@ export const TABS: Array<[Tab, string]> = [
   ['discover', 'découvrir']
 ]
 
-type Dialog = { kind: 'pins' } | { kind: 'file' } | { kind: 'review'; subject: ReviewSubject } | null
+/** « settings »: a service's own settings, by its code, so that what it shows follows the service as it changes. */
+type Dialog = { kind: 'pins' } | { kind: 'file' } | { kind: 'review'; subject: ReviewSubject } | { kind: 'settings'; code: string } | null
 
 /** The tab shown, kept while the user opens a service and comes back. */
 let lastTab: Tab = 'mine'
 
 export function ServicesPage() {
   const app = useApp()
-  const { go, setSettings, setScreenKeys, toast, openSettings } = app
+  const { go, setSettings, setScreenKeys, toast } = app
   const services = useServices()
   const tiles = useServiceTiles((app.settings?.services.pinned ?? []).join())
   const catalogue = useCatalogue()
@@ -130,7 +132,9 @@ export function ServicesPage() {
   useEffect(() => {
     const keys: ScreenKey[] | null = dialogKind
       ? [
-          { key: 'ENVOI', shortcut: 'Enter', what: dialogKind === 'pins' ? 'terminé' : dialogKind === 'file' ? 'choisir' : 'ajouter' },
+          ...(dialogKind === 'settings'
+            ? []
+            : [{ key: 'ENVOI', shortcut: 'Enter', what: dialogKind === 'pins' ? 'terminé' : dialogKind === 'file' ? 'choisir' : 'ajouter' }]),
           { key: 'ANNULATION', shortcut: 'Escape', what: 'fermer', run: () => setDialog(null) },
           { key: 'GUIDE', shortcut: 'guide', what: 'aide' }
         ]
@@ -228,7 +232,7 @@ export function ServicesPage() {
                 onOpen={(l) => open(l.code)}
                 onPin={(l) => togglePin(l.code)}
                 onSwitch={switchOn}
-                onSettings={() => openSettings('services')}
+                onSettings={(l) => setDialog({ kind: 'settings', code: l.code })}
               />
             </div>
           ) : (
@@ -299,6 +303,11 @@ export function ServicesPage() {
           onClose={closeDialog}
         />
       )}
+      {dialog?.kind === 'settings' &&
+        (() => {
+          const state = services.find((s) => s.manifest.id === dialog.code)
+          return state && <ServiceSettingsDialog state={state} onClose={closeDialog} />
+        })()}
       {dialog?.kind === 'file' && <FileDialog onReview={(r) => setDialog({ kind: 'review', subject: { kind: 'file', review: r } })} onClose={closeDialog} />}
       {dialog?.kind === 'review' && (
         <ReviewDialog

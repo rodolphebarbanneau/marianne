@@ -18,7 +18,7 @@ export function View() {
     <div className="carte">
       <div className="carte-body">
         {!host.home && (
-          <Notice action={{ label: 'renseigner mon adresse', onClick: () => host.openRoute('settings/identity') }}>
+          <Notice action={{ label: 'renseigner mon adresse', onClick: () => host.openRoute('settings/contact') }}>
             Renseignez votre adresse pour situer votre commune sur la carte.
           </Notice>
         )}
