@@ -66,9 +66,19 @@ export function BugReportDialog({ onClose }: { onClose: () => void }) {
   )
 }
 
-/** From the lock screen: the archive locked, no engine reads the report, which comes without analysis. */
+/**
+ * From the lock screen: the archive locked, no engine reads the report, which comes without analysis, and without the
+ * log, from which the profile's identifiers couldn't be removed (bug-reporter.ts).
+ */
 export function LockedBugReportDialog({ onClose }: { onClose: () => void }) {
-  return <BugReportSteps onClose={onClose} where={{ screen: 'lock screen' }} analyst={null} unready="l’archive verrouillée, le rapport se fera sans analyse" />
+  return (
+    <BugReportSteps
+      onClose={onClose}
+      where={{ screen: 'lock screen' }}
+      analyst={null}
+      unready="l’archive verrouillée, le rapport se fera sans analyse ni la fin du journal, dont Marianne ne pourrait pas retirer vos identifiants"
+    />
+  )
 }
 
 interface StepsProps {
