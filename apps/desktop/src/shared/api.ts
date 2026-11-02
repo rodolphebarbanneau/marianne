@@ -174,7 +174,12 @@ export interface MarianneApi {
   setFolderStep(id: string, step: number, done: boolean): Promise<void>
   /** Starts a turn; resolves with the folder id once the user message is saved. */
   send(request: SendRequest): Promise<string>
-  regenerate(folderId: string): Promise<void>
+  /**
+   * Answers the user's last message again, dropping the answer that followed it. Says what it did:
+   * `nothing` without a message of the user's, `after-run` when a planned task's run came after
+   * the last one, which redoing would wipe.
+   */
+  regenerate(folderId: string): Promise<'redone' | 'after-run' | 'nothing'>
   /**
    * A planned task's follow-up (« payer maintenant »), from the line of the run that found something
    * (`lineId`): a turn of the conversation, the user's message reading as the label. Refused once that

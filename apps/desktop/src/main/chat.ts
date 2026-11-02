@@ -284,19 +284,20 @@ class Chat extends EventEmitter {
     return task && task.id === user.followUp ? followUpMessage(task) : text
   }
 
-  /** Answer the last user message again, dropping the answer that followed it. */
-  async regenerate(id: string): Promise<void> {
+  /** Answer the last user message again, dropping the answer that followed it; or say why not. */
+  async regenerate(id: string): Promise<'redone' | 'after-run' | 'nothing'> {
     await this.interruptRun()
     const folder = folders.get(id)
-    if (!folder || this.active.has(id)) return
+    if (!folder || this.active.has(id)) return 'nothing'
     const messages = folders.messages(id)
     const lastUser = redoFrom(messages)
-    if (lastUser < 0) return
+    if (lastUser < 0) return messages.some((m) => m.role === 'user') ? 'after-run' : 'nothing'
     const kept = messages.slice(0, lastUser + 1)
     // The engine's session still holds the dropped answer: start a fresh one with a recap.
     const updated = folders.update(id, { sessions: { ...folder.sessions, [folder.engine]: undefined } })
     folders.saveMessages(id, kept)
     void this.turn(updated, kept, kept[lastUser])
+    return 'redone'
   }
 
   cancel(id: string): void {

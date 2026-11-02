@@ -114,7 +114,8 @@ export function FolderScreen({ id, at }: { id: string; at?: 'run' }) {
       }
       if (!view?.running && matches(e, accelOf('retry', isMac, shortcuts), isMac)) {
         e.preventDefault()
-        void api.regenerate(id)
+        // Not redone when a planned task's run came after the user's last message: said, rather than nothing happening.
+        void api.regenerate(id).then((done) => done === 'after-run' && app.toast('rien à refaire : une tâche planifiée a répondu depuis votre dernier message'))
       }
     }
     window.addEventListener('keydown', key)
