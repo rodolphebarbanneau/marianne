@@ -51,12 +51,18 @@ export interface SiteState {
   done: boolean
 }
 
+/**
+ * Set up as the engine sees it (siteReady): a site with numbers or that needs the social security number only once
+ * chosen, its record kept, though the number may already be in Identité.
+ */
 export function siteState(site: Site, profile: Pick<Profile, 'accounts' | 'person'> | null, hasLogin: boolean): SiteState {
-  const fields = profile?.accounts.find((a) => a.siteId === site.id)?.fields ?? {}
+  const account = profile?.accounts.find((a) => a.siteId === site.id)
+  const fields = account?.fields ?? {}
   const numbers = (site.fields ?? []).map((f) => ({ label: f.label, given: !!fields[f.key]?.trim() }))
   if (site.needsNir) numbers.push({ label: 'n° de sécurité sociale', given: !!profile?.person.nir })
   const login = site.login === 'account' && hasLogin
-  return { login, numbers, done: (site.login !== 'account' || login) && numbers.every((n) => n.given) }
+  const chosen = !numbers.length || !!account
+  return { login, numbers, done: chosen && (site.login !== 'account' || login) && numbers.every((n) => n.given) }
 }
 
 /** The sites a search and the filter keep: all, those set up, those left to set up. */
