@@ -3010,9 +3010,13 @@ button.card:hover {
   display: flex;
   padding: calc(var(--titlebar-h) + 26px) 40px 32px;
 }
+/* Margins that grow with the window, on top of the overlay's: the settings stay a dialog over the application, which
+   shows around them, rather than a second window over it. At the smallest window, the overlay's alone. The other
+   dialogs (Modal) keep all the overlay's room. */
 .settings {
   flex: 1;
   min-height: 0;
+  margin: max(0px, 9vh - 56px) max(0px, 12vw - 100px) max(0px, 9vh - 62px);
   display: flex;
   background: var(--bg);
   border: 1px solid var(--fg);
@@ -3426,6 +3430,7 @@ button.card:hover {
   }
   .settings {
     flex-direction: column;
+    margin: 0;
   }
   .settings-nav {
     width: auto;
