@@ -164,7 +164,7 @@ export function AppProvider({ config, session, children }: { config: DeviceConfi
     (route: string, params?: Record<string, string | number>) => {
       const target = routeTarget(route, params)
       if (target?.kind === 'view') go(target.view)
-      // The settings dialog brings the section into view itself (« identity#sources »).
+      // The settings dialog brings the section into view itself (« sources#sources »).
       else if (target?.kind === 'settings') setSettingsPage(target.section ? `${target.page}#${target.section}` : target.page)
     },
     [go]

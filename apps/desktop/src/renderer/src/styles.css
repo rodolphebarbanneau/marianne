@@ -143,7 +143,7 @@ html[data-theme='monochrome'] {
 
 /* The news sources' colours: a source's editorial line, from the left (red) to the right (blue), the centre (no clear
    lean) a greyish white, so it reads as no side (packages/sdk/src/news.ts, LEANS). One property per position and its text's colour, so
-   Réglages › Identité and 3615 INFOS draw a source the same way: var(--lean-centre), var(--lean-centre-ink). */
+   Réglages › Sources d’information and 3615 INFOS draw a source the same way: var(--lean-centre), var(--lean-centre-ink). */
 :root {
   --lean-gauche: var(--rouge);
   --lean-gauche-ink: var(--noir);
@@ -3344,7 +3344,7 @@ select.bare {
   font-size: 1.3em;
   color: var(--hi);
 }
-/* Réglages › Identité: the opinions (a leaning, themes) and who may read them. */
+/* Réglages › Sensibilité and Thèmes: the opinions (a leaning, themes). */
 .opinions .chips {
   width: auto;
   margin: 0;
@@ -3497,7 +3497,7 @@ select.bare {
     display: none;
   }
 }
-/* Réglages › Identité › sources d'information: the kiosk's summary, the families, a source's row (its block, its sections,
+/* Réglages › Sources d’information: the kiosk's summary, the families, a source's row (its block, its sections,
    its colour, accepter · écarter) and the pick of its colour. */
 .source-tag {
   display: inline-block;

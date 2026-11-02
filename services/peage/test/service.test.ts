@@ -60,7 +60,7 @@ describe('the runtime', () => {
     expect(runtime.instructions).not.toContain('one confirmation')
     expect(runtime.instructions).not.toMatch(/no card of their own|card of its own/)
     expect(runtime.instructions).toContain('hand_over when the bank asks for a confirmation (3-D Secure)')
-    expect(runtime.instructions).toContain('propose adding one (request_setup, target payment)')
+    expect(runtime.instructions).toContain('propose adding one (request_setup, target money)')
     expect(runtime.instructions).toContain('Once the site confirms the payment, mark the trips paid with peage_mark_paid')
     expect(runtime.instructions).toContain('forward the SMS to 33700')
     expect(runtime.skills?.[0]).toContain('Paie avec `pay_by_card`')

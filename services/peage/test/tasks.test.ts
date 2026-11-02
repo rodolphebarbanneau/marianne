@@ -95,7 +95,7 @@ describe('its follow-up, « payer maintenant »', () => {
     expect(instruction).toContain('with read_form and fill_form, tokens for identifiers')
     expect(instruction).toContain("Pay with pay_by_card, giving the amount read on the page: its card is the user's one confirmation.")
     expect(instruction).toContain('If the bank asks for a confirmation (3-D Secure), hand_over.')
-    expect(instruction).toContain('propose adding one (request_setup, target payment) or hand_over so the user types theirs')
+    expect(instruction).toContain('propose adding one (request_setup, target money) or hand_over so the user types theirs')
     expect(instruction).toContain('Once the site confirms the payment, mark the matching trips paid with peage_mark_paid')
     expect(instruction).toContain("If the site doesn't confirm it, mark nothing")
     // The service knows no amount: it never states one.

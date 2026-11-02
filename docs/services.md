@@ -671,7 +671,7 @@ For the engines, it is « a community service »:
 
 #### When it runs
 
-While an open account has it among its services and doesn't switch it off. It starts at the unlock (`activate` then, rather than at Marianne's start) and stops at the lock. A crash or a hang stops it; Marianne starts it again once, then leaves it off with the reason, its tools withdrawn. Removing it (Réglages › Services) also removes it from this computer.
+While an open account has it among its services and doesn't switch it off. It starts at the unlock (`activate` then, rather than at Marianne's start) and stops at the lock. A crash or a hang stops it; Marianne starts it again once, then leaves it off with the reason, its tools withdrawn. Removing it (on the Services page) also removes it from this computer.
 
 #### Its limits
 

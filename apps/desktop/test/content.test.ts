@@ -108,11 +108,12 @@ describe('the built-in content', () => {
   })
 })
 
+// A published bundle is dated 2099: newer than the built-in content whatever day its files were last changed.
 describe('the content store', () => {
   const { privateKey, publicKey } = generateKeyPairSync('ed25519')
 
   it('uses the built-in content and never looks for updates without a signing key', async () => {
-    const { s, lines, fetch } = store({ key: null, remote: () => publish(newer(), '2026-11-02T10:00:00.000Z', privateKey) })
+    const { s, lines, fetch } = store({ key: null, remote: () => publish(newer(), '2099-01-01T10:00:00.000Z', privateKey) })
     await s.check()
     expect(fetch).not.toHaveBeenCalled()
     expect(s.origin).toBe('built-in')
@@ -121,13 +122,13 @@ describe('the content store', () => {
   })
 
   it('takes a newer signed bundle, keeps it, and asks again conditionally', async () => {
-    const published = publish(newer(), '2026-11-02T10:00:00.000Z', privateKey)
+    const published = publish(newer(), '2099-01-01T10:00:00.000Z', privateKey)
     const { s, dir, requests, lists } = store({ key: publicKey, remote: () => published })
     const changed = vi.fn()
     s.on('change', changed)
     await s.check()
     expect(s.origin).toBe('bundle')
-    expect(s.version).toBe('2026-11-02T10:00:00.000Z')
+    expect(s.version).toBe('2099-01-01T10:00:00.000Z')
     expect(title(s)).toBe('Impôts des particuliers')
     expect(changed).toHaveBeenCalledTimes(1)
     expect(requests.map((r) => r.url)).toEqual([BUNDLE_URL, `${BUNDLE_URL}.sig`])
@@ -149,7 +150,7 @@ describe('the content store', () => {
 
   it('refuses a bundle whose signature does not match, and tries it again next time', async () => {
     const other = generateKeyPairSync('ed25519').privateKey
-    const { s, dir, lines, requests } = store({ key: publicKey, remote: () => publish(newer(), '2026-11-02T10:00:00.000Z', other) })
+    const { s, dir, lines, requests } = store({ key: publicKey, remote: () => publish(newer(), '2099-01-01T10:00:00.000Z', other) })
     await s.check()
     await s.check()
     expect(s.origin).toBe('built-in')
@@ -175,18 +176,18 @@ describe('the content store', () => {
       ...files,
       'procedures/taxes/declare-income.md': files['procedures/taxes/declare-income.md'].replace('> setup: account:impots', '> setup: garage')
     }
-    const { s, lines } = store({ key: publicKey, remote: () => publish(broken, '2026-11-02T10:00:00.000Z', privateKey) })
+    const { s, lines } = store({ key: publicKey, remote: () => publish(broken, '2099-01-01T10:00:00.000Z', privateKey) })
     await s.check()
     expect(s.origin).toBe('built-in')
     expect(lines).toContainEqual(
       expect.stringMatching(
-        /^warn Content bundle .* refused: version 2026-11-02T10:00:00\.000Z: 1 problem in the content:\n- procedures\/taxes\/declare-income\.md: .*setup: "garage" is not a setting of Marianne/
+        /^warn Content bundle .* refused: version 2099-01-01T10:00:00\.000Z: 1 problem in the content:\n- procedures\/taxes\/declare-income\.md: .*setup: "garage" is not a setting of Marianne/
       )
     )
   })
 
   it('removes a kept bundle that no longer checks out, and downloads the published one again', async () => {
-    const published = publish(newer(), '2026-11-02T10:00:00.000Z', privateKey)
+    const published = publish(newer(), '2099-01-01T10:00:00.000Z', privateKey)
     const first = store({ key: publicKey, remote: () => published })
     await first.s.check()
     writeFileSync(join(first.dir, 'content.json'), Buffer.from(published.data.toString('utf8').replace('Impôts des particuliers', 'Impôts des contribuables')))
@@ -210,7 +211,7 @@ describe('the content store', () => {
   })
 
   it('tries again next time when the list of releases can’t be read', async () => {
-    const published = publish(newer(), '2026-11-02T10:00:00.000Z', privateKey)
+    const published = publish(newer(), '2099-01-01T10:00:00.000Z', privateKey)
     let answer = () => new Response('rate limit exceeded', { status: 403 })
     const { s, lines } = store({ key: publicKey, remote: () => published, list: () => answer() })
     await s.check()
