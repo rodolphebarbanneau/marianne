@@ -23,6 +23,11 @@ import { session } from './session'
  */
 
 const ANALYSIS_MINUTES = 4
+/**
+ * The log in a report made from the lock screen: its lines may hold what a service or an engine wrote of the user
+ * (an address in an error), and with the archive locked, the profile's identifiers can't be scrubbed from them.
+ */
+export const LOCKED_LOG = '(left out: the archive is locked, so the identifiers of its profile could not be removed from it)'
 /** The log's end is what matters: no need to read 5 MB for 60 lines. */
 const LOG_BYTES = 64 * 1024
 
@@ -92,7 +97,7 @@ async function diagnostics(req: BugReportRequest): Promise<string> {
     screen: String(req.screen ?? '').slice(0, 120) || 'unknown',
     errors: (Array.isArray(req.errors) ? req.errors : []).slice(-10).map((e) => String(e).slice(0, 600)),
     conversation,
-    log: logTail(readLogEnd())
+    log: session.unlocked ? logTail(readLogEnd()) : LOCKED_LOG
   })
 }
 
