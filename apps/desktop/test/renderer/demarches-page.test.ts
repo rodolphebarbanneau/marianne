@@ -61,6 +61,7 @@ const service = (code: string, more: Partial<ServiceState> & { domains?: string[
     tools: [],
     builtIn: true,
     access: { asked: [], granted: null },
+    options: {},
     ...rest
   }
 }

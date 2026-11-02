@@ -131,7 +131,8 @@ function context(): ServiceContext {
         runs++
         if (runFails) throw new Error('No sync job built for parlement')
       }
-    }
+    },
+    options: { get: () => ({ chamber: 'both' }), onChange: () => () => undefined }
   }
 }
 

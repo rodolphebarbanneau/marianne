@@ -14,6 +14,7 @@ import { findCommunes, getCommune } from '../public/geo'
 import { serviceNews } from '../public/news'
 import { parisDay } from '../public/time'
 import { session } from '../session'
+import { serviceOptions } from './options'
 import { serviceStorage, storageKind } from './storage'
 import type { ServiceSync } from './sync'
 
@@ -140,6 +141,7 @@ export function serviceContext(
     },
     profile: { granted: () => grantedFields(m), vehicles: () => vehicles(m), leaning: () => leaning(m), themes: () => themes(m), sources: () => sources(m) },
     sync: { status: () => sync.status(), run: () => sync.run() },
+    options: serviceOptions(m),
     ...(m.news && options.news !== false
       ? {
           news: serviceNews({

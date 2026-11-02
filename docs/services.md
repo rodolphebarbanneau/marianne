@@ -111,6 +111,32 @@ The manifest is the `marianne` field of the service's `package.json`. `readManif
   - Nothing else of the profile is ever available to a service.
   - `opinions.sources` serves `ctx.news`: built-in services only. A community service that asks for it is refused when it is added.
 
+**Its own options**
+
+- `options`: what the user may set of the service itself, in its settings (its row's « réglages du service », on the Services page), never in Réglages, which is the application's and the user's. At most 12 (`MAX_OPTIONS`); Marianne draws them, keeps what the user chose in their archive, and gives it to the service (`ctx.options`, `useOptions()`): the service draws nothing in her dialog, and never writes them. Each has a `key` (camelCase), a French `label` (lowercase, as a settings row says its own), a `hint` only when the label can't say it, a `type`, and its `default`:
+  - `switch`: on or off (`"default": true`);
+  - `choice`: 2 to 12 `choices`, each `{ "value": "an", "label": "Assemblée" }` (side by side up to three, else a menu);
+  - `number`: between `min` and `max`, by `step` (1), with its `unit` (`"jours"`);
+  - `text`: one line, at most `maxLength` characters (80).
+
+  ```json
+  "options": [
+    {
+      "key": "chamber",
+      "label": "chambre à l’ouverture",
+      "type": "choice",
+      "choices": [
+        { "value": "both", "label": "les deux" },
+        { "value": "an", "label": "Assemblée" },
+        { "value": "se", "label": "Sénat" }
+      ],
+      "default": "both"
+    }
+  ]
+  ```
+
+  What was kept and no longer fits (an option gone, a choice removed, a bound moved) gives way to the default. An option is a preference, not a place for personal data: what the user is, Marianne asks for in Réglages and gives through `permissions`.
+
 **Where it shows**
 
 - `domains`: the domains it is useful for (`DOMAIN_IDS`: identity, family, health, taxes, work, retirement, housing, mobility, justice, business). Their dashboards show its line. Its deadlines and the tasks it proposes must belong to one of them.
@@ -210,6 +236,7 @@ export const service = defineService<MeteoMethods>({
 | `profile`  | `granted()`, `vehicles()`, `leaning()`, `themes()`, `sources()`: the fields the user granted it, nothing else                                                                                                     |
 | `news`     | the headlines Marianne reads for it ([below](#news)); present only with `"news": true`                                                                                                                            |
 | `sync`     | `status()` and `run()` of its sync job                                                                                                                                                                            |
+| `options`  | `get()`, its own options as the user set them (else their defaults), and `onChange(listener)`, which gives back the way to stop listening; read them when they matter                                             |
 
 Two caches keep the network quiet:
 
@@ -430,7 +457,7 @@ export function View() {
 ### The hooks
 
 - `useHost()`, the host:
-  - `manifest`; `params`, what the screen was opened with; `home`;
+  - `manifest`; `params`, what the screen was opened with; `home`; `options`, its own options as the user set them (`useOptions()` gives them, typed: the screen draws again when one changes);
   - `call(method, …args)`;
   - `ask(text, page?)`: hand a question to Marianne (a new folder, the question in the composer);
   - `openRoute(route, params?)`: another screen (`settings/contact`, `service/carte`), with what it opens with (`openRoute('service/infos', { search: 'budget 2027' })`). A settings page is the user's, never the service's own: `settings/contact` for the address, `settings/sources` for the news sources, `settings/access` for what the service may read. A service's own settings are its row's « réglages du service », on the Services page;
@@ -554,7 +581,7 @@ A service the user removes (« retirer de mes services », in its settings on th
 The 3615 kiosk: its head is the page's one search (the 3615 bar: a code or words), and under it two tabs, « mes services » (F2) and « découvrir » (F3).
 
 - **« mes services »**: the pinned services as tiles, in the user's order (`services.pinned`; moved by their grip, or its arrow keys; chosen in « modifier les épingles »), then all the user's services as a table: origin, theme, what each reaches and reads, when it was last opened, on or off.
-- **A service's settings** (its row's ⋯, « réglages du service »): its own, never Réglages, which is the application's and the user's. What Marianne lets it do, drawn by her and the same for every service: on or off, what it reads of the profile (accepter, refuser, or field by field: the same choice as Réglages › Accès des services), the sites it reaches and those where she acts with it, its data on this computer (« mettre à jour »), its tile, and « retirer de mes services ». A service declares no settings of its own yet: they would come above, in its own part.
+- **A service's settings** (its row's ⋯, « réglages du service »): its own, never Réglages, which is the application's and the user's. First its own options, as its manifest declares them ([above](#the-manifest)): « aucun réglage propre » without any. Then what Marianne lets it do, drawn by her and the same for every service: on or off, what it reads of the profile (accepter, refuser, or field by field: the same choice as Réglages › Accès des services), the sites it reaches and those where she acts with it, its data on this computer (« mettre à jour »), its tile, and « retirer de mes services ».
 - **« découvrir »**: what Marianne recommends, as cards (the built-in services not added, then the community services she recommends, validated only), then the community catalogue as a table, loaded as one scrolls, and « ajouter un fichier .3615 ».
 - **The search** looks in both, ranked by trust (pinned, installed, official to add, catalogue validated, then not validated), then by relevance: the code first, then the name, a keyword of the manifest, the description, the theme, the author. A code typed in full is what ENVOI opens.
 - **Adding** always goes through « avant d’ajouter »: the verdict (official, validated, not validated, outside the catalogue), what the service will be able to do (its hosts, the sites where Marianne acts for it, the commune of the address, public data kept, its tools, what it asks of the profile), and what it never can.
@@ -572,13 +599,14 @@ The 3615 kiosk: its head is the page's one search (the 3615 bar: a code or words
 Each package has its own `test/` and `vitest.config.ts`; `npm test` at the root runs the app's tests and every package's (vitest projects). `npm run typecheck` checks the app and each package (`tsc -p services/<code>`).
 
 - **The pure parts** (parsers, queries, formatting): without the network.
-- **The main side**: through `fakeContext(pkg, options)` from `@marianne/sdk/testing`, built from the service's package.json. It returns `{ ctx, urls, stored }`, keeps the storage in memory, and refuses what Marianne refuses: a host the manifest doesn't declare, a vehicle's field not granted. Its options:
+- **The main side**: through `fakeContext(pkg, options)` from `@marianne/sdk/testing`, built from the service's package.json. It returns `{ ctx, urls, stored, setOptions }` (`setOptions(values)`: the user changes its options, checked as Marianne checks them, its listeners told), keeps the storage in memory, and refuses what Marianne refuses: a host the manifest doesn't declare, a vehicle's field not granted. Its options:
   - `answer`, `answerText`: the network's answers, JSON and text, which it records;
   - `communes`, `home`: the communes, and the commune of the address;
   - `profile`: the profile fields given (`profile.sources` among them);
   - `dataDir`: a data folder;
   - `sync`: the sync job's status;
-  - `news`, for `"news": true`: what `ctx.news` reads, `{ read, sources, articles, filtered }`.
+  - `news`, for `"news": true`: what `ctx.news` reads, `{ read, sources, articles, filtered }`;
+  - `options`: what the user chose of its own options (the others keep their defaults).
 - **A sync job's logic**: through `execute` from `@marianne/sdk/sync`, with a fake `download`.
 - **A tile**: with `checkTile` ([above](#the-tile)).
 - **A task's follow-up**: with `followUpProblem` ([above](#planned-tasks)).
@@ -625,7 +653,7 @@ It runs in a worker of a hidden, sandboxed page of its own (`main/community/runt
 - no document, no Node, no Electron, no `window.marianne`; every permission refused;
 - a session of its own that keeps nothing, cancels every request but its own files, and sends what it can't cancel (WebRTC, name resolution) to a proxy that leads nowhere.
 
-The page holds the bridge (`window.__marianneService`) and relays the service's context, a request for each part: the network and the communes are answered later; the storage, the commune and the granted profile fields at once (the worker waits on memory it shares with its page).
+The page holds the bridge (`window.__marianneService`) and relays the service's context, a request for each part: the network and the communes are answered later; the storage, the commune, the granted profile fields and its own options at once (the worker waits on memory it shares with its page). When the user changes an option, the main process tells the worker (an `options` request), which tells the service's listeners.
 
 The main process answers with the context a built-in service gets for that manifest, narrowed:
 

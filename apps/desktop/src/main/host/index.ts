@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { clipboard } from 'electron'
 import {
   followUpProblem,
+  optionValues,
   readManifest,
   serviceCode,
   type DomainId,
@@ -43,6 +44,7 @@ import { getCommune } from '../public/geo'
 import { session } from '../session'
 import type { Tool } from '../tools/tool'
 import { grantedFields, serviceContext, storageKind } from './context'
+import { announceOptions, optionsOf, setOption } from './options'
 import { quotaStorage, type QuotaStorage } from './storage'
 import { BUILTIN_SERVICES, RENAMED_SERVICES } from './registry'
 import { ServiceSync } from './sync'
@@ -188,6 +190,8 @@ class ServiceHost extends EventEmitter {
       this.reconcileCommunity()
       // What the services may read now, so that the first change after unlocking is seen as one.
       this.profileSeen = this.profileKey()
+      // The built-in services started before any account opened: this one's options, now.
+      for (const s of this.loaded) if (s.builtIn) announceOptions(s.manifest)
     })
     session.on('unlocked', () => setTimeout(() => void this.syncDue(), 10_000).unref())
     session.on('locked', () => {
@@ -195,6 +199,7 @@ class ServiceHost extends EventEmitter {
       // What the built-in services kept with cached() came from this account: the next one starts without it.
       forgetCached()
       this.profileSeen = ''
+      for (const s of this.loaded) if (s.builtIn) announceOptions(s.manifest)
       this.reconcileCommunity()
       // The next account has its own records: the quotas' tallies are read again.
       for (const s of this.loaded) s.community?.storage.reset()
@@ -303,6 +308,8 @@ class ServiceHost extends EventEmitter {
       home: () => this.communityHome(),
       storage
     }
+    // Its options' changes reach its sandbox (while it runs): a listener of its own context, as a built-in service's.
+    ctx.options.onChange((values) => service?.optionsChanged(values))
     service = new CommunityService({
       manifest,
       bridge: sandboxBridge(manifest, ctx),
@@ -600,7 +607,8 @@ class ServiceHost extends EventEmitter {
           asked: manifest.permissions.profile,
           granted: chosen && id in chosen.access ? grantedFields(manifest) : null,
           ...(chosen?.reads[id] ? { readAt: chosen.reads[id] } : {})
-        }
+        },
+        options: optionValues(manifest.options, chosen?.options?.[id])
       }
     })
   }
@@ -785,6 +793,13 @@ class ServiceHost extends EventEmitter {
     this.tileHost.invalidate(id)
   }
 
+  /** The user's choice for one of a service's own options, in its settings on the Services page: what its tile shows may change. */
+  setOption(id: string, key: string, value: unknown): void {
+    const { manifest } = this.find(id)
+    setOption(manifest, key, value)
+    this.tileHost.invalidate(id)
+  }
+
   /** A service among the user's services (from « découvrir »), switched on. */
   add(id: string): void {
     this.find(id)
@@ -895,6 +910,10 @@ export const screens = new CommunityScreens({
   host: {
     manifestOf: (code) => services.communityPackage(code)?.manifest ?? null,
     home: () => services.communityHome(),
+    options: (code) => {
+      const manifest = services.communityPackage(code)?.manifest
+      return manifest ? optionsOf(manifest) : {}
+    },
     call: (code, method, args) => services.call(code, method, args),
     load: (code, key) => services.data(code, key),
     save: (code, key, value) => services.setData(code, key, value),

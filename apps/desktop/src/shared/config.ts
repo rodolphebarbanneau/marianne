@@ -35,7 +35,7 @@ export const DEFAULT_CONFIG: DeviceConfig = {
 
 export const DEFAULT_ACCOUNT_SETTINGS: AccountSettings = {
   display: 'initials',
-  services: { pinned: [], added: [], offered: [], disabled: [], access: {}, reads: {}, opened: {}, reviewed: {} },
+  services: { pinned: [], added: [], offered: [], disabled: [], access: {}, reads: {}, opened: {}, reviewed: {}, options: {} },
   approvals: { level: 'balanced', rules: [] },
   browser: { show: 'ask' }
 }

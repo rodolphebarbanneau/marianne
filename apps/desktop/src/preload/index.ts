@@ -120,6 +120,7 @@ const INVOKE = [
   'syncService',
   'serviceSummaries',
   'setServiceAccess',
+  'setServiceOption',
   'addService',
   'removeService',
   'serviceOpened',

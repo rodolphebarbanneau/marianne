@@ -12,6 +12,7 @@ import type {
   ServiceImpl,
   ServiceManifest,
   ServiceMethods,
+  ServiceOptionValues,
   ServiceSummary,
   ServiceTaskTemplate,
   ServiceTile,
@@ -145,6 +146,17 @@ export interface ServiceNews {
   sources(opts?: { all?: boolean }): Promise<NewsSourceInfo[]>
 }
 
+/**
+ * The service's own options (its manifest's `options`), as the user set them in its settings on the
+ * Services page, else their defaults. Marianne keeps them; the service only reads them.
+ */
+export interface ServiceOptions {
+  /** Their values, by key: read them when they matter, they may have changed since. */
+  get(): ServiceOptionValues
+  /** Called with their new values when the user changes one; gives back the way to stop listening. */
+  onChange(listener: (values: ServiceOptionValues) => void): () => void
+}
+
 export interface ServiceContext {
   manifest: ServiceManifest
   http: ServiceHttp
@@ -160,6 +172,8 @@ export interface ServiceContext {
   sync: { status(): SyncStatus; run(): Promise<void> }
   /** The headlines Marianne reads for it: present only when its manifest says `"news": true`. */
   news?: ServiceNews
+  /** Its own options, as the user set them (see ServiceOptions). */
+  options: ServiceOptions
 }
 
 export interface ToolCall {

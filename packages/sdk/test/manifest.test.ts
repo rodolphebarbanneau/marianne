@@ -5,8 +5,11 @@ import {
   foldText,
   followUpProblem,
   ManifestError,
+  MAX_OPTIONS,
   MAX_SITES,
   MAX_TABS,
+  optionValue,
+  optionValues,
   readManifest,
   serviceCode,
   serviceMatches,
@@ -128,6 +131,78 @@ describe('a screen’s tabs', () => {
     ).toThrow(/same id/)
     const nine = Array.from({ length: MAX_TABS + 1 }, (_, i) => ({ id: `t${i}`, label: `onglet ${i}` }))
     expect(() => readManifest(pkg({ tabs: nine }))).toThrow(/at most 8/)
+  })
+})
+
+describe('its own options', () => {
+  const CHAMBER = {
+    key: 'chamber',
+    label: ' chambre à l’ouverture ',
+    type: 'choice',
+    choices: [
+      { value: 'both', label: 'les deux' },
+      { value: 'an', label: 'Assemblée' },
+      { value: 'se', label: 'Sénat' }
+    ],
+    default: 'both'
+  }
+  const DAYS = { key: 'daysAhead', label: 'prévisions', type: 'number', min: 1, max: 15, unit: 'jours', default: 7 }
+  const ALERTS = { key: 'alerts', label: 'alertes', type: 'switch', default: true }
+  const CITY = { key: 'city', label: 'ville', type: 'text', maxLength: 40, placeholder: 'Bordeaux', default: '' }
+
+  it('reads each kind, its words trimmed, and none by default', () => {
+    const m = readManifest(pkg({ options: [CHAMBER, DAYS, ALERTS, CITY] }))
+    expect(m.options.map((o) => [o.key, o.type, o.label])).toEqual([
+      ['chamber', 'choice', 'chambre à l’ouverture'],
+      ['daysAhead', 'number', 'prévisions'],
+      ['alerts', 'switch', 'alertes'],
+      ['city', 'text', 'ville']
+    ])
+    expect(m.options[1]).toMatchObject({ min: 1, max: 15, unit: 'jours', default: 7 })
+    expect(readManifest(pkg({})).options).toEqual([])
+  })
+
+  it('refuses what Marianne couldn’t draw or check', () => {
+    const one = (o: Record<string, unknown>) => () => readManifest(pkg({ options: [o] }))
+    expect(one({ ...ALERTS, key: 'Alerts' })).toThrow(/camelCase/)
+    expect(one({ ...ALERTS, label: '' })).toThrow(/label/)
+    expect(one({ ...ALERTS, type: 'color' })).toThrow(/switch, choice, number or text/)
+    expect(one({ ...ALERTS, default: 'yes' })).toThrow(/default/)
+    expect(one({ ...CHAMBER, choices: [CHAMBER.choices[0]] })).toThrow(/2 to 12 choices/)
+    expect(one({ ...CHAMBER, choices: [...CHAMBER.choices, { value: 'an', label: 'encore' }] })).toThrow(/same value/)
+    expect(one({ ...CHAMBER, choices: [{ value: 'Both', label: 'les deux' }, CHAMBER.choices[1]] })).toThrow(/each choice/)
+    expect(one({ ...CHAMBER, default: 'eu' })).toThrow(/default/)
+    expect(one({ ...DAYS, min: 15, max: 1 })).toThrow(/min below its max/)
+    expect(one({ ...DAYS, step: 0 })).toThrow(/step/)
+    expect(one({ ...DAYS, default: 20 })).toThrow(/default/)
+    expect(one({ ...DAYS, step: 2, default: 4 })).toThrow(/default/)
+    expect(one({ ...CITY, maxLength: 500 })).toThrow(/maxLength/)
+    expect(one({ ...CITY, default: 'x'.repeat(41) })).toThrow(/default/)
+    expect(() => readManifest(pkg({ options: [ALERTS, ALERTS] }))).toThrow(/same key/)
+    const many = Array.from({ length: MAX_OPTIONS + 1 }, (_, i) => ({ ...ALERTS, key: `alert${i}` }))
+    expect(() => readManifest(pkg({ options: many }))).toThrow(/at most 12/)
+  })
+
+  it('checks a value as Marianne does before keeping it', () => {
+    const [chamber, days, alerts, city] = readManifest(pkg({ options: [CHAMBER, { ...DAYS, step: 2 }, ALERTS, CITY] })).options
+    expect(optionValue(chamber, 'se')).toBe('se')
+    expect(optionValue(chamber, 'eu')).toBeNull()
+    expect(optionValue(days, 9)).toBe(9)
+    expect(optionValue(days, 8)).toBeNull()
+    expect(optionValue(days, 16)).toBeNull()
+    expect(optionValue(days, '9')).toBeNull()
+    expect(optionValue(alerts, false)).toBe(false)
+    expect(optionValue(alerts, 0)).toBeNull()
+    expect(optionValue(city, 'Rennes')).toBe('Rennes')
+    expect(optionValue(city, 'une\nautre ligne')).toBeNull()
+  })
+
+  it('gives what was kept and still fits, else each default', () => {
+    const { options } = readManifest(pkg({ options: [CHAMBER, DAYS, ALERTS] }))
+    expect(optionValues(options, undefined)).toEqual({ chamber: 'both', daysAhead: 7, alerts: true })
+    // An option gone from the manifest, a value it no longer takes: left out, its default instead.
+    expect(optionValues(options, { chamber: 'se', daysAhead: 99, alerts: false, gone: 'x' })).toEqual({ chamber: 'se', daysAhead: 7, alerts: false })
+    expect(optionValues(options, 'not a record')).toEqual({ chamber: 'both', daysAhead: 7, alerts: true })
   })
 })
 
@@ -266,7 +341,8 @@ describe('search and order', () => {
     tools: [],
     search: null,
     news: false,
-    sites: []
+    sites: [],
+    options: []
   })
   const meteo = manifest('meteo', 'Météo', 'daily', ['pluie'])
   const carte = manifest('carte', 'Carte de France', 'territory')

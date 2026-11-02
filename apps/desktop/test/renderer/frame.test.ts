@@ -29,6 +29,7 @@ const state = (more: Partial<ServiceState> = {}): ServiceState => ({
   tools: [],
   builtIn: true,
   access: { asked: ['opinions.themes', 'opinions.sources'], granted: ['opinions.themes'] },
+  options: {},
   ...more
 })
 

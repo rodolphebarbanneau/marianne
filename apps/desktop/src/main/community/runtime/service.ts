@@ -412,6 +412,14 @@ export class CommunityService extends EventEmitter {
     this.timers.push(t)
   }
 
+  /** The user changed its own options: its listeners hear the new values (not before it is ready: it reads them then). */
+  optionsChanged(values: Record<string, unknown>): void {
+    if (this.status !== 'ready') return
+    this.request('options', '', [values]).catch((err: unknown) =>
+      this.opts.log.warn(`${this.label}: options:`, logLine(err instanceof Error ? err.message : String(err)))
+    )
+  }
+
   /** A request to the sandbox, once it is ready (a request made while it starts waits for it). */
   private async request(kind: SandboxKind, name: string, args: unknown[]): Promise<unknown> {
     if (this.status === 'starting') await this.ready.promise

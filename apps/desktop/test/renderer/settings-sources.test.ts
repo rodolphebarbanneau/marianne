@@ -121,7 +121,8 @@ describe('Réglages › Accès des services', () => {
       pinned: false,
       tools: [],
       builtIn: true,
-      access: { asked, granted: null }
+      access: { asked, granted: null },
+      options: {}
     })
     const { asking, others } = accessReaders([
       service('infos', ['opinions.sources'], false),

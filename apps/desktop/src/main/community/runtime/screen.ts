@@ -50,6 +50,8 @@ export interface ScreenHost {
   manifestOf(code: string): ServiceManifest | null
   /** The commune of the user's address, as community services get it (never the address). */
   home(): FrameHost['home']
+  /** A service's own options, as the user set them. */
+  options(code: string): FrameHost['options']
   call(code: string, method: string, args: unknown[]): Promise<unknown>
   load(code: string, key: string): unknown
   save(code: string, key: string, value: unknown): void
@@ -106,7 +108,7 @@ export class ScreenRelay extends EventEmitter {
     const manifest = this.host.manifestOf(this.code)
     if (!manifest) return
     if (m.type === 'init' || m.type === 'host') {
-      const host: FrameHost = { manifest, params: m.host.params, home: this.host.home() }
+      const host: FrameHost = { manifest, params: m.host.params, home: this.host.home(), options: this.host.options(this.code) }
       if (m.type === 'init') {
         this.init = { ...m, host }
         if (this.ready) this.send(this.init)

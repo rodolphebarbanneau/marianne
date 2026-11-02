@@ -135,7 +135,29 @@
         "opinions.themes"
       ],
       "purpose": "comparer les votes de vos élus à vos idées, et faire remonter vos thèmes"
-    }
+    },
+    "options": [
+      {
+        "key": "chamber",
+        "label": "chambre à l’ouverture",
+        "type": "choice",
+        "choices": [
+          {
+            "value": "both",
+            "label": "les deux"
+          },
+          {
+            "value": "an",
+            "label": "Assemblée"
+          },
+          {
+            "value": "se",
+            "label": "Sénat"
+          }
+        ],
+        "default": "both"
+      }
+    ]
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p .",

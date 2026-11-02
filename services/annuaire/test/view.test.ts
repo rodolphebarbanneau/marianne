@@ -15,6 +15,7 @@ const HOST: ServiceHost = {
   call: async () => null as never,
   params: {},
   home: null,
+  options: {},
   ask: () => undefined,
   openRoute: () => undefined,
   openUrl: () => undefined,

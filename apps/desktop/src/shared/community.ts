@@ -28,7 +28,8 @@ export const sandboxUrl = (code: string) => `${SERVICE_SCHEME}://${code}/~runtim
 export { SANDBOX_CHANNELS } from './sandbox-channels'
 
 /** What the main process asks of a sandbox. */
-export type SandboxKind = 'activate' | 'ping' | 'method' | 'tool' | 'tile' | 'summary' | 'today' | 'deadlines'
+/** `options`: the user changed the service's own options, their new values as its argument (no answer awaited). */
+export type SandboxKind = 'activate' | 'ping' | 'method' | 'tool' | 'tile' | 'summary' | 'today' | 'deadlines' | 'options'
 
 export interface SandboxInvoke {
   id: number
@@ -59,7 +60,8 @@ export const SANDBOX_SYNC_CALLS = [
   'profile.granted',
   'profile.vehicles',
   'profile.leaning',
-  'profile.themes'
+  'profile.themes',
+  'options'
 ] as const
 
 /**
@@ -126,6 +128,8 @@ export interface FrameHost {
   manifest: ServiceManifest
   params: Record<string, string | number>
   home: { code: string; name: string; postcode: string; latitude?: number; longitude?: number } | null
+  /** Its own options' values, as the main process gives them (never as the window says). */
+  options: Record<string, boolean | string | number>
 }
 
 /** The window's look, which the frame follows. */
