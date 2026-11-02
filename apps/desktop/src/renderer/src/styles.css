@@ -3016,6 +3016,8 @@ button.card:hover {
 .settings {
   flex: 1;
   min-height: 0;
+  /* Its size whatever a page holds: a wide table scrolls in the page. */
+  min-width: 0;
   margin: max(0px, 9vh - 56px) max(0px, 12vw - 100px) max(0px, 9vh - 62px);
   display: flex;
   background: var(--bg);
@@ -3042,17 +3044,18 @@ button.card:hover {
 .settings-nav .search-field {
   margin: 0 10px 6px;
 }
+/* Its 23 pages a little close together: they fit a 2048 × 1104 window; a smaller one scrolls the list. */
 .settings-nav .g {
   display: block;
   font-size: 0.78em;
   letter-spacing: 0.1em;
   color: var(--dim);
-  padding: 10px 14px 3px;
+  padding: 7px 14px 2px;
 }
 .settings-nav button {
   display: block;
   width: 100%;
-  padding: 3px 14px 3px 16px;
+  padding: 2px 14px 2px 16px;
   border-left: 3px solid transparent;
   color: var(--fg);
 }
@@ -3079,13 +3082,226 @@ button.card:hover {
   color: var(--hi);
   margin-bottom: var(--s4);
 }
+/* Beside the title, the way to what explains the page: the guide's section (a page holds settings only). */
+.settings-page .ptitle .guide-link {
+  margin-left: 12px;
+  font-size: 12px;
+  vertical-align: 2px;
+}
+/* The page's lists as wide as their heads, in one column up to a width that still reads. */
+.settings-page .rows {
+  max-width: none;
+}
+.settings-page .sec-h,
+.settings-page .rows,
+.settings-page .engine-row,
+.settings-page .table-wrap,
+.settings-page .list-tools,
+.settings-page .perms,
+.settings-page .source-kiosk,
+.settings-page .levels,
+.settings-page .empty {
+  max-width: 1200px;
+}
+/* A list's tools above it: its search, its filters (a second group of them at the end). */
+.list-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.list-tools .search-field.framed {
+  width: 260px;
+}
+.list-tools .grow {
+  flex: 1;
+}
+.list-foot {
+  margin-top: 10px;
+}
+/* An empty list: its line where its rows would be. */
+.settings-page .empty {
+  padding: 10px 4px;
+  border-bottom: 1px dashed var(--rule);
+}
+.settings-page .table-wrap + .sec-h,
+.settings-page .empty + .sec-h,
+.settings-page .rows + .sec-h,
+.settings-page .form-grid + .sec-h {
+  margin-top: 26px;
+}
+.settings-page .table-wrap {
+  overflow-x: auto;
+}
+/* In a settings table: a group's row (a family, a domain) and a row's details under it. */
+.settings-page .stable tr.grp td {
+  padding: 18px 4px 6px;
+  border-bottom: 1px solid var(--rule);
+  white-space: normal;
+  cursor: default;
+}
+.settings-page .stable tbody tr.grp:first-child td {
+  padding-top: 6px;
+}
+.settings-page .stable tr.grp:hover td,
+.settings-page .stable tr.detail:hover td {
+  background: none;
+}
+.settings-page .stable tr.grp .label {
+  display: inline;
+  margin-right: 8px;
+}
+.settings-page .stable tr.grp .grp-tools {
+  float: right;
+}
+.settings-page .stable tr.detail td {
+  white-space: normal;
+  background: var(--bg-raised);
+  padding: 10px 14px 12px;
+  cursor: default;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.settings-page .stable td.r,
+.settings-page .stable th.r {
+  text-align: right;
+}
+/* A table whose columns are set: what is too long ends in « … » rather than widening it. */
+.stable.fixed {
+  table-layout: fixed;
+}
+.stable.fixed td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stable.fixed .ell {
+  display: block;
+  max-width: 100%;
+}
+.row-acts {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.nowrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+/* A choice inside a cell (a document's domain): the value as text, its menu on click. */
+select.bare {
+  border: 0;
+  background: transparent;
+  padding: 0 2px;
+  color: inherit;
+}
+/* Under a page of MES IDÉES: who reads it. */
+.read-by {
+  margin-top: 14px;
+}
+/* A box to tick in a form, on its own line. */
+.check-field {
+  display: block;
+}
+/* The approval levels: each a choice in its frame, its line under its name. */
+.levels label {
+  display: block;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  margin-bottom: 6px;
+}
+.levels label:has(input:checked) {
+  border-color: var(--accent);
+}
+.levels label > .small.dim:last-child {
+  display: block;
+}
+/* A news source's editorial line, its colour as a block; its details (sections, line) under its row. */
+.lean-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.lean-chip i {
+  width: 10px;
+  height: 10px;
+  flex: none;
+}
+.src-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px 28px;
+}
+.src-detail .label {
+  display: block;
+  margin-bottom: 6px;
+}
+.src-detail .opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.src-detail .leans {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.src-detail .leans button:not(.link) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--rule);
+  color: var(--dim);
+}
+.src-detail .leans button.on {
+  border-color: var(--fg);
+  color: var(--hi);
+}
+.src-detail .leans i {
+  width: 10px;
+  height: 10px;
+}
+.settings-page section#sources .source-kiosk {
+  margin-bottom: 14px;
+}
+/* A company's form: its SIREN first, apart from the fields it fills. */
+.siren-fill {
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--rule);
+}
+/* A service's own settings (Services page): its part, then Marianne's. */
+.service-settings .svc-part {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.service-settings .svc-part > .label {
+  display: block;
+}
+.service-settings .rows {
+  margin-bottom: 0;
+}
+.service-settings .rows > .row {
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+}
+.service-settings .rows > .row > span:first-child {
+  color: var(--dim);
+}
+.service-settings .hosts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
 .settings-page .sub {
   display: block;
   margin: var(--s4) 0 6px;
 }
 /* A page's small notes (an empty list, a word under its rows): in the rows' column, a little apart from what follows. */
 .settings-page > p.small {
-  max-width: 800px;
+  max-width: 1200px;
   margin-bottom: var(--s3);
 }
 /* A page's subtitle, close under its title: what the page is about, in a sentence or two. */

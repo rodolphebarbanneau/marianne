@@ -16,7 +16,11 @@ Marianne va chercher l’information publique (les titres des journaux, les donn
 
 Pour 3615 INFOS, Marianne lit les flux de tous les journaux de sa liste, pas seulement ceux que vous avez acceptés : aucun journal ne peut savoir lesquels vous lisez. Elle garde leurs titres 7 jours. Elle ne lit le début d’un article (quelques lignes) que pour le titre affiché, quand vous l’affichez, et jamais au-delà de ce qu’un journal réserve à ses abonnés : la suite se lit chez lui.
 
-Vos sources d’information font partie de votre profil, comme votre sensibilité : ce que vous lisez dit ce que vous pensez. Le moteur ne les reçoit jamais, et aucun service ne les lit sans votre accord, jamais donné d’avance (Réglages › Identité › qui peut les lire). Un service qui ne peut pas les lire reçoit tous les journaux de la liste.
+Vos sources d’information font partie de votre profil, comme votre sensibilité : ce que vous lisez dit ce que vous pensez. Le moteur ne les reçoit jamais, et aucun service ne les lit sans votre accord, jamais donné d’avance (Réglages › Accès des services). Un service qui ne peut pas les lire reçoit tous les journaux de la liste.
+
+## Ce que lisent vos services
+
+Tous vos services connaissent la commune de votre adresse, pour vous montrer ce qui est près de chez vous ; rien d’autre de votre profil sans votre accord. Un service qui veut lire autre chose (votre plaque pour 3615 PEAGE, votre sensibilité et vos thèmes pour 3615 PARLEMENT) vous le demande à sa première ouverture. Réglages › Accès des services les montre tous, avec ce que chacun lit et quand il l’a lu : « accepter » ou « refuser », et ⚙ pour choisir parmi ce qu’il demande. Le même choix est dans les réglages du service, sur la page Services. Les moteurs ne reçoivent jamais votre sensibilité, vos thèmes ni vos sources.
 
 ## Les services de la communauté
 
@@ -24,7 +28,7 @@ Un service de la communauté (un fichier .3615, ou le catalogue de la communaut�
 
 ## Sauvegarder
 
-Dans Réglages › Place et emplacement :
+Dans Réglages › Place et sauvegarde :
 
 - **copie de sauvegarde** : une copie chiffrée de l’archive, à garder ailleurs, sur une clé USB ou un autre disque.
 - **tout exporter** : vos pièces, vos conversations et votre profil, en fichiers ordinaires et non chiffrés.

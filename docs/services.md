@@ -107,7 +107,7 @@ The manifest is the `marianne` field of the service's `package.json`. `readManif
 **What it reads of the user**
 
 - `permissions`: what of the profile it asks to read, among `PROFILE_FIELDS` (`vehicles.plate`, `vehicles.model`…, `opinions.leaning`, `opinions.themes`, `opinions.sources`), and what for, in one French line: `{ "profile": ["vehicles.plate"], "purpose": "retrouver vos passages en flux libre" }`.
-  - The first time the user opens the service, Marianne asks them, field by field. They can take it back in the settings.
+  - The first time the user opens the service, Marianne asks them, field by field. They can take it back in the service's own settings (its row's « réglages du service », on the Services page) or in Réglages › Accès des services, which shows the same choice.
   - Nothing else of the profile is ever available to a service.
   - `opinions.sources` serves `ctx.news`: built-in services only. A community service that asks for it is refused when it is added.
 
@@ -142,7 +142,7 @@ A service's icon and its tile's picture are **grids of named colours, never imag
 
 ### Opinions
 
-In Réglages › Identité, the user may say:
+In Réglages › Mes idées, the user may say:
 
 - which political groups they feel close to: `opinions.leaning`, acronyms of each chamber's groups, from the content's `parliament.json`;
 - which themes matter to them: `opinions.themes`, ids of `THEMES` (`ecology`, `housing`…);
@@ -150,7 +150,7 @@ In Réglages › Identité, the user may say:
 
 All are optional and never inferred. The leaning and the sources are sensitive data (RGPD, article 9: what one reads says what one thinks):
 
-- a service reads them only when it asked and the user accepted; Réglages › Identité lists those services, with the day each last read them;
+- a service reads them only when it asked and the user accepted; Réglages › Accès des services lists those services, with the day each last read them, and each page of Mes idées says which read it;
 - engines never receive them;
 - without `opinions.sources` granted, a service sees Marianne's defaults, never the user's.
 
@@ -267,7 +267,7 @@ export const service = defineService<MeteoMethods>({
       methods: { … },
       async tile() {
         const home = ctx.home()
-        if (!home) return { title: 'votre commune ?', lines: [{ text: 'votre adresse, dans Réglages › Identité', tone: 'dim' }] }
+        if (!home) return { title: 'votre commune ?', lines: [{ text: 'votre adresse, dans Réglages › Coordonnées', tone: 'dim' }] }
         const f = await forecastOf(ctx, home.code)
         return {
           value: { text: `${f.now}°`, unit: `${home.name} · ciel dégagé` },
@@ -433,7 +433,7 @@ export function View() {
   - `manifest`; `params`, what the screen was opened with; `home`;
   - `call(method, …args)`;
   - `ask(text, page?)`: hand a question to Marianne (a new folder, the question in the composer);
-  - `openRoute(route, params?)`: another screen (`settings/identity`, `service/carte`), with what it opens with (`openRoute('service/infos', { search: 'budget 2027' })`), or a settings page's section (`settings/identity#sources`);
+  - `openRoute(route, params?)`: another screen (`settings/contact`, `service/carte`), with what it opens with (`openRoute('service/infos', { search: 'budget 2027' })`). A settings page is the user's, never the service's own: `settings/contact` for the address, `settings/sources` for the news sources, `settings/access` for what the service may read. A service's own settings are its row's « réglages du service », on the Services page;
   - `openUrl`, `copy`, `toast`;
   - `load(key)` and `save(key, value)`: the same storage as `ctx.storage`.
 - `useHostOptional()`: the same host, or `null` outside a service's screen (where `useHost()` throws), for a block that also works elsewhere. The media player uses it: with a host, it copies and opens links through Marianne and has the mini-player (`host.media`); without one, it copies to the clipboard itself, opens links in a new window and has no mini-player key.
@@ -547,13 +547,14 @@ The build bundles it, and takes from it its sync job and the hosts the window ma
 - a starter joins its services (`services.added`);
 - another waits in « découvrir » until the user adds it. A newer Marianne's new service thus shows in « découvrir » for everyone, never added behind the user's back. Marianne may propose it in a conversation, when it covers a request ([above](#what-marianne-does-with-the-services)): the user still adds it in « avant d’ajouter ».
 
-A service the user removes (Réglages › Services) goes back to « découvrir », unpinned, its access to the profile taken back; what it stored for the user stays.
+A service the user removes (« retirer de mes services », in its settings on the Services page) goes back to « découvrir », unpinned, its access to the profile taken back; what it stored for the user stays.
 
 ## The Services page
 
 The 3615 kiosk: its head is the page's one search (the 3615 bar: a code or words), and under it two tabs, « mes services » (F2) and « découvrir » (F3).
 
 - **« mes services »**: the pinned services as tiles, in the user's order (`services.pinned`; moved by their grip, or its arrow keys; chosen in « modifier les épingles »), then all the user's services as a table: origin, theme, what each reaches and reads, when it was last opened, on or off.
+- **A service's settings** (its row's ⋯, « réglages du service »): its own, never Réglages, which is the application's and the user's. What Marianne lets it do, drawn by her and the same for every service: on or off, what it reads of the profile (accepter, refuser, or field by field: the same choice as Réglages › Accès des services), the sites it reaches and those where she acts with it, its data on this computer (« mettre à jour »), its tile, and « retirer de mes services ». A service declares no settings of its own yet: they would come above, in its own part.
 - **« découvrir »**: what Marianne recommends, as cards (the built-in services not added, then the community services she recommends, validated only), then the community catalogue as a table, loaded as one scrolls, and « ajouter un fichier .3615 ».
 - **The search** looks in both, ranked by trust (pinned, installed, official to add, catalogue validated, then not validated), then by relevance: the code first, then the name, a keyword of the manifest, the description, the theme, the author. A code typed in full is what ENVOI opens.
 - **Adding** always goes through « avant d’ajouter »: the verdict (official, validated, not validated, outside the catalogue), what the service will be able to do (its hosts, the sites where Marianne acts for it, the commune of the address, public data kept, its tools, what it asks of the profile), and what it never can.

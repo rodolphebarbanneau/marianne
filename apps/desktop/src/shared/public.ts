@@ -56,7 +56,7 @@ export const PUBLIC_SOURCES: PublicSourceInfo[] = [
   {
     id: 'legifrance',
     label: 'Légifrance',
-    description: 'codes, lois et décrets en vigueur, jurisprudence · demande un accès gratuit à l’API PISTE, à enregistrer dans Réglages › Sites et API',
+    description: 'codes, lois et décrets en vigueur, jurisprudence · avec un accès gratuit à l’API PISTE',
     kind: 'live',
     defaultUrl: 'https://api.piste.gouv.fr/dila/legifrance/lf-engine-app',
     homepage: 'https://www.legifrance.gouv.fr',

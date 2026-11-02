@@ -522,7 +522,7 @@ function Overview({
             </>
           )}
           {held.map(({ kind, list }) => (
-            <EntityBlock key={kind} title={ENTITY_TITLES[kind]} list={list} onFoyer={() => app.openSettings('household')} data={data} />
+            <EntityBlock key={kind} title={ENTITY_TITLES[kind]} list={list} onFoyer={() => app.openSettings('assets')} data={data} />
           ))}
           <Weeks entities={entities} data={data} />
           {profile && !items.length && !entities.length && (
@@ -593,7 +593,7 @@ function EntityBlock({ title, list, onFoyer, data }: { title: string; list: Doma
         note={list.length}
         tools={
           <button className="link small" onClick={onFoyer}>
-            dans Moi › Foyer ›
+            dans Moi › Activités et biens ›
           </button>
         }
       />

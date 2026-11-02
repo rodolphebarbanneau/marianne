@@ -3,7 +3,7 @@ import type { CardBrand, PaymentCard } from './types'
 /**
  * Payment cards, the pure part: checking a number as it is typed (its length, its Luhn key, its
  * brand), the expiry and the security code, how a card is shown (« Visa •••• 4242 · perso · 09/28 »),
- * and masking stored numbers out of a text. Shared: Réglages › Paiement checks as the user types,
+ * and masking stored numbers out of a text. Shared: Réglages › Banque et paiement checks as the user types,
  * the main process checks again before it stores anything (main/cards.ts).
  */
 

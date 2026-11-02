@@ -2,4 +2,4 @@ Les titres de vos sources d’information des dernières 24 heures, regroupés e
 
 Le fil donne les mêmes titres à leur heure ; le kiosque, source par source.
 
-Marianne lit les journaux pour INFOS et ne montre que le titre, l’heure, le lien et le début de l’article : l’article s’ouvre chez la source. Vos sources se choisissent dans Réglages › Identité ; « toutes » montre aussi celles que vous avez écartées, pour cette fois.
+Marianne lit les journaux pour INFOS et ne montre que le titre, l’heure, le lien et le début de l’article : l’article s’ouvre chez la source. Vos sources se choisissent dans Réglages › Sources d’information ; « toutes » montre aussi celles que vous avez écartées, pour cette fois.

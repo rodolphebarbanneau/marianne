@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { foldText } from '@marianne/sdk'
 import { accelOf, pressedAccel, SHORTCUTS, shortcutLabel } from '@shared/shortcuts'
 import { REPO_URL } from '@shared/project'
 import type { AppInfo, UpdateState } from '@shared/types'
@@ -6,8 +7,9 @@ import { useApp } from '../app/context'
 import { Authors } from '../app/guide'
 import { ArchivePath } from '../components/archive-path'
 import { Logo } from '../components/logo'
-import { Spinner } from '../components/ui'
+import { SearchField, Spinner } from '../components/ui'
 import { api, isMac, useLive } from '../lib/api'
+import { ListHead } from './parts'
 
 export function DisplayPane() {
   const { config, setConfig } = useApp()
@@ -74,13 +76,15 @@ export function ShortcutsPane() {
   const groups = [...new Set(SHORTCUTS.map((s) => s.group))]
   return (
     <>
-      <div className="note">
-        Pour changer un raccourci, cliquez dessus puis appuyez sur la nouvelle combinaison. Échap annule. Sur macOS, ctrl devient cmd. Ces raccourcis ne
-        marchent que dans Marianne.
-      </div>
-      {groups.map((g) => (
+      {groups.map((g, i) => (
         <div key={g}>
-          <span className="label sub">{g}</span>
+          <ListHead label={g}>
+            {i === 0 && (
+              <button className="btn small" onClick={() => reset()}>
+                tout remettre par défaut
+              </button>
+            )}
+          </ListHead>
           <div className="rows">
             {SHORTCUTS.filter((s) => s.group === g).map((s) => {
               const accel = accelOf(s.id, isMac, config.shortcuts)
@@ -89,7 +93,11 @@ export function ShortcutsPane() {
                 <div key={s.id} className="row">
                   <span>{s.label}</span>
                   <span>
-                    <button className={`btn small${recording === s.id ? ' primary' : ''}`} onClick={() => setRecording(recording === s.id ? null : s.id)}>
+                    <button
+                      className={`btn small${recording === s.id ? ' primary' : ''}`}
+                      title="cliquez, puis appuyez sur la nouvelle combinaison"
+                      onClick={() => setRecording(recording === s.id ? null : s.id)}
+                    >
                       {recording === s.id ? 'appuyez sur les touches… (échap pour annuler)' : shortcutLabel(accel, isMac)}
                     </button>
                     {clash && <span className="small accent"> déjà utilisé pour « {clash.label} »</span>}
@@ -107,33 +115,56 @@ export function ShortcutsPane() {
           </div>
         </div>
       ))}
-      <button className="btn" onClick={() => reset()}>
-        tout remettre par défaut
-      </button>
     </>
   )
 }
 
+/** The skills Marianne reads when the subject calls for them: hers, and those the user adds to their folder. */
 export function SkillsPane() {
   const skills = useLive(api.listSkills, () => () => undefined) ?? []
+  const [query, setQuery] = useState('')
+  const q = foldText(query.trim())
+  const shown = skills.filter((s) => !q || foldText(`${s.title} ${s.description}`).includes(q))
   return (
     <>
-      <div className="note">
-        Les compétences sont des fiches que Marianne consulte quand le sujet s’y prête : impôts, délais et recours, droit du travail… Vous pouvez aussi ajouter
-        les vôtres.
+      <ListHead label="compétences" count={skills.length}>
+        <button className="btn small" onClick={() => api.openSkillsDir()}>
+          ouvrir le dossier des compétences
+        </button>
+      </ListHead>
+      <div className="list-tools">
+        <SearchField className="framed" value={query} onChange={setQuery} placeholder="chercher une compétence" />
       </div>
-      <div className="rows">
-        {skills.map((s) => (
-          <div key={s.name} className="row">
-            <span className="hi">{s.title}</span>
-            <span className="small dim">{s.description}</span>
-            <span className="small muted">{s.builtin ? 'intégrée' : 'la vôtre'}</span>
-          </div>
-        ))}
-      </div>
-      <button className="btn" onClick={() => api.openSkillsDir()}>
-        ouvrir le dossier des compétences
-      </button>
+      {shown.length ? (
+        <div className="table-wrap">
+          <table className="stable fixed">
+            <thead>
+              <tr>
+                <th style={{ width: '30%' }}>compétence</th>
+                <th>ce qu’elle couvre</th>
+                <th style={{ width: 90 }}>
+                  <span className="sr-only">origine</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((s) => (
+                <tr key={s.name}>
+                  <td>
+                    <span className="hi ell">{s.title}</span>
+                  </td>
+                  <td className="small dim" title={s.description}>
+                    <span className="ell">{s.description}</span>
+                  </td>
+                  <td className="small muted">{s.builtin ? 'intégrée' : 'la vôtre'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="small dim empty">{skills.length ? 'Aucune compétence ne correspond.' : 'aucune compétence'}</p>
+      )}
     </>
   )
 }

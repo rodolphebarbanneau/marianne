@@ -282,7 +282,7 @@ export function readFromFrame(data: unknown): FromFrame | null {
       if (!isRecord(p) || !text(p.url, 2000) || !/^https:\/\//.test(p.url) || !text(p.title, 300) || !text(p.text, 100_000)) return null
       return { type: 'ask', text: d.text, page: { url: p.url, title: p.title, text: p.text } }
     }
-    // Another screen of the app (settings/identity#sources, service/carte), never one of the user's folders;
+    // Another screen of the app (settings/sources, service/carte), never one of the user's folders;
     // with what it opens with (a few short params: { search: 'budget 2027' }).
     case 'route': {
       if (!text(d.route, 200) || !/^[a-z]+(?:[:/][a-z0-9-]+)?(?:#[a-z0-9-]+)?$/.test(d.route) || /^folder\b/.test(d.route)) return null

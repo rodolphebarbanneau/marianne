@@ -187,7 +187,7 @@ function SubjectList({ listed, chosen, choose, mine, setMine, wide }: FrontProps
             tous · {reading.subjects.length}
           </button>
           {reading.themes.length > 0 && (
-            <button className={mine ? 'on' : ''} onClick={() => setMine(true)} title="les sujets de vos thèmes (Réglages › Identité)">
+            <button className={mine ? 'on' : ''} onClick={() => setMine(true)} title="les sujets de vos thèmes (Réglages › Thèmes)">
               ◆ vos thèmes · {themed}
             </button>
           )}
@@ -256,7 +256,7 @@ function SubjectList({ listed, chosen, choose, mine, setMine, wide }: FrontProps
       <div className="infos-legend">
         <span className="small muted">sur 24 h, rangés par nombre de sources</span>
         <LeanKey />
-        <button className="link small" onClick={openSources} title="Réglages › Identité › sources d’information">
+        <button className="link small" onClick={openSources} title="Réglages › Sources d’information">
           les couleurs ›
         </button>
       </div>

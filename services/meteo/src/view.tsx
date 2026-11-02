@@ -57,7 +57,7 @@ export function View() {
     <div className="meteo">
       {search.query && <Found query={search.query} onPick={pick} />}
       {!home && !chosen && (
-        <Notice action={{ label: 'renseigner mon adresse', onClick: () => host.openRoute('settings/identity') }}>
+        <Notice action={{ label: 'renseigner mon adresse', onClick: () => host.openRoute('settings/contact') }}>
           Renseignez votre adresse pour voir d’emblée le temps de votre commune.
         </Notice>
       )}

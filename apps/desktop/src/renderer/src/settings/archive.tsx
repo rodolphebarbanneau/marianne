@@ -9,6 +9,8 @@ import { api, errorText, useLive } from '../lib/api'
 import { accountLabel, bytes } from '../lib/format'
 import { useDocuments } from '../lib/profile'
 import { NewPassword, PasswordInput, passwordProblem } from '../screens/password'
+import { LockScreenChoice } from './me'
+import { ListHead } from './parts'
 
 const pct = (n: number, total: number) => `${Math.max(0.3, (n / total) * 100)}%`
 
@@ -35,7 +37,7 @@ export function SpacePane() {
       <div className="space">
         <span className="big">il reste {bytes(left)}</span>
         <span className="dim">
-          {bytes(usage.used)} utilisés sur {bytes(usage.capacity)}. Comme une clé USB, l’archive a une taille fixe.
+          {bytes(usage.used)} utilisés sur {bytes(usage.capacity)}
         </span>
         <div className="sbar">
           <span className="documents" style={{ width: pct(usage.documents, usage.capacity) }} title={`pièces · ${bytes(usage.documents)}`} />
@@ -61,50 +63,68 @@ export function SpacePane() {
             libre {bytes(left)}
           </span>
         </div>
-        <span className={`small ${ratio >= 0.8 ? 'accent' : 'dim'}`}>
-          {ratio >= 1
-            ? 'L’archive est pleine. Libérez de la place pour pouvoir ajouter de nouvelles pièces.'
-            : ratio >= 0.8
-              ? 'L’archive est remplie à plus de 80 %. Pensez à faire un peu de place.'
-              : 'Marianne vous prévient quand l’archive est remplie à 80 %. Une fois pleine, elle n’accepte plus de nouvelles pièces.'}
-        </span>
+        {ratio >= 0.8 && (
+          <span className="small accent">
+            {ratio >= 1 ? 'L’archive est pleine : libérez de la place pour ajouter de nouvelles pièces.' : 'L’archive est remplie à plus de 80 %.'}
+          </span>
+        )}
       </div>
-      <span className="label sub">Les plus grosses pièces</span>
-      <div className="rows">
-        {biggest.map((d) => (
-          <div key={d.id} className="row">
-            <span>{d.title}</span>
-            <span className="dim">{bytes(d.size)}</span>
-            <button className="btn small danger" onClick={() => confirm(`Supprimer « ${d.title} » de l’archive ?`) && void api.deleteDocument(d.id)}>
-              supprimer
-            </button>
-          </div>
-        ))}
-        <div className="row">
-          <span>dossiers classés</span>
-          <span className="dim">{app.folders.filter((f) => f.settledAt).length}</span>
-          <span />
+      <ListHead label="les plus grosses pièces">
+        <button className="link small" onClick={() => app.openSettings('documents')}>
+          toutes les pièces ›
+        </button>
+      </ListHead>
+      {biggest.length ? (
+        <div className="table-wrap">
+          <table className="stable">
+            <thead>
+              <tr>
+                <th>pièce</th>
+                <th>dossier</th>
+                <th className="r">taille</th>
+                <th>
+                  <span className="sr-only">actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {biggest.map((d) => (
+                <tr key={d.id} onClick={() => void api.openDocument(d.id)}>
+                  <td>
+                    <span className="hi">{d.title}</span>
+                  </td>
+                  <td className="dim">{app.folders.find((f) => f.id === d.folderId)?.title ?? '—'}</td>
+                  <td className="r">{bytes(d.size)}</td>
+                  <td className="r" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className="btn small danger"
+                      aria-label={`supprimer ${d.title} de l’archive`}
+                      title="supprimer de l’archive"
+                      onClick={() => confirm(`Supprimer « ${d.title} » de l’archive ?`) && void api.deleteDocument(d.id)}
+                    >
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
-      <span className="label sub">Emplacement</span>
+      ) : (
+        <p className="small dim empty">aucune pièce</p>
+      )}
+      <ListHead label="sauvegarde" />
       <div className="rows">
-        <div className="row">
-          <span>archive</span>
-          {app.session.account && <ArchivePath path={app.session.account.file} boxed />}
-          <button className="btn small" onClick={() => api.showArchive()}>
-            montrer
-          </button>
-        </div>
         <div className="row">
           <span>copie de sauvegarde</span>
-          <span className="dim small">une copie chiffrée de l’archive, à garder ailleurs, sur une clé USB ou un autre disque</span>
+          <span className="dim small">une copie chiffrée de l’archive, à garder ailleurs</span>
           <button className="btn small" onClick={run(api.backupArchive, (p) => `copie enregistrée : ${p}`)}>
             exporter
           </button>
         </div>
         <div className="row">
           <span>tout exporter</span>
-          <span className="dim small">vos pièces, vos conversations et votre profil, en fichiers ordinaires et non chiffrés</span>
+          <span className="dim small">vos pièces, vos conversations et votre profil, en fichiers ordinaires, non chiffrés</span>
           <button className="btn small" onClick={run(api.exportAll, (p) => `exporté dans ${p}`)}>
             exporter
           </button>
@@ -158,7 +178,7 @@ export function SecurityPane() {
   }
   return (
     <>
-      <span className="label sub">Changer la phrase de passe</span>
+      <ListHead label="changer la phrase de passe" />
       <div className="form-grid">
         <Field label="phrase de passe actuelle" wide>
           <PasswordInput value={current} onChange={(e) => setCurrent(e.target.value)} />
@@ -179,8 +199,7 @@ export function SecurityPane() {
           changer
         </button>
       </p>
-      <span className="label sub">Clé de secours</span>
-      <p className="dim small">Si vous refaites la clé de secours, l’ancienne cesse aussitôt de marcher. Votre phrase de passe vous est demandée d’abord.</p>
+      <ListHead label="clé de secours" />
       <div className="form-grid">
         <Field label="phrase de passe" wide>
           <PasswordInput
@@ -200,11 +219,10 @@ export function SecurityPane() {
         </button>
       </p>
       {renewMessage && <p className="small dim">{renewMessage}</p>}
-      <span className="label sub">Code sur cet ordinateur</span>
+      <ListHead label="code sur cet ordinateur" />
       {!app.session.pinAvailable ? (
         <p className="dim small">
-          Le trousseau du système n’est pas disponible sur cet ordinateur. Un code n’est donc pas possible ici, et la phrase de passe est demandée à chaque
-          ouverture.
+          Le trousseau du système n’est pas disponible sur cet ordinateur : pas de code ici, la phrase de passe est demandée à chaque ouverture.
         </p>
       ) : account.hasPin ? (
         <p>
@@ -221,7 +239,7 @@ export function SecurityPane() {
           activer un code
         </button>
       )}
-      <span className="label sub">Verrouillage</span>
+      <ListHead label="verrouillage" />
       <div className="rows">
         <div className="row">
           <span>verrouillage automatique</span>
@@ -259,6 +277,11 @@ export function AccountsPane() {
   }
   return (
     <>
+      <ListHead label="comptes sur cet ordinateur" count={accounts.length}>
+        <button className="btn small" onClick={switchTo}>
+          changer de compte
+        </button>
+      </ListHead>
       <div className="rows">
         {accounts.map((a) => (
           <div key={a.id} className="row">
@@ -280,17 +303,31 @@ export function AccountsPane() {
           </div>
         ))}
       </div>
-      <p className="dim small">
-        Vos archives sont rangées dans <ArchivePath path={app.config.archiveFolder} boxed />
-      </p>
-      <p style={{ display: 'flex', gap: 8 }}>
-        <button className="btn" onClick={switchTo}>
-          changer de compte
-        </button>
-        <button className="btn" onClick={() => void api.pickArchiveFolder()}>
-          changer d’emplacement…
-        </button>
-      </p>
+      <ListHead label="emplacement" />
+      <div className="rows">
+        <div className="row">
+          <span>vos archives</span>
+          <ArchivePath path={app.config.archiveFolder} boxed />
+          <button className="btn small" onClick={() => void api.pickArchiveFolder()}>
+            changer…
+          </button>
+        </div>
+        <div className="row">
+          <span>celle de ce compte</span>
+          {app.session.account ? <ArchivePath path={app.session.account.file} boxed /> : <span />}
+          <button className="btn small" onClick={() => api.showArchive()}>
+            montrer
+          </button>
+        </div>
+      </div>
+      <ListHead label="écran de verrouillage" />
+      <div className="rows">
+        <div className="row">
+          <span>ce compte s’y montre par</span>
+          <LockScreenChoice />
+          <span />
+        </div>
+      </div>
     </>
   )
 }

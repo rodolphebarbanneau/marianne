@@ -126,7 +126,7 @@ export function formatAgenda(agenda: Agenda, meetings: AgendaMeeting[], wanted?:
   const answered = asked.filter((c) => !missing.includes(c))
   const gaps = missing.map((c) =>
     c === 'an'
-      ? "The Assemblée nationale's agenda is missing: its open data isn't downloaded yet (the user can download it with « mettre à jour », on the 3615 PARLEMENT screen or in Réglages › Services)."
+      ? "The Assemblée nationale's agenda is missing: its open data isn't downloaded yet (the user can download it with « mettre à jour », on the 3615 PARLEMENT screen or in its settings, on the Services page)."
       : "The Sénat's agenda is missing, in part or whole: senat.fr didn't answer. Try again later."
   )
   if (!meetings.length) {

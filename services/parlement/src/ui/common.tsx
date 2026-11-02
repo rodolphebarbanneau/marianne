@@ -204,7 +204,7 @@ export function LensIcon() {
 
 export function LensChip({ group }: { group: string }) {
   return (
-    <span className="parlement-lens" title="la sensibilité indiquée dans Réglages › Identité">
+    <span className="parlement-lens" title="la sensibilité indiquée dans Réglages › Sensibilité">
       <LensIcon /> vos idées · {group}
     </span>
   )

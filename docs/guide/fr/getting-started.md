@@ -13,17 +13,17 @@ Rassurez-vous, vous ne taperez la phrase de passe qu’une fois par ordinateur. 
 
 Juste après la création, Marianne vous montre votre clé de secours. Si vous oubliez votre phrase de passe, c’est le seul moyen d’ouvrir l’archive. Copiez-la ou imprimez-la, et rangez-la à part. Sans phrase de passe ni clé de secours, personne ne peut rouvrir l’archive, pas même nous.
 
-Vous pouvez en refaire une dans Réglages › Phrase de passe et code, en redonnant votre phrase de passe. L’ancienne cesse alors aussitôt de marcher.
+Vous pouvez en refaire une dans Réglages › Sécurité, en redonnant votre phrase de passe. L’ancienne cesse alors aussitôt de marcher.
 
 ## Le code sur cet ordinateur
 
 Après une ouverture avec la phrase de passe, Marianne vous propose un code de 6 à 12 chiffres, autre qu’une suite (123456) ou un chiffre répété (111111). La prochaine fois, il suffira pour ouvrir l’archive. Il ne marche que sur cet ordinateur, car il s’appuie sur le trousseau du système. Après 5 erreurs, il faut de nouveau la phrase de passe.
 
-Pour changer ou retirer le code : Réglages › Phrase de passe et code.
+Pour changer ou retirer le code : Réglages › Sécurité.
 
 ## Verrouiller
 
-Le cadenas en bas à gauche, ou ctrl+L, verrouille l’archive. Marianne la verrouille aussi d’elle-même après un moment sans activité (15 minutes, au départ), et quand l’ordinateur se met en veille. Vous réglez les deux dans Réglages › Phrase de passe et code.
+Le cadenas en bas à gauche, ou ctrl+L, verrouille l’archive. Marianne la verrouille aussi d’elle-même après un moment sans activité (15 minutes, au départ), et quand l’ordinateur se met en veille. Vous réglez les deux dans Réglages › Sécurité.
 
 ## Plusieurs comptes
 

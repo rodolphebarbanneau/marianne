@@ -283,7 +283,7 @@ export function createMethods(ctx: ServiceContext, index: ParliamentIndex): Serv
 
   /**
    * The user's deputies and senators, from their address alone: the tile needs nothing more, and
-   * doesn't read their opinions (reading them is noted in Réglages › Identité).
+   * doesn't read their opinions (reading them is noted in Réglages › Accès des services).
    */
   async function representatives(): Promise<Representatives> {
     const home = ctx.home()

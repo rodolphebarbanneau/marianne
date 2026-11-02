@@ -465,7 +465,7 @@ function ReadingKey({ reading, chamber, lensGroup }: { reading: Reading; chamber
         </div>
         {reading === 'lens' && (
           <p className="small dim">
-            Comparé à la position majoritaire du groupe {lensGroup} {chamber === 'se' ? 'au Sénat' : ''}, que vous avez indiqué dans Réglages › Identité. Une
+            Comparé à la position majoritaire du groupe {lensGroup} {chamber === 'se' ? 'au Sénat' : ''}, que vous avez indiqué dans Réglages › Sensibilité. Une
             comparaison, pas un classement : rien n’est trié ni caché.
           </p>
         )}

@@ -113,22 +113,22 @@ export function givenLabel(verdict: Extract<Verdict, { by: 'rule' | 'level' | 'f
   return verdict.by === 'rule' ? alwaysLabel(verdict.rule) : verdict.by === 'followUp' ? verdict.label : 'autonomie'
 }
 
-/** The levels, as Réglages › Autorisations offers them. */
+/** The levels, as Réglages › Autorisations offers them: each in one line, its details in the guide (« Votre accord »). */
 export const LEVELS: Array<{ id: ApprovalLevel; label: string; text: string }> = [
   {
     id: 'ask',
     label: 'tout demander',
-    text: 'Marianne vous demande chaque nouveau site de chaque dossier, chaque formulaire et chaque enregistrement dans votre profil.'
+    text: 'chaque site, chaque formulaire, chaque enregistrement dans votre profil vous sont demandés'
   },
   {
     id: 'balanced',
     label: 'équilibré',
-    text: 'Marianne vous demande une fois par dossier avant d’aller en ligne, puis chaque formulaire et chaque enregistrement dans votre profil.'
+    text: 'aller en ligne vous est demandé une fois par dossier ; chaque formulaire, chaque enregistrement aussi'
   },
   {
     id: 'autonomous',
     label: 'autonomie',
-    text: 'Marianne va sans demander sur les sites qu’elle connaît (les sites publics de sa liste, et ceux où agissent ses services officiels que vous avez activés), y remplit les formulaires et enregistre vos échéances. Les autres sites vous sont demandés une fois par dossier.'
+    text: 'les sites qu’elle connaît, leurs formulaires et vos échéances sans demander ; les autres sites une fois par dossier'
   }
 ]
 

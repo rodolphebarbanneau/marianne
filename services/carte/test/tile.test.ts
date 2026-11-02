@@ -73,7 +73,7 @@ describe('the tile', () => {
   it('shows France’s figures without an address, and says where to give it', () => {
     expect(checkTile(franceTile([{ code: '00', name: 'France', region: '', population: 68_373_433, area: 632_734, density: 0, communes: 34_875 }]))).toEqual({
       value: { text: '68,4 M', unit: 'habitants · France' },
-      lines: [{ text: 'densité 108 hab./km² · 34 875 communes' }, { text: 'votre commune ? votre adresse dans Réglages › Identité', tone: 'dim' }]
+      lines: [{ text: 'densité 108 hab./km² · 34 875 communes' }, { text: 'votre commune ? votre adresse dans Réglages › Coordonnées', tone: 'dim' }]
     })
     expect(franceTile([])).toBeNull()
   })

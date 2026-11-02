@@ -210,7 +210,7 @@ describe('peage_trips', () => {
     const text = await tool('trips')()
     expect(text).toContain('| vehicle v1 | A79 Sazeret – Digoin (a79) |')
     expect(text).not.toContain(CLIO.plate!)
-    expect(text).toContain("the user hasn't let 3615 PEAGE read their plates (Réglages › Services, marianne:settings/services)")
+    expect(text).toContain("the user hasn't let 3615 PEAGE read their plates (Réglages › Accès des services, marianne:settings/access)")
   })
 })
 
@@ -245,10 +245,10 @@ describe('peage_add_trip', () => {
 
   it('sends the user to the settings when it can’t see a vehicle', async () => {
     await expect(setup({}).tool('add_trip')({ vehicle: 'v1', network: 'a79', at: PASSAGE })).rejects.toThrow(
-      "3615 PEAGE can't see the user's vehicles: they haven't let it read their plates. They can allow it in Réglages › Services (marianne:settings/services)."
+      "3615 PEAGE can't see the user's vehicles: they haven't let it read their plates. They can allow it in Réglages › Accès des services (marianne:settings/access)."
     )
     await expect(setup({ granted: ['vehicles.plate'], vehicles: [] }).tool('add_trip')({ vehicle: 'v1', network: 'a79', at: PASSAGE })).rejects.toThrow(
-      'The user has no vehicle in their profile: they add one in Réglages › Foyer & entités (marianne:settings/household).'
+      'The user has no vehicle in their profile: they add one in Réglages › Activités et biens (marianne:settings/assets).'
     )
   })
 })

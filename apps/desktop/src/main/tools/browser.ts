@@ -262,7 +262,7 @@ function pickCard(wanted: string | undefined): PaymentCard {
   const all = cards.list()
   if (!all.length)
     throw new ToolError(
-      'No card is saved. Propose adding one (request_setup, target payment), or let the user type theirs in the page (hand_over). Never ask for card details in the conversation.'
+      'No card is saved. Propose adding one (request_setup, target money), or let the user type theirs in the page (hand_over). Never ask for card details in the conversation.'
     )
   const listing = all.map((c) => `- ${cardTitle(c)}${expired(c.expiry) ? ' (expired)' : ''}`).join('\n')
   const name = wanted?.trim() ?? ''
@@ -660,7 +660,7 @@ export const browserTools = [
     name: 'pay_by_card',
     title: 'Card payment',
     description:
-      'Pays by card on this folder’s page with one of the user’s saved cards (Réglages › Paiement). It finds the card fields, in the page and in its payment provider’s frames, and asks the user’s yes on a card that shows the site, the page, the card and the amount you read on the page (they type the security code there when it isn’t saved); then it fills the number, expiry, holder and code. The card’s details never reach you. Only on a site Marianne knows (the public sites, the sites her services that are on act on), or on a payment provider’s page that a page on a host her services act on sent the browser to (its form or its link); elsewhere, let the user pay (hand_over). That yes also covers the one pay click that follows on this page (click). Without card, it takes the only saved card that hasn’t expired, or lists them.',
+      'Pays by card on this folder’s page with one of the user’s saved cards (Réglages › Banque et paiement). It finds the card fields, in the page and in its payment provider’s frames, and asks the user’s yes on a card that shows the site, the page, the card and the amount you read on the page (they type the security code there when it isn’t saved); then it fills the number, expiry, holder and code. The card’s details never reach you. Only on a site Marianne knows (the public sites, the sites her services that are on act on), or on a payment provider’s page that a page on a host her services act on sent the browser to (its form or its link); elsewhere, let the user pay (hand_over). That yes also covers the one pay click that follows on this page (click). Without card, it takes the only saved card that hasn’t expired, or lists them.',
     input: {
       card: z.string().max(80).optional().describe('The saved card to use: its label or its last four digits, as this tool lists them'),
       amount: z.string().min(1).max(60).describe('The amount to pay as the page shows it, e.g. « 12,40 € »: the user sees it as read on the page'),

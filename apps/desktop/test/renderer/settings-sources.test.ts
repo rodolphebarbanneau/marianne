@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { NewsSource } from '../../src/shared/news'
 import { acceptSources, byLean, choiceOf, giveLean, isAccepted, keepSections, sidesOf } from '../../src/shared/news-choice'
 import { keptSections, leanOf } from '../../src/shared/news'
-import { opinionReaders, readSummary } from '../../src/renderer/src/settings/readers'
+import { accessReaders, readSummary } from '../../src/renderer/src/settings/readers'
 
 const source = (id: string, more: Partial<NewsSource> = {}): NewsSource => ({
   id,
@@ -95,7 +95,7 @@ describe('the sources of Réglages › Identité', () => {
   })
 })
 
-describe('« qui peut les lire », with three fields', () => {
+describe('Réglages › Accès des services', () => {
   const all: ProfileField[] = ['opinions.leaning', 'opinions.themes', 'opinions.sources']
 
   it('says what each service reads of what it asked for', () => {
@@ -123,13 +123,15 @@ describe('« qui peut les lire », with three fields', () => {
       builtIn: true,
       access: { asked, granted: null }
     })
-    const { asking, others } = opinionReaders([
+    const { asking, others } = accessReaders([
       service('infos', ['opinions.sources'], false),
       service('parlement', all),
-      service('meteo', ['vehicles.critair']),
+      service('peage', ['vehicles.plate']),
+      service('meteo', []),
       service('carte', [], false)
     ])
-    expect(asking.map((s) => s.manifest.id)).toEqual(['parlement'])
+    // Every field a service asks for, the opinions and the others: the plates too.
+    expect(asking.map((s) => s.manifest.id)).toEqual(['parlement', 'peage'])
     expect(others.map((s) => s.manifest.id)).toEqual(['meteo'])
   })
 })

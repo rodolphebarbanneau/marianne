@@ -263,7 +263,7 @@ function AccountSelector() {
                 {account.display && ` · ${account.display}`}
               </span>
               {usage && (
-                <button title="Réglages › Place et emplacement" onClick={go(() => app.openSettings('space'))}>
+                <button title="Réglages › Place et sauvegarde" onClick={go(() => app.openSettings('space'))}>
                   <Gauge usage={usage} />
                 </button>
               )}

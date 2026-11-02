@@ -5,7 +5,7 @@ import type { PaymentCard, PaymentCardInput } from '../shared/types'
 import { session } from './session'
 
 /**
- * The user's payment cards (Réglages › Paiement), inside the account's archive like the keychain.
+ * The user's payment cards (Réglages › Banque et paiement), inside the account's archive like the keychain.
  * The number, and the security code when the user chose to keep it, are read in the main process
  * only, to fill a payment page after the user's yes on a card (tools/browser.ts, pay_by_card):
  * never sent back to the window once saved, never to an engine, never logged. What the others know

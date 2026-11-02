@@ -132,7 +132,7 @@ function Mine({ day }: { day: DayBallots | null }) {
         <div className="box-note">
           Vos députés et vos sénateurs se trouvent d’après votre adresse, qui n’est pas encore renseignée. Le calcul se fait sur cet ordinateur : rien n’est
           envoyé.{' '}
-          <button className="link" onClick={() => host.openRoute('settings/identity')}>
+          <button className="link" onClick={() => host.openRoute('settings/contact')}>
             renseigner mon adresse
           </button>
         </div>
@@ -146,7 +146,7 @@ function Mine({ day }: { day: DayBallots | null }) {
         <span className="label">vos élus</span>
         <span className="small dim">
           d’après votre adresse : {c.name} ({c.department}){deputy ? ` · ${constituency(deputy.constituency)}` : ''} ·{' '}
-          <button className="link" onClick={() => host.openRoute('settings/identity')}>
+          <button className="link" onClick={() => host.openRoute('settings/contact')}>
             modifier
           </button>
         </span>

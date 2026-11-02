@@ -720,7 +720,7 @@ export interface NewsAccess {
   granted(): boolean
   choice(): NewsChoice | null
   region(): string | null
-  /** The service read the user's opinions.sources (Réglages › Identité says when). */
+  /** The service read the user's opinions.sources (Réglages › Accès des services says when). */
   noteRead(): void
 }
 

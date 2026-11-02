@@ -275,7 +275,7 @@ describe('where Marianne pays', () => {
 describe('which card', () => {
   it('none saved: propose adding one, or let the user type it', async () => {
     cards.remove(cards.list()[0].id)
-    expect(await call(on(`${SANEF}/client/`), 'pay_by_card', PAY)).toMatch(/No card is saved.*request_setup, target payment.*hand_over/)
+    expect(await call(on(`${SANEF}/client/`), 'pay_by_card', PAY)).toMatch(/No card is saved.*request_setup, target money.*hand_over/)
   })
 
   it('several, none named: lists them as the user sees them, never their numbers', async () => {

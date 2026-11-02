@@ -109,7 +109,7 @@ One file per account, `<8-hex-id>.marianne`, in a folder the user chooses; other
 - **PIN**: after the full password once on a computer, the user may set a PIN (6 to 12 digits, no repetition or sequence).
   - A device secret kept by the OS credential store (Keychain, DPAPI, libsecret) and the PIN wrap the data key; 5 wrong PINs erase it.
   - No PIN where the store is a plain file (Linux without a keyring).
-- **Secrets**: the keychain's logins and API keys, and the payment cards (Réglages › Paiement: a label, the holder, the number, the expiry, and the security code only when the user ticks « enregistrer le cryptogramme » for that card), are records like the others. Only the main process reads them, to sign in or to pay after the user's yes: a card's number and code never go back to the window once saved, nor to an engine, an export or the log.
+- **Secrets**: the keychain's logins and API keys, and the payment cards (Réglages › Banque et paiement: a label, the holder, the number, the expiry, and the security code only when the user ticks « enregistrer le cryptogramme » for that card), are records like the others. Only the main process reads them, to sign in or to pay after the user's yes: a card's number and code never go back to the window once saved, nor to an engine, an export or the log.
 - **Capacity**: 1 GiB; a warning at 80 %, new pièces refused at 100 %.
 - **Locking**: by hand, after inactivity, or when the computer sleeps or locks its screen. Locking drops the key, cancels running turns, wipes the engines' scratch folders and the opened copies, and clears the built-in browser's cookies. Those temporary copies are the only personal data ever written in clear.
 
@@ -282,7 +282,7 @@ The news is a service (`services/infos`); `ctx.news` hands it to the services th
 - **No outlet learns what the user reads.** Marianne reads every source of the content's list, whatever the user chose. INFOS reaches no site itself.
 - **What it keeps**: 7 days of titles, grouped into subjects (the titles of different sources that say the same thing).
 - **What it shows**: the title, the time, the link and the feed's summary. For the one title a subject shows, the start of the article: 600 characters at most, read on demand, never past a paywall. The article opens at the source.
-- **The user's sources are sensitive**, like their leaning: a profile field (`opinions.sources`, Réglages › Identité › sources d'information), never ticked in advance, never given to the engines, shared service by service.
+- **The user's sources are sensitive**, like their leaning: a profile field (`opinions.sources`, Réglages › Sources d'information), never ticked in advance, never given to the engines, shared service by service.
 - **Colours place, never rank.** Each source's colour is its editorial line, Marianne's by default or the user's own. Colours place the sources from left to right (`byLean`); they never rank the news, hide or pick a source.
 
 ## The code

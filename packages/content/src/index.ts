@@ -230,7 +230,7 @@ export const CHAMBERS = ['an', 'se'] as const
 export type ChamberId = (typeof CHAMBERS)[number]
 
 /**
- * A political group of either chamber, for the leaning a user may declare (Réglages › Identité):
+ * A political group of either chamber, for the leaning a user may declare (Réglages › Sensibilité):
  * its acronym as the chamber's open data writes it, its colour, and for a group of the Assemblée,
  * the Sénat group of its political family, proposed when the user picks it.
  */
