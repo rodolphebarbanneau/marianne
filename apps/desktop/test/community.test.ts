@@ -178,7 +178,7 @@ describe('a .3615 file', () => {
     expect(nested).toContain('Il y manque main.js.')
   })
 
-  it('opens links only on its own hosts, never on a built-in service’s', () => {
+  it('opens links only on its own hosts, on their usual port, never on a built-in service’s', () => {
     const protectedHosts = new Set(['videos.assemblee-nationale.fr'])
     const read = (marianne: Record<string, unknown>) => {
       try {
@@ -191,6 +191,9 @@ describe('a .3615 file', () => {
     expect(read({ links: ['https://www.data.gouv.fr/datasets/'] })).toEqual([])
     expect(read({ links: ['https://www.impots.gouv.fr/'] })).toEqual([
       'Le lien « https://www.impots.gouv.fr/ » n’est pas sur un site que 3615 PHARMAGARDE déclare.'
+    ])
+    expect(read({ links: ['https://www.data.gouv.fr:8443/datasets/'] })).toEqual([
+      'Le lien « https://www.data.gouv.fr:8443/datasets/ » n’est pas sur un site que 3615 PHARMAGARDE déclare.'
     ])
     expect(read({ hosts: ['www.data.gouv.fr', 'videos.assemblee-nationale.fr'], links: ['https://videos.assemblee-nationale.fr/'] })).toEqual([
       'Le lien « https://videos.assemblee-nationale.fr/ » est sur videos.assemblee-nationale.fr, un site que Marianne ouvre elle-même : un service de la communauté ne peut pas l’ouvrir à sa place.'

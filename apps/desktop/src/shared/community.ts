@@ -372,7 +372,8 @@ export const ownRoute = (code: string, route: string) => route === `service:${co
 
 /**
  * Whether a community service's screen may open a page in the system's browser: https, on one
- * of its declared hosts or under one of the links it handles. Anything else stays closed.
+ * of its declared hosts (on its usual port) or under one of the links it handles. Anything else
+ * stays closed.
  */
 export function frameMayOpen(m: Pick<ServiceManifest, 'hosts' | 'links'>, url: string): boolean {
   let u: URL
@@ -382,5 +383,5 @@ export function frameMayOpen(m: Pick<ServiceManifest, 'hosts' | 'links'>, url: s
     return false
   }
   if (u.protocol !== 'https:' || u.username || u.password) return false
-  return m.hosts.includes(u.hostname) || m.links.some((prefix) => u.href.startsWith(prefix))
+  return (u.port === '' && m.hosts.includes(u.hostname)) || m.links.some((prefix) => u.href.startsWith(prefix))
 }

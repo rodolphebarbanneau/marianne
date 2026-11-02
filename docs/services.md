@@ -89,7 +89,7 @@ The manifest is the `marianne` field of the service's `package.json`. `readManif
 
 **What it reaches**
 
-- `hosts`: every host the service reaches, from any side. The main side's network, the sync job's downloads and the window's content policy allow only these.
+- `hosts`: every host the service reaches, from any side, over HTTPS on its usual port (443): another port of a declared host stays closed. The main side's network, the sync job's downloads and the window's content policy allow only these.
 - `connections`: Marianne's connections it relies on (`geo` for the communes). The service is unavailable while one is off.
 - `news`: `true` when it reads headlines through Marianne (`ctx.news`, [below](#news)) rather than from the press itself: no press host to declare. Built-in services only: a community service that declares it is refused when it is added.
 

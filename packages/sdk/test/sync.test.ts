@@ -65,7 +65,7 @@ describe('execute', () => {
     expect(required.at(-1)).toMatchObject({ type: 'error', message: expect.stringMatching(/404/) })
   })
 
-  it('refuses hosts the service has not declared, and plain http', async () => {
+  it('refuses hosts the service has not declared, another port of one, and plain http', async () => {
     vi.stubGlobal('fetch', vi.fn())
     const messages = await run(async (ctx) => {
       await ctx.download('https://elsewhere.fr/dump.zip')
@@ -77,6 +77,11 @@ describe('execute', () => {
       return { summary: '' }
     })
     expect(plain.at(-1)).toMatchObject({ type: 'error' })
+    const port = await run(async (ctx) => {
+      await ctx.download('https://data.example.fr:8443/dump.zip')
+      return { summary: '' }
+    })
+    expect(port.at(-1)).toMatchObject({ type: 'error' })
   })
 
   it('follows a redirect only to a declared host, checked before it is asked', async () => {
