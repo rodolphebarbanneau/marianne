@@ -191,9 +191,14 @@ class Chat extends EventEmitter {
     return this.active.has(id)
   }
 
-  /** Whether Marianne is answering in any folder: the automatic lock waits for her (presence.ts). */
+  /**
+   * Whether Marianne is working on something the user asked, in any folder: the automatic lock waits for her
+   * (presence.ts). Not a planned task's run, which nobody watches, and not a turn waiting for the user (a card, a
+   * hand-over): the user may have left, and the lock is what stops a card being answered by whoever sits down.
+   */
   answering(): boolean {
-    return this.active.size > 0
+    for (const id of this.active.keys()) if (this.run?.folderId !== id && !approvals.waitingFor(id)) return true
+    return false
   }
 
   /** The folder as the window shows it. */

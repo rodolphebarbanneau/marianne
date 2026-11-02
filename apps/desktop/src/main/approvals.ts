@@ -152,6 +152,12 @@ class Approvals extends EventEmitter {
     return total
   }
 
+  /** Whether the folder's turn waits for the user: a card not answered yet, a hand-over under way. */
+  waitingFor(folderId: string): boolean {
+    for (const p of this.pending.values()) if (p.folderId === folderId) return true
+    return (this.holds.get(folderId)?.size ?? 0) > 0
+  }
+
   /** Wait for the user some other way than a card (a hand-over): that time doesn't count in the turn's limit either. */
   async hold<T>(folderId: string, wait: Promise<T>): Promise<T> {
     const started = Date.now()

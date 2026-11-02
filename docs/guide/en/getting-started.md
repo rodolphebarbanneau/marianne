@@ -25,7 +25,7 @@ To change or remove the PIN: Réglages › Sécurité.
 
 The padlock at the bottom left, or ctrl+L, locks the archive. Marianne also locks it by itself:
 
-- **When you no longer use Marianne**, after the time you chose (15 minutes, to begin with). As long as you use it, with the keyboard or the mouse, or it is answering you, the archive stays open; with Marianne left aside, or behind other windows, the time runs.
+- **When you no longer use Marianne**, after the time you chose (15 minutes, to begin with). As long as you use it, with the keyboard or the mouse, or it is answering you, the archive stays open; with Marianne left aside, or behind other windows, the time runs. It runs too while she waits for you (a card to answer, the browser she hands you), and during a planned task's check.
 - **With the computer**, when its session locks or it goes to sleep.
 
 You set both in Réglages › Sécurité. For the archive to lock only with the computer, choose « jamais » (never) and keep « avec l’ordinateur » (with the computer); with both off, it no longer locks by itself.
