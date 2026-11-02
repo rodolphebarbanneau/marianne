@@ -105,8 +105,6 @@ export interface MarianneApi {
   /** A dialog is over the screens: the system's window buttons dim with the title bar. */
   dimTitleBar(dim: boolean): void
   onFullscreen(cb: (on: boolean) => void): () => void
-  /** The user is active: postpones the automatic lock. */
-  activity(): void
 
   // ---------- updates ----------
   getUpdateState(): Promise<UpdateState>

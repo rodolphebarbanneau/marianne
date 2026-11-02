@@ -246,17 +246,17 @@ export function SecurityPane() {
           <select value={app.config.lockAfterMinutes} onChange={(e) => void app.setConfig({ lockAfterMinutes: Number(e.target.value) })}>
             {[5, 15, 30, 60, 0].map((m) => (
               <option key={m} value={m}>
-                {m ? `après ${m} min sans activité` : 'jamais'}
+                {m ? `après ${m} min sans vous en servir` : 'jamais'}
               </option>
             ))}
           </select>
           <span />
         </div>
         <div className="row">
-          <span>mise en veille</span>
+          <span>avec l’ordinateur</span>
           <label>
             <input type="checkbox" checked={app.config.lockOnSleep} onChange={(e) => void app.setConfig({ lockOnSleep: e.target.checked })} />
-            verrouiller l’archive quand l’ordinateur se met en veille ou que l’écran se verrouille
+            verrouiller l’archive quand la session de l’ordinateur se verrouille ou qu’il se met en veille
           </label>
           <span />
         </div>

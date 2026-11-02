@@ -19,6 +19,7 @@ import { ALL_TOOLS } from './tools'
 import { openedArchives } from './opened-archives'
 import { isServiceFile, openedServiceFiles, serviceFilesIn } from './opened-service-files'
 import { ensureDirs, paths } from './paths'
+import { watchPresence } from './presence'
 import { sync } from './public/sync'
 import { screens, services } from './host'
 import { session } from './session'
@@ -95,6 +96,7 @@ if (!app.requestSingleInstanceLock()) {
     communityPackages.start()
     wipeScratch()
     session.setIdleMinutes(configStore.get().lockAfterMinutes)
+    watchPresence()
     sync.hasKey = (id) => (id === 'legifrance' ? session.unlocked && keychain.hasApi('piste') : true)
 
     // Our own pages may write to the clipboard and show a video full screen (the player's « plein
