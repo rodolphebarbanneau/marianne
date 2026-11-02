@@ -12,7 +12,7 @@ export interface KeyPress {
 /**
  * Whether the key pressed is one of `keys` (' ' for Space), alone: no Ctrl, Alt, Shift nor Cmd.
  * A page's own Enter or Space answers only these. With a modifier the key is one of the app's
- * shortcuts (ctrl+entrée, ctrl+espace), which skip a key a page has already taken.
+ * shortcuts (ctrl+espace), which skip a key a page has already taken.
  */
 export function plainKey(e: KeyPress, ...keys: string[]): boolean {
   return keys.includes(e.key) && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey
@@ -52,7 +52,7 @@ export function dialogEnter(e: DialogKey, openedAt: number): boolean {
 
 /**
  * Entrée in a dialog: its main button (`run`, null while it can't), unless the focus is on another
- * button, a link or a text box of several lines. Ctrl+Entrée stays the app's (a new folder).
+ * button, a link or a text box of several lines. With a modifier, it may be one of the app's shortcuts.
  */
 export function useDialogEnter(run: (() => void) | null): void {
   // Taken when the dialog is first drawn, not at each new `run`, which most dialogs make at each render.

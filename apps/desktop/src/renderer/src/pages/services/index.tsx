@@ -110,7 +110,7 @@ export function ServicesPage() {
   }
   const step = (by: number) => setSelected((i) => Math.max(0, Math.min(results.length - 1, i + by)))
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    // Entrée alone: ctrl+entrée stays the app's (a new folder).
+    // Entrée alone: with a modifier, it may be one of the app's shortcuts.
     if (plainKey(e, 'Enter')) {
       e.preventDefault()
       envoi()

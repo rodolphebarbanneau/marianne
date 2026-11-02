@@ -61,18 +61,17 @@ Services, Démarches and a domain's page open with the same head (`KioskHead`), 
 - **Settings**: a dialog over the app, in five groups: MOI (identity, household, documents, payment), ARCHIVE (space, security, accounts), CONNEXIONS (sites, engines, browser, approvals, privacy, public data), PAGES (services), APPLICATION (display, shortcuts, skills, about).
 - **Keyboard** (`shared/shortcuts.ts`): every shortcut can be changed.
 
-  | keys           | what                                                       |
-  | -------------- | ---------------------------------------------------------- |
-  | ctrl+k         | commands                                                   |
-  | ctrl+space     | the menu (the Minitel's SOMMAIRE)                          |
-  | ctrl+alt+space | search                                                     |
-  | ctrl+enter     | Marianne (a new folder)                                    |
-  | ctrl+2, ctrl+3 | Démarches, Services (ctrl+1 was the old Actualités page's) |
-  | ctrl+b         | the sidebar                                                |
-  | ctrl+l         | lock                                                       |
-  | ctrl+shift+r   | reload                                                     |
+  | keys                   | what                                         |
+  | ---------------------- | -------------------------------------------- |
+  | ctrl+k                 | commands                                     |
+  | ctrl+space             | the menu (the Minitel's SOMMAIRE)            |
+  | ctrl+alt+space         | search                                       |
+  | ctrl+1, ctrl+2, ctrl+3 | Marianne (a new folder), Démarches, Services |
+  | ctrl+b                 | the sidebar                                  |
+  | ctrl+l                 | lock                                         |
+  | ctrl+shift+r           | reload                                       |
   - ctrl is CommandOrControl (cmd on macOS), except for the menu and search, which keep ctrl (cmd+space is Spotlight's), and full screen.
-  - A page's own Enter and Space leave ctrl+enter and ctrl+space to the app.
+  - A page's own Enter and Space leave the keys with a modifier (ctrl+space) to the app.
 
 - **The mini-player**: a video a service's player hands over (P, or leaving its page while it plays) keeps playing in a corner of the window, over any page, one video at a time ([services.md](services.md#media)).
 - **Look**: Minitel touches on a clean monospace screen: inverse blocks, codes, function keys. The pixel font is for titles and codes only. The old screen's lines and glow are an option.

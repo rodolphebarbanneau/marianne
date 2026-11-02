@@ -2,7 +2,7 @@
 
 ## Les dossiers
 
-Un dossier, c’est une conversation avec Marianne sur un sujet : une démarche, une question, un courrier à comprendre. Écrivez sur la page d’accueil pour en commencer un (ctrl+entrée en ouvre un nouveau de n’importe où). « + pièce » joint un document, et le menu à côté du bouton « envoyer » choisit le moteur du dossier.
+Un dossier, c’est une conversation avec Marianne sur un sujet : une démarche, une question, un courrier à comprendre. Écrivez sur la page d’accueil pour en commencer un (ctrl+1 en ouvre un nouveau de n’importe où). « + pièce » joint un document, et le menu à côté du bouton « envoyer » choisit le moteur du dossier.
 
 Les dossiers en cours sont dans la colonne de gauche, avec « chercher » en haut pour en retrouver un. Ceux que vous mettez en veille reviennent à la date choisie, et ceux que vous classez restent à portée, dans « Classés ». Un dossier se classe aussi de lui-même quand sa démarche guidée est finie, ou après 7 jours sans activité s’il n’en suit aucune ; un dossier épinglé ou qui porte une tâche planifiée, jamais. Un nouveau message le ressort.
 
@@ -130,4 +130,4 @@ Comme sur un Minitel, la barre du bas montre les touches de l’écran :
 
 La barre suit l’écran : sur l’écran d’un service ou la page d’un domaine, RETOUR (échap) revient en arrière, et dans les réglages, ENVOI (ctrl+S) enregistre.
 
-Et aussi : ctrl+K pour les commandes, ctrl+alt+espace pour chercher partout, ctrl+2 et ctrl+3 pour Démarches et Services (inscrits à côté de leur nom, en haut de la fenêtre), ctrl+, pour les réglages, ctrl+B pour replier la colonne de gauche, F11 pour le plein écran, ctrl+maj+R pour recharger la fenêtre. Dans un service, F2, F3… ouvrent ses onglets, F1 son guide, et « / » sa recherche ; sur Démarches, Services et la page d’un domaine, F2, F3… ouvrent leurs onglets. Sur macOS, cmd remplace ctrl, sauf pour le menu et la recherche, et le plein écran est ctrl+cmd+F. Tous se changent dans Réglages › Raccourcis clavier.
+Et aussi : ctrl+K pour les commandes, ctrl+alt+espace pour chercher partout, ctrl+1, ctrl+2 et ctrl+3 pour Marianne (un nouveau dossier), Démarches et Services (inscrits à côté de leur nom, en haut de la fenêtre), ctrl+, pour les réglages, ctrl+B pour replier la colonne de gauche, F11 pour le plein écran, ctrl+maj+R pour recharger la fenêtre. Dans un service, F2, F3… ouvrent ses onglets, F1 son guide, et « / » sa recherche ; sur Démarches, Services et la page d’un domaine, F2, F3… ouvrent leurs onglets. Sur macOS, cmd remplace ctrl, sauf pour le menu et la recherche, et le plein écran est ctrl+cmd+F. Tous se changent dans Réglages › Raccourcis clavier.

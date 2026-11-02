@@ -2,7 +2,7 @@
 
 ## Folders
 
-A folder is a conversation with Marianne about one subject: a formality, a question, a letter to understand. Write on the home page to start one (ctrl+enter opens a new one from anywhere). « + pièce » attaches a document, and the menu next to the « envoyer » (send) button chooses the folder's engine.
+A folder is a conversation with Marianne about one subject: a formality, a question, a letter to understand. Write on the home page to start one (ctrl+1 opens a new one from anywhere). « + pièce » attaches a document, and the menu next to the « envoyer » (send) button chooses the folder's engine.
 
 Ongoing folders are in the left column, with « chercher » (search) at the top to find one. Those you put on hold come back on the date you chose, and those you file stay within reach, under « Classés » (filed). A folder is also filed by itself when its guided formality is done, or after 7 days without activity when it follows none; a pinned folder, or one holding a planned task, never is. A new message brings it back.
 
@@ -130,4 +130,4 @@ Like on a Minitel, the bottom bar shows the screen's keys:
 
 The bar follows the screen: on a service's screen or an area's page, RETOUR (esc) goes back, and in the settings, ENVOI (ctrl+S) saves.
 
-Also: ctrl+K for commands, ctrl+alt+space to search everywhere, ctrl+2 and ctrl+3 for Démarches and Services (written beside their names, at the top of the window), ctrl+, for settings, ctrl+B to fold the left column, F11 for full screen, ctrl+shift+R to reload the window. In a service, F2, F3… open its tabs, F1 its guide, and « / » its search; on Démarches, Services and an area's page, F2, F3… open their tabs. On macOS, cmd replaces ctrl, except for the menu and search, and full screen is ctrl+cmd+F. All of them can be changed in Réglages › Raccourcis clavier (Settings › Keyboard shortcuts).
+Also: ctrl+K for commands, ctrl+alt+space to search everywhere, ctrl+1, ctrl+2 and ctrl+3 for Marianne (a new folder), Démarches and Services (the last two written beside their names, at the top of the window), ctrl+, for settings, ctrl+B to fold the left column, F11 for full screen, ctrl+shift+R to reload the window. In a service, F2, F3… open its tabs, F1 its guide, and « / » its search; on Démarches, Services and an area's page, F2, F3… open their tabs. On macOS, cmd replaces ctrl, except for the menu and search, and full screen is ctrl+cmd+F. All of them can be changed in Réglages › Raccourcis clavier (Settings › Keyboard shortcuts).

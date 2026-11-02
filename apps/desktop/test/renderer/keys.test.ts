@@ -32,16 +32,23 @@ describe('a page’s Enter and Space', () => {
     }
   })
 
-  it('leave the app’s shortcuts on Enter and Space to the app: a new folder, SOMMAIRE, search everywhere', () => {
+  it('leave the app’s shortcuts on Enter and Space to the app: SOMMAIRE, search everywhere', () => {
     for (const mac of [false, true]) {
       const modified = SHORTCUTS.filter((def) => /\+(Enter|Space)$/.test(accelOf(def.id, mac)))
-      expect(modified.map((def) => def.id)).toEqual(expect.arrayContaining(['marianne', 'menu', 'search']))
+      expect(modified.map((def) => def.id)).toEqual(expect.arrayContaining(['menu', 'search']))
       for (const def of modified) {
         const e = eventOf(accelOf(def.id, mac), mac)
         expect(matches(e, accelOf(def.id, mac), mac)).toBe(true)
         expect(plainKey(e, 'Enter', ' ')).toBe(false)
       }
     }
+  })
+})
+
+describe('the pages’ keys', () => {
+  it('are ctrl+1, ctrl+2 and ctrl+3, in the pages’ order, and ctrl+entrée nobody’s', () => {
+    expect(['marianne', 'procedures', 'services'].map((id) => accelOf(id, false))).toEqual(['CommandOrControl+1', 'CommandOrControl+2', 'CommandOrControl+3'])
+    expect(SHORTCUTS.filter((def) => def.accel === 'CommandOrControl+Enter')).toEqual([])
   })
 })
 
@@ -85,7 +92,7 @@ describe('a dialog’s Entrée', () => {
     expect(dialogEnter(at(1500, { repeat: true }), opened)).toBe(false)
   })
 
-  it('leaves an Entrée a field took, and ctrl+entrée to the app', () => {
+  it('leaves an Entrée a field took, and one with a modifier to the app’s shortcuts', () => {
     expect(dialogEnter(at(1250, { defaultPrevented: true }), opened)).toBe(false)
     expect(dialogEnter(at(1250, { ctrlKey: true }), opened)).toBe(false)
     expect(dialogEnter({ ...at(1250), key: 'a' }, opened)).toBe(false)
