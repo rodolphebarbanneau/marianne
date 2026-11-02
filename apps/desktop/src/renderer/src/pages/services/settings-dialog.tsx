@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PROFILE_FIELDS, type ProfileField, type ServiceOption, type ServiceOptionValue, type ServiceState } from '@marianne/sdk'
+import { optionValue, PROFILE_FIELDS, type ProfileField, type ServiceOption, type ServiceOptionValue, type ServiceState } from '@marianne/sdk'
 import { Modal, ServiceIcon, Spinner } from '@marianne/sdk/view'
 import { ON_SITES } from '@shared/approvals'
 import { api, errorText } from '../../lib/api'
@@ -242,9 +242,10 @@ function OptionControl({ option, value, onSet }: { option: ServiceOption; value:
   const commit = () => {
     if (draft === String(value)) return
     if (option.type === 'number') {
-      const n = Number(draft.replace(',', '.'))
-      // Out of its bounds or off its steps: the value it had, which the main process would keep anyway.
-      if (Number.isFinite(n) && n >= option.min && n <= option.max) onSet(n)
+      const text = draft.trim().replace(',', '.')
+      const n = text ? Number(text) : NaN
+      // Empty, out of its bounds or off its steps: the value it had, which the main process would keep anyway.
+      if (optionValue(option, n) !== null) onSet(n)
       else setDraft(String(value))
     } else onSet(draft)
   }

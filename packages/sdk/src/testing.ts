@@ -1,5 +1,6 @@
 import {
   allowedUrl,
+  optionValue,
   optionValues,
   readManifest,
   readTile,
@@ -65,7 +66,10 @@ export interface FakeContext {
   urls: URL[]
   /** The service's storage, by key. */
   stored: Map<string, unknown>
-  /** The user changes options in the service's settings: checked as Marianne checks them, then the service's listeners hear it. */
+  /**
+   * The user changes options in the service's settings: checked as Marianne checks them, then the service's listeners hear it.
+   * A value Marianne would refuse (no such option, out of its bounds) throws, as her settings do, and changes nothing.
+   */
   setOptions(values: ServiceOptionValues): void
 }
 
@@ -132,6 +136,11 @@ export function fakeContext(pkg: unknown, given: FakeContextOptions = {}): FakeC
   }
   if (manifest.news) ctx.news = fakeNews(given.news ?? {}, (profile.granted ?? []).includes('opinions.sources'))
   const setOptions = (values: ServiceOptionValues) => {
+    for (const [key, value] of Object.entries(values)) {
+      const option = manifest.options.find((o) => o.key === key)
+      if (!option) throw new Error(`fakeContext: 3615 ${serviceCode(manifest)} has no option « ${key} »`)
+      if (optionValue(option, value) === null) throw new Error(`fakeContext: Marianne would refuse ${JSON.stringify(value)} for « ${key} »`)
+    }
     chosen = optionValues(manifest.options, { ...chosen, ...values })
     for (const listener of listeners) listener({ ...chosen })
   }
