@@ -412,12 +412,16 @@ export class CommunityService extends EventEmitter {
     this.timers.push(t)
   }
 
-  /** The user changed its own options: its listeners hear the new values (not before it is ready: it reads them then). */
+  /**
+   * The user changed its own options: its listeners hear the new values. While it starts, they wait for it to be
+   * ready: it may have read its options before the change, and hear of it only from here. Stopped, it reads them at its start.
+   */
   optionsChanged(values: Record<string, unknown>): void {
-    if (this.status !== 'ready') return
-    this.request('options', '', [values]).catch((err: unknown) =>
-      this.opts.log.warn(`${this.label}: options:`, logLine(err instanceof Error ? err.message : String(err)))
-    )
+    if (this.status !== 'ready' && this.status !== 'starting') return
+    this.request('options', '', [values]).catch((err: unknown) => {
+      // A start that failed says so on its own.
+      if (this.status === 'ready') this.opts.log.warn(`${this.label}: options:`, logLine(err instanceof Error ? err.message : String(err)))
+    })
   }
 
   /** A request to the sandbox, once it is ready (a request made while it starts waits for it). */

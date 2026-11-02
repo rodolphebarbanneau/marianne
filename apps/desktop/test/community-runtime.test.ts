@@ -586,6 +586,19 @@ describe('a community service, run', () => {
     await expect(service.runtime.methods.greet('x')).rejects.toThrow('3615 BONJOUR est arrêté.')
   })
 
+  it('tells it of a change to its options made while it starts, once it is ready, and of none while it is stopped', async () => {
+    const { service, made } = runService(answering)
+    service.optionsChanged({ countVisits: true })
+    service.start()
+    service.optionsChanged({ countVisits: false })
+    made[0].events.loaded()
+    await settle()
+    expect(made[0].sent.filter((m) => m.kind === 'options').map((m) => m.args)).toEqual([[{ countVisits: false }]])
+    service.stop()
+    service.optionsChanged({ countVisits: true })
+    expect(made[0].sent.filter((m) => m.kind === 'options')).toHaveLength(1)
+  })
+
   it('checks a tool’s arguments before they cross', async () => {
     const { service, made } = runService(answering)
     service.start()

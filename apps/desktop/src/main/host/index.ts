@@ -88,6 +88,8 @@ interface Community {
   service: CommunityService
   /** Its storage, held to its quota (its sandbox's and its screen's writes alike). */
   storage: QuotaStorage
+  /** Stops telling its sandbox its options: once it is off this computer, or replaced by another version. */
+  stopOptions: () => void
 }
 
 /** The largest help a community service's guide shows (its help.md, meant to be under 900 characters). */
@@ -309,7 +311,7 @@ class ServiceHost extends EventEmitter {
       storage
     }
     // Its options' changes reach its sandbox (while it runs): a listener of its own context, as a built-in service's.
-    ctx.options.onChange((values) => service?.optionsChanged(values))
+    const stopOptions = ctx.options.onChange((values) => service?.optionsChanged(values))
     service = new CommunityService({
       manifest,
       bridge: sandboxBridge(manifest, ctx),
@@ -326,7 +328,8 @@ class ServiceHost extends EventEmitter {
       ...(verdict === 'withdrawn' ? { withdrawn: reason ?? '' } : {}),
       ...(blocked ? { blocked } : {}),
       service,
-      storage
+      storage,
+      stopOptions
     }
     service.on('change', () => this.emit('change'))
     const running = service
@@ -516,9 +519,10 @@ class ServiceHost extends EventEmitter {
   private communityRemoved(code: string, tell = true): void {
     const at = this.loaded.findIndex((s) => s.community && s.manifest.id === code)
     if (at < 0) return
-    const { service } = this.loaded[at].community!
+    const { service, stopOptions } = this.loaded[at].community!
     service.stop()
     service.removeAllListeners()
+    stopOptions()
     this.loaded.splice(at, 1)
     if (tell) this.emit('change')
   }

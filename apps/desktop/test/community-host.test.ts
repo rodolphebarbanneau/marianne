@@ -46,7 +46,9 @@ vi.mock('../src/main/community/runtime/sandbox', async (original) => ({
 }))
 
 import { accounts } from '../src/main/account'
+import { CommunityService } from '../src/main/community/runtime/service'
 import { services } from '../src/main/host'
+import { announceOptions } from '../src/main/host/options'
 import { session } from '../src/main/session'
 
 function memoryArchive(): Archive {
@@ -72,7 +74,15 @@ function installed() {
     name: '@marianne/service-bonjour',
     version: '1.0.0',
     author: 'Collectif Bonjour',
-    marianne: { code: 'bonjour', name: 'Bonjour', description: 'un salut', category: 'culture', hosts: [], domains: ['family'] }
+    marianne: {
+      code: 'bonjour',
+      name: 'Bonjour',
+      description: 'un salut',
+      category: 'culture',
+      hosts: [],
+      domains: ['family'],
+      options: [{ key: 'countVisits', label: 'compter les visites', type: 'switch', default: false }]
+    }
   })
   writeFileSync(join(dir, 'package.json'), json)
   const sha = (text: string) => createHash('sha256').update(text).digest('hex')
@@ -87,8 +97,8 @@ function installed() {
   }
 }
 
-describe('a community service’s deadlines, for the engines', () => {
-  it('join the user’s only once the catalogue validates it, each on one line', async () => {
+describe('a community service in the host', () => {
+  it('has its deadlines join the user’s only once the catalogue validates it, each on one line; its options no longer reach it once removed', async () => {
     const description: SandboxDescription = {
       methods: [],
       tools: [],
@@ -106,6 +116,7 @@ describe('a community service’s deadlines, for the engines', () => {
     const entry = { code: 'bonjour', status: 'unvalidated', file: { url: 'https://services.example.test/bonjour.3615', size: 1, sha256: pkg.sha256 } }
     let catalogue = { status: 'ready', entries: [entry], withdrawn: [] } as unknown as CatalogueState
     const heard: Array<() => void> = []
+    const removed: Array<(pkg: { code: string }) => void> = []
     vi.spyOn(accounts, 'settings').mockReturnValue({
       services: {
         pinned: [],
@@ -123,7 +134,11 @@ describe('a community service’s deadlines, for the engines', () => {
     vi.spyOn(accounts, 'updateSettings').mockImplementation(() => undefined as never)
     services.start({
       catalogue: { state: () => catalogue, on: (_event: string, listener: () => void) => void heard.push(listener) } as never,
-      packages: { installed: () => [pkg], remove: async () => undefined, on: () => undefined } as never,
+      packages: {
+        installed: () => [pkg],
+        remove: async () => undefined,
+        on: (_event: string, l: (pkg: { code: string }) => void) => void removed.push(l)
+      } as never,
       appToolNames: () => [],
       protectedHosts: () => new Set()
     })
@@ -140,6 +155,15 @@ describe('a community service’s deadlines, for the engines', () => {
       await vi.waitFor(() =>
         expect(services.deadlines()).toEqual([{ id: 'fete', domain: 'family', title: 'Fête des voisins', due: '2026-11-02', service: 'bonjour' }])
       )
+
+      // Its options reach its sandbox while it is here; off this computer, its listener goes with it.
+      const told = vi.spyOn(CommunityService.prototype, 'optionsChanged')
+      const manifest = services.states().find((s) => s.manifest.id === 'bonjour')!.manifest
+      announceOptions(manifest)
+      expect(told).toHaveBeenCalledTimes(1)
+      for (const listener of removed) listener({ code: 'bonjour' })
+      announceOptions(manifest)
+      expect(told).toHaveBeenCalledTimes(1)
     } finally {
       session.lock()
       vi.restoreAllMocks()
