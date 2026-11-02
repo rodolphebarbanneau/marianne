@@ -295,6 +295,8 @@ export interface MarianneApi {
   serviceSummaries(domain: DomainId): Promise<Array<{ service: string; summary: ServiceSummary }>>
   /** The user's answer to what a service asks to read of the profile: the fields granted (none: refused). */
   setServiceAccess(id: string, granted: ProfileField[]): Promise<void>
+  /** One of a service's own options, as the user sets it in the service's settings (checked against its manifest). */
+  setServiceOption(id: string, key: string, value: boolean | string | number): Promise<void>
   /** A service among the user's services (from « découvrir »). */
   addService(id: string): Promise<void>
   /** A service out of the user's services, back in « découvrir » (unpinned, its access taken back). */

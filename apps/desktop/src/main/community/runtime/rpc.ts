@@ -18,7 +18,8 @@ export const TIMEOUTS: Record<SandboxKind, number> = {
   tile: 10_000,
   summary: 10_000,
   today: 10_000,
-  deadlines: 10_000
+  deadlines: 10_000,
+  options: 5_000
 }
 
 /** A request not answered in time (named Error still: its message is what the user reads). */

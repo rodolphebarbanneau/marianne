@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { LoadingGate, ServiceTools, useHost, useStored, useTab, useTabBadges } from '@marianne/sdk/view'
+import { LoadingGate, ServiceTools, useHost, useOptions, useStored, useTab, useTabBadges } from '@marianne/sdk/view'
 import { parseVideoRef, videoKey } from './links'
 import type { Clips, Favorites, ParlementMethods, Shelf, VideoItem } from './types'
 import { AgendaTab, MeetingPane } from './ui/agenda'
@@ -84,7 +84,9 @@ function Screen() {
   useLayoutEffect(() => {
     if (first.tab && first.tab !== shown) open(first.tab)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  const [chambers, setChambers] = useState<Chambers>('both')
+  // The chamber the user chose to open on (its settings, on the Services page): « les deux » by default.
+  const { chamber } = useOptions<{ chamber: Chambers }>()
+  const [chambers, setChambers] = useState<Chambers>(chamber)
   const [videoSearch, setVideoSearch] = useState<VideoSearch>(DEFAULT_SEARCH)
   const [favorites, setFavorites] = useStored<Favorites & { deputies?: string[] }>('favorites', NO_FAVORITES)
   const [clips, setClips] = useStored<Clips>('clips', NO_CLIPS)

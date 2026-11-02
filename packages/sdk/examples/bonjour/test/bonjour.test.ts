@@ -27,6 +27,15 @@ describe('3615 BONJOUR', () => {
     expect(methods.visits()).toBe(0)
   })
 
+  it('counts nothing while the user’s option says not to, and again once it says so', () => {
+    const { ctx, stored, setOptions } = fakeContext(pkg, { options: { countVisits: false } })
+    const methods = service.activate(ctx).methods as unknown as { greet(n: string): { visits: number } }
+    expect(methods.greet('Camille').visits).toBe(0)
+    expect(stored.has('visits')).toBe(false)
+    setOptions({ countVisits: true })
+    expect(methods.greet('Camille').visits).toBe(1)
+  })
+
   it('lends the tools its manifest declares, and only those', async () => {
     const { ctx } = fakeContext(pkg)
     const runtime = service.activate(ctx)

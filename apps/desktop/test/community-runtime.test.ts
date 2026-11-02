@@ -263,7 +263,8 @@ function contextOf(m: ServiceManifest, store: RecordStore) {
     geo: { findCommunes: vi.fn(async () => []), getCommune: vi.fn(async () => null) },
     home: () => ({ code: '35238', name: 'Rennes', postcode: '35000' }),
     profile: { granted: () => [], vehicles: () => [], leaning: () => null, themes: () => [], sources: () => null },
-    sync: { status: () => ({}), run: async () => {} }
+    sync: { status: () => ({}), run: async () => {} },
+    options: { get: () => ({ countVisits: false }), onChange: () => () => undefined }
   }
   return { ctx, json }
 }
@@ -299,6 +300,8 @@ describe('the bridge', () => {
     expect(a.callSync('storage.set', `["k","${'x'.repeat(1_200_000)}"]`)).toMatchObject({ error: { message: expect.stringContaining('trop longs') } })
     expect(a.callSync('storage.set', '{ not json')).toMatchObject({ error: { message: expect.stringContaining('arguments illisibles') } })
     expect(a.callSync('home', j([]))).toEqual({ ok: { code: '35238', name: 'Rennes', postcode: '35000' } })
+    // Its own options, as the user set them in its settings.
+    expect(a.callSync('options', j([]))).toEqual({ ok: { countVisits: false } })
   })
 
   it('reaches its declared hosts only, with options it may give', async () => {
@@ -768,6 +771,7 @@ describe('a community screen’s relay', () => {
     const host: ScreenHost = {
       manifestOf: (code) => (code === 'bonjour' ? manifestOf() : null),
       home: () => ({ code: '35238', name: 'Rennes', postcode: '35000', latitude: 48.11, longitude: -1.68 }),
+      options: () => ({ countVisits: false }),
       call: async (code, method, args) => (asked.calls.push([code, method, args]), `${method}!`),
       load: () => ({ visits: 2 }),
       save: (code, key, value) => void asked.saved.push([code, key, value]),
@@ -791,15 +795,20 @@ describe('a community screen’s relay', () => {
     look: { theme: 'minitel', crt: false, fontSize: 14, platform: 'win32' }
   })
 
-  it('gives the screen the commune of the address, never its place, once it says hello', () => {
+  it('gives the screen the commune of the address, never its place, and its options as the app keeps them, once it says hello', () => {
     const { relay, toScreen } = relayOf()
-    relay.fromWindow(init({ code: '35238', name: 'Rennes', postcode: '35000', latitude: 48.1173, longitude: -1.6778 }))
+    // What the window says of its options is not taken: the app gives them.
+    const said = init({ code: '35238', name: 'Rennes', postcode: '35000', latitude: 48.1173, longitude: -1.6778 })
+    relay.fromWindow({ ...said, host: { ...said.host, options: { countVisits: true } } })
     expect(toScreen).toEqual([])
     relay.fromScreen({ type: 'hello' })
     expect(toScreen).toEqual([
       expect.objectContaining({
         type: 'init',
-        host: expect.objectContaining({ home: { code: '35238', name: 'Rennes', postcode: '35000', latitude: 48.11, longitude: -1.68 } })
+        host: expect.objectContaining({
+          home: { code: '35238', name: 'Rennes', postcode: '35000', latitude: 48.11, longitude: -1.68 },
+          options: { countVisits: false }
+        })
       })
     ])
   })

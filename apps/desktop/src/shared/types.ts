@@ -155,7 +155,8 @@ export interface AccountSettings {
    * the day each last read the user's opinions (leaning, themes, sources), YYYY-MM-DD. `opened`: when the
    * user last opened each one's screen (ISO). `reviewed`: the file of each community service this
    * account reviewed (its SHA-256, its version): another one on this computer (another account
-   * updated it) waits for this account's review.
+   * updated it) waits for this account's review. `options`: what the user chose of each one's own
+   * options (its settings, on the Services page), checked against its manifest when read and when set.
    */
   services: {
     pinned: string[]
@@ -166,6 +167,7 @@ export interface AccountSettings {
     reads: Record<string, string>
     opened: Record<string, string>
     reviewed: Record<string, { sha256: string; version: string }>
+    options: Record<string, Record<string, unknown>>
   }
   /** How much Marianne asks before acting for the user (shared/approvals.ts). */
   approvals: ApprovalSettings

@@ -25,7 +25,8 @@ const STATE: ServiceState = {
   pinned: true,
   tools: [],
   builtIn: true,
-  access: { asked: [], granted: null }
+  access: { asked: [], granted: null },
+  options: {}
 }
 
 const LIST: ServiceTile = {

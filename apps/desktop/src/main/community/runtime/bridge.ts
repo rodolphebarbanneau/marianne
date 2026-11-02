@@ -156,6 +156,8 @@ export function sandboxBridge(manifest: ServiceManifest, ctx: ServiceContext, no
             return ok(ctx.profile.leaning())
           case 'profile.themes':
             return ok(ctx.profile.themes())
+          case 'options':
+            return ok(ctx.options.get())
         }
         return refuse(`${who} : capacité inconnue.`)
       } catch (err) {

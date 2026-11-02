@@ -347,6 +347,7 @@ export function registerIpc(): void {
   handle('syncService', (id: string) => services.sync(id))
   handle('serviceSummaries', (domain: DomainId) => services.summaries(domain))
   handle('setServiceAccess', (id: string, granted: ProfileField[]) => services.setAccess(id, Array.isArray(granted) ? granted : []))
+  handle('setServiceOption', (id: string, key: string, value: unknown) => services.setOption(String(id), String(key), value))
   handle('addService', (id: string) => services.add(id))
   handle('removeService', (id: string) => services.remove(id))
   handle('serviceOpened', (id: string) => services.opened(id))

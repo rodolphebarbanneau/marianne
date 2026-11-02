@@ -45,7 +45,15 @@
         ".cccccc.",
         ".cc....."
       ]
-    }
+    },
+    "options": [
+      {
+        "key": "countVisits",
+        "label": "compter vos visites",
+        "type": "switch",
+        "default": true
+      }
+    ]
   },
   "scripts": {
     "pack": "node ../../scripts/pack.mjs ."

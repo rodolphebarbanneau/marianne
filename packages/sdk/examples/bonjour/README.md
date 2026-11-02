@@ -1,9 +1,9 @@
 # 3615 BONJOUR
 
-An example of a community service for Marianne, to copy: one tool for the engines, a tile, a one-page screen made of the SDK's blocks, an 8 × 8 icon, a help.
+An example of a community service for Marianne, to copy: one tool for the engines, a tile, a one-page screen made of the SDK's blocks, an 8 × 8 icon, a help, and an option of its own (« compter vos visites », which the user sets in its settings on the Services page).
 
 ```
-package.json      the manifest (the "marianne" field), its tools declared
+package.json      the manifest (the "marianne" field), its tools and its option declared
 src/main.ts       its main side: methods for its screen, the tool, the tile
 src/view.tsx      its screen
 src/view.css      its styles, prefixed with its code

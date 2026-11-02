@@ -7,7 +7,7 @@ A guide for whoever builds a service: a person or an agent. The contract (the ma
 The same for every service, decided by the package and its manifest rather than by code:
 
 - **The package**: `services/<code>/`, named `@marianne/service-<code>`, with `src/main.ts`, `src/view.tsx`, `src/help.md`, optionally `src/sync.ts`, and `test/`.
-- **The manifest** (the `marianne` field of `package.json`): code, name, description, category, hosts, the **sites** where Marianne acts for it (its payment or account pages, built-in services only), the **tabs** of the screen, the **tools** it lends the engines, its **icon**. `readManifest` checks it; a wrong one leaves the service out.
+- **The manifest** (the `marianne` field of `package.json`): code, name, description, category, hosts, the **sites** where Marianne acts for it (its payment or account pages, built-in services only), the **tabs** of the screen, the **tools** it lends the engines, its **icon**, its own **options**. `readManifest` checks it; a wrong one leaves the service out.
 - **The tile** on the Services page: its head (your icon, code and name) and its foot; you give its body as data (`tile()`).
 - **The frame**: the 3615 header (the way back, the name, the star, and the **search field** a manifest's `search` asks for), the **tab bar** drawn from `tabs` (each tab with its key, F2 to F9, fixed while the content scrolls under it; none for a screen of one page), the margins, the scroll bar, the centred column (`--content-width`), and the **bottom bar**, where your keys join Marianne's.
 - **The guide** (F1 on the screen): its header, the keys, the service's facts (version, author, the sites it reaches), and your `help.md` in the middle.
@@ -61,6 +61,13 @@ Marianne's classes, styled by her stylesheet: `.card`, `.grid`, `.rows` and `.ro
 - The view shows what the tab holds: `const { tab } = useTab()`, then the tab's component.
 - Something opened over a tab (a member's page, a ballot): keep your own stack of them, with a `← retour` at its top, and close them when the user picks a tab again: `useTab(() => setStack([]))`.
 - Opened on another tab than the first: give `params.tab` (a line of "Aujourd'hui", a deadline), or `open(id)` in a layout effect when the screen decides from its params.
+
+## Options
+
+- What the user may set of the service itself goes in the manifest's `options` (a switch, a choice, a number, a line of text), never in a screen of yours: Marianne draws them in the service's settings (its row's « réglages du service », on the Services page) and keeps them. Labels in French, lowercase, as a settings row says its own (`chambre à l’ouverture`).
+- Read them where they matter: `useOptions()` in the view (the screen draws again when one changes), `ctx.options.get()` on the main side, `ctx.options.onChange` to act on a change (a tile to compute again).
+- A few, not a second application: what the screen can offer as a toggle of its own (a filter, a sort) stays there; an option is what the user wants every time.
+- Test them with `fakeContext(pkg, { options })` and `setOptions` ([docs/services.md](../docs/services.md#tests)).
 
 ## Help
 

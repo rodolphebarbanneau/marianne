@@ -161,6 +161,7 @@ function hostOf(h: FrameHost): ServiceHost {
     manifest: h.manifest,
     params: h.params,
     home: h.home,
+    options: h.options ?? {},
     call: ((method: string, ...args: unknown[]) => request({ type: 'call', method, args })) as ServiceHost['call'],
     ask: (text, page) => post({ type: 'ask', text, ...(page ? { page: { url: page.url, title: page.title, text: page.text } } : {}) }),
     openRoute: (route, params) => post({ type: 'route', route, ...(params ? { params } : {}) }),

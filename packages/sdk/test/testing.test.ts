@@ -74,6 +74,40 @@ describe('fakeContext', () => {
   })
 })
 
+describe('fakeContext, for a service with options of its own', () => {
+  const withOptions = {
+    ...pkg,
+    marianne: {
+      ...pkg.marianne,
+      options: [
+        { key: 'alerts', label: 'alertes', type: 'switch', default: true },
+        { key: 'daysAhead', label: 'prévisions', type: 'number', min: 1, max: 15, default: 7 }
+      ]
+    }
+  }
+
+  it('gives their defaults, or what the test says the user chose', () => {
+    expect(fakeContext(withOptions).ctx.options.get()).toEqual({ alerts: true, daysAhead: 7 })
+    expect(fakeContext(withOptions, { options: { daysAhead: 3 } }).ctx.options.get()).toEqual({ alerts: true, daysAhead: 3 })
+  })
+
+  it('tells the service’s listeners when the user changes one, as Marianne checks it', () => {
+    const { ctx, setOptions } = fakeContext(withOptions)
+    const heard: unknown[] = []
+    const stop = ctx.options.onChange((values) => heard.push(values))
+    setOptions({ alerts: false })
+    // Out of its bounds: Marianne wouldn't keep it.
+    setOptions({ daysAhead: 40 })
+    stop()
+    setOptions({ alerts: true })
+    expect(heard).toEqual([
+      { alerts: false, daysAhead: 7 },
+      { alerts: false, daysAhead: 7 }
+    ])
+    expect(ctx.options.get()).toEqual({ alerts: true, daysAhead: 7 })
+  })
+})
+
 describe('checkTile', () => {
   it('gives back a tile within its limits, and lists what Marianne would change otherwise', () => {
     expect(checkTile({ title: 'bac jaune demain', lines: [{ text: 'à sortir ce soir', tone: 'accent' }] })).toEqual({

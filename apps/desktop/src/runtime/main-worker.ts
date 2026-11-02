@@ -1,4 +1,4 @@
-import type { ServiceContext, ServiceManifest, ServiceModule, ServiceRuntime } from '@marianne/sdk/main'
+import type { ServiceContext, ServiceManifest, ServiceModule, ServiceOptionValues, ServiceRuntime } from '@marianne/sdk/main'
 import * as z from 'zod'
 import type { BridgeReply, SandboxDescription, SandboxInvoke } from '../shared/community'
 import type { FromWorker, ToWorker, WorkerBridge } from './worker-messages'
@@ -114,9 +114,20 @@ function context(manifest: ServiceManifest, b: WorkerBridge): ServiceContext {
       // for opinions.sources is refused when it is added, and nothing crosses for them.
       sources: () => null
     },
-    sync: { status: () => ({}), run: async () => {} }
+    sync: { status: () => ({}), run: async () => {} },
+    // Read from the main process when asked; their changes come as an `options` request (see run).
+    options: {
+      get: () => sync('options') as ServiceOptionValues,
+      onChange(listener) {
+        optionListeners.add(listener)
+        return () => void optionListeners.delete(listener)
+      }
+    }
   }
 }
+
+/** The service's listeners of its options (ctx.options.onChange). */
+const optionListeners = new Set<(values: ServiceOptionValues) => void>()
 
 /** What the service's main side has, for the main process. */
 function describe(m: ServiceModule, r: ServiceRuntime): SandboxDescription {
@@ -174,6 +185,9 @@ async function run(b: WorkerBridge, m: SandboxInvoke): Promise<unknown> {
       return runtime.today ? runtime.today(String(m.args[0])) : []
     case 'deadlines':
       return runtime.deadlines ? runtime.deadlines() : []
+    case 'options':
+      for (const listener of optionListeners) listener({ ...(m.args[0] as ServiceOptionValues) })
+      return null
   }
   throw new Error(`unknown request ${String(m.kind)}`)
 }

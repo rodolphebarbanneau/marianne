@@ -137,6 +137,72 @@ export const MAX_TABS = 8
 /** The function key of a service's tab, by its place: F2 for the first (F1 is GUIDE). */
 export const tabKey = (index: number) => `F${index + 2}`
 
+/**
+ * One of a service's own options, as its manifest declares it: Marianne draws it in the service's
+ * settings (its row's « réglages du service », on the Services page), keeps what the user chose in
+ * their archive, and gives it to the service (`ctx.options`, `useOptions`). Never in Réglages, which
+ * is the application's and the user's. A service draws nothing there itself: it says what to ask.
+ *
+ * - `switch`: on or off;
+ * - `choice`: one of a few values, each with its label;
+ * - `number`: between `min` and `max`, by `step` (1 by default), with its `unit` (« jours »);
+ * - `text`: one line, at most `maxLength` characters (80 by default).
+ *
+ * `label` in French, lowercase, as the settings' rows say theirs (« chambre à l’ouverture »); `hint`, one
+ * short line under it, only when the label can't say it.
+ */
+export type ServiceOption = { key: string; label: string; hint?: string } & (
+  | { type: 'switch'; default: boolean }
+  | { type: 'choice'; choices: Array<{ value: string; label: string }>; default: string }
+  | { type: 'number'; min: number; max: number; step?: number; unit?: string; default: number }
+  | { type: 'text'; maxLength?: number; placeholder?: string; default: string }
+)
+
+export type ServiceOptionValue = boolean | string | number
+
+/** A service's options, by key: what the user chose, else their defaults. */
+export type ServiceOptionValues = Record<string, ServiceOptionValue>
+
+/** At most this many options: a short list, not a second application. */
+export const MAX_OPTIONS = 12
+
+/** At most this many choices in one option. */
+export const MAX_CHOICES = 12
+
+/** An option's key: camelCase letters and digits ("chamber", "daysAhead"). */
+const OPTION_KEY = /^[a-z][a-zA-Z0-9]*$/
+/** A choice's value: lowercase letters, digits and hyphens ("both", "an"). */
+const CHOICE_VALUE = /^[a-z0-9][a-z0-9-]*$/
+
+const isRecordOf = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+
+/**
+ * A value for an option, checked as Marianne checks what is set: of its type, among its choices,
+ * within its bounds and on its steps, one line within its length. Null: not one it takes.
+ */
+export function optionValue(option: ServiceOption, value: unknown): ServiceOptionValue | null {
+  switch (option.type) {
+    case 'switch':
+      return typeof value === 'boolean' ? value : null
+    case 'choice':
+      return typeof value === 'string' && option.choices.some((c) => c.value === value) ? value : null
+    case 'number': {
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < option.min || value > option.max) return null
+      // On its steps from `min`, within what floating point rounds.
+      const n = (value - option.min) / (option.step ?? 1)
+      return Math.abs(n - Math.round(n)) < 1e-9 ? value : null
+    }
+    case 'text':
+      return typeof value === 'string' && value.length <= (option.maxLength ?? 80) && !NOT_A_LINE.test(value) ? value : null
+  }
+}
+
+/** A service's options as it gets them: what was kept and still fits each option, else its default. */
+export function optionValues(options: ServiceOption[], kept: unknown): ServiceOptionValues {
+  const stored = isRecordOf(kept) ? kept : {}
+  return Object.fromEntries(options.map((o) => [o.key, (Object.hasOwn(stored, o.key) ? optionValue(o, stored[o.key]) : null) ?? o.default]))
+}
+
 /** What a service declares in the `marianne` field of its package.json. */
 export interface ServiceDeclaration {
   /** Its code, and its folder's name. */
@@ -177,6 +243,8 @@ export interface ServiceDeclaration {
    * Built-in services only: a community service that declares them is refused when it is added.
    */
   sites?: string[]
+  /** Its own options, which the user sets in its settings (see ServiceOption). At most MAX_OPTIONS. */
+  options?: ServiceOption[]
 }
 
 /** The fields of a service's package.json that Marianne reads. */
@@ -214,6 +282,8 @@ export interface ServiceManifest {
   news: boolean
   /** Where Marianne acts for the user for it (see ServiceDeclaration.sites). */
   sites: string[]
+  /** Its own options, checked (see ServiceOption). */
+  options: ServiceOption[]
 }
 
 export class ManifestError extends Error {
@@ -307,6 +377,7 @@ export function readManifest(pkg: unknown, options: ManifestOptions = {}): Servi
   if (new Set(sites).size !== sites.length) fail('a site is listed twice in "marianne.sites"')
   const shared = options.sharedHost && sites.find((h) => options.sharedHost!(h))
   if (shared) fail(`site "${shared}" is shared by many sites (a hosting service or a public suffix): list the one site Marianne acts on`)
+  const own = readOptions(m.options, fail)
   const author = typeof p.author === 'string' ? p.author : (p.author?.name ?? '')
   return {
     id: code,
@@ -327,8 +398,82 @@ export function readManifest(pkg: unknown, options: ManifestOptions = {}): Servi
     tools: tools.map((t) => ({ name: t.name, label: t.label.trim() })),
     search: m.search ? { placeholder: m.search.placeholder.trim() } : null,
     news: m.news === true,
-    sites: [...sites]
+    sites: [...sites],
+    options: own
   }
+}
+
+/** A manifest's options, checked: each its key, its label, its type and what that type needs, its default among what it takes. */
+function readOptions(raw: unknown, fail: (what: string) => never): ServiceOption[] {
+  if (raw === undefined) return []
+  if (!Array.isArray(raw) || raw.length > MAX_OPTIONS) fail(`"marianne.options" must list at most ${MAX_OPTIONS} options`)
+  const out: ServiceOption[] = []
+  for (const o of raw as unknown[]) {
+    if (!isRecordOf(o) || typeof o.key !== 'string' || !OPTION_KEY.test(o.key))
+      fail(`option "${String(isRecordOf(o) ? o.key : o)}": its key must be camelCase letters and digits`)
+    const { key, label, hint } = o as { key: string; label: unknown; hint?: unknown }
+    if (!isLine(label, MANIFEST_LIMITS.label)) fail(`option "${key}": its label must be one line of at most ${MANIFEST_LIMITS.label} characters`)
+    if (hint !== undefined && !isLine(hint, MANIFEST_LIMITS.purpose))
+      fail(`option "${key}": its hint must be one line of at most ${MANIFEST_LIMITS.purpose} characters`)
+    const base = { key, label: (label as string).trim(), ...(hint !== undefined ? { hint: (hint as string).trim() } : {}) }
+    let option: ServiceOption
+    switch (o.type) {
+      case 'switch':
+        option = { ...base, type: 'switch', default: o.default as boolean }
+        break
+      case 'choice': {
+        const choices = o.choices
+        if (!Array.isArray(choices) || choices.length < 2 || choices.length > MAX_CHOICES) fail(`option "${key}": a choice lists 2 to ${MAX_CHOICES} choices`)
+        for (const c of choices as unknown[])
+          if (!isRecordOf(c) || typeof c.value !== 'string' || !CHOICE_VALUE.test(c.value) || !isLine(c.label, MANIFEST_LIMITS.label))
+            fail(
+              `option "${key}": each choice is { value: lowercase letters, digits and hyphens, label: one line of at most ${MANIFEST_LIMITS.label} characters }`
+            )
+        const list = (choices as Array<{ value: string; label: string }>).map((c) => ({ value: c.value, label: c.label.trim() }))
+        if (new Set(list.map((c) => c.value)).size !== list.length) fail(`option "${key}": two choices have the same value`)
+        option = { ...base, type: 'choice', choices: list, default: o.default as string }
+        break
+      }
+      case 'number': {
+        const { min, max, step = 1, unit } = o as { min: unknown; max: unknown; step?: unknown; unit?: unknown }
+        if (typeof min !== 'number' || typeof max !== 'number' || !Number.isFinite(min) || !Number.isFinite(max) || min >= max)
+          fail(`option "${key}": a number needs a min below its max`)
+        if (typeof step !== 'number' || !Number.isFinite(step) || step <= 0) fail(`option "${key}": its step must be a number above 0`)
+        if (unit !== undefined && !isLine(unit, 16)) fail(`option "${key}": its unit must be one line of at most 16 characters`)
+        option = {
+          ...base,
+          type: 'number',
+          min: min as number,
+          max: max as number,
+          ...(o.step !== undefined ? { step: step as number } : {}),
+          ...(unit !== undefined ? { unit: (unit as string).trim() } : {}),
+          default: o.default as number
+        }
+        break
+      }
+      case 'text': {
+        const { maxLength = 80, placeholder } = o as { maxLength?: unknown; placeholder?: unknown }
+        if (typeof maxLength !== 'number' || !Number.isInteger(maxLength) || maxLength < 1 || maxLength > 200)
+          fail(`option "${key}": its maxLength must be a whole number from 1 to 200`)
+        if (placeholder !== undefined && !isLine(placeholder, MANIFEST_LIMITS.label))
+          fail(`option "${key}": its placeholder must be one line of at most ${MANIFEST_LIMITS.label} characters`)
+        option = {
+          ...base,
+          type: 'text',
+          ...(o.maxLength !== undefined ? { maxLength: maxLength as number } : {}),
+          ...(placeholder !== undefined ? { placeholder: (placeholder as string).trim() } : {}),
+          default: o.default as string
+        }
+        break
+      }
+      default:
+        return fail(`option "${key}": its type must be switch, choice, number or text`)
+    }
+    if (optionValue(option, option.default) === null) fail(`option "${key}": its default is not one it takes`)
+    out.push(option)
+  }
+  if (new Set(out.map((o) => o.key)).size !== out.length) fail('two options have the same key')
+  return out
 }
 
 /** The département of a commune from its INSEE code: "33063" → "33", "97411" → "974", "2A004" → "2A". */
@@ -416,6 +561,8 @@ export interface ServiceState {
   reviewedVersion?: string
   /** The profile fields it asks for, and the ones the user granted (null: not asked yet); the day it last read the user's opinions. */
   access: { asked: ProfileField[]; granted: ProfileField[] | null; readAt?: string }
+  /** Its own options' values, as the user set them in its settings (else their defaults): see ServiceOption. */
+  options: ServiceOptionValues
 }
 
 export type Urgency = 'none' | 'soon' | 'urgent'

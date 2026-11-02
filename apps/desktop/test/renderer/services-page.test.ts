@@ -27,6 +27,7 @@ const state = (
     tools: [],
     builtIn: true,
     access: { asked: [], granted: null },
+    options: {},
     ...rest
   }
 }

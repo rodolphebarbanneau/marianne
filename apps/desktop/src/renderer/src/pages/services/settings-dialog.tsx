@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { PROFILE_FIELDS, type ProfileField, type ServiceState } from '@marianne/sdk'
+import { useEffect, useState } from 'react'
+import { PROFILE_FIELDS, type ProfileField, type ServiceOption, type ServiceOptionValue, type ServiceState } from '@marianne/sdk'
 import { Modal, ServiceIcon, Spinner } from '@marianne/sdk/view'
 import { ON_SITES } from '@shared/approvals'
 import { api, errorText } from '../../lib/api'
@@ -50,7 +50,22 @@ export function ServiceSettingsDialog({ state, onClose }: { state: ServiceState;
         </div>
         <div className="svc-part">
           <span className="label">ses réglages</span>
-          <p className="small dim empty">aucun réglage propre</p>
+          {m.options.length ? (
+            <div className="rows">
+              {m.options.map((o) => (
+                <div key={o.key} className="row">
+                  <span className="stack" style={{ gap: 2 }}>
+                    <span>{o.label}</span>
+                    {o.hint && <span className="small dim">{o.hint}</span>}
+                  </span>
+                  <OptionControl option={o} value={state.options[o.key] ?? o.default} onSet={(v) => act(api.setServiceOption(m.id, o.key, v))} />
+                  <span />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="small dim empty">aucun réglage propre</p>
+          )}
         </div>
         <div className="svc-part">
           <span className="label">ce que Marianne lui permet</span>
@@ -214,4 +229,94 @@ export function ServiceSettingsDialog({ state, onClose }: { state: ServiceState;
       </div>
     </Modal>
   )
+}
+
+/**
+ * One of the service's own options, as Marianne draws them all: a switch, a choice (its values side by
+ * side up to three, else a menu), a number with its unit, a line of text. Kept as soon as it is set; a
+ * number or a text when it is left, or with Entrée.
+ */
+function OptionControl({ option, value, onSet }: { option: ServiceOption; value: ServiceOptionValue; onSet: (value: ServiceOptionValue) => void }) {
+  const [draft, setDraft] = useState(String(value))
+  useEffect(() => setDraft(String(value)), [value])
+  const commit = () => {
+    if (draft === String(value)) return
+    if (option.type === 'number') {
+      const n = Number(draft.replace(',', '.'))
+      // Out of its bounds or off its steps: the value it had, which the main process would keep anyway.
+      if (Number.isFinite(n) && n >= option.min && n <= option.max) onSet(n)
+      else setDraft(String(value))
+    } else onSet(draft)
+  }
+  const keys = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') e.currentTarget.blur()
+    if (e.key === 'Escape' && draft !== String(value)) {
+      e.preventDefault()
+      setDraft(String(value))
+    }
+  }
+  switch (option.type) {
+    case 'switch':
+      return (
+        <span>
+          <button className={`switch${value ? ' on' : ''}`} role="switch" aria-checked={!!value} aria-label={option.label} onClick={() => onSet(!value)}>
+            <i />
+          </button>
+        </span>
+      )
+    case 'choice':
+      // In a span of their own: the row's cell, not their frame, takes the column's width.
+      return (
+        <span>
+          {option.choices.length <= 3 ? (
+            <span className="seg" role="group" aria-label={option.label}>
+              {option.choices.map((c) => (
+                <button key={c.value} aria-pressed={c.value === value} onClick={() => onSet(c.value)}>
+                  {c.label}
+                </button>
+              ))}
+            </span>
+          ) : (
+            <select value={String(value)} aria-label={option.label} onChange={(e) => onSet(e.target.value)}>
+              {option.choices.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </span>
+      )
+    case 'number':
+      return (
+        <span className="row-flex" style={{ gap: 8 }}>
+          <input
+            type="number"
+            min={option.min}
+            max={option.max}
+            step={option.step ?? 1}
+            value={draft}
+            aria-label={option.label}
+            style={{ width: 110 }}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={keys}
+          />
+          {option.unit && <span className="dim">{option.unit}</span>}
+        </span>
+      )
+    case 'text':
+      return (
+        <input
+          value={draft}
+          maxLength={option.maxLength ?? 80}
+          placeholder={option.placeholder}
+          aria-label={option.label}
+          spellCheck={false}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={keys}
+        />
+      )
+  }
 }

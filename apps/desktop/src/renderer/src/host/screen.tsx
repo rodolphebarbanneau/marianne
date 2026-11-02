@@ -53,6 +53,8 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
   const manifestKey = state ? JSON.stringify(state.manifest) : ''
   // What the service may read changed (an access given or taken back in Réglages, the opinions said): its screen reads again.
   const readsKey = JSON.stringify([state?.access.granted ?? null, profile?.opinions ?? null])
+  // Its own options, as the user set them in its settings (Services page): the screen draws again with them.
+  const optionsKey = JSON.stringify(state?.options ?? {})
 
   const host = useMemo<ServiceHost | null>(() => {
     if (!state) return null
@@ -64,6 +66,7 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
       call: (method: string, ...args: unknown[]) => api.callService(id, method, args) as never,
       params: JSON.parse(paramsKey) as Record<string, string | number>,
       home,
+      options: JSON.parse(optionsKey) as ServiceHost['options'],
       // A new folder, in the service's first domain (Mobilité for 3615 PEAGE).
       ask: (text: string, page?: ShownPage) => {
         setSeed({ text, attachments: page ? [{ type: 'page', ...page }] : [], domain: state.manifest.domains[0] })
@@ -84,6 +87,7 @@ function FramedScreen({ id, params }: { id: string; params: Record<string, strin
     manifestKey,
     readsKey,
     paramsKey,
+    optionsKey,
     address?.inseeCode,
     address?.city,
     address?.postcode,

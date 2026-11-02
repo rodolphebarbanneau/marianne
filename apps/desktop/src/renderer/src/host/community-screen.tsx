@@ -57,8 +57,9 @@ export function CommunityScreen({ host, frame, barred }: { host: ServiceHost; fr
   hidden.current = covered
   const { theme, crt, fontSize } = app.config.ui
   const look = useMemo<FrameLook>(() => ({ theme, crt, fontSize, platform: api.platform }), [theme, crt, fontSize])
-  // Its home is the main process's to give (the commune only): the screen gets its params from here.
-  const frameHost = useMemo<FrameHost>(() => ({ manifest: host.manifest, params: host.params, home: null }), [host])
+  // Its home and its options are the main process's to give (the commune only): the screen gets its params from here,
+  // and a new host when its options change, which the main process fills again.
+  const frameHost = useMemo<FrameHost>(() => ({ manifest: host.manifest, params: host.params, home: null, options: host.options }), [host])
   // The app's mini-player: whether this service's videos may go there, and the one it shows when
   // this service pinned it (what the user watches from another service is none of its business).
   const { item, corner, desk, playable } = useMedia()

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { CallCache, callKey } from './calls'
-import type { ServiceManifest, ServiceMethods } from './index'
+import type { ServiceManifest, ServiceMethods, ServiceOptionValues } from './index'
 import type { PinnedMedia } from './media/types'
 import { WaitContext } from './ui'
 
@@ -34,6 +34,8 @@ export interface ServiceHost<M extends ServiceMethods = ServiceMethods> {
   params: Record<string, string | number>
   /** The commune of the user's address, when the profile has one. */
   home: { code: string; name: string; postcode: string; latitude?: number; longitude?: number } | null
+  /** Its own options, as the user set them in its settings (else their defaults): see ServiceOption. */
+  options: ServiceOptionValues
   /** Hand a question to Marianne: a new folder, the question ready in the composer. */
   ask(text: string, page?: ShownPage): void
   /**
@@ -79,6 +81,14 @@ export function useHost<M extends ServiceMethods>(): ServiceHost<M> {
   const host = useContext(HostContext)
   if (!host) throw new Error('useHost outside a service screen')
   return host as unknown as ServiceHost<M>
+}
+
+/**
+ * The service's own options, as the user set them in its settings (its manifest's `options`), else
+ * their defaults: the screen draws again when one changes. `useOptions<{ chamber: 'an' | 'se' }>()`.
+ */
+export function useOptions<T extends ServiceOptionValues = ServiceOptionValues>(): T {
+  return useHost().options as T
 }
 
 /** The host, or null outside a service screen: for blocks that also work elsewhere (the media player). */

@@ -12,11 +12,13 @@ import type { BonjourMethods } from './types'
 export const service = defineService<BonjourMethods>({
   activate(ctx) {
     const visits = () => ctx.storage.get<number>('visits') ?? 0
+    // Its own option, which the user sets in its settings (package.json, marianne.options): read when it matters.
+    const counting = () => ctx.options.get().countVisits !== false
     return {
       methods: {
         greet(name) {
-          const count = visits() + 1
-          ctx.storage.set('visits', count)
+          const count = counting() ? visits() + 1 : visits()
+          if (counting()) ctx.storage.set('visits', count)
           return { text: greeting(name, new Date()), visits: count, from: ctx.home()?.name ?? null }
         },
         visits,

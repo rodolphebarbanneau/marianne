@@ -1,5 +1,6 @@
 import {
   allowedUrl,
+  optionValues,
   readManifest,
   readTile,
   serviceCode,
@@ -8,6 +9,7 @@ import {
   type NewsArticle,
   type NewsReading,
   type NewsSourceInfo,
+  type ServiceOptionValues,
   type ServiceTile,
   type SyncStatus
 } from './index'
@@ -32,6 +34,8 @@ export interface FakeContextOptions {
   sync?: SyncStatus
   /** The communes Marianne's geo connection knows. */
   communes?: Commune[]
+  /** What the user chose of the service's own options (the others keep their defaults); `setOptions` changes them in the test. */
+  options?: ServiceOptionValues
   /** The commune of the user's address (none by default). */
   home?: HomeCommune | null
   /** The profile fields the user granted, their vehicles, leaning, themes and news sources (given only when granted, as Marianne does). */
@@ -61,13 +65,17 @@ export interface FakeContext {
   urls: URL[]
   /** The service's storage, by key. */
   stored: Map<string, unknown>
+  /** The user changes options in the service's settings: checked as Marianne checks them, then the service's listeners hear it. */
+  setOptions(values: ServiceOptionValues): void
 }
 
-export function fakeContext(pkg: unknown, options: FakeContextOptions = {}): FakeContext {
+export function fakeContext(pkg: unknown, given: FakeContextOptions = {}): FakeContext {
   const manifest = readManifest(pkg)
-  const { answer, answerText, communes = [], home = null, profile = {}, dataDir = '', sync = {} } = options
+  const { answer, answerText, communes = [], home = null, profile = {}, dataDir = '', sync = {} } = given
   const urls: URL[] = []
   const stored = new Map<string, unknown>()
+  let chosen = optionValues(manifest.options, given.options)
+  const listeners = new Set<(values: ServiceOptionValues) => void>()
   // As Marianne does: https to a declared host only, so that a test passes only where Marianne would let the service through.
   const check = (url: string) => {
     if (!allowedUrl(manifest, url)) throw new Error(`3615 ${serviceCode(manifest)} n’a pas déclaré ${new URL(url).host} (package.json, marianne.hosts).`)
@@ -113,10 +121,21 @@ export function fakeContext(pkg: unknown, options: FakeContextOptions = {}): Fak
           ? { accepted: [...profile.sources.accepted], sections: { ...(profile.sources.sections ?? {}) }, leanings: { ...(profile.sources.leanings ?? {}) } }
           : null
     },
-    sync: { status: () => sync, run: async () => {} }
+    sync: { status: () => sync, run: async () => {} },
+    options: {
+      get: () => ({ ...chosen }),
+      onChange: (listener) => {
+        listeners.add(listener)
+        return () => void listeners.delete(listener)
+      }
+    }
   }
-  if (manifest.news) ctx.news = fakeNews(options.news ?? {}, (profile.granted ?? []).includes('opinions.sources'))
-  return { ctx, urls, stored }
+  if (manifest.news) ctx.news = fakeNews(given.news ?? {}, (profile.granted ?? []).includes('opinions.sources'))
+  const setOptions = (values: ServiceOptionValues) => {
+    chosen = optionValues(manifest.options, { ...chosen, ...values })
+    for (const listener of listeners) listener({ ...chosen })
+  }
+  return { ctx, urls, stored, setOptions }
 }
 
 /** The vehicles a test gives, with only the fields granted (and their id), as Marianne gives them: none without a vehicles field granted. */
