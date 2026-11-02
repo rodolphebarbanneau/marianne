@@ -107,7 +107,7 @@ You sign in at the maker's, never in Marianne: it sees neither your password nor
 
 ## Updates
 
-On Windows and Linux, the next versions of Marianne install themselves (Réglages › À propos et mises à jour, Settings › About and updates). On macOS, since the app isn't signed yet, automatic updates don't work: download the new version from the releases page.
+Marianne looks for a new version when it opens, then every four hours, with an account open or not. On Windows and Linux, it downloads it and installs it when it closes (Réglages › À propos et mises à jour, Settings › About and updates). The bottom bar says so, on the lock screen too: « Marianne 1.3.0 est prête » (is ready), and « redémarrer » (restart) installs it right away. On macOS, since the app isn't signed yet, automatic updates don't work: « page des versions » (releases page), in the same bar, leads to the new version to download.
 
 ## Opening an archive with a double click
 

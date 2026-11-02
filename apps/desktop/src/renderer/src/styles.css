@@ -1041,6 +1041,13 @@ textarea.notes {
   display: flex;
   gap: 5px;
 }
+/* A newer Marianne: its version and the one thing to do, beside the engines (or the version, locked). */
+.update-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+}
 .eng {
   display: inline-flex;
   align-items: center;
