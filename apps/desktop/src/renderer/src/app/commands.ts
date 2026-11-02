@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { accelOf, matches, SHORTCUTS, shortcutLabel, type CommandId } from '@shared/shortcuts'
+import { accelOf, matches, matchOrder, shortcutLabel, type CommandId } from '@shared/shortcuts'
 import { lockIntent } from '../lib/after-unlock'
 import { api, isMac } from '../lib/api'
 import { useApp } from './context'
@@ -75,7 +75,7 @@ export function useShortcuts(actions: Actions): void {
         app.step(e.key === 'ArrowDown' ? 'next' : 'prev')
         return
       }
-      for (const def of SHORTCUTS) {
+      for (const def of matchOrder(app.config.shortcuts)) {
         const run = actions[def.id]
         if (!run || !matches(e, accelOf(def.id, isMac, app.config.shortcuts), isMac)) continue
         // In a folder, pg↑ / pg↓ scroll the conversation (the folder handles them).
