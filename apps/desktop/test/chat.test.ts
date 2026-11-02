@@ -208,6 +208,32 @@ describe('an engine that isn’t signed in', () => {
   })
 })
 
+describe('the automatic lock', () => {
+  it('waits for a reply to the user, not for a planned task’s run, nor while a card or a hand-over waits for them', async () => {
+    const task = tasks.create(TOLLS)
+    const ticking = tasks.tick()
+    await vi.waitFor(() => expect(runTurn).toHaveBeenCalledTimes(1))
+    // A run: nobody asked, nobody may be there.
+    expect(chat.running(task.folderId)).toBe(true)
+    expect(chat.answering()).toBe(false)
+
+    fake.user = untilStopped('turn')
+    await chat.send({ folderId: task.folderId, text: 'Et mes péages ?', attachments: [] })
+    await ticking
+    await vi.waitFor(() => expect(chat.answering()).toBe(true))
+    // A hand-over: the turn waits for the user, who may have left.
+    let handBack!: () => void
+    const handOver = approvals.hold(task.folderId, new Promise<void>((resolve) => (handBack = resolve)))
+    expect(chat.answering()).toBe(false)
+    handBack()
+    await handOver
+    expect(chat.answering()).toBe(true)
+    chat.cancel(task.folderId)
+    await vi.waitFor(() => expect(chat.running(task.folderId)).toBe(false))
+    expect(chat.answering()).toBe(false)
+  })
+})
+
 describe('a folder deleted while Marianne answers', () => {
   it('waits for the turn to end, then leaves nothing of it', async () => {
     fake.user = untilStopped('turn')

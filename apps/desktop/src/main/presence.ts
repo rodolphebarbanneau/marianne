@@ -7,7 +7,8 @@ import { session } from './session'
  * pages counts (the window, the browser panel, a service's screen: a key, a click, a scroll, the
  * pointer moving over her window in front), as Chromium reports it from the input itself, so no
  * page can say the user is there when they are not; Marianne's own clicks on a site are the page's
- * script, not input. A reply she is writing counts too, since the lock would stop it. Behind other
+ * script, not input. A reply she is writing to the user counts too, since the lock would stop it; not
+ * a planned task's run, nor a card or a hand-over waiting for them (chat.answering). Behind other
  * windows and untouched, or with the user away, the lock comes after the minutes they chose.
  */
 
