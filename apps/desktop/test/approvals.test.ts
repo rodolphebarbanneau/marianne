@@ -310,7 +310,8 @@ describe('the cards and the lines, in the main process', () => {
     approvals.respond(parts[0].id, 'approve', '737')
     expect(await asked).toEqual({ decision: 'accepted', ahead: false })
     expect(given).toEqual(['737'])
-    expect(JSON.stringify(parts)).not.toContain('737')
+    // Without the card's id: a random one may hold any three digits (« …e03737f… »).
+    expect(JSON.stringify(parts.map(({ id: _id, ...part }) => part))).not.toContain('737')
 
     // Refused, it goes nowhere; nor on a card that asks for none.
     parts = []
