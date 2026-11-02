@@ -405,7 +405,8 @@ function RecordList<T extends { id: string }>({
   onDelete: (id: string) => void
 }) {
   const [editing, setEditing] = useState<{ draft: T; isNew: boolean } | null>(null)
-  const remove = (x: T) => confirm(`Supprimer « ${title(x)} » ?`) && onDelete(x.id)
+  // True once removed: the dialog closes only then, a cancelled confirm keeps it and its edits.
+  const remove = (x: T) => confirm(`Supprimer « ${title(x)} » ?`) && (onDelete(x.id), true)
   return (
     <>
       <ListHead label={label} count={items.length}>
@@ -451,7 +452,7 @@ function RecordList<T extends { id: string }>({
           top={top}
           onClose={() => setEditing(null)}
           onSave={(x) => (onSave(x), setEditing(null))}
-          onDelete={editing.isNew ? undefined : () => (remove(editing.draft), setEditing(null))}
+          onDelete={editing.isNew ? undefined : () => remove(editing.draft) && setEditing(null)}
         />
       )}
     </>
@@ -755,7 +756,7 @@ export function DocumentsPane() {
   const app = useApp()
   const [query, setQuery] = useState('')
   const [place, setPlace] = useState<DocumentPlace>('all')
-  const [domain, setDomain] = useState('all')
+  const [chosenDomain, setDomain] = useState('all')
   const [error, setError] = useState('')
   const add = () => void api.addDocuments({ domain: 'identity' }).catch((err) => setError(errorText(err)))
   const folderTitle = (id?: string) => (id ? app.folders.find((f) => f.id === id)?.title : undefined)
@@ -768,9 +769,11 @@ export function DocumentsPane() {
     return undefined
   }
   const words = documentWords((d) => [folderTitle(d.folderId), linked(d.entity)])
-  const shown = filterDocuments(documents, { query, place, domain }, words)
   const inFolder = documents.filter((d) => d.folderId).length
   const used = DOMAINS.filter((d) => documents.some((x) => x.domain === d.id))
+  // A domain whose last document moved or went is no longer an option: the filter goes back to all of them.
+  const domain = used.some((d) => d.id === chosenDomain) ? chosenDomain : 'all'
+  const shown = filterDocuments(documents, { query, place, domain }, words)
   const openFolder = (id: string) => {
     app.openSettings(null)
     app.go({ kind: 'folder', id })
