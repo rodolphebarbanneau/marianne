@@ -92,19 +92,17 @@ describe('fakeContext, for a service with options of its own', () => {
   })
 
   it('tells the service’s listeners when the user changes one, as Marianne checks it', () => {
-    const { ctx, setOptions } = fakeContext(withOptions)
+    const { ctx, setOptions } = fakeContext(withOptions, { options: { daysAhead: 3 } })
     const heard: unknown[] = []
     const stop = ctx.options.onChange((values) => heard.push(values))
     setOptions({ alerts: false })
-    // Out of its bounds: Marianne wouldn't keep it.
-    setOptions({ daysAhead: 40 })
+    // Out of its bounds, or no such option: Marianne refuses it and keeps what was there.
+    expect(() => setOptions({ daysAhead: 40 })).toThrow('Marianne would refuse 40 for « daysAhead »')
+    expect(() => setOptions({ theme: 'dark' })).toThrow('has no option « theme »')
     stop()
     setOptions({ alerts: true })
-    expect(heard).toEqual([
-      { alerts: false, daysAhead: 7 },
-      { alerts: false, daysAhead: 7 }
-    ])
-    expect(ctx.options.get()).toEqual({ alerts: true, daysAhead: 7 })
+    expect(heard).toEqual([{ alerts: false, daysAhead: 3 }])
+    expect(ctx.options.get()).toEqual({ alerts: true, daysAhead: 3 })
   })
 })
 
