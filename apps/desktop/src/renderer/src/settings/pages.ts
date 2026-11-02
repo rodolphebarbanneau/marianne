@@ -94,3 +94,22 @@ export function settingsTarget(asked: string): { page: string; section: string }
   const [page, section = ''] = moved.split('#')
   return { page: SETTINGS_PAGES.some((p) => p.id === page) ? page : 'identity', section }
 }
+
+/** The profile's entities by their tokens' first word (packages/profile/src/tokens.ts): set in Activités et biens. */
+const ENTITY_TOKENS = ['company', 'employer', 'vehicle', 'property']
+
+/**
+ * The page where a value the engine wrote as a token, and that the profile lacks, is set: « à renseigner » opens it.
+ * `siteFields` are the sites' own numbers (« tax_number »), kept with the site in Sites et API.
+ */
+export function tokenPage(token: string, siteFields: string[]): string {
+  const head = token.split('.')[0]
+  // An identity document is set in Identité, whoever holds it.
+  if (token.includes('id_document.')) return 'identity'
+  if (head === 'household') return 'household'
+  if (ENTITY_TOKENS.includes(head)) return 'assets'
+  if (token === 'iban') return 'money'
+  if (['phone', 'email', 'address'].includes(token)) return 'contact'
+  if (siteFields.includes(token)) return 'sites'
+  return 'identity'
+}
